@@ -1,0 +1,54 @@
+@use "variables" as *;
+@use "./layouts/navbar.scss" as *;
+@use "./layouts/sidebar.scss" as *;
+@use "./pages/dashboard/home.scss" as *;
+@use "./pages/dashboard/features.scss" as *;
+@use "./pages/dashboard/stats.scss" as *;
+@use "./pages/dashboard/testimonials.scss" as *;
+@use "./pages/dashboard/howtWorks.scss" as *;
+@use "./pages/dashboard/security.scss" as *;
+@use "./pages/dashboard/AIFeatures.scss" as *;
+@use "./pages/dashboard/trusted.scss" as *;
+@use "./pages/dashboard/FinalCTA.scss" as *;
+@use "./pages/auth/pages/login.scss" as *;
+@use "./layouts/footer.scss" as *;
+
+@import url("https://fonts.googleapis.com/css2?family=Beiruti:wght@200..900&display=swap");
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+    font-family: "Beiruti", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba($light-gray, 0.1);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba($dark-green, 0.8);
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: $dark-green;
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: darken($dark-green, 10%);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba($dark-green, 0.8) rgba($light-gray, 0.1);
+}

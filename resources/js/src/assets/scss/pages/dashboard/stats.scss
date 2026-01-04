@@ -1,0 +1,68 @@
+@use "../../variables.scss" as *;
+.stats {
+    margin-top: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 15%;
+    &__inner {
+        padding: 24px;
+        background-color: $light;
+        border: 1px solid rgba($light-gray, 0.5);
+        width: 100%;
+        height: 300px;
+        border-radius: 20px;
+        border-left: 6px solid rgba($dark-green, 0.7);
+        border-right: 20px solid rgba($dark-green, 0.7);
+        border-bottom-right-radius: 1000px;
+    }
+    &__container {
+        padding: 24px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 15%;
+    }
+    &__content {
+        text-align: center;
+        h2 {
+            font-weight: 500;
+            font-size: $xs-font;
+            color: $dark-gray;
+        }
+    }
+    &__data {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        h2 {
+            font-weight: 600;
+            font-size: $xl-font;
+            color: $dark-gray;
+        }
+        span {
+            font-size: $xl-font;
+            font-weight: 600;
+            color: $dark-green;
+        }
+    }
+}
+@media screen and (max-width: 1024px) {
+    .stats {
+        &__container {
+            display: grid;
+        }
+        &__data {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            text-align: center;
+        }
+        &__inner {
+            border-right: 1px solid rgba($light-bright, 0.3);
+            border-bottom-right-radius: 020px;
+            height: 100%;
+        }
+    }
+}

@@ -1,0 +1,178 @@
+@use "../../variables.scss" as *;
+
+.testimonials {
+    padding: 0 15%;
+    margin-top: 48px;
+
+    @media (max-width: 768px) {
+        padding: 0 5%;
+        &__slider-container {
+            max-width: 340px;
+            margin: 0 auto;
+            display: block;
+        }
+        &__data {
+            width: 280px !important;
+            flex: 0 0 350px !important;
+        }
+        &__content {
+            gap: 30px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        padding: 0 5%;
+        &__slider-container {
+            max-width: 320px;
+        }
+        &__data {
+            width: 280px !important;
+            flex: 0 0 301px !important;
+            padding: 20px;
+        }
+        &__content {
+            gap: 30px;
+        }
+    }
+
+    @media (min-width: 769px) {
+        &__data {
+            width: 350px;
+            flex: 0 0 330px;
+        }
+    }
+
+    &__slider-container {
+        overflow: hidden;
+        width: 100%;
+        max-width: 1450px;
+        margin: 0 auto;
+    }
+
+    &__toggleContainer {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: center;
+        margin-top: 24px;
+    }
+
+    &__toggle {
+        cursor: pointer;
+        width: 6px;
+        height: 6px;
+        border-radius: 100px;
+        border: 1px solid rgba($light-bright, 1);
+        transition: all 0.3s ease;
+
+        &.active {
+            background-color: rgba($dark-green, 0.7);
+            border: 1px solid rgba($dark-green, 1);
+        }
+    }
+
+    &__toggleRight,
+    &__toggleLeft {
+        cursor: pointer;
+        color: $dark-gray;
+        font-size: 24px;
+        transition: color 0.3s ease;
+
+        &:hover {
+            color: $dark-green;
+        }
+    }
+
+    &__mainTitle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+
+        h1 {
+            color: rgba($dark-green, 1);
+            font-weight: 500;
+            font-size: $l-font;
+        }
+        button {
+            cursor: pointer;
+            background-color: rgba($dark-green, 0.5);
+            border-radius: 5px;
+            padding: 5px 15px;
+            font-size: $xxs-font;
+            color: $light;
+            &:hover {
+                &:hover {
+                    background-color: $dark-green !important;
+                }
+            }
+        }
+    }
+
+    &__inner {
+        overflow: hidden;
+    }
+
+    &__content {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        width: max-content;
+        will-change: transform;
+    }
+
+    &__data {
+        display: grid;
+        justify-content: center;
+        border: 1px solid rgba($light-bright, 0.4);
+        border-radius: 15px;
+        padding: 24px;
+        height: 280px;
+        flex-shrink: 0;
+    }
+
+    &__img {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        img {
+            border-radius: 100px;
+            border: 1px dashed rgba($dark-green, 0.7);
+            max-width: 90px;
+            height: 90px;
+            object-fit: cover;
+        }
+    }
+
+    &__name {
+        text-align: center;
+
+        h2 {
+            font-size: $s-font;
+            font-weight: 600;
+            color: rgba($dark-green, 0.7);
+            margin: 12px 0 4px 0;
+        }
+
+        p {
+            font-size: $xs-font;
+            color: $light-gray;
+            margin: 0;
+        }
+    }
+
+    &__rating {
+        justify-content: center;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin: 12px 0;
+
+        i {
+            color: rgba($orange, 0.8);
+            font-size: $xxs-font;
+        }
+    }
+}

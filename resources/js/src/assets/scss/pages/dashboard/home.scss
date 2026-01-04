@@ -1,0 +1,206 @@
+@use "../../variables.scss" as *;
+
+.home {
+    min-height: 70vh;
+    background-color: rgba($dark-green, 0.02);
+
+    &__inner {
+        padding: 0 15%;
+        padding-top: 68px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    &__content {
+        text-align: right;
+        opacity: 0;
+        transform: translateX(100px);
+        animation: slideInRight 1.2s ease-out 0.3s forwards;
+    }
+
+    &__images {
+        position: relative;
+        width: 60%;
+        opacity: 0;
+        transform: translateX(-100px);
+        animation: slideInLeft 1.2s ease-out forwards;
+        overflow: hidden;
+    }
+
+    &__title {
+        h1 {
+            font-weight: 600;
+            color: rgba($dark-green, 1);
+            font-size: $xxl-font;
+        }
+
+        p {
+            margin: 12px 0;
+            color: $light-gray;
+            font-weight: 400;
+            font-size: $xs-font;
+        }
+    }
+
+    &__btns {
+        display: flex;
+        align-items: center;
+        justify-content: end;
+        gap: 12px;
+
+        button {
+            font-size: $xs-font;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 5px 15px;
+            border-radius: 10px;
+            color: $light;
+            background-color: rgba($dark-green, 0.7);
+            transition: all 0.2s ease;
+
+            &:hover {
+                background-color: $dark-green;
+            }
+        }
+    }
+}
+
+@keyframes slideInLeft {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.img {
+    &__cover {
+        position: absolute;
+        top: 48px;
+        left: -34px;
+    }
+
+    &__main {
+        max-width: 600px;
+        animation: floatRandomMain 8s ease-in-out infinite;
+    }
+
+    @keyframes floatRandomMain {
+        0%,
+        100% {
+            transform: translateY(0px) rotate(0deg) scale(1);
+        }
+        20% {
+            transform: translateY(-15px) rotate(2deg) scale(1.02);
+        }
+        40% {
+            transform: translateY(8px) rotate(-1deg) scale(0.98);
+        }
+        60% {
+            transform: translateY(-10px) rotate(1deg) scale(1.01);
+        }
+        80% {
+            transform: translateY(12px) rotate(-2deg) scale(0.99);
+        }
+    }
+
+    &__submain {
+        max-width: 100px;
+        position: absolute;
+        top: 190px;
+        animation: floatRandom 8s ease-in-out infinite;
+    }
+
+    &__submain_2 {
+        max-width: 100px;
+        position: absolute;
+        top: 30px;
+        left: 420px;
+        animation: floatRandom 10s ease-in-out infinite reverse;
+    }
+
+    &__submain_3 {
+        max-width: 100px;
+        position: absolute;
+        left: 480px;
+        top: 200px;
+        animation: floatRandom 12s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatRandom {
+        0%,
+        100% {
+            transform: translateY(0px) rotate(0deg) scale(1);
+        }
+        20% {
+            transform: translateY(-15px) rotate(2deg) scale(1.02);
+        }
+        40% {
+            transform: translateY(8px) rotate(-1deg) scale(0.98);
+        }
+        60% {
+            transform: translateY(-10px) rotate(1deg) scale(1.01);
+        }
+        80% {
+            transform: translateY(12px) rotate(-2deg) scale(0.99);
+        }
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    .home {
+        &__inner {
+            align-items: center;
+            display: grid;
+        }
+        &__images {
+            margin-top: 24px;
+            img {
+                max-width: 280px;
+            }
+            width: 100%;
+        }
+        &__title {
+            h1 {
+                margin-top: 24px;
+                font-size: $m-font;
+            }
+        }
+        p {
+            font-size: $xxs-font;
+        }
+        &__btns {
+            button {
+                border-radius: 5px;
+                font-size: $xxs-font;
+            }
+        }
+    }
+    .img {
+        &__cover {
+            width: 250px;
+        }
+        &__submain {
+            top: 50px;
+            width: 40px;
+        }
+        &__submain_2 {
+            width: 40px;
+            top: 80px;
+            left: 190px;
+        }
+        &__submain_3 {
+            top: 130px;
+            left: 50px;
+            width: 40px;
+        }
+    }
+}

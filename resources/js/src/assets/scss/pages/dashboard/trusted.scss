@@ -1,0 +1,41 @@
+@use "../../variables.scss" as *;
+
+.trusted {
+    padding: 0 15%;
+    margin-top: 48px;
+    overflow: hidden;
+
+    &__inner {
+        background-color: $light-low;
+        padding: 0 15%;
+        overflow: hidden;
+    }
+
+    &__container {
+        display: flex;
+        align-items: center;
+        gap: 60px;
+        white-space: nowrap;
+        will-change: transform;
+    }
+
+    &__content {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-shrink: 0;
+        min-width: 220px;
+        h2 {
+            color: rgba($light-gray, 0.3);
+            font-size: $l-font;
+            font-weight: 600;
+            margin: 0;
+            white-space: nowrap;
+        }
+    }
+    &__img {
+        i {
+            color: rgba($light-gray, 0.4);
+        }
+    }
+}
