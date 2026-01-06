@@ -4,6 +4,7 @@ import { FaStarHalfAlt } from "react-icons/fa";
 import { FaRegStar } from "react-icons/fa";
 import { IoIosArrowBack } from "react-icons/io";
 import { IoIosArrowForward } from "react-icons/io";
+import facelessAvatar from "../../../assets/images/facelessAvatar.png";
 
 interface Testimonial {
     id: number;
@@ -36,7 +37,7 @@ const Testimonials: React.FC = () => {
         },
         {
             id: 3,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/974/small/front-view-a-happy-arab-man-in-traditional-white-thobe-and-red-and-white-checkered-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             rating: 5,
             name: "أ/ عبدالله القحطاني",
             title: "داعية وخطيب - مركز الدعوة والإرشاد",
@@ -152,8 +153,19 @@ const Testimonials: React.FC = () => {
                                 className="testimonials__data"
                             >
                                 <div className="testimonials__img">
-                                    <img src={testimonial.img} alt="" />
+                                    <div className="testimonials__imgBg">
+                                        <img
+                                            className="wave-bg"
+                                            src="https://png.pngtree.com/thumb_back/fw800/background/20251004/pngtree-elegant-green-islamic-background-with-ornamental-arch-image_19763723.webp"
+                                            alt=""
+                                        />
+                                    </div>
+                                    <img
+                                        src={testimonial.img}
+                                        alt={testimonial.name}
+                                    />
                                 </div>
+
                                 <div className="testimonials__rating">
                                     {renderStars(testimonial.rating).map(
                                         (Star, index) => (

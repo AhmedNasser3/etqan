@@ -82,6 +82,13 @@
             gap: 6px;
             border-bottom: 1px dashed $light-bright;
         }
+        a {
+            border-radius: 10px;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
     }
 
     &__links {

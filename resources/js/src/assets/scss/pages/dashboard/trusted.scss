@@ -6,9 +6,10 @@
     overflow: hidden;
 
     &__inner {
-        background-color: $light-low;
+        background-color: $light-bright;
         padding: 0 15%;
         overflow: hidden;
+        border-radius: 15px;
     }
 
     &__container {
@@ -26,7 +27,7 @@
         flex-shrink: 0;
         min-width: 220px;
         h2 {
-            color: rgba($light-gray, 0.3);
+            color: rgba($light, 0.7);
             font-size: $l-font;
             font-weight: 600;
             margin: 0;
@@ -35,7 +36,7 @@
     }
     &__img {
         i {
-            color: rgba($light-gray, 0.4);
+            color: rgba($light, 0.7);
         }
     }
 }

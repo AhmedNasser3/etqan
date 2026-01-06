@@ -56,6 +56,14 @@ const Navbar: React.FC = () => {
                             </i>
                             احمد ناصر
                         </h4>
+                        <a
+                            href="/login"
+                            id="navbar__active"
+                            className="navbar__link"
+                        >
+                            <HiLogin />
+                            تسجيل الدخول
+                        </a>
                     </div>
                 </div>
 

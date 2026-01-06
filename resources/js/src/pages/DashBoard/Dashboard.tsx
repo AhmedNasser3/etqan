@@ -1,3 +1,4 @@
+import Complexes from "./home/Complexes";
 import Features from "./home/Features";
 import FinalCTA from "./home/FinalCTA";
 import Home from "./home/Home";
@@ -20,20 +21,23 @@ const Dashboard: React.FC = () => {
             <div className="dashboard__studentTestimonials">
                 <StudentTestimonials />
             </div>
-            <div className="dashboard__testimonials">
-                <Testimonials />
-            </div>
             <div className="dashboard__howItWorksSection">
                 <HowItWorksSection />
             </div>
             <div className="dashboard__security">
                 <Security />
             </div>
-            <div className="dashboard__trusted">
+            {/* <div className="dashboard__trusted">
                 <Trusted />
-            </div>
+            </div> */}
             <div className="dashboard__finalCTA">
                 <FinalCTA />
+            </div>
+            <div className="dashboard__complexes">
+                <Complexes />
+            </div>
+            <div className="dashboard__testimonials">
+                <Testimonials />
             </div>
         </div>
     );

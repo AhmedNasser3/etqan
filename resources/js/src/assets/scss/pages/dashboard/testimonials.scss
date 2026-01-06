@@ -101,6 +101,7 @@
             padding: 5px 15px;
             font-size: $xxs-font;
             color: $light;
+            transition: all 0.2s ease;
             &:hover {
                 &:hover {
                     background-color: $dark-green !important;
@@ -123,6 +124,7 @@
     }
 
     &__data {
+        cursor: pointer;
         display: grid;
         justify-content: center;
         border: 1px solid rgba($light-bright, 0.4);
@@ -130,19 +132,73 @@
         padding: 24px;
         height: 280px;
         flex-shrink: 0;
+        &:hover {
+            .testimonials__imgBg {
+                animation: waveRise 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+                    forwards;
+                transform-origin: bottom;
+            }
+
+            img:last-child {
+                transform: scale(1.05);
+                border-color: $dark-green;
+            }
+        }
     }
 
-    &__img {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .testimonials {
+        &__img {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
 
-        img {
-            border-radius: 100px;
-            border: 1px dashed rgba($dark-green, 0.7);
-            max-width: 90px;
-            height: 90px;
-            object-fit: cover;
+            img {
+                border-radius: 100px;
+                border: 1px dashed rgba($dark-green, 0.7);
+                max-width: 90px;
+                width: 90px;
+                height: 90px;
+                object-fit: cover;
+                position: relative;
+                z-index: 2;
+                transition: all 0.3s ease;
+            }
+        }
+
+        &__imgBg {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%) translateY(110%);
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+
+            img {
+                border-radius: 100px;
+                border: none;
+                max-width: 90px;
+                width: 90px;
+                height: 90px;
+                object-fit: cover;
+            }
+        }
+    }
+
+    @keyframes waveRise {
+        0% {
+            transform: translateX(-50%) translateY(100%) scale(0.8);
+            opacity: 0;
+        }
+        50% {
+            transform: translateX(-50%) translateY(20%) scale(1.1);
+            opacity: 0.1;
+        }
+        100% {
+            transform: translateX(-50%) translateY(0%) scale(1);
+            opacity: 1;
         }
     }
 

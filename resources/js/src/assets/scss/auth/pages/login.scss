@@ -1,1 +1,566 @@
 @use "../../variables.scss" as *;
+
+.auth {
+    &__content {
+        display: flex;
+        justify-content: space-between;
+    }
+    &__bg {
+        height: 90.5vh;
+        width: 50%;
+        border-top-left-radius: 50px;
+        border-bottom-left-radius: 50px;
+        border-left: 12px solid rgba($dark-green, 1);
+        background-color: rgba($dark-green, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        img {
+            cursor: pointer;
+            background-color: $light;
+            padding: 24px 24px 0 24px;
+            border-radius: 10px;
+            width: 300px;
+            transition: all 0.2s ease;
+            border-bottom: 12px solid rgba($dark-green, 1);
+            border-top-right-radius: 150px;
+            border-top-left-radius: 150px;
+            &:hover {
+                scale: calc(1.005);
+            }
+        }
+    }
+    &__bgImg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    &__bgData {
+        text-align: center;
+        margin: 24px 0;
+        h1 {
+            font-size: $xl-font;
+            font-weight: 600;
+            color: $light;
+        }
+        p {
+            font-size: $s-font;
+            color: rgba($dark-green, 1);
+            font-weight: 400;
+        }
+    }
+    &__form {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 50%;
+    }
+    &__formContainer {
+        border-radius: 20px;
+        border: 1px solid rgba($dark-gray, 0.2);
+        height: 750px;
+        width: 900px;
+        padding: 24px;
+        display: flex;
+        justify-content: center;
+    }
+    &__formContent {
+        width: 100%;
+    }
+    &__formImg {
+        display: flex;
+        justify-content: center;
+        img {
+            width: 100px;
+        }
+    }
+}
+
+.inputs {
+    &__email,
+    &__Firstname,
+    &__Lastname,
+    &__verifyOTP {
+        text-align: end;
+        display: grid;
+        width: 100%;
+        margin: 6px 0;
+        input {
+            text-align: end;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px dashed rgba($dark-green, 0.4);
+            width: 100%;
+            outline: none;
+            transition: all 0.2s ease;
+            &:focus {
+                border: 1px dashed $dark-green;
+                transform: translateY(-2px);
+            }
+            &:hover {
+                border-color: $dark-green;
+                transform: translateY(-2px);
+            }
+        }
+        span {
+            color: rgba($dark-gray, 0.8);
+        }
+    }
+    &__verifyOTPBirth {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    &__select {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        select {
+            margin-top: 24px;
+            padding: 12px 20px 12px 16px;
+            height: 51px;
+            border-radius: 10px;
+            border: 1px dashed rgba($dark-green, 0.4);
+            outline: none;
+            background: $light;
+            color: $dark-green;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+            text-align: center;
+            min-width: 95px;
+            &:hover {
+                border-color: $dark-green;
+                transform: translateY(-2px);
+            }
+            &:focus {
+                border: 1px dashed $dark-green;
+            }
+            option {
+                padding: 12px 16px;
+                background: $light;
+                color: $dark-green;
+                font-weight: 600;
+            }
+        }
+    }
+    &__name {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    &__verifyOTPBtn {
+        button {
+            cursor: pointer;
+            padding: 12px;
+            background-color: rgba($dark-green, 0.7);
+            border-radius: 10px;
+            width: 100%;
+            color: $light;
+            margin-top: 12px;
+            transition: all 0.2s ease;
+            &:hover {
+                background-color: rgba($dark-green, 0.8);
+            }
+            &.active {
+                background-color: rgba($dark-green, 0.7);
+            }
+            &:not(.active) {
+                background-color: rgba($dark-gray, 0.5);
+            }
+        }
+    }
+    &__verifyOTPtimer {
+        display: flex;
+        align-items: center;
+        justify-content: end;
+        margin-top: 12px;
+        gap: 6px;
+        p {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: $xxs-font;
+            font-weight: 400;
+        }
+        .resend-link {
+            color: $dark-green;
+            cursor: pointer;
+            font-weight: 400;
+            transition: all 0.2s ease;
+            &:hover {
+                color: darken($dark-green, 10%);
+            }
+        }
+    }
+    .inputs__submitBtn {
+        button {
+            cursor: pointer;
+            padding: 12px;
+            background-color: rgba($dark-green, 0.4);
+            border-radius: 10px;
+            width: 100%;
+            color: rgba($light, 0.7);
+            margin-top: 12px;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+
+            &:hover {
+                background-color: rgba($dark-green, 0.5);
+            }
+
+            &.login-btn-active {
+                background-color: rgba($dark-green, 0.7) !important;
+                color: $light !important;
+                cursor: pointer !important;
+                opacity: 1 !important;
+                transform: translateY(-2px);
+
+                &:hover {
+                    background-color: darken($dark-green, 0.7) !important;
+                }
+            }
+        }
+    }
+    &__verifyOTP {
+        select,
+        textarea {
+            text-align: end;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px dashed rgba($dark-green, 0.4);
+            width: 100%;
+            outline: none;
+            background: $light;
+            color: $dark-gray;
+            transition: all 0.2s ease;
+            resize: vertical;
+
+            &:focus {
+                border: 1px dashed $dark-green;
+                transform: translateY(-2px);
+            }
+            &:hover {
+                border-color: $dark-green;
+                transform: translateY(-2px);
+            }
+        }
+    }
+
+    textarea {
+        font-family: inherit;
+        min-height: 80px;
+    }
+}
+
+#inputs {
+    &__submitBtn {
+        button {
+            background-color: rgba($dark-green, 0.5);
+        }
+    }
+}
+
+button {
+    &[disabled] {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+.verifyPopout {
+    position: fixed;
+    top: 0;
+    right: 0;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: rgba($dark-gray, 0.3);
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    &__submitBtnVerfiry {
+        button {
+            cursor: pointer;
+            padding: 12px;
+            background-color: rgba($dark-green, 0.7);
+            border-radius: 10px;
+            width: 100%;
+            color: rgba($light, 0.7);
+            margin-top: 12px;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+
+            &:hover {
+                background-color: rgba($dark-green, 1);
+            }
+        }
+    }
+    &.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    &__inner {
+        padding: 24px;
+        background-color: $light;
+        border: 1px dashed rgba($dark-gray, 0.5);
+        width: 600px;
+        height: 350px;
+        border-radius: 20px;
+        position: relative;
+    }
+    &__content {
+        height: 300px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    &__data {
+        width: 100%;
+        text-align: center;
+    }
+    &__header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        h1 {
+            font-size: $l-font;
+            color: $dark-green;
+        }
+    }
+    &__OTP {
+        margin-top: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: center;
+        input {
+            background-color: rgba($dark-gray, 0.08);
+            display: flex;
+            justify-content: center;
+            height: 60px;
+            width: 60px;
+            font-size: $l-font;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.2s ease;
+            &.verified {
+                border: 2px solid rgba($dark-green, 0.8);
+            }
+        }
+        &.error {
+            animation: shake 1s ease-in-out;
+
+            input {
+                border: 2px solid $error-red !important;
+                background-color: rgba($error-red, 0.1) !important;
+            }
+        }
+
+        &.error-cleared {
+            input {
+                border: 2px solid $error-red !important;
+                background-color: rgba($error-red, 0.03) !important;
+            }
+        }
+    }
+    @keyframes shake {
+        0%,
+        100% {
+            transform: translateX(0);
+        }
+        10%,
+        30%,
+        50%,
+        70%,
+        90% {
+            transform: translateX(-5px);
+        }
+        20%,
+        40%,
+        60%,
+        80% {
+            transform: translateX(5px);
+        }
+    }
+    &__exit {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        i {
+            cursor: pointer;
+            font-size: 24px;
+            color: $dark-gray;
+            &:hover {
+                color: $dark-green;
+            }
+        }
+    }
+    &__header {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+
+        i {
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            color: rgba($dark-gray, 0.5);
+            &.verified {
+                color: $dark-green !important;
+
+                svg {
+                    color: rgba($dark-green, 0.7) !important;
+                }
+            }
+
+            svg {
+                width: 50px !important;
+                height: 50px !important;
+                transition: color 0.3s ease;
+            }
+        }
+    }
+
+    &__resend {
+        margin-top: 24px;
+        color: $dark-green;
+        cursor: pointer;
+        font-weight: 500;
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.inputs__verifyOTPBtn {
+    button.open-popup {
+        background-color: rgba($dark-green, 0.7);
+        &:hover {
+            background-color: darken($dark-green, 10%);
+        }
+    }
+}
+
+#verifyPopout {
+    &__verifyOTPtimer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+@media screen and (max-width: 924px) {
+    .auth {
+        &__content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+        &__bg {
+            display: none;
+        }
+        &__form {
+            width: 100%;
+        }
+        &__formContainer {
+            border: none;
+            height: 800px;
+        }
+    }
+}
+.gender-selector {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 12px 20px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.gender-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.gender-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    width: 100%;
+    padding: 10px 60px 6px 24px;
+
+    img {
+        border-radius: 50%;
+    }
+
+    &:hover {
+        background: rgba(rgba($dark-green, 0.7), 0.1);
+        border-color: rgba($dark-green, 0.7);
+    }
+
+    &.active {
+        background: rgba($dark-green, 0.7);
+        color: white;
+        border-color: rgba($dark-green, 0.7);
+        width: 100%;
+        padding: 10px 60px 6px 24px;
+    }
+}
+
+.inputs__name.female {
+    .inputs__Firstname input::placeholder {
+        color: rgba($dark-gray, 0.5);
+    }
+}
+.inputs__verifyOTPBtn {
+    button {
+        &.open-popup {
+            background-color: $dark-green;
+            color: $light;
+
+            &:hover:not([disabled]) {
+                background-color: darken($dark-green, 10%);
+            }
+        }
+
+        &.sms-btn-active {
+            background-color: rgba($dark-green, 0.8) !important;
+            color: rgba($light, 0.9) !important;
+            cursor: default !important;
+
+            &:hover {
+                background-color: rgba($dark-green, 0.8) !important;
+                transform: none;
+            }
+
+            &[disabled] {
+                cursor: default;
+            }
+        }
+    }
+}
