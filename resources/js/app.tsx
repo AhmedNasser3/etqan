@@ -11,6 +11,7 @@ import TestimonialsView from "./src/pages/DashBoard/TestimonialsView/Testimonial
 import UserSidebar from "./src/layouts/userDashboard/UserSidebar";
 import UserNavbar from "./src/layouts/userDashboard/userNavbar";
 import UserDashboard from "./src/pages/DashBoard/UserDashboard/UserDashboard";
+import Plans from "./src/pages/DashBoard/UserDashboard/widgets/Plans";
 
 function MainLayout() {
     return (
@@ -57,8 +58,7 @@ function App() {
 
                 <Route path="/user-dashboard" element={<UserLayout />}>
                     <Route index element={<UserDashboard />} />
-                    {/* لو عندك صفحات تانية لليوزر */}
-                    {/* <Route path="settings" element={<UserSettings />} /> */}
+                    <Route path="plans" element={<Plans />} />
                 </Route>
             </Routes>
         </BrowserRouter>

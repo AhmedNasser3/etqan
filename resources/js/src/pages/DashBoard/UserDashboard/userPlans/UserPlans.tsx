@@ -19,7 +19,7 @@ const UserPlans: React.FC = () => {
         {
             id: 1,
             date: "2026-01-07",
-            day: "الأحد",
+            day: "الأربعاء",
             hifz: "البقرة ٤٦-٥٠",
             review: "البقرة ١-١٠",
             status: "completed",
@@ -27,7 +27,7 @@ const UserPlans: React.FC = () => {
         {
             id: 2,
             date: "2026-01-08",
-            day: "الإثنين",
+            day: "الخميس",
             hifz: "البقرة ٥١-٥٥",
             review: "البقرة ١١-٢٠",
             status: "active",
@@ -35,7 +35,7 @@ const UserPlans: React.FC = () => {
         {
             id: 3,
             date: "2026-01-09",
-            day: "الثلاثاء",
+            day: "الجمعة",
             hifz: "البقرة ٥٦-٦٠",
             review: "البقرة ٢١-٣٠",
             status: "pending",
@@ -43,13 +43,26 @@ const UserPlans: React.FC = () => {
         {
             id: 4,
             date: "2026-01-10",
-            day: "الأحد",
-            hifz: "البقرة ٤٦-٥٠",
-            review: "البقرة ١-١٠",
+            day: "السبت",
+            hifz: "البقرة ٦١-٦٥",
+            review: "البقرة ٣١-٤٠",
             status: "pending",
         },
     ]);
     const [filteredData, setFilteredData] = useState(planData);
+
+    const getArabicDayName = (date: Date) => {
+        const days = [
+            "الأحد",
+            "الإثنين",
+            "الثلاثاء",
+            "الأربعاء",
+            "الخميس",
+            "الجمعة",
+            "السبت",
+        ];
+        return days[date.getDay()];
+    };
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -195,7 +208,10 @@ const UserPlans: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <div className="inputs__verifyOTPBirth">
+            <div
+                className="inputs__verifyOTPBirth"
+                id="userProfile__verifyOTPBirth"
+            >
                 <div
                     className="userProfile__progressContent"
                     id="userProfile__progressContent"
@@ -208,7 +224,10 @@ const UserPlans: React.FC = () => {
                         <span></span>
                     </div>
                 </div>
-                <div className="userProfile__progressContent">
+                <div
+                    className="userProfile__progressContent"
+                    id="userProfile__progressContent"
+                >
                     <div className="userProfile__progressTitle">
                         <h1>الجزء الثاني</h1>
                     </div>

@@ -1,3 +1,4 @@
+import UserMeetCard from "../userMeet/UserMeetCard";
 import UserPlans from "../userPlans/UserPlans";
 import EmailVerifyWidget from "./EmailVerifyWidget";
 import Medals from "./medals";
@@ -63,6 +64,7 @@ const UserProfile: React.FC = () => {
                     </div>
                 </div>
                 <UserPlans />
+                <UserMeetCard />
             </div>
         </div>
     );
