@@ -18,4 +18,24 @@
         opacity: 1;
         visibility: visible;
     }
+    &__data {
+        cursor: pointer;
+        padding: 24px;
+        transition: all 0.2s ease;
+        &.active {
+            background-color: rgba($dark-green, 0.03);
+            border-left: 6px solid rgba($dark-green, 0.7);
+        }
+        &:hover {
+            background-color: rgba($dark-green, 0.03);
+            border-left: 6px solid rgba($dark-green, 0.7);
+        }
+    }
+    &__title {
+        a {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+    }
 }

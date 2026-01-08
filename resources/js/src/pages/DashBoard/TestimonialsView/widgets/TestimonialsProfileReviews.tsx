@@ -4,8 +4,7 @@ import { FaStarHalfAlt } from "react-icons/fa";
 import { FaRegStar } from "react-icons/fa";
 import { IoIosArrowBack } from "react-icons/io";
 import { IoIosArrowForward } from "react-icons/io";
-import facelessAvatar from "../../../assets/images/facelessAvatar.png";
-import { a } from "framer-motion/dist/types.d-DagZKalS";
+import facelessAvatar from "../../../../assets/images/facelessYoung.png";
 
 interface Testimonial {
     id: number;
@@ -14,8 +13,7 @@ interface Testimonial {
     name: string;
     title: string;
 }
-
-const Testimonials: React.FC = () => {
+const TestimonialsProfileReviews: React.FC = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [slideWidth, setSlideWidth] = useState(374);
     const [isMobile, setIsMobile] = useState(false);
@@ -26,50 +24,57 @@ const Testimonials: React.FC = () => {
             id: 1,
             img: "https://png.pngtree.com/png-vector/20250705/ourmid/pngtree-a-saudi-man-traditional-attire-middle-aged-wearing-white-thobe-and-png-image_16610073.webp",
             rating: 4.5,
-            name: "الشيخ محمد البريدي",
-            title: "قارئ القرآن الكريم - إمام مسجد الرحمة",
+            name: "أحمد علي",
+            title: "التجربة ممتازة، الشرح واضح والخدمة ساعدتني أطور مستواي في وقت قصير.",
         },
         {
             id: 2,
             img: "https://static.vecteezy.com/system/resources/thumbnails/070/221/098/small_2x/confident-saudi-arabian-man-in-traditional-attire-portrait-against-isolated-backdrop-presenting-png.png",
             rating: 4,
-            name: "د/ أحمد السعدي",
-            title: "أستاذ الفقه الإسلامي - جامعة الإمام",
+            name: "محمد حسن",
+            title: "منصة مرتبة، المتابعة مستمرة والأسلوب في التدريس مشجع جدًا.",
         },
         {
             id: 3,
             img: facelessAvatar,
             rating: 5,
-            name: "أ/ عبدالله القحطاني",
-            title: "داعية وخطيب - مركز الدعوة والإرشاد",
+            name: "سارة خالد",
+            title: "أفضل تجربة تعليمية خضتها، تنظيم عالي واهتمام حقيقي بالطلاب.",
         },
         {
             id: 4,
             img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/921/small/a-smiling-saudi-arabian-man-in-a-white-thobe-and-ghutra-isolated-on-transparent-background-free-png.png",
-            rating: 3,
-            name: "ش/ سالم العتيبي",
-            title: "معلم حفظ القرآن - معهد التقوى",
+            rating: 3.5,
+            name: "خالد إبراهيم",
+            title: "المحتوى جيد جدًا، وأتمنى إضافة مزيد من الأنشطة والتطبيقات العملية.",
+        },
+        {
+            id: 5,
+            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/974/small/front-view-a-happy-arab-man-in-traditional-white-thobe-and-red-and-white-checkered-ghutra-isolated-on-transparent-background-free-png.png",
+            rating: 5,
+            name: "ندى يوسف",
+            title: "المدرسين متعاونين والشرح مبسط، أنصح أي طالب بالاشتراك في المنصة.",
         },
         {
             id: 6,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/974/small/front-view-a-happy-arab-man-in-traditional-white-thobe-and-red-and-white-checkered-ghutra-isolated-on-transparent-background-free-png.png",
-            rating: 5,
-            name: "أ/ عبدالله القحطاني",
-            title: "داعية وخطيب - مركز الدعوة والإرشاد",
+            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/921/small/a-smiling-saudi-arabian-man-in-a-white-thobe-and-ghutra-isolated-on-transparent-background-free-png.png",
+            rating: 4,
+            name: "عبدالله محمود",
+            title: "منصة قوية، ساعدتني أراجع وأثبت المعلومات بطريقة سهلة وممتعة.",
         },
         {
             id: 7,
             img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/921/small/a-smiling-saudi-arabian-man-in-a-white-thobe-and-ghutra-isolated-on-transparent-background-free-png.png",
-            rating: 3,
-            name: "ش/ سالم العتيبي",
-            title: "معلم حفظ القرآن - معهد التقوى",
+            rating: 4.5,
+            name: "ليان عمر",
+            title: "الدروس مرتبة والتقييمات المستمرة حفزتني أن أستمر بدون انقطاع.",
         },
         {
             id: 8,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/921/small/a-smiling-saudi-arabian-man-in-a-white-thobe-and-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             rating: 3,
-            name: "ش/ سالم العتيبي",
-            title: "معلم حفظ القرآن - معهد التقوى",
+            name: "يوسف سامي",
+            title: "التجربة جيدة عمومًا، وأتوقع تحسين الواجهة لتكون أسرع وأسهل.",
         },
     ];
 
@@ -130,12 +135,10 @@ const Testimonials: React.FC = () => {
         }
         return stars;
     };
-
     return (
         <div className="testimonials">
             <div className="testimonials__mainTitle">
-                <button>جميع المعلمين</button>
-                <h1>آراء المعلمين</h1>
+                <h1>آراء الطلاب</h1>
             </div>
             <div className="testimonials__slider-container">
                 <div className="testimonials__inner">
@@ -154,27 +157,6 @@ const Testimonials: React.FC = () => {
                                     key={testimonial.id}
                                     className="testimonials__data"
                                 >
-                                    <div className="testimonials__img">
-                                        <div className="testimonials__imgBg">
-                                            <img
-                                                className="wave-bg"
-                                                src="https://png.pngtree.com/thumb_back/fw800/background/20251004/pngtree-elegant-green-islamic-background-with-ornamental-arch-image_19763723.webp"
-                                                alt=""
-                                            />
-                                        </div>
-                                        <img
-                                            src={testimonial.img}
-                                            alt={testimonial.name}
-                                        />
-                                    </div>
-
-                                    <div className="testimonials__rating">
-                                        {renderStars(testimonial.rating).map(
-                                            (Star, index) => (
-                                                <i key={index}>{Star}</i>
-                                            )
-                                        )}
-                                    </div>
                                     <div className="testimonials__name">
                                         <h2>
                                             <span>
@@ -193,6 +175,16 @@ const Testimonials: React.FC = () => {
                                             {testimonial.name}
                                         </h2>
                                         <p>{testimonial.title}</p>
+                                        <div className="testimonials__rating">
+                                            {renderStars(
+                                                testimonial.rating
+                                            ).map((Star, index) => (
+                                                <i key={index}>{Star}</i>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="testimonials__rating">
+                                        <p>2026/01/05</p>
                                     </div>
                                 </div>
                             </a>
@@ -221,4 +213,4 @@ const Testimonials: React.FC = () => {
     );
 };
 
-export default Testimonials;
+export default TestimonialsProfileReviews;

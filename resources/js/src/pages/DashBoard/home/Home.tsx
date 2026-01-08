@@ -1,6 +1,6 @@
 import { MdUnfoldMore } from "react-icons/md";
 import { BsSkipStartFill } from "react-icons/bs";
-
+import QURANN from "../../../assets/images/qurann.png";
 const Home: React.FC = () => {
     return (
         <div className="home">
@@ -11,11 +11,7 @@ const Home: React.FC = () => {
             />
             <div className="home__inner">
                 <div className="home__images">
-                    <img
-                        className="img__main"
-                        src="https://pngimg.com/d/quran_PNG8.png"
-                        alt=""
-                    />
+                    <img className="img__main" src={QURANN} alt="" />
                     <img
                         className="img__submain"
                         src="https://png.pngtree.com/png-vector/20221214/ourmid/pngtree-islamic-frame-with-gradient-blue-background-and-golden-border-png-image_6523794.png"

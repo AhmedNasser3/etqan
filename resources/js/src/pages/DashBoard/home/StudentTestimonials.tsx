@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { IoIosArrowBack } from "react-icons/io";
 import { IoIosArrowForward } from "react-icons/io";
+import facelessAvatar from "../../../assets/images/facelessYoung.png";
 
 interface Testimonial {
     id: number;
@@ -30,7 +31,7 @@ const StudentTestimonials: React.FC = () => {
         },
         {
             id: 3,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/974/small/front-view-a-happy-arab-man-in-traditional-white-thobe-and-red-and-white-checkered-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             name: "خالد محمد الدوسري",
             title: "حافظ قرآن كريم - المجود",
         },

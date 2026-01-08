@@ -4,6 +4,11 @@ import { IoIosArrowDown } from "react-icons/io";
 import { useState } from "react";
 import { HiLogin } from "react-icons/hi";
 import { LuUserRoundPlus } from "react-icons/lu";
+import { FaUserAlt } from "react-icons/fa";
+import { IoSettings } from "react-icons/io5";
+import { BsTable } from "react-icons/bs";
+import { MdCallMade } from "react-icons/md";
+import { FaCircleQuestion } from "react-icons/fa6";
 
 const Navbar: React.FC = () => {
     const [isRotated, setIsRotated] = useState(false);
@@ -50,11 +55,46 @@ const Navbar: React.FC = () => {
                         <div className="navbar__profile">
                             <span>A</span>
                         </div>
-                        <h4>
+                        <h4
+                            className="navbar__link"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                toggleDropdown("profile");
+                            }}
+                        >
                             <i>
-                                <IoIosArrowDown />
+                                <IoIosArrowDown
+                                    className={`navbar__arrow ${
+                                        dropdowns.profile ? "flipped" : ""
+                                    }`}
+                                />{" "}
                             </i>
                             احمد ناصر
+                            <ul
+                                className={`navbar__dropdown ${
+                                    dropdowns.profile ? "dropped" : ""
+                                }`}
+                                id="navbar__profileDropDown"
+                            >
+                                <a href="user-dashboard">
+                                    <li>
+                                        <FaUserAlt />
+                                        حسابي
+                                    </li>
+                                </a>
+                                <a href="#">
+                                    <li>
+                                        <IoSettings />
+                                        اعدادات
+                                    </li>
+                                </a>
+                                <a href="#">
+                                    <li>
+                                        <BsTable />
+                                        جدول
+                                    </li>
+                                </a>
+                            </ul>
                         </h4>
                         <a
                             href="/login"
@@ -97,7 +137,6 @@ const Navbar: React.FC = () => {
 
                         <li className="navbar__dropdown-item">
                             <a
-                                href="#"
                                 className="navbar__link"
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -109,22 +148,26 @@ const Navbar: React.FC = () => {
                                         dropdowns.platform ? "flipped" : ""
                                     }`}
                                 />
-                                منصة اتقان
+                                عن منصة اتقان
                             </a>
                             <ul
                                 className={`navbar__dropdown ${
                                     dropdowns.platform ? "dropped" : ""
                                 }`}
                             >
-                                <li>خاصية 1</li>
-                                <li>خاصية 2</li>
-                                <li>خاصية 3</li>
+                                <li>
+                                    <MdCallMade />
+                                    تواصل معنا
+                                </li>
+                                <li>
+                                    <FaCircleQuestion />
+                                    من نحن
+                                </li>
                             </ul>
                         </li>
 
                         <li className="navbar__dropdown-item">
                             <a
-                                href="#"
                                 className="navbar__link"
                                 onClick={(e) => {
                                     e.stopPropagation();

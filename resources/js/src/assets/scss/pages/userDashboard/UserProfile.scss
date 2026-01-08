@@ -1,0 +1,233 @@
+@use "../../variables.scss" as *;
+.userProfile {
+    &__description {
+        margin-top: 12px;
+        cursor: text;
+        padding: 8px 15px;
+        border-radius: 5px;
+        color: $dark-green;
+        background-color: rgba($dark-green, 0.05);
+        border: 1px solid $dark-green;
+        transition: all 0.2s ease;
+        &:hover {
+            border: 1px solid rgba($dark-green, 0.3);
+        }
+    }
+    &__doupleSide {
+        margin-top: 48px;
+        padding: 0 15%;
+    }
+    &__medalContainer {
+        max-width: 400px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+    }
+    &__medalContent {
+        cursor: pointer;
+        border-radius: 5px;
+        padding: 12px;
+        min-width: 30px;
+        color: rgba($dark-green, 0.7);
+        background-color: rgba($dark-green, 0.01);
+        border: 1px solid rgba($dark-green, 0.2);
+        text-align: center;
+    }
+    &__medalTitle {
+        width: 100%;
+        i {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+    }
+    &__medalContent {
+        position: relative;
+
+        .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+            &::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                border: 6px solid transparent;
+                border-top-color: rgba(0, 0, 0, 0.9);
+            }
+        }
+    }
+    &__doupleSide {
+        display: flex;
+        justify-content: space-between;
+    }
+    &__progressTitle {
+        direction: rtl;
+    }
+    &__progressContent {
+        border-radius: 10px;
+        padding: 12px;
+        width: 600px;
+        border: 1px solid rgba($light-gray, 0.3);
+    }
+    &__progressBar {
+        display: flex;
+        align-items: center;
+        justify-content: start;
+        background-color: rgba($dark-green, 0.08);
+        height: 5px;
+        width: 500px;
+        span {
+            width: 450px;
+            height: 3px;
+            background-color: rgba($dark-green, 0.7);
+        }
+    }
+    &__plan {
+        margin-top: 48px;
+        padding: 0 15%;
+        border-radius: 12px;
+
+        .plan__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba($light-gray, 0.3);
+
+            h2 {
+                margin: 0 0 8px 0;
+                color: $dark-green;
+            }
+            .plan__progress {
+                font-size: 14px;
+                color: rgba($dark-green, 0.7);
+                span {
+                    font-weight: bold;
+                }
+            }
+            .plan__ai-suggestion {
+                background: rgba(rgba($dark-green, 0.7), 0.1);
+                padding: 8px 12px;
+                border-radius: 20px;
+                font-size: 13px;
+            }
+        }
+
+        .plan__daily-table {
+            overflow-x: auto;
+            margin-bottom: 24px;
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+                th,
+                td {
+                    padding: 12px 8px;
+                    text-align: center;
+                    border-bottom: 1px solid rgba($light-gray, 0.2);
+                }
+                th {
+                    background: rgba($dark-green, 0.05);
+                    font-weight: 600;
+                }
+
+                .plan__row {
+                    &.completed span {
+                        color: rgba($dark-green, 0.7);
+                    }
+                    &.active span {
+                        color: $orange;
+                    }
+                    &.pending span {
+                        color: $dark-gray;
+                    }
+                }
+            }
+        }
+
+        .plan__stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+
+            .stat-card {
+                flex: 1;
+                display: flex;
+                gap: 12px;
+                padding: 16px;
+                background: white;
+                border-radius: 8px;
+                border: 1px solid rgba($light-gray, 0.3);
+
+                .stat-icon {
+                    font-size: 24px;
+                }
+                h3 {
+                    margin: 0 0 4px 0;
+                    font-size: 14px;
+                    color: $dark-green;
+                }
+                p {
+                    margin: 0;
+                    color: $dark-gray;
+                    font-weight: 600;
+                }
+            }
+        }
+
+        .plan__progress-bar {
+            background: rgba($dark-green, 0.08);
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+
+            .progress-label {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 8px;
+                font-size: 13px;
+                color: $dark-gray;
+            }
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(
+                    90deg,
+                    rgba($dark-green, 0.7),
+                    $dark-green
+                );
+                width: 60%;
+                border-radius: 6px;
+                animation: progress 2s ease-in-out;
+            }
+        }
+    }
+}
+#userProfile {
+    &__low {
+        span {
+            background-color: $red;
+            width: 50px;
+        }
+    }
+}

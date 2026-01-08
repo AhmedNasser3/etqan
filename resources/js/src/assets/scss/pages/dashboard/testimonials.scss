@@ -88,13 +88,15 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 32px;
-
         h1 {
+            direction: rtl;
+            width: 100%;
             color: rgba($dark-green, 1);
             font-weight: 500;
             font-size: $l-font;
         }
         button {
+            min-width: 150px;
             cursor: pointer;
             background-color: rgba($dark-green, 0.5);
             border-radius: 5px;

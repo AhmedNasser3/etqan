@@ -204,6 +204,12 @@
         background-color: $dark-green !important;
     }
 }
+#navbar {
+    &__profileDropDown {
+        right: 70%;
+        top: 70px;
+    }
+}
 
 @media screen and (max-width: 1200px) {
     .navbar {

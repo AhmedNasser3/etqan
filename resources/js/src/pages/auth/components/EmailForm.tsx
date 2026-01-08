@@ -74,14 +74,11 @@
 //     );
 // };
 
-// export default EmailForm;
 import React from "react";
 import VerifyOtp from "../pages/VerifyOtp";
-
 interface StudentEnrollmentProps {
     gender: "male" | "female";
 }
-
 const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
     return (
         <div className="inputs">
@@ -135,7 +132,7 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                         </div>
                     </div>
                     <div className="inputs__verifyOTPBirth">
-                        <div className="inputs__select">
+                        <div className="inputs__verifyOTP">
                             <label>المرحلة الدراسية</label>
                             <select name="grade_level" id="grade_level">
                                 <option value="">اختر المرحلة</option>
@@ -145,7 +142,7 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                             </select>
                         </div>
 
-                        <div className="inputs__select">
+                        <div className="inputs__verifyOTP">
                             <label>الحلقة المناسبة</label>
                             <select name="circle" id="circle">
                                 <option value="">اختر الحلقة</option>
@@ -159,15 +156,23 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                             </select>
                         </div>
                     </div>
+                    <div className="inputs__verifyOTP">
+                        <label>مستوى القراءة/الحفظ (اختياري)</label>
+                        <input
+                            type="text"
+                            name="reading_level"
+                            id="reading_level"
+                            placeholder="مثال: جُزء عم + 5 أجزاء حفظ"
+                        />
+                    </div>
                     <div className="inputs__verifyOTPBirth">
                         <div className="inputs__verifyOTP">
-                            <label>مستوى القراءة/الحفظ (اختياري)</label>
-                            <input
-                                type="text"
-                                name="reading_level"
-                                id="reading_level"
-                                placeholder="مثال: جُزء عم + 5 أجزاء حفظ"
-                            />
+                            <label>وقت الحلقة (اختياري)</label>
+                            <select name="session_time" id="session_time">
+                                <option value="">اختر الوقت</option>
+                                <option value="asr">العصر</option>
+                                <option value="maghrib">المغرب</option>
+                            </select>
                         </div>
 
                         <div className="inputs__verifyOTP">
@@ -188,70 +193,63 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                             </select>
                         </div>
                     </div>
-
-                    <div className="inputs__select">
-                        <label>وقت الحلقة (اختياري)</label>
-                        <select name="session_time" id="session_time">
-                            <option value="">اختر الوقت</option>
-                            <option value="asr">العصر</option>
-                            <option value="maghrib">المغرب</option>
-                        </select>
-                    </div>
-
-                    <div className="inputs__email">
-                        <label>بريد ولي الأمر الإلكتروني *</label>
-                        <input
-                            required
-                            type="email"
-                            name="guardian_email"
-                            id="guardian_email"
-                            placeholder="parent@example.com"
-                        />
-                    </div>
-
-                    <div className="inputs__select">
-                        <label>جوال ولي الأمر *</label>
-                        <div className="inputs__phone-container">
-                            <select
-                                name="guardian_country_code"
-                                id="guardian_country_code"
-                            >
-                                <option value="966">966+</option>
-                                <option value="20">20+</option>
-                                <option value="966">971+</option>
-                            </select>
+                    <div className="inputs__verifyOTPBirth">
+                        <div className="inputs__email">
+                            <label>بريد ولي الأمر الإلكتروني *</label>
                             <input
                                 required
-                                type="tel"
-                                name="guardian_phone"
-                                id="guardian_phone"
-                                placeholder="50 123 4567"
-                                className="inputs__phone-input"
+                                type="email"
+                                name="guardian_email"
+                                id="guardian_email"
+                                placeholder="parent@example.com"
                             />
                         </div>
+                        <div className="inputs__verifyOTP">
+                            <label>جوال ولي الأمر *</label>
+                            <div className="inputs__phone-container">
+                                <div className="inputs__verifyOTPBirth">
+                                    <select
+                                        name="guardian_country_code"
+                                        id="guardian_country_code"
+                                    >
+                                        <option value="966">966+</option>
+                                        <option value="20">20+</option>
+                                        <option value="966">971+</option>
+                                    </select>
+                                    <input
+                                        required
+                                        type="tel"
+                                        name="guardian_phone"
+                                        id="guardian_phone"
+                                        placeholder="50 123 4567"
+                                        className="inputs__phone-input"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
                     <div className="inputs__verifyOTP">
                         <label>جوال الطالب (اختياري)</label>
                         <div className="inputs__phone-container">
-                            <select
-                                name="student_country_code"
-                                id="student_country_code"
-                            >
-                                <option value="966">966+</option>
-                                <option value="20">20+</option>
-                                <option value="966">971+</option>
-                            </select>
-                            <input
-                                type="tel"
-                                name="student_phone"
-                                id="student_phone"
-                                placeholder="50 987 6543"
-                                className="inputs__phone-input"
-                            />
+                            <div className="inputs__verifyOTPBirth">
+                                <select
+                                    name="student_country_code"
+                                    id="student_country_code"
+                                >
+                                    <option value="966">966+</option>
+                                    <option value="20">20+</option>
+                                    <option value="966">971+</option>
+                                </select>
+                                <input
+                                    type="tel"
+                                    name="student_phone"
+                                    id="student_phone"
+                                    placeholder="50 987 6543"
+                                    className="inputs__phone-input"
+                                />
+                            </div>
                         </div>
                     </div>
-
                     <div className="inputs__verifyOTP">
                         <label>ملاحظات</label>
                         <textarea
@@ -261,7 +259,6 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                             placeholder="ملاحظات إضافية..."
                         />
                     </div>
-
                     <div className="inputs__submitBtn">
                         <button type="submit">إرسال طلب التسجيل</button>
                     </div>

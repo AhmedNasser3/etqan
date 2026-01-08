@@ -1,0 +1,128 @@
+@use "../../variables.scss" as *;
+.testimonialsView {
+    &__header {
+        display: grid;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background-color: rgba($light-gray, 0.03);
+        padding: 24px 0;
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+
+        // Texture background بدل الصورة
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(
+                    45deg,
+                    rgba($light-gray, 0.1) 0px,
+                    rgba($light-gray, 0.1) 1px,
+                    transparent 1px,
+                    transparent 4px
+                ),
+                repeating-linear-gradient(
+                    -45deg,
+                    rgba($light-gray, 0.05) 0px,
+                    rgba($light-gray, 0.05) 1px,
+                    transparent 1px,
+                    transparent 3px
+                );
+            background-size: 100px 100px, 60px 60px;
+            opacity: 0.6;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            position: relative;
+            z-index: 1;
+        }
+    }
+
+    &__img {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        img {
+            margin-left: 12px;
+            max-width: 160px;
+            border-radius: 100px;
+            border: 1px solid rgba($light-gray, 0.2);
+            background-color: $light;
+            border-right: 6px solid rgba($dark-green, 0.7);
+        }
+    }
+    &__rating {
+        background-color: $light;
+        border-bottom-left-radius: 50px;
+        padding: 10px 24px;
+        border: 1px solid rgba($light-gray, 0.2);
+    }
+    &__ratingStars {
+        justify-content: end;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        i {
+            font-size: $xxs-font;
+            color: rgba($orange, 0.7);
+        }
+    }
+    &__name {
+        font-size: $s-font;
+        color: rgba($dark-gray, 1);
+    }
+    &__description {
+        font-size: $xs-font;
+        span {
+            color: rgba($dark-green, 0.7);
+        }
+        p {
+            color: rgba($light-gray, 1);
+        }
+        margin-top: 24px;
+        text-align: end;
+        max-width: 650px;
+    }
+    &__body {
+        margin: 24px 0;
+    }
+    &__certificate {
+        margin: 48px 0;
+        padding: 0 15%;
+    }
+    &__certificateContainer {
+        justify-content: center;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    &__certificateImg {
+        max-width: 300px;
+        height: 200px;
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+    }
+    &__certificatDetails {
+        direction: rtl;
+        display: flex;
+        gap: 12px;
+        border-radius: 10px;
+        border: 1px solid rgba($light-gray, 0.2);
+        padding: 24px;
+        max-width: 662px;
+        width: 100%;
+    }
+}

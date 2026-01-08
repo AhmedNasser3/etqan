@@ -1,6 +1,8 @@
 @use "variables" as *;
 @use "./layouts/navbar.scss" as *;
 @use "./layouts/sidebar.scss" as *;
+@use "./auth/pages/login.scss" as *;
+@use "./layouts/footer.scss" as *;
 @use "./pages/dashboard/home.scss" as *;
 @use "./pages/dashboard/features.scss" as *;
 @use "./pages/dashboard/stats.scss" as *;
@@ -11,8 +13,8 @@
 @use "./pages/dashboard/trusted.scss" as *;
 @use "./pages/dashboard/FinalCTA.scss" as *;
 @use "./pages/dashboard/Complexes.scss" as *;
-@use "./auth/pages/login.scss" as *;
-@use "./layouts/footer.scss" as *;
+@use "./pages/userDashboard/UserProfile.scss" as *;
+@use "./pages/TestimonialsView/TestimonialsView.scss" as *;
 
 @import url("https://fonts.googleapis.com/css2?family=Beiruti:wght@200..900&display=swap");
 
@@ -52,4 +54,20 @@
 * {
     scrollbar-width: thin;
     scrollbar-color: rgba($dark-green, 0.8) rgba($light-gray, 0.1);
+}
+.dashboard__WhatsApp {
+    i {
+        color: rgba($dark-green, 0.7);
+        cursor: pointer;
+        position: fixed;
+        z-index: 99999;
+        bottom: 0;
+        padding: 24px;
+        font-size: $xl-font;
+        transition: all 0.2s ease;
+        &:hover {
+            color: rgba($dark-green, 1);
+            scale: calc(1.03);
+        }
+    }
 }

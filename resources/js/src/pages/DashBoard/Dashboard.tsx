@@ -8,6 +8,8 @@ import Stats from "./home/Stats";
 import StudentTestimonials from "./home/StudentTestimonials";
 import Testimonials from "./home/Testimonials";
 import Trusted from "./home/Trusted";
+import { PiWhatsappLogoDuotone } from "react-icons/pi";
+
 const Dashboard: React.FC = () => {
     return (
         <div className="dashboard">
@@ -38,6 +40,11 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="dashboard__testimonials">
                 <Testimonials />
+            </div>
+            <div className="dashboard__WhatsApp">
+                <i>
+                    <PiWhatsappLogoDuotone />
+                </i>
             </div>
         </div>
     );
