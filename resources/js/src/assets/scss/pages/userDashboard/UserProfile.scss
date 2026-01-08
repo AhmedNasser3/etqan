@@ -1,5 +1,7 @@
 @use "../../variables.scss" as *;
 .userProfile {
+    min-height: 100%;
+    padding-bottom: 48px;
     &__description {
         margin-top: 12px;
         cursor: text;
@@ -106,7 +108,7 @@
         .plan__header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: end;
             margin-bottom: 24px;
             padding-bottom: 16px;
             border-bottom: 1px solid rgba($light-gray, 0.3);
@@ -124,9 +126,13 @@
             }
             .plan__ai-suggestion {
                 background: rgba(rgba($dark-green, 0.7), 0.1);
-                padding: 8px 12px;
                 border-radius: 20px;
                 font-size: 13px;
+                display: flex;
+                align-items: center;
+                padding: 5px 15px;
+                color: $dark-green;
+                gap: 12px;
             }
         }
 
@@ -139,7 +145,6 @@
                 border-collapse: collapse;
                 background: white;
                 border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 
                 th,
                 td {
@@ -153,6 +158,10 @@
                 }
 
                 .plan__row {
+                    &.completed {
+                        background-color: rgba($light-gray, 0.03);
+                        border-left: 6px solid rgba($dark-green, 0.7);
+                    }
                     &.completed span {
                         color: rgba($dark-green, 0.7);
                     }
@@ -183,6 +192,15 @@
                 .stat-icon {
                     font-size: 24px;
                 }
+                .redColor {
+                    color: $error-red;
+                }
+                .yellowColor {
+                    color: rgba($orange, 0.5);
+                }
+                .greenColor {
+                    color: rgba($dark-green, 0.7);
+                }
                 h3 {
                     margin: 0 0 4px 0;
                     font-size: 14px;
@@ -195,10 +213,34 @@
                 }
             }
         }
-
+        .date-picker {
+            display: flex;
+            gap: 12px;
+            direction: rtl;
+            label {
+                margin-bottom: 6px;
+                color: rgba($dark-green, 1);
+                background-color: rgba($dark-green, 0.05);
+                padding: 5px;
+                width: 25px;
+                border-radius: 5px;
+            }
+            input {
+                background-color: rgba($dark-green, 0.01);
+                border: 1px dashed rgba($dark-green, 0.7);
+                padding: 5px 15px;
+                border-radius: 5px;
+            }
+        }
+        .plan__current {
+            h2 {
+                direction: rtl;
+                font-size: $s-font;
+            }
+        }
         .plan__progress-bar {
             background: rgba($dark-green, 0.08);
-            height: 12px;
+            height: 100%;
             border-radius: 6px;
             overflow: hidden;
 
@@ -221,9 +263,20 @@
                 animation: progress 2s ease-in-out;
             }
         }
+        .plan__date-range {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
     }
 }
 #userProfile {
+    &__progressContent {
+        width: 730px;
+    }
+    &__progressBar {
+        width: 500px;
+    }
     &__low {
         span {
             background-color: $red;

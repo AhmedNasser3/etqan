@@ -1,6 +1,6 @@
+import UserPlans from "../userPlans/UserPlans";
 import EmailVerifyWidget from "./EmailVerifyWidget";
 import Medals from "./medals";
-import UserPlans from "./UserPlans";
 
 const UserProfile: React.FC = () => {
     return (
