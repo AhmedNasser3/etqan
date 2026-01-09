@@ -30,6 +30,62 @@ const UserPlans: React.FC = () => {
             day: "الخميس",
             hifz: "البقرة ٥١-٥٥",
             review: "البقرة ١١-٢٠",
+            status: "completed",
+        },
+        {
+            id: 3,
+            date: "2026-01-09",
+            day: "الجمعة",
+            hifz: "البقرة ٥٦-٦٠",
+            review: "البقرة ٢١-٣٠",
+            status: "completed",
+        },
+        {
+            id: 4,
+            date: "2026-01-10",
+            day: "السبت",
+            hifz: "البقرة ٦١-٦٥",
+            review: "البقرة ٣١-٤٠",
+            status: "completed",
+        },
+        {
+            id: 1,
+            date: "2026-01-07",
+            day: "الأربعاء",
+            hifz: "البقرة ٤٦-٥٠",
+            review: "البقرة ١-١٠",
+            status: "completed",
+        },
+        {
+            id: 2,
+            date: "2026-01-08",
+            day: "الخميس",
+            hifz: "البقرة ٥١-٥٥",
+            review: "البقرة ١١-٢٠",
+            status: "active",
+        },
+        {
+            id: 3,
+            date: "2026-01-09",
+            day: "الجمعة",
+            hifz: "البقرة ٥٦-٦٠",
+            review: "البقرة ٢١-٣٠",
+            status: "pending",
+        },
+        {
+            id: 4,
+            date: "2026-01-10",
+            day: "السبت",
+            hifz: "البقرة ٦١-٦٥",
+            review: "البقرة ٣١-٤٠",
+            status: "pending",
+        },
+        {
+            id: 2,
+            date: "2026-01-08",
+            day: "الخميس",
+            hifz: "البقرة ٥١-٥٥",
+            review: "البقرة ١١-٢٠",
             status: "active",
         },
         {
@@ -100,6 +156,11 @@ const UserPlans: React.FC = () => {
 
     return (
         <div className="userProfile__plan">
+            <div className="userProfile__planTitle">
+                <h1>
+                    تختيم القرأن في <span>12 شهر</span>
+                </h1>
+            </div>
             <div className="plan__header">
                 <div className="plan__ai-suggestion">
                     <i>

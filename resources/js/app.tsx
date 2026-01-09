@@ -12,6 +12,8 @@ import UserSidebar from "./src/layouts/userDashboard/UserSidebar";
 import UserNavbar from "./src/layouts/userDashboard/userNavbar";
 import UserDashboard from "./src/pages/DashBoard/UserDashboard/UserDashboard";
 import Plans from "./src/pages/DashBoard/UserDashboard/widgets/Plans";
+import UserProgress from "./src/pages/DashBoard/UserDashboard/userProgress/UserProgress";
+import UserComplexes from "./src/pages/DashBoard/UserDashboard/usercomplexes/UserComplexes";
 
 function MainLayout() {
     return (
@@ -59,6 +61,8 @@ function App() {
                 <Route path="/user-dashboard" element={<UserLayout />}>
                     <Route index element={<UserDashboard />} />
                     <Route path="plans" element={<Plans />} />
+                    <Route path="user-progress" element={<UserProgress />} />
+                    <Route path="user-complexes" element={<UserComplexes />} />
                 </Route>
             </Routes>
         </BrowserRouter>

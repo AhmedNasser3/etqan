@@ -71,7 +71,7 @@ const UserSidebar: React.FC = () => {
                             }`}
                         >
                             <div className="sidebar__title">
-                                <a href="#">
+                                <a href="/user-dashboard/user-progress">
                                     <i>
                                         <FaBarsProgress />
                                     </i>
@@ -85,7 +85,7 @@ const UserSidebar: React.FC = () => {
                             }`}
                         >
                             <div className="sidebar__title">
-                                <a href="#">
+                                <a href="/user-dashboard/user-complexes">
                                     <i>
                                         <BsFillMortarboardFill />
                                     </i>
@@ -121,20 +121,7 @@ const UserSidebar: React.FC = () => {
                                 </a>
                             </div>
                         </div>
-                        <div
-                            className={`sidebar__data ${
-                                activePage === "points" ? "active" : ""
-                            }`}
-                        >
-                            <div className="sidebar__title">
-                                <a href="#">
-                                    <i>
-                                        <PiMedalFill />
-                                    </i>
-                                    <h2>النقاط والأوسمة</h2>
-                                </a>
-                            </div>
-                        </div>
+
                         <div
                             className={`sidebar__data ${
                                 activePage === "certificates" ? "active" : ""
