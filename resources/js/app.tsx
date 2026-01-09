@@ -14,6 +14,8 @@ import UserDashboard from "./src/pages/DashBoard/UserDashboard/UserDashboard";
 import Plans from "./src/pages/DashBoard/UserDashboard/widgets/Plans";
 import UserProgress from "./src/pages/DashBoard/UserDashboard/userProgress/UserProgress";
 import UserComplexes from "./src/pages/DashBoard/UserDashboard/usercomplexes/UserComplexes";
+import UserListening from "./src/pages/DashBoard/UserDashboard/userListening/UserListening";
+import UserPresence from "./src/pages/DashBoard/UserDashboard/userPresence/UserPresence";
 
 function MainLayout() {
     return (
@@ -63,6 +65,8 @@ function App() {
                     <Route path="plans" element={<Plans />} />
                     <Route path="user-progress" element={<UserProgress />} />
                     <Route path="user-complexes" element={<UserComplexes />} />
+                    <Route path="user-listesning" element={<UserListening />} />
+                    <Route path="user-listesning" element={<UserPresence />} />
                 </Route>
             </Routes>
         </BrowserRouter>

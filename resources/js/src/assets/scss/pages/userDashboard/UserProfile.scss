@@ -492,6 +492,9 @@
 }
 
 #userProfile {
+    &__footerBtContainer {
+        width: 100%;
+    }
     &__commentBad {
         background-color: rgba($red, 0.08);
         color: rgba($error-red, 1);

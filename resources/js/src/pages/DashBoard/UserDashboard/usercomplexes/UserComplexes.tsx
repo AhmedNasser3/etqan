@@ -31,7 +31,11 @@ const UserComplexes: React.FC = () => {
                 </div>
                 <div className="complexes__inner">
                     {complexesData.map((complex, index) => (
-                        <div key={index} className="complexes__container">
+                        <div
+                            key={index}
+                            className="complexes__container"
+                            id="userProfile__footerBtContainer"
+                        >
                             <div className="complexes__data">
                                 <div className="complexes__img">
                                     <img
@@ -76,7 +80,7 @@ const UserComplexes: React.FC = () => {
                                         )}
                                     </div>
                                     <div className="complexes__footerBtContainer">
-                                        <div
+                                        {/* <div
                                             className="complexes__footerBtn"
                                             id={`complexes__footerBtnView`}
                                         >
@@ -86,7 +90,7 @@ const UserComplexes: React.FC = () => {
                                             <button>
                                                 الاشتراك مع هذا المجمع
                                             </button>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </div>
                             </div>
