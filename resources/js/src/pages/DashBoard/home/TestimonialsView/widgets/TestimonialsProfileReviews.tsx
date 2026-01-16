@@ -4,7 +4,7 @@ import { FaStarHalfAlt } from "react-icons/fa";
 import { FaRegStar } from "react-icons/fa";
 import { IoIosArrowBack } from "react-icons/io";
 import { IoIosArrowForward } from "react-icons/io";
-import facelessAvatar from "../../../../assets/images/facelessYoung.png";
+import facelessAvatar from "../../../../../assets/images/facelessYoung.png";
 
 interface Testimonial {
     id: number;

@@ -88,7 +88,7 @@ const Navbar: React.FC = () => {
                                         اعدادات
                                     </li>
                                 </a>
-                                <a href="#">
+                                <a href="/user-dashboard/plans">
                                     <li>
                                         <BsTable />
                                         جدول

@@ -42,7 +42,7 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                             >
                                 <ShieldCheckIcon />
                             </i>
-                            <h1>التحقق من رقم الجوال</h1>
+                            <h1>التحقق من البريد الإلكتروني</h1>
                         </div>
 
                         <div
@@ -66,8 +66,23 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                                         )
                                     }
                                     onKeyDown={(e) => handleKeyDown(index, e)}
-                                    style={{ textAlign: "center" }}
+                                    onPaste={(e) => e.preventDefault()}
+                                    onCopy={(e) => e.preventDefault()}
+                                    onCut={(e) => e.preventDefault()}
+                                    onContextMenu={(e) => e.preventDefault()}
+                                    onDragStart={(e) => e.preventDefault()}
+                                    onDrop={(e) => e.preventDefault()}
+                                    spellCheck="false"
+                                    style={{
+                                        textAlign: "center",
+                                        userSelect: "none",
+                                        WebkitUserSelect: "none",
+                                        MozUserSelect: "none",
+                                        msUserSelect: "none",
+                                    }}
                                     autoComplete="off"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     className={verified ? "verified" : ""}
                                 />
                             ))}

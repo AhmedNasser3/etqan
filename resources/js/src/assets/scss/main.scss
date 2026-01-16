@@ -13,7 +13,10 @@
 @use "./pages/dashboard/trusted.scss" as *;
 @use "./pages/dashboard/FinalCTA.scss" as *;
 @use "./pages/dashboard/Complexes.scss" as *;
+@use "./pages/dashboard/contactForm.scss" as *;
 @use "./pages/userDashboard/UserProfile.scss" as *;
+@use "./pages/teacherDashboard/TeacherDashboard.scss" as *;
+@use "./pages/teacherDashboard/TeacherMotivate.scss" as *;
 @use "./pages/TestimonialsView/TestimonialsView.scss" as *;
 
 @import url("https://fonts.googleapis.com/css2?family=Beiruti:wght@200..900&display=swap");

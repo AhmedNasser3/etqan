@@ -195,6 +195,23 @@
             }
         }
     }
+    .inputs__submit {
+        button {
+            cursor: pointer;
+            padding: 12px;
+            background-color: rgba($dark-green, 0.7);
+            border-radius: 10px;
+            width: 100%;
+            color: rgba($light, 1);
+            margin-top: 12px;
+            opacity: 1;
+            transition: all 0.3s ease;
+
+            &:hover {
+                background-color: rgba($dark-green, 0.5);
+            }
+        }
+    }
     .inputs__submitBtn {
         button {
             cursor: pointer;

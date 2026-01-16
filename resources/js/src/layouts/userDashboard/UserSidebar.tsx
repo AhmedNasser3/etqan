@@ -113,7 +113,7 @@ const UserSidebar: React.FC = () => {
                             }`}
                         >
                             <div className="sidebar__title">
-                                <a href="#">
+                                <a href="/user-dashboard/user-presence">
                                     <i>
                                         <FaUserCheck />
                                     </i>
@@ -128,7 +128,7 @@ const UserSidebar: React.FC = () => {
                             }`}
                         >
                             <div className="sidebar__title">
-                                <a href="#">
+                                <a href="/user-dashboard/user-certificate">
                                     <i>
                                         <GrCertificate />
                                     </i>

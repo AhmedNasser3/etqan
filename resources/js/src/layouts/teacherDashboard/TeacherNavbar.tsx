@@ -10,7 +10,7 @@ import { BsTable } from "react-icons/bs";
 import { MdCallMade } from "react-icons/md";
 import { FaCircleQuestion } from "react-icons/fa6";
 
-const UserNavbar: React.FC = () => {
+const TeacherNavbar: React.FC = () => {
     const [isRotated, setIsRotated] = useState(false);
     const [dropdowns, setDropdowns] = useState<{ [key: string]: boolean }>({});
 
@@ -110,4 +110,4 @@ const UserNavbar: React.FC = () => {
     );
 };
 
-export default UserNavbar;
+export default TeacherNavbar;

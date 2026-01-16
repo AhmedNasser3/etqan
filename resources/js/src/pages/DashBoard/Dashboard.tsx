@@ -1,4 +1,5 @@
 import Complexes from "./home/Complexes";
+import ContactForm from "./home/contactForm";
 import Features from "./home/Features";
 import FinalCTA from "./home/FinalCTA";
 import Home from "./home/Home";
@@ -40,6 +41,11 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="dashboard__testimonials">
                 <Testimonials />
+            </div>
+            <div className="dashboard__ContactForm">
+                <i>
+                    <ContactForm />
+                </i>
             </div>
             <div className="dashboard__WhatsApp">
                 <i>

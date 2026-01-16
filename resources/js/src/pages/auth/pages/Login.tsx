@@ -2,18 +2,31 @@ import React, { useState } from "react";
 import EmailForm from "../components/EmailForm";
 import Men from "../../../assets/images/facelessAvatar.png";
 import Woman from "../../../assets/images/facelessAvatarWoman.png";
+import { useOtpVerification } from "../hooks/useOtpVerification";
+import VerifyOtpPopout from "./verifyOtpPopout";
 
 const Login: React.FC = () => {
-    const [selectedGender, setSelectedGender] = useState<"male" | "female">(
-        "male"
-    );
+    const [showPopup, setShowPopup] = useState(false);
+    const [email, setEmail] = useState("");
+    const [isVerified, setIsVerified] = useState(false);
+
+    const { verified } = useOtpVerification();
+
+    const handleOpenPopup = () => {
+        setShowPopup(true);
+    };
+
+    const handleVerificationSuccess = () => {
+        setIsVerified(true);
+        setShowPopup(false);
+    };
 
     return (
         <div className="auth">
             <div className="auth__inner">
                 <div className="auth__container">
                     <div className="auth__content">
-                        <div className="auth__form">
+                        <div className="auth__form" style={{ height: "100%" }}>
                             <div className="auth__formContainer">
                                 <div className="auth__formContent">
                                     <div className="auth__formImg">
@@ -22,11 +35,96 @@ const Login: React.FC = () => {
                                             alt="لوجو"
                                         />
                                     </div>
-                                    <EmailForm gender={selectedGender} />
+                                    <div className="inputs">
+                                        <div className="inputs__inner">
+                                            <div className="inputs__container">
+                                                <div className="inputs__email">
+                                                    <label>
+                                                        بريدك الإلكتروني *
+                                                    </label>
+                                                    <input
+                                                        required
+                                                        type="email"
+                                                        name="guardian_email"
+                                                        id="guardian_email"
+                                                        placeholder="parent@example.com"
+                                                        value={email}
+                                                        onChange={(e) =>
+                                                            setEmail(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="inputs__verifyOTPBtn">
+                                                <button
+                                                    className={`open-popup ${
+                                                        email.length > 0 &&
+                                                        !isVerified
+                                                            ? "sms-btn-active"
+                                                            : ""
+                                                    }`}
+                                                    onClick={handleOpenPopup}
+                                                    disabled={
+                                                        email.length === 0 ||
+                                                        isVerified
+                                                    }
+                                                >
+                                                    إرسال OTP للبريد الإلكتروني
+                                                </button>
+                                            </div>
+                                            <div
+                                                className="inputs__submitBtn"
+                                                id="inputs__submitBtn"
+                                            >
+                                                <button
+                                                    disabled={!isVerified}
+                                                    className={`login-btn ${
+                                                        isVerified
+                                                            ? "login-btn-active"
+                                                            : ""
+                                                    }`}
+                                                >
+                                                    تسجيل الدخول
+                                                </button>
+                                            </div>
+                                            {showPopup && (
+                                                <VerifyOtpPopout
+                                                    onClose={() =>
+                                                        setShowPopup(false)
+                                                    }
+                                                    onSuccess={
+                                                        handleVerificationSuccess
+                                                    }
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div
+                                        className="inputs__verifyOTPtimer"
+                                        id="verifyPopout__verifyOTPtimer"
+                                    >
+                                        <a href="/register">
+                                            <span className="resend-link">
+                                                ليس لديك حساب؟
+                                            </span>
+                                        </a>
+                                    </div>
+                                    <div
+                                        className="inputs__verifyOTPtimer"
+                                        id="verifyPopout__verifyOTPtimer"
+                                    >
+                                        <a href="/teacher-register">
+                                            <span className="resend-link">
+                                                انشاء حساب معلم
+                                            </span>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="auth__bg">
+                        <div className="auth__bg" style={{ height: "90vh" }}>
                             <div className="auth__bgContainer">
                                 <div className="auth__bgData">
                                     <h1>تسجيل دخول</h1>
@@ -36,45 +134,11 @@ const Login: React.FC = () => {
                                     </p>
                                 </div>
                                 <div className="auth__bgImg">
-                                    <img
-                                        src={
-                                            selectedGender === "male"
-                                                ? Men
-                                                : Woman
-                                        }
-                                        alt={
-                                            selectedGender === "male"
-                                                ? "رجل"
-                                                : "امرأة"
-                                        }
-                                    />
+                                    <img src={Men} alt={"رجل"} />
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            {/* ✅ اختيار الجنس */}
-            <div className="gender-selector">
-                <div className="gender-buttons">
-                    <button
-                        className={`gender-btn ${
-                            selectedGender === "male" ? "active" : ""
-                        }`}
-                        onClick={() => setSelectedGender("male")}
-                    >
-                        <img src={Men} alt="ذكر" width={40} height={40} />
-                        ذكر
-                    </button>
-                    <button
-                        className={`gender-btn ${
-                            selectedGender === "female" ? "active" : ""
-                        }`}
-                        onClick={() => setSelectedGender("female")}
-                    >
-                        <img src={Woman} alt="أنثى" width={40} height={40} />
-                        أنثى
-                    </button>
                 </div>
             </div>
         </div>

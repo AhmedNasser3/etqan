@@ -4,7 +4,7 @@ import { IoIosArrowForward } from "react-icons/io";
 import { FaStar } from "react-icons/fa";
 import { FaStarHalfAlt } from "react-icons/fa";
 import { FaRegStar } from "react-icons/fa";
-import facelessAvatar from "../../../assets/images/facelessYoung.png";
+import facelessAvatar from "../../../../assets/images/facelessYoung.png";
 import TestimonialsProfileHead from "./widgets/TestimonialsProfileHead";
 import TestimonialsProfileReviews from "./widgets/TestimonialsProfileReviews";
 import TestimonialsProfileComplexes from "./widgets/TestimonialsProfileComplexes";
