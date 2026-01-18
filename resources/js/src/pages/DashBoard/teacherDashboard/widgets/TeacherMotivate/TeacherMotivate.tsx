@@ -32,8 +32,8 @@ const TeacherMotivate: React.FC = () => {
             prev.map((student) =>
                 student.id === studentId
                     ? { ...student, reward: student.reward + changeValue }
-                    : student
-            )
+                    : student,
+            ),
         );
     };
 
@@ -102,7 +102,7 @@ const TeacherMotivate: React.FC = () => {
                                         <td>
                                             <span
                                                 className={`teacherStudent__progress-badge ${getProgressClass(
-                                                    item.progress
+                                                    item.progress,
                                                 )}`}
                                             >
                                                 {item.progress}%
@@ -136,7 +136,7 @@ const TeacherMotivate: React.FC = () => {
                                                                 handleRewardChange(
                                                                     item.id,
                                                                     e.target
-                                                                        .value
+                                                                        .value,
                                                                 );
                                                             }}
                                                             className="reward-input"

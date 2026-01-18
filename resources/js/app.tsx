@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import "./src/assets/scss/main.scss";
 import Navbar from "./src/layouts/navbar";
 import Sidebar from "./src/layouts/Sidebar";
@@ -27,6 +28,9 @@ import TeacherAttendance from "./src/pages/DashBoard/teacherDashboard/widgets/Te
 import TeacherRoom from "./src/pages/DashBoard/teacherDashboard/widgets/TeahcerRoom/TeahcerRoom";
 import TeacherReports from "./src/pages/DashBoard/teacherDashboard/widgets/TeacherReports/TeacherReports";
 import TestimonialsView from "./src/pages/DashBoard/home/TestimonialsView/TestimonialsView";
+import CenterDashboard from "./src/pages/DashBoard/Center/CenterDashboard";
+import CenterSidebar from "./src/layouts/centerDashboard/CenterSidebar";
+import StudentApproval from "./src/pages/DashBoard/Center/Students/Approval/StudentApproval";
 
 function MainLayout() {
     return (
@@ -56,6 +60,7 @@ function UserLayout() {
         </>
     );
 }
+
 function TeacehrLayout() {
     return (
         <>
@@ -70,11 +75,24 @@ function TeacehrLayout() {
     );
 }
 
+function CenterLayout() {
+    return (
+        <>
+            <TeacherNavbar />
+            <CenterSidebar />
+            <main className="page">
+                <div className="page__container">
+                    <Outlet />
+                </div>
+            </main>
+        </>
+    );
+}
+
 function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* Admin Routes */}
                 <Route element={<MainLayout />}>
                     <Route path="/" element={<Dashboard />} />
                     <Route
@@ -88,8 +106,18 @@ function App() {
                         element={<TeacherRegister />}
                     />
                 </Route>
-
-                {/* Teacher Dashboard */}
+                <Route path="/center-dashboard" element={<CenterLayout />}>
+                    <Route index element={<CenterDashboard />} />
+                    <Route
+                        path="students/approval"
+                        element={<StudentApproval />}
+                    />
+                    <Route path="plan" element={<TeacherPlan />} />
+                    <Route path="motivation" element={<TeacherMotivate />} />
+                    <Route path="attendance" element={<TeacherAttendance />} />
+                    <Route path="room" element={<TeacherRoom />} />
+                    <Route path="reports" element={<TeacherReports />} />
+                </Route>
                 <Route path="/teacher-dashboard" element={<TeacehrLayout />}>
                     <Route index element={<TeacherDashboard />} />
                     <Route path="students" element={<TeacherStudents />} />
@@ -99,8 +127,6 @@ function App() {
                     <Route path="room" element={<TeacherRoom />} />
                     <Route path="reports" element={<TeacherReports />} />
                 </Route>
-
-                {/* User Dashboard - Legacy */}
                 <Route path="/user-dashboard" element={<UserLayout />}>
                     <Route index element={<UserDashboard />} />
                     <Route path="plans" element={<Plans />} />
@@ -111,6 +137,18 @@ function App() {
                     <Route path="user-certificate" element={<Certificate />} />
                 </Route>
             </Routes>
+            <Toaster
+                position="top-right"
+                gutter={8}
+                toastOptions={{
+                    duration: 4000,
+                    style: {
+                        background: "hsl(var(--background))",
+                        color: "hsl(var(--foreground))",
+                        border: "1px solid hsl(var(--border))",
+                    },
+                }}
+            />
         </BrowserRouter>
     );
 }

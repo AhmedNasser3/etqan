@@ -82,6 +82,18 @@ const Navbar: React.FC = () => {
                                         حسابي
                                     </li>
                                 </a>
+                                <a href="center-dashboard">
+                                    <li>
+                                        <FaUserAlt />
+                                        مجمعي
+                                    </li>
+                                </a>
+                                <a href="teacher-dashboard">
+                                    <li>
+                                        <FaUserAlt />
+                                        ادارة معلم
+                                    </li>
+                                </a>
                                 <a href="#">
                                     <li>
                                         <IoSettings />
