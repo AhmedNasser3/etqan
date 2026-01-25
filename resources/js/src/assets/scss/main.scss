@@ -19,6 +19,9 @@
 @use "./pages/teacherDashboard/TeacherMotivate.scss" as *;
 @use "./pages/TestimonialsView/TestimonialsView.scss" as *;
 @use "./pages/center/CenterDashboard/CenterDashboard.scss" as *;
+@use "./pages/center/Students/Approval/modals/ParentModel.scss" as *;
+@use "./pages/center/Students/Approval/modals/AnalysisLinksModel.scss" as *;
+@use "./pages/center/Students/performance/PerformanceModel.scss" as *;
 
 @import url("https://fonts.googleapis.com/css2?family=Beiruti:wght@200..900&display=swap");
 

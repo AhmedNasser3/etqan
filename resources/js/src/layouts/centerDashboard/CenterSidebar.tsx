@@ -8,210 +8,294 @@ import { FaClock } from "react-icons/fa";
 import { FaVideo } from "react-icons/fa";
 import { GrCertificate } from "react-icons/gr";
 import { IoIosArrowDown } from "react-icons/io";
+import { FaUsers } from "react-icons/fa";
+import { FaUserTie } from "react-icons/fa";
+import { FaDollarSign } from "react-icons/fa";
+import { FaLink } from "react-icons/fa";
+import { FaChalkboardTeacher } from "react-icons/fa";
+import { FaBullhorn } from "react-icons/fa";
+import { FaDoorOpen } from "react-icons/fa";
+import { FaFileAlt } from "react-icons/fa";
+import { FaHistory } from "react-icons/fa";
 
 const CenterSidebar: React.FC = () => {
     const [activePage, setActivePage] = useState("dashboard");
-    const [isStudentsOpen, setIsStudentsOpen] = useState(false);
+    const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
+    const [activeSubPage, setActiveSubPage] = useState("");
 
     useEffect(() => {
         const currentPath = window.location.pathname;
-        if (currentPath.includes("students")) {
+
+        if (currentPath.includes("students/approval")) {
             setActivePage("students");
-            setIsStudentsOpen(true);
-        } else if (currentPath.includes("plans")) {
-            setActivePage("plans");
-        } else if (currentPath.includes("motivation")) {
-            setActivePage("motivation");
+            setActiveSubPage("/center-dashboard/students/approval");
+            setOpenMenus((prev) => ({ ...prev, students: true }));
+        } else if (currentPath.includes("staff-approval")) {
+            setActivePage("staff");
+            setActiveSubPage("/center-dashboard/staff-approval");
+            setOpenMenus((prev) => ({ ...prev, staff: true }));
+        } else if (currentPath.includes("staff-attendance")) {
+            setActivePage("staff");
+            setActiveSubPage("/center-dashboard/staff-attendance");
+            setOpenMenus((prev) => ({ ...prev, staff: true }));
+        } else if (currentPath.includes("user-suspend")) {
+            setActivePage("staff");
+            setActiveSubPage("/center-dashboard/user-suspend");
+            setOpenMenus((prev) => ({ ...prev, staff: true }));
+        } else if (
+            currentPath.includes("financial-dashboard") ||
+            currentPath.includes("payroll-exports") ||
+            currentPath.includes("payroll-reports") ||
+            currentPath.includes("payroll-settings")
+        ) {
+            setActivePage("financial");
+            setActiveSubPage(currentPath);
+            setOpenMenus((prev) => ({ ...prev, financial: true }));
+        } else if (currentPath.includes("education")) {
+            setActivePage("education");
+            setActiveSubPage("");
         } else if (currentPath.includes("certificates")) {
             setActivePage("certificates");
+            setActiveSubPage("");
         } else if (currentPath.includes("messages")) {
             setActivePage("messages");
+            setActiveSubPage("");
         } else if (currentPath.includes("reports")) {
             setActivePage("reports");
+            setActiveSubPage("");
         } else if (currentPath.includes("attendance")) {
             setActivePage("attendance");
+            setActiveSubPage("");
         } else if (currentPath.includes("room")) {
             setActivePage("room");
+            setActiveSubPage("");
         } else {
             setActivePage("dashboard");
+            setActiveSubPage("");
         }
     }, []);
 
-    const toggleStudents = () => {
-        setIsStudentsOpen(!isStudentsOpen);
+    const toggleMenu = (menuKey: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        setOpenMenus((prev) => ({
+            ...prev,
+            [menuKey]: !prev[menuKey],
+        }));
     };
+
+    const handleMainLinkClick = (
+        href: string,
+        activePageKey: string,
+        e: React.MouseEvent,
+    ) => {
+        if (href === "#") {
+            e.preventDefault();
+            toggleMenu(activePageKey, e);
+        } else {
+            setActivePage(activePageKey);
+            setActiveSubPage("");
+            Object.keys(openMenus).forEach((key) => {
+                if (key !== activePageKey)
+                    setOpenMenus((prev) => ({ ...prev, [key]: false }));
+            });
+        }
+    };
+
+    const handleSubLinkClick = (href: string, parentKey: string) => {
+        setActiveSubPage(href);
+        setActivePage(parentKey);
+        setOpenMenus((prev) => ({ ...prev, [parentKey]: true }));
+    };
+
+    const menuItems = [
+        {
+            key: "dashboard",
+            href: "/center-dashboard",
+            icon: <TbLayoutDashboardFilled />,
+            title: "مجمعي",
+            activePage: "dashboard",
+        },
+        {
+            key: "students",
+            href: "#",
+            icon: (
+                <IoIosArrowDown
+                    className={`arrow-icon ${openMenus.students ? "rotated" : ""}`}
+                />
+            ),
+            title: "الطلاب",
+            activePage: "students",
+            submenu: [
+                {
+                    href: "/center-dashboard/students/approval",
+                    title: "اعتماد الطلاب",
+                },
+            ],
+        },
+        {
+            key: "staff",
+            href: "#",
+            icon: (
+                <IoIosArrowDown
+                    className={`arrow-icon ${openMenus.staff ? "rotated" : ""}`}
+                />
+            ),
+            title: "موظفين",
+            activePage: "staff",
+            submenu: [
+                {
+                    href: "/center-dashboard/staff-approval",
+                    title: "اعتماد المعلمين",
+                },
+                {
+                    href: "/center-dashboard/staff-attendance",
+                    title: "حضور الموظفين",
+                },
+                {
+                    href: "/center-dashboard/user-suspend",
+                    title: "موظفين موقوفين",
+                },
+            ],
+        },
+        {
+            key: "financial",
+            href: "#",
+            icon: (
+                <IoIosArrowDown
+                    className={`arrow-icon ${openMenus.financial ? "rotated" : ""}`}
+                />
+            ),
+            title: "ادارة مالية",
+            activePage: "financial",
+            submenu: [
+                {
+                    href: "/center-dashboard/financial-dashboard",
+                    title: "اللوحة المالية",
+                },
+                {
+                    href: "/center-dashboard/payroll-exports",
+                    title: "مسيرات الرواتب",
+                },
+                {
+                    href: "/center-dashboard/payroll-reports",
+                    title: "تقارير الدوام",
+                },
+                {
+                    href: "/center-dashboard/payroll-settings",
+                    title: "قواعد الراتب",
+                },
+            ],
+        },
+        {
+            key: "doamin",
+            href: "/center-dashboard/domian-links",
+            icon: <FaLink />,
+            title: "روابط مهمة",
+            activePage: "doamin",
+        },
+        {
+            key: "education",
+            href: "/center-dashboard/education-supervisor",
+            icon: <FaChalkboardTeacher />,
+            title: "ادارة معلمين وحلقات",
+            activePage: "education",
+        },
+        {
+            key: "attendance",
+            href: "/center-dashboard/motivation-supervisor",
+            icon: <FaBullhorn />,
+            title: "ادارة التحفيزات",
+            activePage: "attendance",
+        },
+        {
+            key: "room",
+            href: "/center-dashboard/rooms-supervisor",
+            icon: <FaDoorOpen />,
+            title: "ادارة الغرف",
+            activePage: "room",
+        },
+        {
+            key: "reports",
+            href: "/center-dashboard/student-supervisor",
+            icon: <FaUsers />,
+            title: "ادارة الطلاب",
+            activePage: "reports",
+        },
+        {
+            key: "certificates",
+            href: "/center-dashboard/report-dashboard",
+            icon: <FaFileAlt />,
+            title: "مكتبة التقارير",
+            activePage: "certificates",
+        },
+        {
+            key: "messages",
+            href: "/center-dashboard/audit-log",
+            icon: <FaHistory />,
+            title: "سجل الاجراءات",
+            activePage: "messages",
+        },
+    ];
 
     return (
         <div className="sidebar">
             <div className="sidebar__features">
                 <div className="sidebar__inner">
                     <div className="sidebar__container">
-                        <div
-                            className={`sidebar__data ${activePage === "dashboard" ? "active" : ""}`}
-                        >
-                            <div className="sidebar__title">
-                                <a href="/teacher-dashboard">
-                                    <i>
-                                        <TbLayoutDashboardFilled />
-                                    </i>
-                                    <h2>حلقتي اليوم</h2>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div
-                            className={`sidebar__data ${activePage === "students" ? "active" : ""}`}
-                        >
+                        {menuItems.map((item) => (
                             <div
-                                className="sidebar__title"
-                                onClick={toggleStudents}
+                                key={item.key}
+                                className={`sidebar__data ${activePage === item.activePage ? "active" : ""}`}
                             >
-                                <a href="#">
-                                    <i>
-                                        <IoIosArrowDown
-                                            className={`arrow-icon ${isStudentsOpen ? "rotated" : ""}`}
-                                        />
-                                    </i>
-                                    <h2>الطلاب</h2>
-                                </a>
-                            </div>
-                            <ul
-                                className={`sub-menu ${isStudentsOpen ? "open" : ""}`}
-                            >
-                                <li>
-                                    <a href="/center-dashboard/students/all">
-                                        جميع الطلاب
+                                <div
+                                    className="sidebar__title"
+                                    onClick={(e) =>
+                                        handleMainLinkClick(
+                                            item.href,
+                                            item.key,
+                                            e,
+                                        )
+                                    }
+                                >
+                                    <a
+                                        href={item.href}
+                                        className={
+                                            item.href === "#" ? "no-link" : ""
+                                        }
+                                    >
+                                        <i>{item.icon}</i>
+                                        <h2>{item.title}</h2>
                                     </a>
-                                </li>
-                                <li>
-                                    <a href="/center-dashboard/students/approval">
-                                        اعتماد الطلاب
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                        <div
-                            className={`sidebar__data ${activePage === "students" ? "active" : ""}`}
-                        >
-                            <div
-                                className="sidebar__title"
-                                onClick={toggleStudents}
-                            >
-                                <a href="#">
-                                    <i>
-                                        <IoIosArrowDown
-                                            className={`arrow-icon ${isStudentsOpen ? "rotated" : ""}`}
-                                        />
-                                    </i>
-                                    <h2>موظفين</h2>
-                                </a>
+                                </div>
+                                {item.submenu && (
+                                    <ul
+                                        className={`sub-menu ${openMenus[item.key as string] ? "open" : ""}`}
+                                    >
+                                        {item.submenu.map((subItem, index) => (
+                                            <li
+                                                key={index}
+                                                className={
+                                                    activeSubPage ===
+                                                    subItem.href
+                                                        ? "active"
+                                                        : ""
+                                                }
+                                                onClick={() =>
+                                                    handleSubLinkClick(
+                                                        subItem.href,
+                                                        item.key,
+                                                    )
+                                                }
+                                            >
+                                                <a href={subItem.href}>
+                                                    {subItem.title}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             </div>
-                            <ul
-                                className={`sub-menu ${isStudentsOpen ? "open" : ""}`}
-                            >
-                                <li>
-                                    <a href="/center-dashboard/students/all">
-                                        اعتماد المعلمين
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="/center-dashboard/students/approval">
-                                        اعتماد المشرفين
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div
-                            className={`sidebar__data ${activePage === "plans" ? "active" : ""}`}
-                        >
-                            <div className="sidebar__title">
-                                <a href="/teacher-dashboard/plan">
-                                    <i>
-                                        <FaRegCalendarAlt />
-                                    </i>
-                                    <h2>الخطط</h2>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div
-                            className={`sidebar__data ${activePage === "motivation" ? "active" : ""}`}
-                        >
-                            <div className="sidebar__title">
-                                <a href="/teacher-dashboard/motivation">
-                                    <i>
-                                        <FaStar />
-                                    </i>
-                                    <h2>التحفيز</h2>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div
-                            className={`sidebar__data ${activePage === "attendance" ? "active" : ""}`}
-                        >
-                            <div className="sidebar__title">
-                                <a href="/teacher-dashboard/attendance">
-                                    <i>
-                                        <FaClock />
-                                    </i>
-                                    <h2>تحضيري</h2>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div
-                            className={`sidebar__data ${activePage === "room" ? "active" : ""}`}
-                        >
-                            <div className="sidebar__title">
-                                <a href="/teacher-dashboard/room">
-                                    <i>
-                                        <FaVideo />
-                                    </i>
-                                    <h2>غرفة التسميع</h2>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div
-                            className={`sidebar__data ${activePage === "reports" ? "active" : ""}`}
-                        >
-                            <div className="sidebar__title">
-                                <a href="/teacher-dashboard/reports">
-                                    <i>
-                                        <FaChartBar />
-                                    </i>
-                                    <h2>التقارير</h2>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div
-                            className={`sidebar__data ${activePage === "certificates" ? "active" : ""}`}
-                        >
-                            <div className="sidebar__title">
-                                <a href="/teacher-dashboard/certificates">
-                                    <i>
-                                        <GrCertificate />
-                                    </i>
-                                    <h2>الشهادات</h2>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div
-                            className={`sidebar__data ${activePage === "messages" ? "active" : ""}`}
-                        >
-                            <div className="sidebar__title">
-                                <a href="/teacher-dashboard/messages">
-                                    <i>
-                                        <FaComments />
-                                    </i>
-                                    <h2>الرسائل</h2>
-                                </a>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </div>

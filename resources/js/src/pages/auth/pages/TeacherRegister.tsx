@@ -9,7 +9,7 @@ interface StudentEnrollmentProps {
 
 const TeacherRegister: React.FC<StudentEnrollmentProps> = ({ gender }) => {
     const [selectedGender, setSelectedGender] = useState<"male" | "female">(
-        "male"
+        "male",
     );
     const [selectedRole, setSelectedRole] = useState<string>("");
 

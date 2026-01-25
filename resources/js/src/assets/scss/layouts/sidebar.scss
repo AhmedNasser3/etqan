@@ -31,7 +31,6 @@
 
         &:hover {
             background-color: rgba($dark-green, 0.03);
-            border-left: 6px solid rgba($dark-green, 0.7);
         }
     }
 
@@ -60,21 +59,42 @@
         transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
         &.open {
-            max-height: 100px;
+            max-height: 100%;
         }
 
         li {
             padding: 2px 12px;
+            background-color: rgba($dark-green, 0.5);
+            display: block;
+            color: inherit;
+            text-decoration: none;
+            font-size: 0.9em;
+            padding: 5px 15px;
+            border-radius: 6px;
+            color: $light;
+            margin: 6px 0;
+            text-align: end;
+            &:hover {
+                background-color: rgba($dark-green, 0.6);
+            }
 
-            a {
-                background-color: rgba($dark-green, 0.5);
-                display: block;
-                color: inherit;
-                text-decoration: none;
-                font-size: 0.9em;
-                padding: 5px 15px;
-                border-radius: 6px;
-                color: $light;
+            &.active {
+                background-color: rgba($dark-green, 0.08) !important;
+                color: $dark-green !important;
+                font-weight: 600 !important;
+                border-left: 4px solid rgba($dark-green, 0.7) !important;
+                padding-right: 20px !important;
+                text-align: end;
+            }
+        }
+    }
+
+    &__data.active {
+        ul.sub-menu {
+            li {
+                &:hover {
+                    background: rgba($dark-green, 0.3);
+                }
             }
         }
     }

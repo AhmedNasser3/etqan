@@ -7,7 +7,7 @@ import { RiMessage2Line } from "react-icons/ri";
 import { FiXCircle } from "react-icons/fi";
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
 import { IoMdLink } from "react-icons/io";
-import { MdSupervisorAccount } from "react-icons/md";
+import PayrollModel from "./modals/PayrollModel";
 
 const StaffApproval: React.FC = () => {
     const [staffs, setStaffs] = useState([
@@ -25,7 +25,7 @@ const StaffApproval: React.FC = () => {
         {
             id: 2,
             name: "فاطمة عبدالله محمد الزهراني",
-            email: "fatima.zahرانی@example.com",
+            email: "fatima.zahrani@example.com",
             role: "مشرفة تعليمية",
             circle: "لا يوجد",
             experience: "5 سنوات",
@@ -48,6 +48,10 @@ const StaffApproval: React.FC = () => {
 
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // Modal States
+    const [showPayrollModal, setShowPayrollModal] = useState(false);
+    const [selectedStaff, setSelectedStaff] = useState<any>(null);
 
     const filteredStaffs = staffs.filter(
         (staff) =>
@@ -75,16 +79,21 @@ const StaffApproval: React.FC = () => {
         toast.error("تم رفض طلب الموظف");
     };
 
-    const handleSendOTP = (id: number) => {
+    const handleSendOTP = (name: string) => {
         setLoading(true);
         setTimeout(() => {
-            toast.success(`تم إرسال OTP إلى الموظف ${id}`);
+            toast.success(`تم إرسال رقم التحقق إلى الموظف ${name}`);
             setLoading(false);
         }, 1000);
     };
 
+    const handleLinkPayroll = (staff: any) => {
+        setSelectedStaff(staff);
+        setShowPayrollModal(true);
+    };
+
     return (
-        <div className="teacherMotivate">
+        <div className="teacherMotivate" style={{ padding: "0 15%" }}>
             <div className="teacherMotivate__inner">
                 <div
                     className="userProfile__plan"
@@ -201,7 +210,7 @@ const StaffApproval: React.FC = () => {
                                                 <button
                                                     className="teacherStudent__status-btn otp-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
                                                     onClick={() =>
-                                                        handleSendOTP(item.id)
+                                                        handleSendOTP(item.name)
                                                     }
                                                     disabled={loading}
                                                 >
@@ -209,7 +218,13 @@ const StaffApproval: React.FC = () => {
                                                         <RiMessage2Line />
                                                     </i>
                                                 </button>
-                                                <button className="teacherStudent__status-btn link-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100">
+                                                <button
+                                                    className="teacherStudent__status-btn link-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100"
+                                                    onClick={() =>
+                                                        handleLinkPayroll(item)
+                                                    }
+                                                    title="ربط حساب الرواتب"
+                                                >
                                                     <IoMdLink />
                                                 </button>
                                             </div>
@@ -297,6 +312,13 @@ const StaffApproval: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Payroll Modal - Controlled */}
+            <PayrollModel
+                isOpen={showPayrollModal}
+                onClose={() => setShowPayrollModal(false)}
+                staffName={selectedStaff?.name}
+            />
         </div>
     );
 };

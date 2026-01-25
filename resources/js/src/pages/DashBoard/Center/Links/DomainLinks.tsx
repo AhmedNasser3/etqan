@@ -7,6 +7,8 @@ import { FiCopy, FiEdit2, FiDownload, FiEye, FiTrash2 } from "react-icons/fi";
 import { IoQrCodeOutline } from "react-icons/io5";
 import { AiTwotoneStop } from "react-icons/ai";
 import { IoPlayCircleOutline } from "react-icons/io5";
+import EditLinksModel from "./models/EditLinksModel";
+import AnalysisLinksModel from "./models/AnalysisLinksModel";
 
 const DomainLinks: React.FC = () => {
     const [links, setLinks] = useState([
@@ -54,7 +56,20 @@ const DomainLinks: React.FC = () => {
 
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
-
+    const [showEditLinksModel, setShowEditLinksModel] = useState(false);
+    const [showAnalysisLinksModel, setShowAnalysisLinksModel] = useState(false);
+    const handleOpenEditLinksModel = () => {
+        setShowEditLinksModel(true);
+    };
+    const handleCloseEditLinksModel = () => {
+        setShowEditLinksModel(false);
+    };
+    const handleOpenAnalysisLinksModel = () => {
+        setShowAnalysisLinksModel(true);
+    };
+    const handleCloseAnalysisLinksModel = () => {
+        setShowAnalysisLinksModel(false);
+    };
     const filteredLinks = links.filter(
         (link) =>
             link.type.includes(search) ||
@@ -100,8 +115,16 @@ const DomainLinks: React.FC = () => {
     };
 
     return (
-        <div className="teacherMotivate">
+        <div className="teacherMotivate" style={{ padding: "0 15%" }}>
             <div className="teacherMotivate__inner">
+                <EditLinksModel
+                    isOpen={showEditLinksModel}
+                    onClose={handleCloseEditLinksModel}
+                />
+                <AnalysisLinksModel
+                    isOpen={showAnalysisLinksModel}
+                    onClose={handleCloseAnalysisLinksModel}
+                />
                 <div
                     className="userProfile__plan"
                     style={{ paddingBottom: "24px", padding: "0" }}
@@ -245,6 +268,9 @@ const DomainLinks: React.FC = () => {
                                                 <button
                                                     className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-orange-50 border-orange-300 text-orange-600 hover:bg-orange-100"
                                                     title="تعديل"
+                                                    onClick={
+                                                        handleOpenEditLinksModel
+                                                    }
                                                 >
                                                     <FiEdit2 />
                                                 </button>
@@ -257,6 +283,9 @@ const DomainLinks: React.FC = () => {
                                                 <button
                                                     className="teacherStudent__status-btn view-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
                                                     title="عرض الإحصائيات"
+                                                    onClick={
+                                                        handleOpenAnalysisLinksModel
+                                                    }
                                                 >
                                                     <FiEye />
                                                 </button>

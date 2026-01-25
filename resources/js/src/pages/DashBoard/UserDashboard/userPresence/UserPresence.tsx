@@ -50,7 +50,7 @@ const UserPresence: React.FC = () => {
                     </div>
                 </div>
                 <div className="testimonials__mainTitle">
-                    <h1>ملاحظات المعلمين</h1>
+                    <h1>حضور وغياب الطالب</h1>
                 </div>
                 <div className="userProfile__plan" id="userProfile__plan">
                     <div className="plan__header">

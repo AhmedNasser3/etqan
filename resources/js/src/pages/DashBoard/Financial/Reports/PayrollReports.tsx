@@ -101,7 +101,7 @@ const PayrollReports: React.FC = () => {
     };
 
     return (
-        <div className="teacherMotivate">
+        <div className="teacherMotivate" style={{ padding: "0 15%" }}>
             <div className="teacherMotivate__inner">
                 <div
                     className="userProfile__plan"

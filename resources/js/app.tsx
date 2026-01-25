@@ -31,6 +31,21 @@ import TestimonialsView from "./src/pages/DashBoard/home/TestimonialsView/Testim
 import CenterDashboard from "./src/pages/DashBoard/Center/CenterDashboard";
 import CenterSidebar from "./src/layouts/centerDashboard/CenterSidebar";
 import StudentApproval from "./src/pages/DashBoard/Center/Students/Approval/StudentApproval";
+import StaffAttendance from "./src/pages/DashBoard/Center/Attendance/Staff/StaffAttendance";
+import DomainLinks from "./src/pages/DashBoard/Center/Links/DomainLinks";
+import StaffApproval from "./src/pages/DashBoard/Center/Staff/Approval/StaffApproval";
+import UserSuspend from "./src/pages/DashBoard/Center/Users/Suspend/UserSuspend";
+import FinancialDashboard from "./src/pages/DashBoard/Financial/Dashboard/FinancialDashboard";
+import PayrollExport from "./src/pages/DashBoard/Financial/Export/PayrollExport";
+import PayrollReports from "./src/pages/DashBoard/Financial/Reports/PayrollReports";
+import PayrollSettings from "./src/pages/DashBoard/Financial/Settings/PayrollSettings";
+import MotivationSupervisor from "./src/pages/DashBoard/Supervisors/Motivation/MotivationSupervisor";
+import EducationalSupervisor from "./src/pages/DashBoard/Supervisors/Education/EducationSupervisor";
+import ListeningRooms from "./src/pages/DashBoard/Supervisors/Rooms/ListeningRooms";
+import StudentAffairs from "./src/pages/DashBoard/Supervisors/Students/StudentsAffairs";
+import ReportsDashboard from "./src/pages/DashBoard/Reports/ReportsDashboard";
+import AuditLogPage from "./src/pages/DashBoard/AuditLogs";
+import CenterRegister from "./src/pages/auth/pages/CenterRegister";
 
 function MainLayout() {
     return (
@@ -99,6 +114,10 @@ function App() {
                         path="/teacher-view"
                         element={<TestimonialsView />}
                     />
+                    <Route
+                        path="/center-register"
+                        element={<CenterRegister />}
+                    />
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
                     <Route
@@ -106,18 +125,56 @@ function App() {
                         element={<TeacherRegister />}
                     />
                 </Route>
+
                 <Route path="/center-dashboard" element={<CenterLayout />}>
                     <Route index element={<CenterDashboard />} />
                     <Route
                         path="students/approval"
                         element={<StudentApproval />}
                     />
-                    <Route path="plan" element={<TeacherPlan />} />
-                    <Route path="motivation" element={<TeacherMotivate />} />
-                    <Route path="attendance" element={<TeacherAttendance />} />
-                    <Route path="room" element={<TeacherRoom />} />
-                    <Route path="reports" element={<TeacherReports />} />
+                    <Route
+                        path="staff-attendance"
+                        element={<StaffAttendance />}
+                    />
+                    <Route path="domian-links" element={<DomainLinks />} />
+                    <Route path="staff-approval" element={<StaffApproval />} />
+                    <Route path="user-suspend" element={<UserSuspend />} />
+                    <Route
+                        path="financial-dashboard"
+                        element={<FinancialDashboard />}
+                    />
+                    <Route path="payroll-exports" element={<PayrollExport />} />
+                    <Route
+                        path="payroll-reports"
+                        element={<PayrollReports />}
+                    />
+                    <Route
+                        path="payroll-settings"
+                        element={<PayrollSettings />}
+                    />
+                    <Route
+                        path="education-supervisor"
+                        element={<EducationalSupervisor />}
+                    />
+                    <Route
+                        path="motivation-supervisor"
+                        element={<MotivationSupervisor />}
+                    />
+                    <Route
+                        path="rooms-supervisor"
+                        element={<ListeningRooms />}
+                    />
+                    <Route
+                        path="student-supervisor"
+                        element={<StudentAffairs />}
+                    />
+                    <Route
+                        path="report-dashboard"
+                        element={<ReportsDashboard />}
+                    />
+                    <Route path="audit-log" element={<AuditLogPage />} />
                 </Route>
+
                 <Route path="/teacher-dashboard" element={<TeacehrLayout />}>
                     <Route index element={<TeacherDashboard />} />
                     <Route path="students" element={<TeacherStudents />} />
@@ -126,7 +183,9 @@ function App() {
                     <Route path="attendance" element={<TeacherAttendance />} />
                     <Route path="room" element={<TeacherRoom />} />
                     <Route path="reports" element={<TeacherReports />} />
+                    <Route path="certificates" element={<Certificate />} />
                 </Route>
+
                 <Route path="/user-dashboard" element={<UserLayout />}>
                     <Route index element={<UserDashboard />} />
                     <Route path="plans" element={<Plans />} />

@@ -5,3 +5,11 @@
 #teacherMotivate {
     padding: 0 15%;
 }
+.teacherMotivate {
+    &__bgs {
+        background-color: rgba($dark-green, 0.08);
+        padding: 2px;
+        border-radius: 6px;
+        margin: 2px 0;
+    }
+}

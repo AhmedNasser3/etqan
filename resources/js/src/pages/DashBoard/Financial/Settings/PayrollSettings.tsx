@@ -111,7 +111,7 @@ const PayrollSettings: React.FC = () => {
     };
 
     return (
-        <div className="teacherMotivate">
+        <div className="teacherMotivate" style={{ padding: "0 15%" }}>
             <div className="teacherMotivate__inner">
                 <div
                     className="userProfile__plan"
@@ -156,50 +156,74 @@ const PayrollSettings: React.FC = () => {
                                 دور جديد
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <input
-                                    placeholder="اسم الدور"
-                                    value={newRole.name}
-                                    onChange={(e) =>
-                                        setNewRole({
-                                            ...newRole,
-                                            name: e.target.value,
-                                        })
-                                    }
-                                    className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                />
-                                <input
-                                    placeholder="الراتب الأساسي"
-                                    value={newRole.basicSalary}
-                                    onChange={(e) =>
-                                        setNewRole({
-                                            ...newRole,
-                                            basicSalary: e.target.value,
-                                        })
-                                    }
-                                    className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                                />
-                                <input
-                                    placeholder="الأجر بالساعة"
-                                    value={newRole.hourlyRate}
-                                    onChange={(e) =>
-                                        setNewRole({
-                                            ...newRole,
-                                            hourlyRate: e.target.value,
-                                        })
-                                    }
-                                    className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                />
-                                <input
-                                    placeholder="بدل يومي"
-                                    value={newRole.dailyAllowance}
-                                    onChange={(e) =>
-                                        setNewRole({
-                                            ...newRole,
-                                            dailyAllowance: e.target.value,
-                                        })
-                                    }
-                                    className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                                />
+                                <div className="inputs__verifyOTPBirth">
+                                    <div className="inputs__verifyOTP">
+                                        <label>اسم الدور</label>
+                                        <input
+                                            type="text"
+                                            name="reading_level"
+                                            id="reading_level"
+                                            placeholder="اسم الدور"
+                                            value={newRole.name}
+                                            onChange={(e) =>
+                                                setNewRole({
+                                                    ...newRole,
+                                                    name: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="inputs__verifyOTP">
+                                        <label>الراتب الأساسي</label>
+                                        <input
+                                            type="text"
+                                            name="reading_level"
+                                            id="reading_level"
+                                            placeholder="الراتب الأساسي"
+                                            value={newRole.basicSalary}
+                                            onChange={(e) =>
+                                                setNewRole({
+                                                    ...newRole,
+                                                    basicSalary: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                    <div className="inputs__verifyOTP">
+                                        <label>الأجر بالساعة</label>
+                                        <input
+                                            type="text"
+                                            name="reading_level"
+                                            id="reading_level"
+                                            placeholder="الأجر بالساعة"
+                                            value={newRole.hourlyRate}
+                                            onChange={(e) =>
+                                                setNewRole({
+                                                    ...newRole,
+                                                    hourlyRate: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                    <div className="inputs__verifyOTP">
+                                        <label>بدل يومي</label>
+                                        <input
+                                            type="text"
+                                            name="reading_level"
+                                            id="reading_level"
+                                            placeholder="بدل يومي"
+                                            value={newRole.dailyAllowance}
+                                            onChange={(e) =>
+                                                setNewRole({
+                                                    ...newRole,
+                                                    dailyAllowance:
+                                                        e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </div>
                             </div>
                             <button
                                 onClick={addRole}
@@ -238,7 +262,7 @@ const PayrollSettings: React.FC = () => {
                                             <td>ر.{role.hourlyRate}</td>
                                             <td>ر.{role.dailyAllowance}</td>
                                             <td>
-                                                <div className="space-y-1">
+                                                <div className=" space-y-1">
                                                     {role.deductions.map(
                                                         (deduction) => (
                                                             <div
@@ -247,12 +271,12 @@ const PayrollSettings: React.FC = () => {
                                                                 }
                                                                 className="flex items-center justify-between text-xs bg-red-50 p-2 rounded"
                                                             >
-                                                                <span>
+                                                                <span className="teacherMotivate__bgs">
                                                                     {
                                                                         deduction.name
                                                                     }
                                                                 </span>
-                                                                <div className="flex items-center gap-2">
+                                                                <div className="teacherMotivate__bgs flex items-center gap-2">
                                                                     <span>
                                                                         {
                                                                             deduction.percentage

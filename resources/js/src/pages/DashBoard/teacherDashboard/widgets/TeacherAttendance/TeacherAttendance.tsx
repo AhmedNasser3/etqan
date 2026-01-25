@@ -4,7 +4,7 @@ import { PiWhatsappLogoDuotone } from "react-icons/pi";
 import { FaStar } from "react-icons/fa";
 import { GoGoal } from "react-icons/go";
 import { FiMessageSquare } from "react-icons/fi";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Profile from "../dashboard/Profile";
 
 interface AttendanceSession {
@@ -26,10 +26,14 @@ const TeacherAttendance: React.FC = () => {
     const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     const [dateFrom, setDateFrom] = useState(
-        sevenDaysAgo.toISOString().split("T")[0]
+        sevenDaysAgo.toISOString().split("T")[0],
     );
     const [dateTo, setDateTo] = useState(today.toISOString().split("T")[0]);
-    const [attendanceData, setAttendanceData] = useState<AttendanceDay[]>([
+    const [attendanceData, setAttendanceData] = useState<AttendanceDay[]>([]);
+    const [filteredData, setFilteredData] = useState<AttendanceDay[]>([]);
+    const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+    const initialData: AttendanceDay[] = [
         {
             id: 1,
             date: "2026-01-06",
@@ -98,10 +102,11 @@ const TeacherAttendance: React.FC = () => {
             ],
             totalStatus: "present",
         },
-    ]);
-    const [filteredData, setFilteredData] =
-        useState<AttendanceDay[]>(attendanceData);
-    const [selectedDay, setSelectedDay] = useState<number | null>(null);
+    ];
+
+    useEffect(() => {
+        setAttendanceData(initialData);
+    }, []);
 
     const getDayName = (dateString: string) => {
         const date = new Date(dateString);
@@ -129,8 +134,8 @@ const TeacherAttendance: React.FC = () => {
         return status === "present"
             ? "حاضر كامل"
             : status === "partial"
-            ? "حاضر جزئي"
-            : "غائب";
+              ? "حاضر جزئي"
+              : "غائب";
     };
 
     const getSessionStatusIcon = (status: AttendanceSession["status"]) => {
@@ -145,25 +150,26 @@ const TeacherAttendance: React.FC = () => {
         );
     };
 
-    const toggleSessionStatus = (dayId: number, sessionId: number) => {
-        setAttendanceData((prev) =>
-            prev.map((day) =>
-                day.id === dayId
-                    ? {
-                          ...day,
-                          sessions: day.sessions.map((session) =>
-                              session.id === sessionId
-                                  ? {
-                                        ...session,
-                                        status:
-                                            session.status === "present"
-                                                ? "absent"
-                                                : "present",
-                                    }
-                                  : session
-                          ),
-                          totalStatus: calculateTotalStatus(
-                              day.sessions.map((session) =>
+    const calculateTotalStatus = (
+        sessions: AttendanceSession[],
+    ): AttendanceDay["totalStatus"] => {
+        if (sessions.length === 0) return "absent";
+        const presentCount = sessions.filter(
+            (s) => s.status === "present",
+        ).length;
+        if (presentCount === sessions.length) return "present";
+        if (presentCount > 0) return "partial";
+        return "absent";
+    };
+
+    const toggleSessionStatus = useCallback(
+        (dayId: number, sessionId: number) => {
+            setAttendanceData((prev) =>
+                prev.map((day) =>
+                    day.id === dayId
+                        ? {
+                              ...day,
+                              sessions: day.sessions.map((session) =>
                                   session.id === sessionId
                                       ? {
                                             ...session,
@@ -172,44 +178,63 @@ const TeacherAttendance: React.FC = () => {
                                                     ? "absent"
                                                     : "present",
                                         }
-                                      : session
-                              )
-                          ),
-                      }
-                    : day
-            )
-        );
-    };
+                                      : session,
+                              ),
+                              totalStatus: calculateTotalStatus(
+                                  day.sessions.map((session) =>
+                                      session.id === sessionId
+                                          ? {
+                                                ...session,
+                                                status:
+                                                    session.status === "present"
+                                                        ? "absent"
+                                                        : "present",
+                                            }
+                                          : session,
+                                  ),
+                              ),
+                          }
+                        : day,
+                ),
+            );
+        },
+        [],
+    );
 
-    const calculateTotalStatus = (
-        sessions: AttendanceSession[]
-    ): AttendanceDay["totalStatus"] => {
-        if (sessions.length === 0) return "absent";
-        const presentCount = sessions.filter(
-            (s) => s.status === "present"
-        ).length;
-        if (presentCount === sessions.length) return "present";
-        if (presentCount > 0) return "partial";
-        return "absent";
-    };
-
-    const fetchAttendanceData = () => {
+    const fetchAttendanceData = useCallback(() => {
         const filtered = attendanceData.filter((item) => {
             const itemDate = new Date(item.date);
             const fromDate = new Date(dateFrom);
             const toDate = new Date(dateTo);
+            fromDate.setHours(0, 0, 0, 0);
+            toDate.setHours(23, 59, 59, 999);
             return itemDate >= fromDate && itemDate <= toDate;
         });
         setFilteredData(filtered);
-    };
+    }, [attendanceData, dateFrom, dateTo]);
 
     useEffect(() => {
         fetchAttendanceData();
-    }, [dateFrom, dateTo, attendanceData]);
+    }, [fetchAttendanceData]);
+
+    const handleDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setDateFrom(e.target.value);
+    };
+
+    const handleDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setDateTo(e.target.value);
+    };
 
     const selectedDayData = selectedDay
         ? attendanceData.find((day) => day.id === selectedDay)
         : null;
+
+    const presentDays = filteredData.filter(
+        (d) => d.totalStatus === "present",
+    ).length;
+    const totalDays = Math.max(filteredData.length, 1);
+    const attendancePercentage = Math.round((presentDays / totalDays) * 100);
+    const lastDayToday = attendanceData[attendanceData.length - 1];
 
     return (
         <>
@@ -234,10 +259,19 @@ const TeacherAttendance: React.FC = () => {
                     <div className="plan__current">
                         <h2>سجل الحضور اليومي</h2>
                         <div className="plan__date-range">
+                            <div className="date-picker from">
+                                <input
+                                    type="date"
+                                    value={dateFrom}
+                                    onChange={handleDateFromChange}
+                                />
+                            </div>
+                            <span>إلى</span>
                             <div className="date-picker to">
                                 <input
-                                    type="search"
-                                    placeholder="البحث بالتاريخ..."
+                                    type="date"
+                                    value={dateTo}
+                                    onChange={handleDateToChange}
                                 />
                             </div>
                         </div>
@@ -286,12 +320,12 @@ const TeacherAttendance: React.FC = () => {
                                                             e.stopPropagation();
                                                             toggleSessionStatus(
                                                                 day.id,
-                                                                session.id
+                                                                session.id,
                                                             );
                                                         }}
                                                     >
                                                         {getSessionStatusIcon(
-                                                            session.status
+                                                            session.status,
                                                         )}
                                                     </div>
                                                 </div>
@@ -306,11 +340,11 @@ const TeacherAttendance: React.FC = () => {
                                     <td>
                                         <span
                                             className={`teacherAttendance__status-badge ${getTotalStatusClass(
-                                                day.totalStatus
+                                                day.totalStatus,
                                             )}`}
                                         >
                                             {getTotalStatusText(
-                                                day.totalStatus
+                                                day.totalStatus,
                                             )}
                                         </span>
                                     </td>
@@ -322,7 +356,7 @@ const TeacherAttendance: React.FC = () => {
                                                 setSelectedDay(
                                                     selectedDay === day.id
                                                         ? null
-                                                        : day.id
+                                                        : day.id,
                                                 );
                                             }}
                                         >
@@ -379,7 +413,7 @@ const TeacherAttendance: React.FC = () => {
                                             </span>
                                             <div className="session-icon">
                                                 {getSessionStatusIcon(
-                                                    session.status
+                                                    session.status,
                                                 )}
                                             </div>
                                         </div>
@@ -391,7 +425,7 @@ const TeacherAttendance: React.FC = () => {
                                         className={`status-badge ${selectedDayData.totalStatus}`}
                                     >
                                         {getTotalStatusText(
-                                            selectedDayData.totalStatus
+                                            selectedDayData.totalStatus,
                                         )}
                                     </span>
                                 </div>
@@ -423,14 +457,7 @@ const TeacherAttendance: React.FC = () => {
                         <div>
                             <h3>نسبة الحضور</h3>
                             <p className="text-2xl font-bold text-yellow-600">
-                                {Math.round(
-                                    (filteredData.filter(
-                                        (d) => d.totalStatus === "present"
-                                    ).length /
-                                        Math.max(filteredData.length, 1)) *
-                                        100
-                                )}
-                                %
+                                {attendancePercentage}%
                             </p>
                         </div>
                     </div>
@@ -443,8 +470,7 @@ const TeacherAttendance: React.FC = () => {
                         <div>
                             <h3>حاضر اليوم</h3>
                             <p className="text-2xl font-bold text-green-600">
-                                {attendanceData[attendanceData.length - 1]
-                                    ?.totalStatus === "present"
+                                {lastDayToday?.totalStatus === "present"
                                     ? "نعم"
                                     : "لا"}
                             </p>

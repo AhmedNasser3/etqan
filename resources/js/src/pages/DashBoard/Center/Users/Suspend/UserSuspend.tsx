@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast, Toaster } from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusCritical } from "react-icons/gr";
 import { PiWhatsappLogoDuotone } from "react-icons/pi";
@@ -6,6 +7,8 @@ import { FiEdit2, FiEye, FiTrash2, FiShield } from "react-icons/fi";
 import { IoPauseCircleOutline, IoPlayCircleOutline } from "react-icons/io5";
 import { IoWarningOutline } from "react-icons/io5";
 import { GrStatusGood } from "react-icons/gr";
+import UserSuspendModel from "./models/UserSuspendModel";
+import HistoryModel from "./models/HistoryModel";
 
 const UserSuspend: React.FC = () => {
     const [users, setUsers] = useState([
@@ -61,7 +64,23 @@ const UserSuspend: React.FC = () => {
 
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showUserSuspendModel, setShowUserSuspendModel] = useState(false);
+    const [showHistoryModel, setShowHistoryModel] = useState(false);
+    const [loadingUserId, setLoadingUserId] = useState<number | null>(null);
 
+    const handleOpenUserSuspendModel = () => {
+        setShowUserSuspendModel(true);
+    };
+    const handleOpenHistoryModel = () => {
+        setShowHistoryModel(true);
+    };
+
+    const handleCloseUserSuspendModel = () => {
+        setShowUserSuspendModel(false);
+    };
+    const handleCloseHistoryModel = () => {
+        setShowHistoryModel(false);
+    };
     const filteredUsers = users.filter(
         (user) =>
             user.name.includes(search) ||
@@ -71,7 +90,10 @@ const UserSuspend: React.FC = () => {
     );
 
     const toggleSuspend = (id: number) => {
-        setLoading(true);
+        setLoadingUserId(id);
+        const user = users.find((u) => u.id === id);
+        const isActivating = user?.status === "active";
+
         setTimeout(() => {
             setUsers((prev) =>
                 prev.map((user) => {
@@ -90,12 +112,22 @@ const UserSuspend: React.FC = () => {
                     return user;
                 }),
             );
-            setLoading(false);
+            setLoadingUserId(null);
+            if (isActivating) {
+                toast.error("تم إيقاف الحساب بنجاح");
+            } else {
+                toast.success("تم تفعيل الحساب بنجاح");
+            }
         }, 1000);
     };
 
     const handleDelete = (id: number) => {
-        setUsers((prev) => prev.filter((user) => user.id !== id));
+        setLoadingUserId(id);
+        setTimeout(() => {
+            setUsers((prev) => prev.filter((user) => user.id !== id));
+            setLoadingUserId(null);
+            toast.error("تم حذف الحساب بنجاح");
+        }, 1000);
     };
 
     const getStatusColor = (status: string) => {
@@ -120,8 +152,17 @@ const UserSuspend: React.FC = () => {
     };
 
     return (
-        <div className="teacherMotivate">
+        <div className="teacherMotivate" style={{ padding: "0 15%" }}>
+            <Toaster position="top-right" reverseOrder={false} />
             <div className="teacherMotivate__inner">
+                <UserSuspendModel
+                    isOpen={showUserSuspendModel}
+                    onClose={handleCloseUserSuspendModel}
+                />
+                <HistoryModel
+                    isOpen={showHistoryModel}
+                    onClose={handleCloseHistoryModel}
+                />
                 <div
                     className="userProfile__plan"
                     style={{ paddingBottom: "24px", padding: "0" }}
@@ -251,9 +292,13 @@ const UserSuspend: React.FC = () => {
                                                     onClick={() =>
                                                         toggleSuspend(item.id)
                                                     }
-                                                    disabled={loading}
+                                                    disabled={
+                                                        loadingUserId ===
+                                                        item.id
+                                                    }
                                                 >
-                                                    {loading ? (
+                                                    {loadingUserId ===
+                                                    item.id ? (
                                                         "..."
                                                     ) : item.status ===
                                                       "active" ? (
@@ -265,12 +310,18 @@ const UserSuspend: React.FC = () => {
                                                 <button
                                                     className="teacherStudent__status-btn reason-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-yellow-50 border-yellow-300 text-yellow-600 hover:bg-yellow-100"
                                                     title="سبب الإيقاف"
+                                                    onClick={
+                                                        handleOpenUserSuspendModel
+                                                    }
                                                 >
                                                     <FiShield />
                                                 </button>
                                                 <button
                                                     className="teacherStudent__status-btn view-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
                                                     title="عرض السجل"
+                                                    onClick={
+                                                        handleOpenHistoryModel
+                                                    }
                                                 >
                                                     <FiEye />
                                                 </button>
@@ -279,9 +330,20 @@ const UserSuspend: React.FC = () => {
                                                     onClick={() =>
                                                         handleDelete(item.id)
                                                     }
+                                                    disabled={
+                                                        loadingUserId ===
+                                                        item.id
+                                                    }
                                                     title="حذف نهائي"
                                                 >
-                                                    <FiTrash2 />
+                                                    {loadingUserId ===
+                                                        item.id &&
+                                                    item.id ===
+                                                        loadingUserId ? (
+                                                        "..."
+                                                    ) : (
+                                                        <FiTrash2 />
+                                                    )}
                                                 </button>
                                             </div>
                                         </td>
@@ -311,7 +373,11 @@ const UserSuspend: React.FC = () => {
                             <div>
                                 <h3>حسابات مفعلة</h3>
                                 <p className="text-2xl font-bold text-red-600">
-                                    2
+                                    {
+                                        users.filter(
+                                            (u) => u.status === "active",
+                                        ).length
+                                    }
                                 </p>
                             </div>
                         </div>
@@ -324,7 +390,11 @@ const UserSuspend: React.FC = () => {
                             <div>
                                 <h3>حسابات موقوفة</h3>
                                 <p className="text-2xl font-bold text-yellow-600">
-                                    2
+                                    {
+                                        users.filter(
+                                            (u) => u.status === "suspended",
+                                        ).length
+                                    }
                                 </p>
                             </div>
                         </div>
@@ -353,9 +423,21 @@ const UserSuspend: React.FC = () => {
                             <div className="userProfile__progressTitle">
                                 <h1>نسبة الحسابات النشطة</h1>
                             </div>
-                            <p>50%</p>
+                            <p>
+                                {Math.round(
+                                    (users.filter((u) => u.status === "active")
+                                        .length /
+                                        users.length) *
+                                        100,
+                                )}
+                                %
+                            </p>
                             <div className="userProfile__progressBar">
-                                <span style={{ width: "50%" }}></span>
+                                <span
+                                    style={{
+                                        width: `${Math.round((users.filter((u) => u.status === "active").length / users.length) * 100)}%`,
+                                    }}
+                                ></span>
                             </div>
                         </div>
                         <div className="userProfile__progressContent">

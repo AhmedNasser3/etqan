@@ -7,6 +7,7 @@ import { RiMessage2Line } from "react-icons/ri";
 import { FiXCircle } from "react-icons/fi";
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
 import { IoMdLink } from "react-icons/io";
+import ParentModel from "./modals/ParentModel";
 
 const StudentApproval: React.FC = () => {
     const [students, setStudents] = useState([
@@ -46,6 +47,7 @@ const StudentApproval: React.FC = () => {
     ]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showParentModal, setShowParentModal] = useState(false);
 
     const filteredStudents = students.filter(
         (student) =>
@@ -72,28 +74,73 @@ const StudentApproval: React.FC = () => {
         toast.error("تم رفض طلب الطالب");
     };
 
-    const handleSendOTP = (id: number) => {
+    const handleSendOTP = (name: string) => {
         setLoading(true);
         setTimeout(() => {
-            toast.success(`تم إرسال OTP إلى ولي أمر الطالب ${id}`);
+            toast.success(`تم إرسال رقم التحقق إلى ولي أمر الطالب ${name}`);
             setLoading(false);
         }, 1000);
     };
 
+    const handleOpenParentModal = () => {
+        setShowParentModal(true);
+    };
+
+    const handleCloseParentModal = () => {
+        setShowParentModal(false);
+    };
+
     return (
-        <div className="teacherMotivate">
-            <div className="teacherMotivate__inner">
+        <>
+            <ParentModel
+                isOpen={showParentModal}
+                onClose={handleCloseParentModal}
+            />
+            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
+                <div className="plan__stats">
+                    <div className="stat-card">
+                        <div className="stat-icon redColor">
+                            <i>
+                                <GrStatusGood />
+                            </i>
+                        </div>
+                        <div>
+                            <h3>طلبات اليوم</h3>
+                            <p className="text-2xl font-bold text-red-600">3</p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-icon yellowColor">
+                            <i>
+                                <GrStatusCritical />
+                            </i>
+                        </div>
+                        <div>
+                            <h3>معلقة</h3>
+                            <p className="text-2xl font-bold text-yellow-600">
+                                {filteredStudents.length}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-icon greenColor">
+                            <i>
+                                <PiWhatsappLogoDuotone />
+                            </i>
+                        </div>
+                        <div>
+                            <h3>تم الاعتماد</h3>
+                            <p className="text-2xl font-bold text-green-600">
+                                24
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div
                     className="userProfile__plan"
                     style={{ paddingBottom: "24px", padding: "0" }}
                 >
-                    <div className="userProfile__planTitle">
-                        <h1>
-                            اعتماد الطلاب الجدد{" "}
-                            <span>{filteredStudents.length} طالب</span>
-                        </h1>
-                    </div>
-
                     <div className="plan__header">
                         <div className="plan__ai-suggestion">
                             <i>
@@ -164,7 +211,7 @@ const StudentApproval: React.FC = () => {
                                             )}
                                         </td>
                                         <td>
-                                            <div className="teacherStudent__btns ">
+                                            <div className="teacherStudent__btns">
                                                 <button
                                                     className="teacherStudent__status-btn approve-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1"
                                                     onClick={() =>
@@ -190,7 +237,7 @@ const StudentApproval: React.FC = () => {
                                                 <button
                                                     className="teacherStudent__status-btn otp-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
                                                     onClick={() =>
-                                                        handleSendOTP(item.id)
+                                                        handleSendOTP(item.name)
                                                     }
                                                     disabled={loading}
                                                 >
@@ -198,7 +245,12 @@ const StudentApproval: React.FC = () => {
                                                         <RiMessage2Line />
                                                     </i>
                                                 </button>
-                                                <button className="teacherStudent__status-btn link-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100">
+                                                <button
+                                                    className="teacherStudent__status-btn link-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100"
+                                                    onClick={
+                                                        handleOpenParentModal
+                                                    }
+                                                >
                                                     <IoMdLink />
                                                 </button>
                                             </div>
@@ -217,48 +269,6 @@ const StudentApproval: React.FC = () => {
                                 )}
                             </tbody>
                         </table>
-                    </div>
-
-                    <div className="plan__stats">
-                        <div className="stat-card">
-                            <div className="stat-icon redColor">
-                                <i>
-                                    <GrStatusGood />
-                                </i>
-                            </div>
-                            <div>
-                                <h3>طلبات اليوم</h3>
-                                <p className="text-2xl font-bold text-red-600">
-                                    3
-                                </p>
-                            </div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon yellowColor">
-                                <i>
-                                    <GrStatusCritical />
-                                </i>
-                            </div>
-                            <div>
-                                <h3>معلقة</h3>
-                                <p className="text-2xl font-bold text-yellow-600">
-                                    {filteredStudents.length}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon greenColor">
-                                <i>
-                                    <PiWhatsappLogoDuotone />
-                                </i>
-                            </div>
-                            <div>
-                                <h3>تم الاعتماد</h3>
-                                <p className="text-2xl font-bold text-green-600">
-                                    24
-                                </p>
-                            </div>
-                        </div>
                     </div>
 
                     <div
@@ -287,7 +297,7 @@ const StudentApproval: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

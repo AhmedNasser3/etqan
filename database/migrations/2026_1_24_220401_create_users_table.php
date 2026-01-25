@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -17,8 +14,27 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->foreignId('center_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignId('role_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->enum('status', ['pending', 'active', 'inactive', 'suspended'])->default('pending')->index(); // ✅ pending مضاف
+            $table->string('otp_code', 6)->nullable();
+            $table->timestamp('otp_expires')->nullable();
+            $table->integer('login_attempts')->default(0);
+            $table->timestamp('locked_until')->nullable();
+            $table->string('phone')->nullable()->unique();
+            $table->string('avatar')->nullable();
+            $table->date('birth_date')->nullable();
+            $table->enum('gender', ['male', 'female'])->nullable();
+            $table->timestamp('last_login_at')->nullable();
+            $table->string('last_login_ip')->nullable();
             $table->rememberToken();
             $table->timestamps();
+
+            // ✅ عدلت الـ indexes لتشتغل مع role_id
+            $table->index(['center_id', 'role_id']);
+            $table->index(['center_id', 'status']);
+            $table->index(['email', 'center_id']);
+            $table->index('email_verified_at');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -29,7 +45,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->foreignId('user_id')->nullable()->index()->constrained()->onDelete('cascade');
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
@@ -37,9 +53,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');

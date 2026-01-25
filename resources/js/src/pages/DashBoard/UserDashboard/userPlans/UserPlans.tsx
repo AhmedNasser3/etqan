@@ -12,7 +12,7 @@ const UserPlans: React.FC = () => {
     const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     const [dateFrom, setDateFrom] = useState(
-        sevenDaysAgo.toISOString().split("T")[0]
+        sevenDaysAgo.toISOString().split("T")[0],
     );
     const [dateTo, setDateTo] = useState(today.toISOString().split("T")[0]);
     const [planData, setPlanData] = useState([
@@ -74,7 +74,7 @@ const UserPlans: React.FC = () => {
         },
         {
             id: 4,
-            date: "2026-01-10",
+            date: "2026-01-28",
             day: "السبت",
             hifz: "البقرة ٦١-٦٥",
             review: "البقرة ٣١-٤٠",
@@ -82,7 +82,7 @@ const UserPlans: React.FC = () => {
         },
         {
             id: 2,
-            date: "2026-01-08",
+            date: "2026-01-22",
             day: "الخميس",
             hifz: "البقرة ٥١-٥٥",
             review: "البقرة ١١-٢٠",
@@ -125,11 +125,11 @@ const UserPlans: React.FC = () => {
         const todayDate = new Date(today.toDateString());
         const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
         const dayBeforeYesterday = new Date(
-            today.getTime() - 2 * 24 * 60 * 60 * 1000
+            today.getTime() - 2 * 24 * 60 * 60 * 1000,
         );
         const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
         const dayAfterTomorrow = new Date(
-            today.getTime() + 2 * 24 * 60 * 60 * 1000
+            today.getTime() + 2 * 24 * 60 * 60 * 1000,
         );
 
         if (date.toDateString() === todayDate.toDateString()) return "اليوم";
@@ -145,7 +145,7 @@ const UserPlans: React.FC = () => {
 
     const fetchPlanData = () => {
         const filtered = planData.filter(
-            (item) => item.date >= dateFrom && item.date <= dateTo
+            (item) => item.date >= dateFrom && item.date <= dateTo,
         );
         setFilteredData(filtered);
     };
@@ -224,8 +224,8 @@ const UserPlans: React.FC = () => {
                                         {item.status === "completed"
                                             ? "مكتمل"
                                             : item.status === "active"
-                                            ? "قيد التنفيذ"
-                                            : "قيد الانتظار"}
+                                              ? "قيد التنفيذ"
+                                              : "قيد الانتظار"}
                                     </span>
                                 </td>
                             </tr>

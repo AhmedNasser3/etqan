@@ -5,7 +5,7 @@ import Woman from "../../../assets/images/facelessAvatarWoman.png";
 
 const Register: React.FC = () => {
     const [selectedGender, setSelectedGender] = useState<"male" | "female">(
-        "male"
+        "male",
     );
 
     return (
