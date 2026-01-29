@@ -7,81 +7,151 @@ use App\Models\Auth\User;
 use Illuminate\Http\Request;
 use App\Models\Tenant\Center;
 use App\Services\AuditLogService;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class CenterController extends Controller
 {
     public function index()
     {
-        return response()->json(Center::where('is_active', true)->get());
-    }
+        $centers = Center::select([
+                'id', 'name', 'subdomain', 'email', 'phone', 'logo',
+                'is_active', 'address', 'created_at'
+            ])
+            ->latest()->where('is_active', 1)
+            ->get();
 
-    public function showRegister()
-    {
-        return response()->json(['message' => 'Center registration form']);
+        return response()->json([
+            'success' => true,
+            'data' => $centers->map(function ($center) {
+                return [
+                    'id' => $center->id,
+                    'circleName' => $center->name,
+                    'managerName' => $center->email,
+                    'managerEmail' => $center->email,
+                    'managerPhone' => $center->phone ?? '',
+                    'circleLink' => config('app.url') . '/' . $center->subdomain,
+                    'domain' => $center->subdomain,
+                    'logo' => $center->logo ? Storage::url($center->logo) : 'https://via.placeholder.com/80x80/4F46E5/FFFFFF?text=C',
+                    'countryCode' => '966+',
+                    'hosting_provider' => $center->hosting_provider ?? '',
+                    'is_active' => $center->is_active,
+                    'students_count' => 0,
+                    'address' => $center->address,
+                    'created_at' => $center->created_at?->format('Y-m-d'),
+                ];
+            })
+        ]);
     }
 
     public function register(Request $request)
     {
         $request->validate([
-            'subdomain' => 'required|string|max:50|unique:centers|alpha_dash',
-            'name' => 'required|string|max:255',
-            'admin_email' => 'required|email|unique:users,email',
-            'admin_name' => 'required|string|max:255',
-            'avatar' => 'nullable',
-            'phone' => 'nullable|string|max:20'
+            'circle_name' => 'required|string|max:255',
+            'manager_name' => 'required|string|max:255',
+            'manager_email' => 'required|email|unique:users,email',
+            'manager_phone' => 'required|string|max:20',
+            'hosting_provider' => 'string|max:255',
+            'country_code' => 'required|string|max:5',
+            'domain' => 'nullable|string|max:255|alpha_dash|unique:centers,subdomain',
+            'circle_link' => 'nullable|url',
+            'logo' => 'nullable|image|max:2048',
+            'notes' => 'nullable|string'
         ]);
 
-        $center = Center::create([
-            'name' => $request->name,
-            'subdomain' => $request->subdomain,
-            'email' => $request->admin_email,
-            'avatar' => $request->avatar,
-            'phone' => $request->phone
-        ]);
+        DB::beginTransaction();
+        try {
+            $subdomain = $request->domain ?: Str::slug($request->circle_name);
 
-        $centerOwnerRole = Role::firstOrCreate(
-            ['name' => 'center_owner'],
-            [
-                'title_ar' => 'صاحب المجمع',
-                'title_en' => 'Center Owner',
-                'permissions' => ['*'],
-                'is_system' => true
-            ]
-        );
+            // ✅ حفظ الصورة مع اسم فريد
+            $logoPath = null;
+            if ($request->hasFile('logo')) {
+                $logoPath = $request->file('logo')->store('centers', 'public');
+            }
 
-        $admin = User::create([
-            'name' => $request->admin_name,
-            'email' => $request->admin_email,
-            'password' => Hash::make('12345678'),
-            'center_id' => $center->id,
-            'role_id' => $centerOwnerRole->id,
-            'status' => 'pending',
-            'phone' => $request->phone
-        ]);
+            // ✅ ✅ تغيير هنا - مجمعات السوبر أدمن = is_active = true
+            $center = Center::create([
+                'name' => $request->circle_name,
+                'subdomain' => $subdomain,
+                'email' => $request->manager_email,
+                'phone' => $request->manager_phone,
+                'logo' => $logoPath,
+                'hosting_provider' => $request->hosting_provider,
+                'notes' => $request->notes,
+                'country_code' => $request->country_code, // ✅ أضف country_code
+                'is_active' => true  // ← التعديل الوحيد المطلوب
+            ]);
 
-        AuditLogService::logUserCreate(null, $admin->id, $admin->toArray());
-        AuditLogService::log(null, 'create_center', 'App\\Models\\Tenant\\Center', $center->id, null, $center->toArray());
+            $centerOwnerRole = Role::firstOrCreate(
+                ['name' => 'center_owner'],
+                [
+                    'title_ar' => 'صاحب المجمع',
+                    'title_en' => 'Center Owner',
+                    'permissions' => json_encode(['*']),
+                    'is_system' => true
+                ]
+            );
 
-        return response()->json([
-            'success' => true,
-            'center' => $center,
-            'admin' => $admin,
-            'center_url' => $request->subdomain . '.127.0.0.1:8000',
-            'login_url' => $request->subdomain . '.127.0.0.1:8000/login',
-            'temp_password' => '12345678',
-            'status' => 'pending_approval'
-        ], 201);
+            $admin = User::create([
+                'name' => $request->manager_name,
+                'email' => $request->manager_email,
+                'password' => Hash::make('12345678'),
+                'center_id' => $center->id,
+                'role_id' => $centerOwnerRole->id,
+                'status' => 'pending',
+                'phone' => $request->manager_phone
+            ]);
+
+            AuditLogService::logUserCreate(null, $admin->id, $admin->toArray());
+            AuditLogService::log(null, 'create_center', 'App\\Models\\Tenant\\Center', $center->id, null, $center->toArray());
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تم إنشاء المجمع بنجاح',
+                'center' => $center,
+                'center_url' => $subdomain . '.' . parse_url(config('app.url'), PHP_URL_HOST),
+                'login_url' => $subdomain . '.' . parse_url(config('app.url'), PHP_URL_HOST) . '/login',
+                'temp_password' => '12345678'
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'فشل في إنشاء المجمع: ' . $e->getMessage()
+            ], 422);
+        }
     }
 
     public function show(string $id)
     {
-        $center = Center::with(['users' => function($query) {
-            $query->where('status', 'active');
-        }])->findOrFail($id);
+        $center = Center::select('id', 'name', 'subdomain', 'email', 'phone', 'logo', 'hosting_provider', 'notes', 'is_active', 'address')
+                       ->findOrFail($id);
 
-        return response()->json($center);
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $center->id,
+                'circleName' => $center->name,
+                'managerName' => $center->email,
+                'managerEmail' => $center->email,
+                'managerPhone' => $center->phone ?? '',
+                'circleLink' => config('app.url') . '/' . $center->subdomain,
+                'domain' => $center->subdomain,
+                'logo' => $center->logo ? Storage::url($center->logo) : null,
+                'countryCode' => '966+',
+                'hosting_provider' => $center->hosting_provider ?? '',
+                'notes' => $center->notes ?? '',
+                'is_active' => $center->is_active,
+                'students_count' => 0,
+                'address' => $center->address,
+            ]
+        ]);
     }
 
     public function update(Request $request, string $id)
@@ -90,29 +160,73 @@ class CenterController extends Controller
         $oldData = $center->toArray();
 
         $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:centers,email,' . $id,
-            'phone' => 'sometimes|string|max:20',
-            'address' => 'sometimes|string',
-            'is_active' => 'sometimes|boolean'
+            'circle_name' => 'sometimes|required|string|max:255',
+            'manager_name' => 'sometimes|required|string|max:255',
+            'manager_email' => 'sometimes|required|email',
+            'manager_phone' => 'sometimes|required|string|max:20',
+            'hosting_provider' => 'sometimes|required|string|max:255',
+            'country_code' => 'sometimes|required|string|max:5',
+            'domain' => 'sometimes|string|max:255|alpha_dash|unique:centers,subdomain,' . $id,
+            'circle_link' => 'sometimes|url',
+            'logo' => 'nullable|image|max:2048',
+            'notes' => 'nullable|string'
         ]);
 
-        if ($request->hasFile('logo')) {
-            $center->logo = $request->file('logo')->store('centers', 'public');
+        DB::beginTransaction();
+        try {
+            // ✅ تحديث الصورة بشكل صحيح
+            if ($request->hasFile('logo')) {
+                // حذف الصورة القديمة إذا كانت موجودة
+                if ($center->logo && Storage::disk('public')->exists($center->logo)) {
+                    Storage::disk('public')->delete($center->logo);
+                }
+
+                // حفظ الصورة الجديدة باسم فريد
+                $logoPath = $request->file('logo')->store('centers', 'public');
+                $center->logo = $logoPath;
+            }
+
+            // ✅ تحديث جميع الحقول المطلوبة
+            $updateData = [
+                'name' => $request->circle_name ?? $center->name,
+                'email' => $request->manager_email ?? $center->email,
+                'phone' => $request->manager_phone ?? $center->phone,
+                'hosting_provider' => $request->hosting_provider ?? $center->hosting_provider,
+                'notes' => $request->notes ?? $center->notes,
+                'subdomain' => $request->domain ?? $center->subdomain,
+            ];
+
+            $center->update($updateData);
+
+            AuditLogService::log(
+                auth()->user(),
+                'update_center',
+                'App\\Models\\Tenant\\Center',
+                $center->id,
+                $oldData,
+                $center->fresh()->toArray()
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تم التحديث بنجاح',
+                'data' => $center->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Center update failed: ' . $e->getMessage(), [
+                'center_id' => $id,
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'فشل في التحديث: ' . $e->getMessage()
+            ], 422);
         }
-
-        $center->update($request->only(['name', 'email', 'phone', 'address', 'is_active']));
-
-        AuditLogService::log(
-            auth()->user(),
-            'update_center',
-            'App\\Models\\Tenant\\Center',
-            $center->id,
-            $oldData,
-            $center->fresh()->toArray()
-        );
-
-        return response()->json($center->fresh());
     }
 
     public function destroy(string $id)
@@ -120,7 +234,14 @@ class CenterController extends Controller
         $center = Center::findOrFail($id);
         $oldData = $center->toArray();
 
-        $center->delete();
+        // ✅ حذف الصورة قبل حذف المجمع
+        if ($center->logo && Storage::disk('public')->exists($center->logo)) {
+            Storage::disk('public')->delete($center->logo);
+        }
+
+        DB::transaction(function () use ($center) {
+            $center->delete();
+        });
 
         AuditLogService::log(
             auth()->user(),
@@ -131,7 +252,10 @@ class CenterController extends Controller
             null
         );
 
-        return response()->json();
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حذف المجمع بنجاح'
+        ]);
     }
 
     public function activate(string $id)
@@ -150,7 +274,10 @@ class CenterController extends Controller
             $center->fresh()->toArray()
         );
 
-        return response()->json(['message' => 'تم تفعيل المجمع']);
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تفعيل المجمع بنجاح'
+        ]);
     }
 
     public function deactivate(string $id)
@@ -169,6 +296,9 @@ class CenterController extends Controller
             $center->fresh()->toArray()
         );
 
-        return response()->json(['message' => 'تم إيقاف المجمع']);
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إيقاف المجمع بنجاح'
+        ]);
     }
 }

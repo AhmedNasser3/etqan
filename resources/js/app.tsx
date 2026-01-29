@@ -46,6 +46,8 @@ import StudentAffairs from "./src/pages/DashBoard/Supervisors/Students/StudentsA
 import ReportsDashboard from "./src/pages/DashBoard/Reports/ReportsDashboard";
 import AuditLogPage from "./src/pages/DashBoard/AuditLogs";
 import CenterRegister from "./src/pages/auth/pages/CenterRegister";
+import CentersMangement from "./src/pages/DashBoard/Admin/Center/CentersMangement";
+import Mosque from "./src/pages/DashBoard/Admin/mosque/MosquesManagement";
 
 function MainLayout() {
     return (
@@ -118,7 +120,10 @@ function App() {
                         path="/center-register"
                         element={<CenterRegister />}
                     />
-                    <Route path="/register" element={<Register />} />
+                    <Route
+                        path="/register/:centerSlug?"
+                        element={<Register />}
+                    />
                     <Route path="/login" element={<Login />} />
                     <Route
                         path="/teacher-register"
@@ -172,6 +177,11 @@ function App() {
                         path="report-dashboard"
                         element={<ReportsDashboard />}
                     />
+                    <Route
+                        path="center-manegment"
+                        element={<CentersMangement />}
+                    />
+                    <Route path="mosque-manegment" element={<Mosque />} />
                     <Route path="audit-log" element={<AuditLogPage />} />
                 </Route>
 

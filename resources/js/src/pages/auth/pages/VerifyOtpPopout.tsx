@@ -17,14 +17,17 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
     const { timer, resendCode, isTimerActive } = useOtpTimer();
     const { inputsRef, otpValue, otpFilled, handleInputChange, handleKeyDown } =
         useOtpInputs();
-    const { verified, error, verifyOtp, shieldRef } = useOtpVerification();
+    const { verified, error, loading, verifyOtp } = useOtpVerification();
 
     const handleVerify = () => {
-        verifyOtp(otpValue, onSuccess);
+        const otpString = Array.isArray(otpValue)
+            ? otpValue.join("")
+            : String(otpValue);
+        verifyOtp(otpString, onSuccess);
     };
 
     return (
-        <div className="verifyPopout visible" ref={shieldRef}>
+        <div className="verifyPopout visible">
             <div className="verifyPopout__inner">
                 <div className="verifyPopout__container">
                     <div className="verifyPopout__exit">
@@ -43,6 +46,9 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                                 <ShieldCheckIcon />
                             </i>
                             <h1>التحقق من البريد الإلكتروني</h1>
+                            <p>
+                                ادخل الرمز الذي ظهر في الرسالة أعلاه (4 أرقام)
+                            </p>
                         </div>
 
                         <div
@@ -62,7 +68,7 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                                     onChange={(e) =>
                                         handleInputChange(
                                             index,
-                                            e.target.value.slice(-1)
+                                            e.target.value.slice(-1),
                                         )
                                     }
                                     onKeyDown={(e) => handleKeyDown(index, e)}
@@ -107,8 +113,15 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                         </div>
 
                         <div className="verifyPopout__submitBtnVerfiry">
-                            <button onClick={handleVerify}>
-                                {verified ? "تم التحقق" : "التحقق"}
+                            <button
+                                onClick={handleVerify}
+                                disabled={loading || !otpFilled}
+                            >
+                                {loading
+                                    ? "جاري التحقق..."
+                                    : verified
+                                      ? "تم التحقق"
+                                      : "التحقق"}
                             </button>
                         </div>
                     </div>

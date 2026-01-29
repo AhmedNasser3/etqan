@@ -1,89 +1,45 @@
-// import React from "react";
-// import VerifyOtp from "../pages/VerifyOtp";
+import React, { FormEvent } from "react";
+import { useStudentEnrollment } from "../hooks/useStudentEnrollment";
 
-// interface EmailFormProps {
-//     gender: "male" | "female";
-// }
-
-// const EmailForm: React.FC<EmailFormProps> = ({ gender }) => {
-//     return (
-//         <div className="inputs">
-//             <div className="inputs__inner">
-//                 <div className="inputs__container">
-//                     <div className="inputs__email">
-//                         <label>البريد الالكتروني</label>
-//                         <input
-//                             type="email"
-//                             name="email"
-//                             id="email"
-//                             placeholder="ah******@gmail.com"
-//                         />
-//                     </div>
-//                     <div
-//                         className={`inputs__name ${
-//                             gender === "female" ? "female" : ""
-//                         }`}
-//                     >
-//                         <div className="inputs__Lastname">
-//                             <label>الأسم الثاني</label>
-//                             <input
-//                                 type="text"
-//                                 name="last_name"
-//                                 id="last_name"
-//                                 placeholder={
-//                                     gender === "female"
-//                                         ? "... التميمي"
-//                                         : "... التميمي"
-//                                 }
-//                             />
-//                         </div>
-//                         <div className="inputs__Firstname">
-//                             <label>الأسم الاول</label>
-//                             <input
-//                                 type="text"
-//                                 name="first_name"
-//                                 id="first_name"
-//                                 placeholder={
-//                                     gender === "male" ? "... احمد" : "... فاطمة"
-//                                 }
-//                             />
-//                         </div>
-//                     </div>
-//                     <div className="inputs__email">
-//                         <label>كلمة المرور</label>
-//                         <input
-//                             type="password"
-//                             name="password"
-//                             id="password"
-//                             placeholder="********"
-//                         />
-//                     </div>
-//                     <div className="inputs__email">
-//                         <label>تأكيد كلمة المرور</label>
-//                         <input
-//                             type="password"
-//                             name="confirm_password"
-//                             id="confirm_password"
-//                             placeholder="********"
-//                         />
-//                     </div>
-//                     <VerifyOtp />
-//                 </div>
-//             </div>
-//         </div>
-//     );
-// };
-
-import React from "react";
-import VerifyOtp from "../pages/VerifyOtp";
 interface StudentEnrollmentProps {
     gender: "male" | "female";
+    centerSlug?: string | null;
 }
-const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
+
+const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({
+    gender,
+    centerSlug,
+}) => {
+    const { handleSubmit, isLoading, error, success, resetForm } =
+        useStudentEnrollment();
+
+    const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        await handleSubmit(formData);
+    };
+
     return (
         <div className="inputs">
+            {centerSlug && (
+                <div
+                    className="center-info"
+                    style={{
+                        marginBottom: "20px",
+                        padding: "15px",
+                        background: "#e3f2fd",
+                        borderRadius: "8px",
+                        textAlign: "center",
+                    }}
+                >
+                    <h3>
+                        📍 تسجيل في مجمع: <strong>{centerSlug}</strong>
+                    </h3>
+                </div>
+            )}
+
             <div className="inputs__inner">
-                <div className="inputs__container">
+                <form onSubmit={onSubmit} className="inputs__container">
                     <div className="inputs__name">
                         <div className="inputs__Lastname">
                             <label>اللقب/الاسم الثاني</label>
@@ -131,20 +87,24 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                             />
                         </div>
                     </div>
+
                     <div className="inputs__verifyOTPBirth">
                         <div className="inputs__verifyOTP">
                             <label>المرحلة الدراسية</label>
-                            <select name="grade_level" id="grade_level">
+                            <select
+                                name="grade_level"
+                                id="grade_level"
+                                required
+                            >
                                 <option value="">اختر المرحلة</option>
                                 <option value="elementary">ابتدائي</option>
                                 <option value="middle">متوسط</option>
                                 <option value="high">ثانوي</option>
                             </select>
                         </div>
-
                         <div className="inputs__verifyOTP">
                             <label>الحلقة المناسبة</label>
-                            <select name="circle" id="circle">
+                            <select name="circle" id="circle" required>
                                 <option value="">اختر الحلقة</option>
                                 <option value="circle-1">
                                     حلقة المبتدئين 1
@@ -156,6 +116,7 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                             </select>
                         </div>
                     </div>
+
                     <div className="inputs__verifyOTP">
                         <label>مستوى القراءة/الحفظ (اختياري)</label>
                         <input
@@ -165,6 +126,7 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                             placeholder="مثال: جُزء عم + 5 أجزاء حفظ"
                         />
                     </div>
+
                     <div className="inputs__verifyOTPBirth">
                         <div className="inputs__verifyOTP">
                             <label>وقت الحلقة (اختياري)</label>
@@ -174,7 +136,6 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                                 <option value="maghrib">المغرب</option>
                             </select>
                         </div>
-
                         <div className="inputs__verifyOTP">
                             <label>الحالة الصحية</label>
                             <select
@@ -193,6 +154,7 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                             </select>
                         </div>
                     </div>
+
                     <div className="inputs__verifyOTPBirth">
                         <div className="inputs__email">
                             <label>بريد ولي الأمر الإلكتروني *</label>
@@ -207,49 +169,37 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                         <div className="inputs__verifyOTP">
                             <label>جوال ولي الأمر *</label>
                             <div className="inputs__phone-container">
-                                <div className="inputs__verifyOTPBirth">
-                                    <select
-                                        name="guardian_country_code"
-                                        id="guardian_country_code"
-                                    >
-                                        <option value="966">966+</option>
-                                        <option value="20">20+</option>
-                                        <option value="966">971+</option>
-                                    </select>
-                                    <input
-                                        required
-                                        type="tel"
-                                        name="guardian_phone"
-                                        id="guardian_phone"
-                                        placeholder="50 123 4567"
-                                        className="inputs__phone-input"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="inputs__verifyOTP">
-                        <label>جوال الطالب (اختياري)</label>
-                        <div className="inputs__phone-container">
-                            <div className="inputs__verifyOTPBirth">
                                 <select
-                                    name="student_country_code"
-                                    id="student_country_code"
+                                    name="guardian_country_code"
+                                    id="guardian_country_code"
+                                    required
                                 >
                                     <option value="966">966+</option>
                                     <option value="20">20+</option>
-                                    <option value="966">971+</option>
+                                    <option value="971">971+</option>
                                 </select>
                                 <input
+                                    required
                                     type="tel"
-                                    name="student_phone"
-                                    id="student_phone"
-                                    placeholder="50 987 6543"
+                                    name="guardian_phone"
+                                    id="guardian_phone"
+                                    placeholder="50 123 4567"
                                     className="inputs__phone-input"
                                 />
                             </div>
                         </div>
                     </div>
+
+                    <div className="inputs__verifyOTP">
+                        <label>بريد الطالب الإلكتروني (اختياري)</label>
+                        <input
+                            type="email"
+                            name="student_email"
+                            id="student_email"
+                            placeholder="ahmed@example.com"
+                        />
+                    </div>
+
                     <div className="inputs__verifyOTP">
                         <label>ملاحظات</label>
                         <textarea
@@ -259,10 +209,56 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({ gender }) => {
                             placeholder="ملاحظات إضافية..."
                         />
                     </div>
+
+                    <input type="hidden" name="gender" value={gender} />
+
+                    {error && (
+                        <div
+                            className="error-message"
+                            style={{
+                                color: "#dc3545",
+                                margin: "15px 0",
+                                padding: "12px 16px",
+                                background: "#f8d7da",
+                                borderRadius: "8px",
+                                border: "1px solid #f5c6cb",
+                            }}
+                        >
+                            ❌ {error}
+                        </div>
+                    )}
+
+                    {success && (
+                        <div
+                            className="success-message"
+                            style={{
+                                color: "#155724",
+                                margin: "15px 0",
+                                padding: "12px 16px",
+                                background: "#d4edda",
+                                borderRadius: "8px",
+                                border: "1px solid #c3e6cb",
+                            }}
+                        >
+                            ✅ تم التسجيل بنجاح! سيتم مراجعة الطلب قريباً.
+                        </div>
+                    )}
+
                     <div className="inputs__submitBtn">
-                        <button type="submit">إرسال طلب التسجيل</button>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            style={{
+                                opacity: isLoading ? 0.7 : 1,
+                                cursor: isLoading ? "not-allowed" : "pointer",
+                            }}
+                        >
+                            {isLoading
+                                ? "⏳ جاري التسجيل..."
+                                : "📤 إرسال طلب التسجيل"}
+                        </button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     );

@@ -10,15 +10,17 @@ const Login: React.FC = () => {
     const [email, setEmail] = useState("");
     const [isVerified, setIsVerified] = useState(false);
 
-    const { verified } = useOtpVerification();
+    const { verified, loading, sendOtp, verifyOtp } = useOtpVerification(email);
 
-    const handleOpenPopup = () => {
+    const handleOpenPopup = async () => {
+        await sendOtp(email);
         setShowPopup(true);
     };
 
     const handleVerificationSuccess = () => {
         setIsVerified(true);
         setShowPopup(false);
+        window.location.href = "/";
     };
 
     return (
@@ -51,7 +53,7 @@ const Login: React.FC = () => {
                                                         value={email}
                                                         onChange={(e) =>
                                                             setEmail(
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
                                                     />
@@ -68,10 +70,13 @@ const Login: React.FC = () => {
                                                     onClick={handleOpenPopup}
                                                     disabled={
                                                         email.length === 0 ||
+                                                        loading ||
                                                         isVerified
                                                     }
                                                 >
-                                                    إرسال OTP للبريد الإلكتروني
+                                                    {loading
+                                                        ? "جاري الإرسال..."
+                                                        : "إرسال OTP للبريد الإلكتروني"}
                                                 </button>
                                             </div>
                                             <div

@@ -9,10 +9,18 @@ import { IoSettings } from "react-icons/io5";
 import { BsTable } from "react-icons/bs";
 import { MdCallMade } from "react-icons/md";
 import { FaCircleQuestion } from "react-icons/fa6";
+import SettingModel from "./models/SettingModel";
 
 const Navbar: React.FC = () => {
     const [isRotated, setIsRotated] = useState(false);
     const [dropdowns, setDropdowns] = useState<{ [key: string]: boolean }>({});
+    const [showSettingModel, setShowSettingModel] = useState(false);
+    const handleOpenSettingModel = () => {
+        setShowSettingModel(true);
+    };
+    const handleClosedSettingModel = () => {
+        setShowSettingModel(false);
+    };
 
     const toggleDropdown = (key: string) => {
         setDropdowns((prev) => ({
@@ -31,6 +39,10 @@ const Navbar: React.FC = () => {
             onClick={closeAllDropdowns}
         >
             <div className="navbar__inner">
+                <SettingModel
+                    isOpen={showSettingModel}
+                    onClose={handleClosedSettingModel}
+                />
                 <div className="navbar__container">
                     <div
                         className={`navbar__toggle ${
@@ -94,12 +106,14 @@ const Navbar: React.FC = () => {
                                         ادارة معلم
                                     </li>
                                 </a>
-                                <a href="#">
-                                    <li>
-                                        <IoSettings />
-                                        اعدادات
-                                    </li>
-                                </a>
+                                <button onClick={handleOpenSettingModel}>
+                                    <a href="#">
+                                        <li>
+                                            <IoSettings />
+                                            اعدادات
+                                        </li>
+                                    </a>
+                                </button>
                                 <a href="/user-dashboard/plans">
                                     <li>
                                         <BsTable />
