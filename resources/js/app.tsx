@@ -1,5 +1,11 @@
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import {
+    BrowserRouter,
+    Routes,
+    Route,
+    Outlet,
+    Navigate,
+} from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import "./src/assets/scss/main.scss";
 import Navbar from "./src/layouts/navbar";
@@ -49,21 +55,6 @@ import CenterRegister from "./src/pages/auth/pages/CenterRegister";
 import CentersMangement from "./src/pages/DashBoard/Admin/Center/CentersMangement";
 import Mosque from "./src/pages/DashBoard/Admin/mosque/MosquesManagement";
 
-function MainLayout() {
-    return (
-        <>
-            <Navbar />
-            <Sidebar />
-            <main className="page">
-                <div className="page__container">
-                    <Outlet />
-                </div>
-            </main>
-            <Footer />
-        </>
-    );
-}
-
 function UserLayout() {
     return (
         <>
@@ -78,7 +69,7 @@ function UserLayout() {
     );
 }
 
-function TeacehrLayout() {
+function TeacherLayout() {
     return (
         <>
             <TeacherNavbar />
@@ -105,106 +96,150 @@ function CenterLayout() {
         </>
     );
 }
+function DashLayout() {
+    return (
+        <>
+            <Navbar />
+            <Sidebar />
+            <main className="page">
+                <div className="page__container">
+                    <Outlet />
+                </div>
+            </main>
+        </>
+    );
+}
 
 function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route element={<MainLayout />}>
-                    <Route path="/" element={<Dashboard />} />
+                <Route path="/*" element={<DashLayout />}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="teacher-view" element={<TestimonialsView />} />
                     <Route
-                        path="/teacher-view"
-                        element={<TestimonialsView />}
-                    />
-                    <Route
-                        path="/center-register"
+                        path="center-register"
                         element={<CenterRegister />}
                     />
                     <Route
-                        path="/register/:centerSlug?"
+                        path="register/:centerSlug?"
                         element={<Register />}
                     />
-                    <Route path="/login" element={<Login />} />
+                    <Route path="login" element={<Login />} />
                     <Route
-                        path="/teacher-register"
+                        path=":centerSlug?/teacher-register"
                         element={<TeacherRegister />}
                     />
                 </Route>
 
-                <Route path="/center-dashboard" element={<CenterLayout />}>
-                    <Route index element={<CenterDashboard />} />
+                <Route path="/:complexSlug?">
+                    <Route path="center-dashboard/*" element={<CenterLayout />}>
+                        <Route index element={<CenterDashboard />} />
+                        <Route
+                            path="students/approval"
+                            element={<StudentApproval />}
+                        />
+                        <Route
+                            path="staff-attendance"
+                            element={<StaffAttendance />}
+                        />
+                        <Route path="domian-links" element={<DomainLinks />} />
+                        <Route
+                            path="staff-approval"
+                            element={<StaffApproval />}
+                        />
+                        <Route path="user-suspend" element={<UserSuspend />} />
+                        <Route
+                            path="financial-dashboard"
+                            element={<FinancialDashboard />}
+                        />
+                        <Route
+                            path="payroll-exports"
+                            element={<PayrollExport />}
+                        />
+                        <Route
+                            path="payroll-reports"
+                            element={<PayrollReports />}
+                        />
+                        <Route
+                            path="payroll-settings"
+                            element={<PayrollSettings />}
+                        />
+                        <Route
+                            path="education-supervisor"
+                            element={<EducationalSupervisor />}
+                        />
+                        <Route
+                            path="motivation-supervisor"
+                            element={<MotivationSupervisor />}
+                        />
+                        <Route
+                            path="rooms-supervisor"
+                            element={<ListeningRooms />}
+                        />
+                        <Route
+                            path="student-supervisor"
+                            element={<StudentAffairs />}
+                        />
+                        <Route
+                            path="report-dashboard"
+                            element={<ReportsDashboard />}
+                        />
+                        <Route
+                            path="center-manegment"
+                            element={<CentersMangement />}
+                        />
+                        <Route path="mosque-manegment" element={<Mosque />} />
+                        <Route path="audit-log" element={<AuditLogPage />} />
+                    </Route>
+
                     <Route
-                        path="students/approval"
-                        element={<StudentApproval />}
-                    />
-                    <Route
-                        path="staff-attendance"
-                        element={<StaffAttendance />}
-                    />
-                    <Route path="domian-links" element={<DomainLinks />} />
-                    <Route path="staff-approval" element={<StaffApproval />} />
-                    <Route path="user-suspend" element={<UserSuspend />} />
-                    <Route
-                        path="financial-dashboard"
-                        element={<FinancialDashboard />}
-                    />
-                    <Route path="payroll-exports" element={<PayrollExport />} />
-                    <Route
-                        path="payroll-reports"
-                        element={<PayrollReports />}
-                    />
-                    <Route
-                        path="payroll-settings"
-                        element={<PayrollSettings />}
-                    />
-                    <Route
-                        path="education-supervisor"
-                        element={<EducationalSupervisor />}
-                    />
-                    <Route
-                        path="motivation-supervisor"
-                        element={<MotivationSupervisor />}
-                    />
-                    <Route
-                        path="rooms-supervisor"
-                        element={<ListeningRooms />}
-                    />
-                    <Route
-                        path="student-supervisor"
-                        element={<StudentAffairs />}
-                    />
-                    <Route
-                        path="report-dashboard"
-                        element={<ReportsDashboard />}
-                    />
-                    <Route
-                        path="center-manegment"
-                        element={<CentersMangement />}
-                    />
-                    <Route path="mosque-manegment" element={<Mosque />} />
-                    <Route path="audit-log" element={<AuditLogPage />} />
+                        path="teacher-dashboard/*"
+                        element={<TeacherLayout />}
+                    >
+                        <Route index element={<TeacherDashboard />} />
+                        <Route path="students" element={<TeacherStudents />} />
+                        <Route path="plan" element={<TeacherPlan />} />
+                        <Route
+                            path="motivation"
+                            element={<TeacherMotivate />}
+                        />
+                        <Route
+                            path="attendance"
+                            element={<TeacherAttendance />}
+                        />
+                        <Route path="room" element={<TeacherRoom />} />
+                        <Route path="reports" element={<TeacherReports />} />
+                        <Route path="certificates" element={<Certificate />} />
+                    </Route>
+
+                    <Route path="user-dashboard/*" element={<UserLayout />}>
+                        <Route index element={<UserDashboard />} />
+                        <Route path="plans" element={<Plans />} />
+                        <Route
+                            path="user-progress"
+                            element={<UserProgress />}
+                        />
+                        <Route
+                            path="user-complexes"
+                            element={<UserComplexes />}
+                        />
+                        <Route
+                            path="user-listesning"
+                            element={<UserListening />}
+                        />
+                        <Route
+                            path="user-presence"
+                            element={<UserPresence />}
+                        />
+                        <Route
+                            path="user-certificate"
+                            element={<Certificate />}
+                        />
+                    </Route>
                 </Route>
 
-                <Route path="/teacher-dashboard" element={<TeacehrLayout />}>
-                    <Route index element={<TeacherDashboard />} />
-                    <Route path="students" element={<TeacherStudents />} />
-                    <Route path="plan" element={<TeacherPlan />} />
-                    <Route path="motivation" element={<TeacherMotivate />} />
-                    <Route path="attendance" element={<TeacherAttendance />} />
-                    <Route path="room" element={<TeacherRoom />} />
-                    <Route path="reports" element={<TeacherReports />} />
-                    <Route path="certificates" element={<Certificate />} />
-                </Route>
-
-                <Route path="/user-dashboard" element={<UserLayout />}>
-                    <Route index element={<UserDashboard />} />
-                    <Route path="plans" element={<Plans />} />
-                    <Route path="user-progress" element={<UserProgress />} />
-                    <Route path="user-complexes" element={<UserComplexes />} />
-                    <Route path="user-listesning" element={<UserListening />} />
-                    <Route path="user-presence" element={<UserPresence />} />
-                    <Route path="user-certificate" element={<Certificate />} />
-                </Route>
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Toaster
                 position="top-right"
@@ -222,5 +257,5 @@ function App() {
     );
 }
 
-const root = createRoot(document.getElementById("app") as HTMLElement);
+const root = createRoot(document.getElementById("app")!);
 root.render(<App />);

@@ -1,4 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import { usePendingStudents } from "./hooks/usePendingStudents";
+import {
+    useConfirmStudent,
+    useRejectStudent,
+} from "./hooks/usePendingStudents";
 import toast from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
@@ -7,7 +12,7 @@ import { RiMessage2Line } from "react-icons/ri";
 import { FiXCircle } from "react-icons/fi";
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
 import { IoMdLink } from "react-icons/io";
-import { FiUpload, FiDownload, FiFileText } from "react-icons/fi";
+import { FiDatabase } from "react-icons/fi";
 import ParentModel from "./modals/ParentModel";
 
 declare global {
@@ -17,192 +22,132 @@ declare global {
 }
 
 const StudentApproval: React.FC = () => {
-    const [students, setStudents] = useState([
-        {
-            id: 1,
-            name: "محمد أحمد محمد علي",
-            idNumber: "1234567890",
-            age: "10 سنوات",
-            circle: "حفظ الجزء 30",
-            date: "2026-01-15",
-            status: "pending",
-            guardianEmail: "",
-            img: "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png",
-        },
-        {
-            id: 2,
-            name: "عبدالله صالح عبدالرحمن",
-            idNumber: "0987654321",
-            age: "11 سنة",
-            circle: "مراجعة الجزء 15",
-            date: "2026-01-14",
-            status: "pending",
-            guardianEmail: "",
-            img: "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png",
-        },
-        {
-            id: 3,
-            name: "فاطمة محمد أحمد السيد",
-            idNumber: "1122334455",
-            age: "9 سنوات",
-            circle: "حفظ الجزء 30",
-            date: "2026-01-16",
-            status: "pending",
-            guardianEmail: "",
-            img: "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png",
-        },
-    ]);
-    const [search, setSearch] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [showParentModal, setShowParentModal] = useState(false);
-    const [excelLoading, setExcelLoading] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const {
+        students,
+        loading: studentsLoading,
+        refetch,
+    } = usePendingStudents();
+    const { confirmStudent, loading: confirmLoading } = useConfirmStudent();
+    const { rejectStudent, loading: rejectLoading } = useRejectStudent();
 
+    const [search, setSearch] = useState("");
+    const [showParentModal, setShowParentModal] = useState(false);
+    const [debugInfo, setDebugInfo] = useState<any>(null);
+    const [selectedStudent, setSelectedStudent] = useState<any>(null);
+
+    //  Fixed filtering - handle missing nested properties safely
     const filteredStudents = students.filter(
-        (student) =>
-            student.name.includes(search) ||
-            student.idNumber.includes(search) ||
-            student.circle.includes(search),
+        (student: any) =>
+            student.name?.toLowerCase().includes(search.toLowerCase()) ||
+            student.id_number?.toLowerCase().includes(search.toLowerCase()) ||
+            student.grade_level?.toLowerCase().includes(search.toLowerCase()) ||
+            student.circle?.toLowerCase().includes(search.toLowerCase()) ||
+            student.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+            student.guardian?.name
+                ?.toLowerCase()
+                .includes(search.toLowerCase()),
     );
 
-    // تحميل Excel مع دعم العربية الكامل
-    const handleExportExcel = () => {
-        if (typeof window.XLSX === "undefined") {
-            toast.error("المكتبة غير محملة. تحقق من CDN في index.html");
-            return;
-        }
+    useEffect(() => {
+        refetch();
+    }, []);
 
-        const worksheet = window.XLSX.utils.json_to_sheet(filteredStudents, {
-            header: [
-                "id",
-                "name",
-                "idNumber",
-                "age",
-                "circle",
-                "date",
-                "status",
-                "guardianEmail",
-                "img",
-            ],
-        });
-
-        // ضبط العرض للأعمدة العربية
-        const colWidths = [
-            { wch: 10 }, // id
-            { wch: 30 }, // name
-            { wch: 15 }, // idNumber
-            { wch: 12 }, // age
-            { wch: 20 }, // circle
-            { wch: 15 }, // date
-            { wch: 15 }, // status
-            { wch: 25 }, // guardianEmail
-            { wch: 40 }, // img
-        ];
-        worksheet["!cols"] = colWidths;
-
-        const workbook = window.XLSX.utils.book_new();
-        window.XLSX.utils.book_append_sheet(workbook, worksheet, "طلاب_معلقين");
-
-        // إضافة BOM لدعم العربية
-        window.XLSX.writeFile(workbook, "طلاب_معلقين.xlsx");
-        toast.success("✅ تم تحميل Excel مع دعم العربية الكامل!");
-    };
-
-    // رفع ملف Excel مع دعم العربية
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file || typeof window.XLSX === "undefined") {
-            toast.error("المكتبة غير محملة أو لا يوجد ملف");
-            return;
-        }
-
-        setExcelLoading(true);
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = window.XLSX.read(data, {
-                    type: "array",
-                    codepage: 65001, // UTF-8
-                });
-
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData =
-                    window.XLSX.utils.sheet_to_json<Array<any>>(firstSheet);
-
-                const newStudents = jsonData
-                    .map((row, index) => ({
-                        id: row.id || students.length + index + 1,
-                        name: row.name || "",
-                        idNumber: row.idNumber || row["رقم الهوية"] || "",
-                        age: row.age || row["العمر"] || "",
-                        circle: row.circle || row["الحلقة المطلوبة"] || "",
-                        date:
-                            row.date || new Date().toISOString().split("T")[0],
-                        status: row.status || "pending",
-                        guardianEmail: row.guardianEmail || "",
-                        img:
-                            row.img ||
-                            "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png",
-                    }))
-                    .filter((s) => s.name.trim()); // تجاهل الصفوف الفارغة
-
-                setStudents((prev) => [...prev, ...newStudents]);
-                toast.success(`✅ تم رفع ${newStudents.length} طالب بنجاح!`);
-            } catch (error) {
-                toast.error("❌ خطأ في قراءة الملف");
-            } finally {
-                setExcelLoading(false);
-                if (fileInputRef.current) fileInputRef.current.value = "";
-            }
-        };
-
-        reader.readAsArrayBuffer(file);
-    };
-
-    // باقي الدوال
-    const handleApprove = (id: number) => {
-        setLoading(true);
-        setTimeout(() => {
-            setStudents((prev) =>
-                prev.map((s) =>
-                    s.id === id ? { ...s, status: "approved" } : s,
-                ),
+    //  Debug button handler
+    const handleDebug = async () => {
+        try {
+            const response = await fetch(
+                "http://127.0.0.1:8000/api/v1/centers/pending-students-debug",
             );
-            setLoading(false);
-            toast.success("تم اعتماد الطالب بنجاح!");
-        }, 1000);
+            const data = await response.json();
+            setDebugInfo(data);
+            toast.success("تم جلب معلومات التشخيص");
+        } catch (error) {
+            toast.error("خطأ في جلب بيانات التشخيص");
+        }
     };
 
-    const handleReject = (id: number) => {
-        setStudents((prev) => prev.filter((s) => s.id !== id));
-        toast.error("تم رفض طلب الطالب");
+    const handleApprove = async (id: number) => {
+        try {
+            await confirmStudent(id);
+            toast.success(" تم اعتماد الطالب بنجاح!");
+            refetch();
+        } catch (error: any) {
+            toast.error(
+                ` خطأ في اعتماد الطالب: ${error.message || "خطأ غير معروف"}`,
+            );
+        }
+    };
+
+    const handleReject = async (id: number) => {
+        if (!confirm("هل أنت متأكد من رفض طلب هذا الطالب؟")) return;
+
+        try {
+            await rejectStudent(id);
+            toast.success(" تم رفض طلب الطالب بنجاح");
+            refetch();
+        } catch (error: any) {
+            toast.error(
+                `❌ خطأ في رفض الطالب: ${error.message || "خطأ غير معروف"}`,
+            );
+        }
     };
 
     const handleSendOTP = (name: string) => {
-        setLoading(true);
-        setTimeout(() => {
-            toast.success(`تم إرسال رقم التحقق إلى ولي أمر الطالب ${name}`);
-            setLoading(false);
-        }, 1000);
+        toast(`📱 تم إرسال رمز التحقق إلى ${name}`, {
+            duration: 4000,
+            position: "top-right",
+        });
     };
 
-    const handleOpenParentModal = () => {
+    const handleOpenParentModal = (student: any) => {
+        setSelectedStudent(student);
         setShowParentModal(true);
     };
 
     const handleCloseParentModal = () => {
         setShowParentModal(false);
+        setSelectedStudent(null);
     };
+
+    if (studentsLoading) {
+        return (
+            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
+                <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-lg text-gray-600">
+                        جاري تحميل الطلاب المعلقين...
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>
             <ParentModel
                 isOpen={showParentModal}
                 onClose={handleCloseParentModal}
+                student={selectedStudent}
             />
             <div className="userProfile__plan" style={{ padding: "0 15%" }}>
+                {/*  Debug Section */}
+                {debugInfo && (
+                    <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                        <h3 className="font-bold text-yellow-800 mb-2">
+                            🔍 معلومات التشخيص:
+                        </h3>
+                        <pre className="text-xs bg-yellow-100 p-3 rounded text-yellow-900 overflow-auto max-h-40">
+                            {JSON.stringify(debugInfo, null, 2)}
+                        </pre>
+                        <button
+                            onClick={() => setDebugInfo(null)}
+                            className="mt-2 text-xs text-yellow-700 underline"
+                        >
+                            إخفاء التشخيص
+                        </button>
+                    </div>
+                )}
+
                 <div className="plan__stats">
                     <div className="stat-card">
                         <div className="stat-icon redColor">
@@ -211,8 +156,10 @@ const StudentApproval: React.FC = () => {
                             </i>
                         </div>
                         <div>
-                            <h3>طلبات اليوم</h3>
-                            <p className="text-2xl font-bold text-red-600">3</p>
+                            <h3>إجمالي الطلاب</h3>
+                            <p className="text-2xl font-bold text-red-600">
+                                {students.length}
+                            </p>
                         </div>
                     </div>
                     <div className="stat-card">
@@ -235,52 +182,17 @@ const StudentApproval: React.FC = () => {
                             </i>
                         </div>
                         <div>
-                            <h3>تم الاعتماد</h3>
+                            <h3>من المجمعات</h3>
                             <p className="text-2xl font-bold text-green-600">
-                                24
+                                {
+                                    students.filter((s: any) => s.center?.name)
+                                        .length
+                                }
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* أزرار Excel مع دعم عربي كامل */}
-                <div className="flex justify-between items-center mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg border border-blue-100">
-                    <div className="flex space-x-4 space-x-reverse">
-                        <button
-                            onClick={handleExportExcel}
-                            className="flex items-center space-x-2 space-x-reverse bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg flex-row-reverse text-lg font-medium"
-                            disabled={
-                                excelLoading || filteredStudents.length === 0
-                            }
-                        >
-                            <FiDownload className="text-xl" />
-                            <span>تحميل Excel 📥</span>
-                        </button>
-                        <label className="flex items-center space-x-2 space-x-reverse bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all cursor-pointer shadow-lg flex-row-reverse text-lg font-medium">
-                            <FiUpload className="text-xl" />
-                            <span>رفع Excel 📤</span>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".xlsx,.xls"
-                                onChange={handleFileUpload}
-                                className="hidden"
-                                disabled={excelLoading}
-                            />
-                        </label>
-                    </div>
-                    {excelLoading && (
-                        <div className="flex items-center space-x-2 space-x-reverse text-blue-600 font-semibold">
-                            <FiFileText className="animate-spin" />
-                            <span>جاري معالجة الملف...</span>
-                        </div>
-                    )}
-                    <div className="text-xs text-gray-500">
-                        دعم العربية 100% ✓ UTF-8 ✓ Excel كامل
-                    </div>
-                </div>
-
-                {/* باقي الكود زي ما هو */}
                 <div
                     className="userProfile__plan"
                     style={{ paddingBottom: "24px", padding: "0" }}
@@ -316,55 +228,79 @@ const StudentApproval: React.FC = () => {
                                     <th>الصورة</th>
                                     <th>الاسم الرباعي</th>
                                     <th>رقم الهوية</th>
-                                    <th>العمر</th>
-                                    <th>الحلقة المطلوبة</th>
+                                    <th>الصف</th>
+                                    <th>الحلقة</th>
+                                    <th>المجمع</th>
                                     <th>تاريخ التقديم</th>
                                     <th>حالة الولي أمر</th>
                                     <th>الإجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredStudents.map((item) => (
+                                {filteredStudents.map((item: any) => (
                                     <tr
                                         key={item.id}
-                                        className={`plan__row ${item.status}`}
+                                        className={`plan__row ${item.user?.status === "pending" ? "pending" : ""}`}
                                     >
                                         <td className="teacherStudent__img">
                                             <div className="w-12 h-12 rounded-full overflow-hidden">
                                                 <img
-                                                    src={item.img}
-                                                    alt={item.name}
+                                                    src={
+                                                        item.user?.avatar ||
+                                                        item.avatar ||
+                                                        "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png"
+                                                    }
+                                                    alt={
+                                                        item.name ||
+                                                        item.user?.name
+                                                    }
                                                     className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src =
+                                                            "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png";
+                                                    }}
                                                 />
                                             </div>
                                         </td>
-                                        <td>{item.name}</td>
-                                        <td>{item.idNumber}</td>
-                                        <td>{item.age}</td>
-                                        <td>{item.circle}</td>
-                                        <td>{item.date}</td>
                                         <td>
-                                            {item.guardianEmail ? (
-                                                <span className="text-green-600 font-medium">
-                                                    مربوط
-                                                </span>
-                                            ) : (
-                                                <span className="text-orange-600 font-medium">
-                                                    معلق
-                                                </span>
-                                            )}
+                                            {item.name ||
+                                                item.user?.name ||
+                                                "غير محدد"}
+                                        </td>
+                                        <td>{item.id_number || "-"}</td>
+                                        <td>{item.grade_level || "-"}</td>
+                                        <td>{item.circle || "-"}</td>
+                                        <td>{item.center?.name || "-"}</td>
+                                        <td>
+                                            {item.created_at
+                                                ? new Date(
+                                                      item.created_at,
+                                                  ).toLocaleDateString("ar-EG")
+                                                : new Date().toLocaleDateString(
+                                                      "ar-EG",
+                                                  )}
+                                        </td>
+                                        <td>
+                                            <span className="text-green-600 font-medium">
+                                                {item.guardian?.name ||
+                                                    "غير محدد"}
+                                            </span>
                                         </td>
                                         <td>
                                             <div className="teacherStudent__btns">
                                                 <button
-                                                    className="teacherStudent__status-btn approve-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1"
+                                                    className="teacherStudent__status-btn approve-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 hover:bg-green-50"
                                                     onClick={() =>
                                                         handleApprove(item.id)
                                                     }
-                                                    disabled={loading}
+                                                    disabled={
+                                                        confirmLoading ||
+                                                        studentsLoading
+                                                    }
+                                                    title="اعتماد الطالب"
                                                 >
-                                                    {loading ? (
-                                                        "..."
+                                                    {confirmLoading ? (
+                                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                                     ) : (
                                                         <IoCheckmarkCircleOutline />
                                                     )}
@@ -374,16 +310,26 @@ const StudentApproval: React.FC = () => {
                                                     onClick={() =>
                                                         handleReject(item.id)
                                                     }
-                                                    disabled={loading}
+                                                    disabled={
+                                                        rejectLoading ||
+                                                        studentsLoading
+                                                    }
+                                                    title="رفض الطالب"
                                                 >
                                                     <FiXCircle />
                                                 </button>
                                                 <button
                                                     className="teacherStudent__status-btn otp-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
                                                     onClick={() =>
-                                                        handleSendOTP(item.name)
+                                                        handleSendOTP(
+                                                            item.guardian
+                                                                ?.name ||
+                                                                item.name ||
+                                                                "",
+                                                        )
                                                     }
-                                                    disabled={loading}
+                                                    disabled={studentsLoading}
+                                                    title="إرسال OTP"
                                                 >
                                                     <i>
                                                         <RiMessage2Line />
@@ -391,9 +337,12 @@ const StudentApproval: React.FC = () => {
                                                 </button>
                                                 <button
                                                     className="teacherStudent__status-btn link-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100"
-                                                    onClick={
-                                                        handleOpenParentModal
+                                                    onClick={() =>
+                                                        handleOpenParentModal(
+                                                            item,
+                                                        )
                                                     }
+                                                    title="بيانات ولي الأمر"
                                                 >
                                                     <IoMdLink />
                                                 </button>
@@ -401,16 +350,27 @@ const StudentApproval: React.FC = () => {
                                         </td>
                                     </tr>
                                 ))}
-                                {filteredStudents.length === 0 && (
-                                    <tr>
-                                        <td
-                                            colSpan={8}
-                                            className="text-center py-8 text-gray-500"
-                                        >
-                                            لا توجد طلبات معلقة حالياً
-                                        </td>
-                                    </tr>
-                                )}
+                                {filteredStudents.length === 0 &&
+                                    !studentsLoading && (
+                                        <tr>
+                                            <td
+                                                colSpan={9}
+                                                className="text-center py-12 text-gray-500"
+                                            >
+                                                <div className="space-y-2">
+                                                    <p>
+                                                        لا توجد طلبات معلقة
+                                                        حالياً
+                                                    </p>
+                                                    <p className="text-sm text-gray-400">
+                                                        {students.length > 0
+                                                            ? `تم العثور على ${students.length} طالب لكن لا يوجد معلقين`
+                                                            : "لا توجد بيانات طلاب"}
+                                                    </p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
                             </tbody>
                         </table>
                     </div>
@@ -418,22 +378,49 @@ const StudentApproval: React.FC = () => {
                     <div
                         className="inputs__verifyOTPBirth"
                         id="userProfile__verifyOTPBirth"
-                        style={{ width: "100%" }}
                     >
                         <div className="userProfile__progressContent">
                             <div className="userProfile__progressTitle">
                                 <h1>معدل الاعتماد</h1>
                             </div>
-                            <p>92%</p>
+                            <p>
+                                {Math.round(
+                                    (students.filter((s: any) => s.status === 1)
+                                        .length /
+                                        Math.max(students.length, 1)) *
+                                        100,
+                                )}
+                                %
+                            </p>
                             <div className="userProfile__progressBar">
-                                <span style={{ width: "92%" }}></span>
+                                <span
+                                    style={{
+                                        width: `${Math.min(
+                                            Math.round(
+                                                (students.filter(
+                                                    (s: any) => s.status === 1,
+                                                ).length /
+                                                    Math.max(
+                                                        students.length,
+                                                        1,
+                                                    )) *
+                                                    100,
+                                            ),
+                                            100,
+                                        )}%`,
+                                    }}
+                                ></span>
                             </div>
                         </div>
                         <div className="userProfile__progressContent">
                             <div className="userProfile__progressTitle">
                                 <h1>متوسط وقت المعالجة</h1>
                             </div>
-                            <p>2.3 ساعة</p>
+                            <p>
+                                {students.length > 0
+                                    ? `${Math.round(students.length / 10)} ساعة`
+                                    : "0 ساعة"}
+                            </p>
                             <div className="userProfile__progressBar">
                                 <span style={{ width: "85%" }}></span>
                             </div>

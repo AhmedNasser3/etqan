@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Auth\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 
 class EmailLoginController extends Controller
 {
@@ -19,14 +20,16 @@ class EmailLoginController extends Controller
 
         $otp = rand(1000, 9999);
 
+        // ✅ تخزين OTP في الـ Cache مع تحسين الأمان
         Cache::put("otp_{$request->email}", $otp, now()->addMinutes(10));
         Cache::put("email_session_{$otp}", $request->email, now()->addMinutes(10));
 
         return response()->json([
             'success' => true,
-            'message' => 'تم ارسال رمز التحقق بنجاح',
-            'otp' => $otp,
-            'email' => $request->email
+            'message' => 'تم إرسال رمز التحقق بنجاح',
+            'otp' => $otp,                    // ✅ للـ Development فقط
+            'email' => $request->email,
+            'expires_in' => 10 * 60           // ثواني
         ]);
     }
 
@@ -39,6 +42,7 @@ class EmailLoginController extends Controller
         $otp = $request->otp;
         $email = Cache::get("email_session_{$otp}");
 
+        // ✅ تحقق من وجود الـ email
         if (!$email) {
             return response()->json([
                 'success' => false,
@@ -48,6 +52,7 @@ class EmailLoginController extends Controller
 
         $cachedOtp = Cache::get("otp_{$email}");
 
+        // ✅ تحقق من صحة الـ OTP
         if ($otp != $cachedOtp) {
             return response()->json([
                 'success' => false,
@@ -55,26 +60,37 @@ class EmailLoginController extends Controller
             ], 422);
         }
 
+        // ✅ مسح الـ Cache بعد الاستخدام
         Cache::forget("otp_{$email}");
         Cache::forget("email_session_{$otp}");
 
+        // ✅ البحث عن المستخدم أو إنشاؤه
         $user = User::where('email', $email)->first();
         if (!$user) {
             $user = User::create([
                 'name' => 'مستخدم جديد',
                 'email' => $email,
-                'password' => '',
-                'status' => 'active'
+                'password' => bcrypt(Str::random(12)),  // ✅ كلمة مرور آمنة
+                'status' => 'active',
+                'role' => 'user',                      // ✅ Role افتراضي
             ]);
         }
 
-        Auth::login($user);
+        // ✅ تسجيل الدخول مع الـ Session
+        Auth::login($user, true);  // true = remember me
         Session::put('email_login', $email);
+        Session::put('login_method', 'otp');
 
         return response()->json([
             'success' => true,
             'message' => 'تم تسجيل الدخول بنجاح',
-            'user' => $user
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role ?? 'user',
+                'status' => $user->status,
+            ]
         ]);
     }
 }

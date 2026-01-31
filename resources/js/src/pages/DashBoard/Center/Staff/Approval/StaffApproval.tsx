@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
@@ -8,81 +8,77 @@ import { FiXCircle } from "react-icons/fi";
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
 import { IoMdLink } from "react-icons/io";
 import PayrollModel from "./modals/PayrollModel";
+import { useTeachers } from "./hooks/useTeachers"; // ✅ استيراد الـ Hook
 
 const StaffApproval: React.FC = () => {
-    const [staffs, setStaffs] = useState([
-        {
-            id: 1,
-            name: "أحمد محمد صالح العتيبي",
-            email: "ahmed.otaibi@example.com",
-            role: "معلم قرآن",
-            circle: "حفظ الجزء 30 (العصر)",
-            experience: "3 سنوات",
-            date: "2026-01-15",
-            status: "pending",
-            img: "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png",
-        },
-        {
-            id: 2,
-            name: "فاطمة عبدالله محمد الزهراني",
-            email: "fatima.zahrani@example.com",
-            role: "مشرفة تعليمية",
-            circle: "لا يوجد",
-            experience: "5 سنوات",
-            date: "2026-01-14",
-            status: "pending",
-            img: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-        },
-        {
-            id: 3,
-            name: "عبدالرحمن خالد عبدالعزيز القحطاني",
-            email: "abdulrahman.qahtani@example.com",
-            role: "مشرف مالي",
-            circle: "لا يوجد",
-            experience: "2 سنة",
-            date: "2026-01-16",
-            status: "pending",
-            img: "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png",
-        },
-    ]);
+    // ✅ استخدام Hook لجلب كل المعلمين (معلقين)
+    const {
+        teachers: staffs,
+        loading: isLoading,
+        error,
+        fetchPendingTeachers,
+        approveTeacher,
+        rejectTeacher,
+    } = useTeachers({ status: "pending" });
 
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
-
-    // Modal States
     const [showPayrollModal, setShowPayrollModal] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
 
+    // ✅ فلترة محلية للبحث
     const filteredStaffs = staffs.filter(
         (staff) =>
-            staff.name.includes(search) ||
-            staff.email.includes(search) ||
-            staff.role.includes(search) ||
-            staff.circle.includes(search),
+            staff.name.toLowerCase().includes(search.toLowerCase()) ||
+            staff.email.toLowerCase().includes(search.toLowerCase()) ||
+            (staff.teacher?.role || "")
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+            (staff.teacher?.notes || "")
+                .toLowerCase()
+                .includes(search.toLowerCase()),
     );
 
-    const handleApprove = (id: number) => {
+    // ✅ تحميل المعلمين المعلقين عند بداية المكون
+    useEffect(() => {
+        fetchPendingTeachers();
+    }, [fetchPendingTeachers]);
+
+    // ✅ معالجة الأخطاء
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+        }
+    }, [error]);
+
+    const handleApprove = async (id: number) => {
         setLoading(true);
-        setTimeout(() => {
-            setStaffs((prev) =>
-                prev.map((s) =>
-                    s.id === id ? { ...s, status: "approved" } : s,
-                ),
-            );
-            setLoading(false);
+        try {
+            await approveTeacher(id);
             toast.success("تم اعتماد الموظف بنجاح!");
-        }, 1000);
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || "فشل في اعتماد الموظف");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleReject = (id: number) => {
-        setStaffs((prev) => prev.filter((s) => s.id !== id));
-        toast.error("تم رفض طلب الموظف");
+    const handleReject = async (id: number) => {
+        setLoading(true);
+        try {
+            await rejectTeacher(id);
+            toast.success("تم رفض طلب الموظف بنجاح!");
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || "فشل في رفض الموظف");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSendOTP = (name: string) => {
         setLoading(true);
         setTimeout(() => {
-            toast.success(`تم إرسال رقم التحقق إلى الموظف ${name}`);
+            toast.success(`تم إرسال OTP إلى ${name}`);
             setLoading(false);
         }, 1000);
     };
@@ -131,118 +127,165 @@ const StaffApproval: React.FC = () => {
                     </div>
 
                     <div className="plan__daily-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>الصورة</th>
-                                    <th>الاسم الكامل</th>
-                                    <th>البريد الإلكتروني</th>
-                                    <th>الدور</th>
-                                    <th>الحلقة/القسم</th>
-                                    <th>الخبرة</th>
-                                    <th>تاريخ التقديم</th>
-                                    <th>الحالة</th>
-                                    <th>الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredStaffs.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        className={`plan__row ${item.status}`}
-                                    >
-                                        <td className="teacherStudent__img">
-                                            <div className="w-12 h-12 rounded-full overflow-hidden">
-                                                <img
-                                                    src={item.img}
-                                                    alt={item.name}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                        </td>
-                                        <td>{item.name}</td>
-                                        <td>{item.email}</td>
-                                        <td>
-                                            <span
-                                                className={`role-badge ${item.role === "معلم قرآن" ? "teacher" : item.role === "مشرفة تعليمية" ? "supervisor" : "financial"}`}
-                                            >
-                                                {item.role}
-                                            </span>
-                                        </td>
-                                        <td>{item.circle}</td>
-                                        <td>{item.experience}</td>
-                                        <td>{item.date}</td>
-                                        <td>
-                                            {item.status === "approved" ? (
-                                                <span className="text-green-600 font-medium">
-                                                    معتمد
-                                                </span>
-                                            ) : (
-                                                <span className="text-orange-600 font-medium">
-                                                    معلق
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <div className="teacherStudent__btns">
-                                                <button
-                                                    className="teacherStudent__status-btn approve-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1"
-                                                    onClick={() =>
-                                                        handleApprove(item.id)
-                                                    }
-                                                    disabled={loading}
-                                                >
-                                                    {loading ? (
-                                                        "..."
-                                                    ) : (
-                                                        <IoCheckmarkCircleOutline />
-                                                    )}
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn reject-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
-                                                    onClick={() =>
-                                                        handleReject(item.id)
-                                                    }
-                                                    disabled={loading}
-                                                >
-                                                    <FiXCircle />
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn otp-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
-                                                    onClick={() =>
-                                                        handleSendOTP(item.name)
-                                                    }
-                                                    disabled={loading}
-                                                >
-                                                    <i>
-                                                        <RiMessage2Line />
-                                                    </i>
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn link-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100"
-                                                    onClick={() =>
-                                                        handleLinkPayroll(item)
-                                                    }
-                                                    title="ربط حساب الرواتب"
-                                                >
-                                                    <IoMdLink />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredStaffs.length === 0 && (
+                        {isLoading ? (
+                            <div className="text-center py-12">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                <p className="text-gray-600">
+                                    جاري تحميل المعلمين...
+                                </p>
+                            </div>
+                        ) : (
+                            <table>
+                                <thead>
                                     <tr>
-                                        <td
-                                            colSpan={9}
-                                            className="text-center py-8 text-gray-500"
-                                        >
-                                            لا توجد طلبات موظفين معلقة حالياً
-                                        </td>
+                                        <th>الصورة</th>
+                                        <th>الاسم الكامل</th>
+                                        <th>البريد الإلكتروني</th>
+                                        <th>الدور</th>
+                                        <th>الحلقة/القسم</th>
+                                        <th>تاريخ التقديم</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {filteredStaffs.map((item) => (
+                                        <tr
+                                            key={item.id}
+                                            className={`plan__row ${item.status}`}
+                                        >
+                                            <td className="teacherStudent__img">
+                                                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                                                    <span className="text-xs font-medium text-gray-700">
+                                                        {item.name.charAt(0)}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td>{item.name}</td>
+                                            <td>{item.email}</td>
+                                            <td>
+                                                <span
+                                                    className={`role-badge ${
+                                                        item.teacher?.role ===
+                                                        "teacher"
+                                                            ? "teacher"
+                                                            : item.teacher
+                                                                    ?.role ===
+                                                                "supervisor"
+                                                              ? "supervisor"
+                                                              : "financial"
+                                                    }`}
+                                                >
+                                                    {item.teacher?.role ===
+                                                    "teacher"
+                                                        ? "معلم قرآن"
+                                                        : item.teacher?.role ===
+                                                            "supervisor"
+                                                          ? "مشرف تعليمي"
+                                                          : "مشرف مالي"}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {item.teacher?.notes ||
+                                                    "لا يوجد"}
+                                            </td>
+                                            <td>
+                                                {item.created_at.split("T")[0]}
+                                            </td>
+                                            <td>
+                                                {item.status === "active" ? (
+                                                    <span className="text-green-600 font-medium">
+                                                        معتمد
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-orange-600 font-medium">
+                                                        معلق
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <div className="teacherStudent__btns">
+                                                    <button
+                                                        className="teacherStudent__status-btn approve-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1"
+                                                        onClick={() =>
+                                                            handleApprove(
+                                                                item.id,
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            loading || isLoading
+                                                        }
+                                                        title="اعتماد المعلم"
+                                                    >
+                                                        {loading ? (
+                                                            <span className="text-xs">
+                                                                ...
+                                                            </span>
+                                                        ) : (
+                                                            <IoCheckmarkCircleOutline />
+                                                        )}
+                                                    </button>
+                                                    <button
+                                                        className="teacherStudent__status-btn reject-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
+                                                        onClick={() =>
+                                                            handleReject(
+                                                                item.id,
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            loading || isLoading
+                                                        }
+                                                        title="رفض المعلم"
+                                                    >
+                                                        <FiXCircle />
+                                                    </button>
+                                                    <button
+                                                        className="teacherStudent__status-btn otp-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
+                                                        onClick={() =>
+                                                            handleSendOTP(
+                                                                item.name,
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            loading || isLoading
+                                                        }
+                                                        title="إرسال OTP"
+                                                    >
+                                                        <RiMessage2Line />
+                                                    </button>
+                                                    <button
+                                                        className="teacherStudent__status-btn link-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100"
+                                                        onClick={() =>
+                                                            handleLinkPayroll(
+                                                                item,
+                                                            )
+                                                        }
+                                                        title="ربط الرواتب"
+                                                        disabled={
+                                                            loading || isLoading
+                                                        }
+                                                    >
+                                                        <IoMdLink />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredStaffs.length === 0 &&
+                                        !isLoading && (
+                                            <tr>
+                                                <td
+                                                    colSpan={8}
+                                                    className="text-center py-8 text-gray-500"
+                                                >
+                                                    لا توجد طلبات موظفين معلقة
+                                                    حالياً
+                                                </td>
+                                            </tr>
+                                        )}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
 
                     <div className="plan__stats">
@@ -313,7 +356,7 @@ const StaffApproval: React.FC = () => {
                 </div>
             </div>
 
-            {/* Payroll Modal - Controlled */}
+            {/* Payroll Modal */}
             <PayrollModel
                 isOpen={showPayrollModal}
                 onClose={() => setShowPayrollModal(false)}

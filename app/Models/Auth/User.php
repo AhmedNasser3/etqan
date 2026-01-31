@@ -2,6 +2,8 @@
 
 namespace App\Models\Auth;
 
+use App\Models\Auth\Role;
+use App\Models\Auth\Teacher;
 use App\Models\Tenant\Center;
 use App\Models\Audit\AuditLog;
 use App\Models\Tenant\Student;
@@ -24,31 +26,45 @@ class User extends Authenticatable
         'birth_date' => 'date'
     ];
 
-    public function center() {
+    // ✅ باقي العلاقات
+    public function center()
+    {
         return $this->belongsTo(Center::class);
     }
 
-    public function role() {
+    public function role()
+    {
         return $this->belongsTo(Role::class);
     }
 
-    public function student() {
+    // ✅ علاقة جديدة مع Teacher (One-to-One)
+    public function teacher()
+    {
+        return $this->hasOne(Teacher::class);
+    }
+
+    public function student()
+    {
         return $this->belongsTo(Student::class, 'student_id');
     }
 
-    public function auditLogs() {
+    public function auditLogs()
+    {
         return $this->hasMany(AuditLog::class);
     }
 
-    public function scopeActive($query) {
+    public function scopeActive($query)
+    {
         return $query->where('status', 'active');
     }
 
-    public function scopeByCenter($query, $centerId) {
+    public function scopeByCenter($query, $centerId)
+    {
         return $query->where('center_id', $centerId);
     }
 
-    public function isParentOf(Student $student) {
+    public function isParentOf(Student $student)
+    {
         return $this->student_id == $student->id;
     }
 

@@ -116,6 +116,13 @@ const CenterSidebar: React.FC = () => {
             activePage: "dashboard",
         },
         {
+            key: "mosque",
+            href: "/center-dashboard/mosque-manegment",
+            icon: <TbLayoutDashboardFilled />,
+            title: "المساجد",
+            activePage: "mosque",
+        },
+        {
             key: "students",
             href: "#",
             icon: (

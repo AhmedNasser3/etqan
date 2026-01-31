@@ -10,37 +10,58 @@ interface UseOtpVerificationReturn {
 }
 
 export const useOtpVerification = (): UseOtpVerificationReturn => {
-    const [verified, setVerified] = useState(false);
-    const [error, setError] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [verified, setVerified] = useState<boolean>(false);
+    const [error, setError] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(false);
     const shieldRef = useRef<HTMLDivElement>(null);
 
-    const showAlert = (message: string) => {
+    const showAlert = useCallback((message: string) => {
         alert(message);
-    };
-
-    const sendOtp = useCallback(async (email: string) => {
-        setLoading(true);
-        try {
-            const response = await fetch("/api/email/send-otp", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                showAlert(`رمز التحقق: ${data.otp} - ادخله في الحقول أدناه`);
-            } else {
-                showAlert(data.message);
-            }
-        } catch (err) {
-            showAlert("فشل في ارسال رمز التحقق");
-        } finally {
-            setLoading(false);
-        }
     }, []);
+
+    const sendOtp = useCallback(
+        async (email: string) => {
+            setLoading(true);
+            setError(false);
+
+            try {
+                const response = await fetch("/email/send-otp", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    } as HeadersInit, // ✅ إصلاح TypeScript
+                    body: JSON.stringify({ email }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showAlert(
+                        `رمز التحقق: ${data.otp} - ادخله في الحقول أدناه`,
+                    );
+                } else {
+                    const errorMessage = Array.isArray(data.message)
+                        ? (Object.values(data.message)[0] as string[])[0]
+                        : (data.message as string) || "فشل في ارسال OTP";
+                    showAlert(errorMessage);
+                    setError(true);
+                    setTimeout(() => setError(false), 2000);
+                }
+            } catch (err: unknown) {
+                // ✅ إصلاح any type
+                console.error("Send OTP Error:", err);
+                showAlert("فشل في الاتصال بالخادم، تأكد من تشغيل Laravel");
+                setError(true);
+                setTimeout(() => setError(false), 2000);
+            } finally {
+                setLoading(false);
+            }
+        },
+        [showAlert],
+    );
 
     const verifyOtp = useCallback(
         async (otp: string, onSuccess?: () => void) => {
@@ -48,18 +69,22 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
             setError(false);
 
             try {
-                const response = await fetch("/api/email/verify-otp", {
+                const response = await fetch("/email/verify-otp", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
                     credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    } as HeadersInit, // ✅ إصلاح TypeScript
                     body: JSON.stringify({ otp }),
                 });
 
                 const data = await response.json();
 
-                if (data.success) {
+                if (response.ok && data.success) {
                     setVerified(true);
-                    showAlert("تم التحقق بنجاح!");
+                    showAlert("✅ تم تسجيل الدخول بنجاح!");
 
                     if (shieldRef.current) {
                         shieldRef.current.classList.add("verified-animation");
@@ -74,20 +99,38 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                         onSuccess?.();
                     }, 1500);
                 } else {
+                    let errorMessage = "رمز التحقق غير صحيح";
+                    if (response.status === 422 && data.message) {
+                        errorMessage = Array.isArray(data.message)
+                            ? (Object.values(data.message)[0] as string[])[0]
+                            : (data.message as string);
+                    } else if (data.message) {
+                        errorMessage = data.message as string;
+                    }
+
                     setError(true);
-                    showAlert(data.message);
-                    setTimeout(() => setError(false), 1000);
+                    showAlert(errorMessage);
+                    setTimeout(() => setError(false), 2000);
                 }
-            } catch (err) {
+            } catch (err: unknown) {
+                // ✅ إصلاح any type
+                console.error("Verify OTP Error:", err);
                 setError(true);
-                showAlert("حدث خطأ في التحقق");
-                setTimeout(() => setError(false), 1000);
+                showAlert("فشل في الاتصال بالخادم");
+                setTimeout(() => setError(false), 2000);
             } finally {
                 setLoading(false);
             }
         },
-        [],
+        [showAlert],
     );
 
-    return { verified, error, loading, verifyOtp, sendOtp, shieldRef };
+    return {
+        verified,
+        error,
+        loading,
+        verifyOtp,
+        sendOtp,
+        shieldRef,
+    };
 };

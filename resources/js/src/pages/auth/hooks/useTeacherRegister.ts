@@ -1,5 +1,6 @@
 // hooks/useTeacherRegister.ts
 import { useState, useCallback } from "react";
+import { useParams } from "react-router-dom";
 
 interface TeacherRegisterData {
     full_name: string;
@@ -11,6 +12,8 @@ interface TeacherRegisterData {
 }
 
 export const useTeacherRegister = () => {
+    const { centerSlug } = useParams();
+
     const [data, setData] = useState<TeacherRegisterData>({
         full_name: "",
         role: "",
@@ -41,13 +44,23 @@ export const useTeacherRegister = () => {
         setSuccess(false);
 
         try {
-            const response = await fetch("/api/teacher/register", {
+            const requestData = {
+                ...data,
+                center_slug: centerSlug || null,
+            };
+
+            // ✅ URL صحيح مع centerSlug
+            const url = centerSlug
+                ? `/api/v1/centers/${centerSlug}/teacher/register`
+                : `/api/v1/teacher/register`;
+
+            const response = await fetch(url, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Accept: "application/json",
                 },
-                body: JSON.stringify(data),
+                body: JSON.stringify(requestData),
             });
 
             const result = await response.json();
@@ -55,10 +68,8 @@ export const useTeacherRegister = () => {
             if (response.ok && result.success) {
                 setSuccess(true);
                 alert(
-                    `تم التسجيل بنجاح!\nID المستخدم: ${result.user_id}\nكلمة المرور المؤقتة: ${result.temp_password}\nسيتم مراجعة طلبك من الإدارة`,
+                    `تم التسجيل بنجاح في ${centerSlug || "النظام العام"}!\nID: ${result.user_id}\nكلمة المرور: ${result.temp_password}`,
                 );
-
-                // Reset form
                 setData({
                     full_name: "",
                     role: "",
@@ -68,7 +79,6 @@ export const useTeacherRegister = () => {
                     gender: "male",
                 });
             } else {
-                // Validation errors
                 if (response.status === 422 && result.message) {
                     const errorMessage = Array.isArray(result.message)
                         ? Object.values(result.message)[0][0]
@@ -80,17 +90,18 @@ export const useTeacherRegister = () => {
             }
         } catch (err: any) {
             console.error("Registration Error:", err);
-            setError("فشل في الاتصال بالخادم، تأكد من تشغيل Laravel");
+            setError("فشل في الاتصال بالخادم");
         } finally {
             setLoading(false);
         }
-    }, [data]);
+    }, [data, centerSlug]);
 
     return {
         data,
         loading,
         success,
         error,
+        centerSlug,
         handleInputChange,
         setGender,
         submitRegister,

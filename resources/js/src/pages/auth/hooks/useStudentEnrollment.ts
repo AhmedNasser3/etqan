@@ -9,7 +9,7 @@ export const useStudentEnrollment = () => {
     const { centerSlug } = useParams<{ centerSlug?: string }>();
 
     const registerStudent = async (data: any) => {
-        const response = await fetch("/api/student/register", {
+        const response = await fetch("/student/register", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
