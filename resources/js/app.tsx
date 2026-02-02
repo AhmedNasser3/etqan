@@ -54,6 +54,9 @@ import AuditLogPage from "./src/pages/DashBoard/AuditLogs";
 import CenterRegister from "./src/pages/auth/pages/CenterRegister";
 import CentersMangement from "./src/pages/DashBoard/Admin/Center/CentersMangement";
 import Mosque from "./src/pages/DashBoard/Admin/mosque/MosquesManagement";
+import CirclesManagement from "./src/pages/DashBoard/Center/Circles/CirclesManagement";
+import PlansManagement from "./src/pages/DashBoard/Center/Plans/PlansManagement";
+import PlanDetailsManagement from "./src/pages/DashBoard/Center/PlansDetails/PlanDetailsManagement";
 
 function UserLayout() {
     return (
@@ -139,6 +142,7 @@ function App() {
                             path="students/approval"
                             element={<StudentApproval />}
                         />
+
                         <Route
                             path="staff-attendance"
                             element={<StaffAttendance />}
@@ -188,6 +192,18 @@ function App() {
                         <Route
                             path="center-manegment"
                             element={<CentersMangement />}
+                        />
+                        <Route
+                            path="circle-manegment"
+                            element={<CirclesManagement />}
+                        />
+                        <Route
+                            path="plans-manegment"
+                            element={<PlansManagement />}
+                        />
+                        <Route
+                            path="plans-details-manegment"
+                            element={<PlanDetailsManagement />}
                         />
                         <Route path="mosque-manegment" element={<Mosque />} />
                         <Route path="audit-log" element={<AuditLogPage />} />

@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { Fragment } from "react";
+import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
@@ -27,7 +26,48 @@ interface Center {
     hosting_provider?: string;
 }
 
-const CentersMangement: React.FC = () => {
+// ✅ CSRF Token Helper
+const getCsrfToken = (): string => {
+    const cookies = document.cookie.split(";");
+    const csrfCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("XSRF-TOKEN="),
+    );
+    return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
+};
+
+// ✅ API Fetch Helper
+const apiFetch = async (url: string, options: RequestInit = {}) => {
+    // CSRF Token أولاً
+    if (!document.cookie.includes("XSRF-TOKEN=")) {
+        await fetch("/sanctum/csrf-cookie", {
+            credentials: "include",
+            headers: { Accept: "application/json" },
+        });
+    }
+
+    const response = await fetch(url, {
+        ...options,
+        credentials: "include",
+        headers: {
+            Accept: "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-XSRF-TOKEN": getCsrfToken(),
+            ...(options.headers as any),
+        },
+    });
+
+    console.log(`🌐 ${url} → Status: ${response.status}`);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ ${response.status}:`, errorText.substring(0, 200));
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    return await response.json();
+};
+
+const CentersManagement: React.FC = () => {
     const [centers, setCenters] = useState<Center[]>([]);
     const [search, setSearch] = useState("");
     const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -36,25 +76,59 @@ const CentersMangement: React.FC = () => {
     const [selectedCenterId, setSelectedCenterId] = useState<number | null>(
         null,
     );
+    const [loading, setLoading] = useState(false);
+
+    // ✅ fetchCenters محدث مع Auth
+    const fetchCenters = useCallback(async () => {
+        try {
+            setLoading(true);
+            console.log("📥 Fetching centers...");
+
+            const result = await apiFetch("/api/v1/super/centers");
+
+            if (result.success) {
+                setCenters(result.data || []);
+                console.log("✅ Centers loaded:", result.data?.length);
+            } else {
+                toast.error(result.message || "فشل في جلب المجمعات");
+            }
+        } catch (error: any) {
+            console.error("فشل في جلب المجمعات:", error);
+            toast.error("فشل في جلب المجمعات");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         fetchCenters();
-    }, []);
+    }, [fetchCenters]);
 
-    const fetchCenters = async () => {
+    // ✅ handleDelete محدث مع Auth
+    const handleDelete = async (center: Center) => {
+        if (!confirm(`هل أنت متأكد من حذف المجمع "${center.circleName}"؟`)) {
+            return;
+        }
+
         try {
-            const response = await fetch("/api/super/centers", {
-                headers: { Accept: "application/json" },
-            });
+            console.log("🗑️ Deleting center:", center.id);
 
-            if (!response.ok) throw new Error("خطأ في جلب البيانات");
+            const result = await apiFetch(
+                `/api/v1/super/centers/${center.id}`,
+                {
+                    method: "DELETE",
+                },
+            );
 
-            const result = await response.json();
             if (result.success) {
-                setCenters(result.data || []);
+                toast.success("تم حذف المجمع بنجاح");
+                fetchCenters();
+            } else {
+                toast.error(result.message || "فشل في الحذف");
             }
-        } catch (error) {
-            console.error("فشل في جلب المجمعات");
+        } catch (error: any) {
+            console.error("Delete error:", error);
+            toast.error("حدث خطأ في الحذف");
         }
     };
 
@@ -70,25 +144,6 @@ const CentersMangement: React.FC = () => {
         setSelectedCenter(center);
         setSelectedCenterId(center.id);
         setShowUpdateModal(true);
-    };
-
-    const handleDelete = async (center: Center) => {
-        try {
-            const response = await fetch(`/api/super/centers/${center.id}`, {
-                method: "DELETE",
-                headers: { Accept: "application/json" },
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                toast.success("تم حذف المجمع بنجاح");
-                fetchCenters();
-            } else {
-                toast.error(result.message || "فشل في الحذف");
-            }
-        } catch {
-            toast.error("حدث خطأ في الحذف");
-        }
     };
 
     const handleCloseUpdateModal = () => {
@@ -236,95 +291,17 @@ const CentersMangement: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredCenters.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        className="plan__row active"
-                                    >
-                                        <td className="teacherStudent__img">
-                                            <div className="w-12 h-12 rounded-lg overflow-hidden">
-                                                <img
-                                                    src={
-                                                        item.logo?.startsWith(
-                                                            "http",
-                                                        )
-                                                            ? item.logo
-                                                            : item.logo?.startsWith(
-                                                                    "centers/",
-                                                                )
-                                                              ? `/storage/${item.logo}`
-                                                              : `/storage/centers/${item.logo}`
-                                                    }
-                                                    alt={item.circleName}
-                                                    className="w-full h-12 object-cover"
-                                                    onError={(e) => {
-                                                        e.currentTarget.src =
-                                                            "/images/default-logo.png";
-                                                    }}
-                                                />
-                                            </div>
-                                        </td>
-                                        <td>{item.circleName}</td>
-                                        <td>{item.managerName}</td>
-                                        <td>{item.managerEmail}</td>
-                                        <td>
-                                            <span className="font-mono text-sm">
-                                                {item.countryCode}{" "}
-                                                {item.managerPhone}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <a
-                                                href={item.circleLink}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                            >
-                                                🔗 رابط
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <span className="font-mono text-sm">
-                                                {item.domain}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span
-                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    item.is_active
-                                                        ? "bg-green-100 text-green-800"
-                                                        : "bg-red-100 text-red-800"
-                                                }`}
-                                            >
-                                                {item.is_active
-                                                    ? "نشط"
-                                                    : "غير نشط"}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div className="teacherStudent__btns">
-                                                <button
-                                                    className="teacherStudent__status-btn edit-btn p-2"
-                                                    onClick={() =>
-                                                        handleEdit(item)
-                                                    }
-                                                    title="تعديل بيانات المجمع"
-                                                >
-                                                    <FiEdit3 />
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn delete-btn p-2"
-                                                    onClick={() =>
-                                                        handleDelete(item)
-                                                    }
-                                                    title="حذف المجمع"
-                                                >
-                                                    <FiTrash2 />
-                                                </button>
-                                            </div>
+                                {loading ? (
+                                    <tr>
+                                        <td
+                                            colSpan={9}
+                                            className="text-center py-8"
+                                        >
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                            جاري تحميل المجمعات...
                                         </td>
                                     </tr>
-                                ))}
-                                {filteredCenters.length === 0 && (
+                                ) : filteredCenters.length === 0 ? (
                                     <tr>
                                         <td
                                             colSpan={9}
@@ -333,6 +310,96 @@ const CentersMangement: React.FC = () => {
                                             لا توجد مجمعات مطابقة للبحث
                                         </td>
                                     </tr>
+                                ) : (
+                                    filteredCenters.map((item) => (
+                                        <tr
+                                            key={item.id}
+                                            className="plan__row active"
+                                        >
+                                            <td className="teacherStudent__img">
+                                                <div className="w-12 h-12 rounded-lg overflow-hidden">
+                                                    <img
+                                                        src={
+                                                            item.logo?.startsWith(
+                                                                "http",
+                                                            )
+                                                                ? item.logo
+                                                                : item.logo?.startsWith(
+                                                                        "centers/",
+                                                                    )
+                                                                  ? `/storage/${item.logo}`
+                                                                  : `/storage/centers/${item.logo}`
+                                                        }
+                                                        alt={item.circleName}
+                                                        className="w-full h-12 object-cover"
+                                                        onError={(e) => {
+                                                            e.currentTarget.src =
+                                                                "/images/default-logo.png";
+                                                        }}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td>{item.circleName}</td>
+                                            <td>{item.managerName}</td>
+                                            <td>{item.managerEmail}</td>
+                                            <td>
+                                                <span className="font-mono text-sm">
+                                                    {item.countryCode}{" "}
+                                                    {item.managerPhone}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a
+                                                    href={item.circleLink}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-600 hover:underline"
+                                                >
+                                                    🔗 رابط
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <span className="font-mono text-sm">
+                                                    {item.domain}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span
+                                                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                        item.is_active
+                                                            ? "bg-green-100 text-green-800"
+                                                            : "bg-red-100 text-red-800"
+                                                    }`}
+                                                >
+                                                    {item.is_active
+                                                        ? "نشط"
+                                                        : "غير نشط"}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="teacherStudent__btns">
+                                                    <button
+                                                        className="teacherStudent__status-btn edit-btn p-2"
+                                                        onClick={() =>
+                                                            handleEdit(item)
+                                                        }
+                                                        title="تعديل بيانات المجمع"
+                                                    >
+                                                        <FiEdit3 />
+                                                    </button>
+                                                    <button
+                                                        className="teacherStudent__status-btn delete-btn p-2"
+                                                        onClick={() =>
+                                                            handleDelete(item)
+                                                        }
+                                                        title="حذف المجمع"
+                                                    >
+                                                        <FiTrash2 />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
                                 )}
                             </tbody>
                         </table>
@@ -372,4 +439,4 @@ const CentersMangement: React.FC = () => {
     );
 };
 
-export default CentersMangement;
+export default CentersManagement;

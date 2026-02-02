@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import toast from "react-hot-toast";
 
 export interface CenterFormData {
     circle_name: string;
@@ -11,6 +12,47 @@ export interface CenterFormData {
     logo?: File | string | null;
     notes?: string;
 }
+
+// ✅ CSRF Token Helper
+const getCsrfToken = (): string => {
+    const cookies = document.cookie.split(";");
+    const csrfCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("XSRF-TOKEN="),
+    );
+    return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
+};
+
+// ✅ API Fetch Helper
+const apiFetch = async (url: string, options: RequestInit = {}) => {
+    // CSRF Token أولاً
+    if (!document.cookie.includes("XSRF-TOKEN=")) {
+        await fetch("/sanctum/csrf-cookie", {
+            credentials: "include",
+            headers: { Accept: "application/json" },
+        });
+    }
+
+    const response = await fetch(url, {
+        ...options,
+        credentials: "include",
+        headers: {
+            Accept: "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-XSRF-TOKEN": getCsrfToken(),
+            ...(options.headers as any),
+        },
+    });
+
+    console.log(`🌐 ${url} → Status: ${response.status}`);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ ${response.status}:`, errorText.substring(0, 200));
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    return await response.json();
+};
 
 export const useCenterForm = (initialData?: Partial<CenterFormData> | null) => {
     const [formData, setFormData] = useState<CenterFormData>({
@@ -26,7 +68,24 @@ export const useCenterForm = (initialData?: Partial<CenterFormData> | null) => {
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loadingCountries, setLoadingCountries] = useState(false);
     const logoPreviewUrl = useRef<string | null>(null);
+
+    // ✅ تحميل قائمة الدول (اختياري)
+    useEffect(() => {
+        const loadCountries = async () => {
+            try {
+                setLoadingCountries(true);
+                // يمكنك استخدام API خارجي أو قائمة محلية
+                console.log("✅ Countries loaded (static list)");
+            } catch (error) {
+                console.error("Failed to load countries:", error);
+            } finally {
+                setLoadingCountries(false);
+            }
+        };
+        loadCountries();
+    }, []);
 
     useEffect(() => {
         if (initialData) {
@@ -35,6 +94,7 @@ export const useCenterForm = (initialData?: Partial<CenterFormData> | null) => {
                 circle_name:
                     (initialData as any).circle_name ||
                     (initialData as any).circleName ||
+                    (initialData as any).name ||
                     "",
                 manager_name:
                     (initialData as any).manager_name ||
@@ -65,7 +125,9 @@ export const useCenterForm = (initialData?: Partial<CenterFormData> | null) => {
             });
 
             if (typeof newLogo === "string" && newLogo) {
-                logoPreviewUrl.current = `/storage/${newLogo}`;
+                logoPreviewUrl.current = newLogo.startsWith("http")
+                    ? newLogo
+                    : `/storage/${newLogo}`;
             }
             setErrors({});
         }
@@ -119,14 +181,17 @@ export const useCenterForm = (initialData?: Partial<CenterFormData> | null) => {
                 const previewUrl = URL.createObjectURL(file);
                 logoPreviewUrl.current = previewUrl;
                 setFormData((prev) => ({ ...prev, logo: file }));
+                toast.success("تم تحميل الصورة بنجاح");
             }
         },
         [],
     );
 
+    // ✅ submitForm مع FormData headers صح
     const submitForm = useCallback(
         async (onSubmit: (data: FormData) => Promise<void>) => {
             if (!validateForm()) {
+                toast.error("يرجى تصحيح الأخطاء الموجودة");
                 return;
             }
 
@@ -146,8 +211,9 @@ export const useCenterForm = (initialData?: Partial<CenterFormData> | null) => {
 
             try {
                 await onSubmit(formDataToSubmit);
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Submit failed:", error);
+                toast.error(error.message || "حدث خطأ في الإرسال");
             } finally {
                 setIsSubmitting(false);
             }
@@ -172,12 +238,14 @@ export const useCenterForm = (initialData?: Partial<CenterFormData> | null) => {
             notes: "",
         });
         setErrors({});
+        toast.success("تم إعادة تعيين النموذج");
     }, []);
 
     return {
         formData,
         errors,
         isSubmitting,
+        loadingCountries,
         handleInputChange,
         handleFileChange,
         submitForm,

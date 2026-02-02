@@ -1,63 +1,53 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import toast from "react-hot-toast";
-import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
-import { PiWhatsappLogoDuotone } from "react-icons/pi";
 import { FiEdit3, FiTrash2 } from "react-icons/fi";
-import { IoMdAdd } from "react-icons/io";
-import CreateCirclePage from "./models/CreateCirclePage";
-import UpdateCirclePage from "./models/UpdateCirclePage";
-import { useCircles } from "./hooks/useCircles";
+import { usePlans } from "./hooks/usePlans";
+import CreatePlanPage from "./models/CreatePlanPage";
+import UpdatePlanPage from "./models/UpdatePlanPage";
 
-interface CircleType {
+interface PlanType {
     id: number;
-    name: string;
+    plan_name: string;
+    total_months: number;
     center: { id: number; name: string };
     center_id: number;
-    mosque?: { id: number; name: string } | null;
-    mosque_id?: number | null;
-    teacher?: { id: number; name: string } | null;
-    teacher_id?: number | null;
+    details_count: number;
+    current_day?: number;
     created_at: string;
-    updated_at: string;
 }
 
-const CirclesManagement: React.FC = () => {
+const PlansManagement: React.FC = () => {
     const {
-        circles,
+        plans,
         loading,
         pagination,
         currentPage,
-        searchCircles,
+        searchPlans,
         goToPage,
         refetch,
-    } = useCircles();
+    } = usePlans();
 
     const [search, setSearch] = useState("");
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [selectedCircleId, setSelectedCircleId] = useState<number | null>(
-        null,
-    );
+    const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
 
     const handleSearch = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const value = e.target.value;
             setSearch(value);
-            searchCircles(value);
+            searchPlans(value);
         },
-        [searchCircles],
+        [searchPlans],
     );
 
-    // تمرير ID الحلقة للـ Modal عشان يحمل البيانات الأصلية
-    const handleEdit = useCallback((circle: CircleType) => {
-        console.log("تحديد حلقة للتعديل:", circle); // للتأكد من البيانات
-        setSelectedCircleId(circle.id);
+    const handleEdit = useCallback((plan: PlanType) => {
+        setSelectedPlanId(plan.id);
         setShowUpdateModal(true);
     }, []);
 
     const handleDelete = async (id: number) => {
-        if (!confirm("هل أنت متأكد من حذف هذه الحلقة؟")) return;
+        if (!confirm("هل أنت متأكد من حذف هذه الخطة؟")) return;
 
         try {
             const csrfToken =
@@ -65,7 +55,7 @@ const CirclesManagement: React.FC = () => {
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content") || "";
 
-            const response = await fetch(`/api/v1/centers/circles/${id}`, {
+            const response = await fetch(`/api/v1/plans/${id}`, {
                 method: "DELETE",
                 credentials: "include",
                 headers: {
@@ -78,7 +68,7 @@ const CirclesManagement: React.FC = () => {
 
             const result = await response.json();
             if (response.ok) {
-                toast.success("تم حذف الحلقة بنجاح ✅");
+                toast.success("تم حذف الخطة بنجاح ✅");
                 refetch();
             } else {
                 toast.error(result.message || "فشل في الحذف");
@@ -90,11 +80,11 @@ const CirclesManagement: React.FC = () => {
 
     const handleCloseUpdateModal = useCallback(() => {
         setShowUpdateModal(false);
-        setSelectedCircleId(null);
+        setSelectedPlanId(null);
     }, []);
 
     const handleUpdateSuccess = useCallback(() => {
-        toast.success("تم تحديث بيانات الحلقة بنجاح! ✨");
+        toast.success("تم تحديث بيانات الخطة بنجاح! ✨");
         refetch();
         handleCloseUpdateModal();
     }, [refetch, handleCloseUpdateModal]);
@@ -104,7 +94,7 @@ const CirclesManagement: React.FC = () => {
     }, []);
 
     const handleCreateSuccess = useCallback(() => {
-        toast.success("تم إضافة الحلقة بنجاح! 🎉");
+        toast.success("تم إضافة الخطة بنجاح! 🎉");
         refetch();
         handleCloseCreateModal();
     }, [refetch, handleCloseCreateModal]);
@@ -115,7 +105,7 @@ const CirclesManagement: React.FC = () => {
 
     const stats = {
         total: pagination?.total || 0,
-        active: circles.filter((c) => c.mosque_id !== null).length,
+        active: plans.filter((p) => p.current_day).length,
         currentPage,
         totalPages: pagination?.last_page || 1,
     };
@@ -128,7 +118,7 @@ const CirclesManagement: React.FC = () => {
             .join("")
             .slice(0, 2);
         return (
-            <div className="w-full h-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white rounded-lg">
+            <div className="w-full h-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white rounded-lg">
                 {initials}
             </div>
         );
@@ -141,8 +131,8 @@ const CirclesManagement: React.FC = () => {
         return (
             <div className="flex items-center justify-center min-h-[400px] p-8">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                    <p className="text-gray-600">جاري تحميل الحلقات...</p>
+                    <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                    <p className="text-gray-600">جاري تحميل الخطط...</p>
                 </div>
             </div>
         );
@@ -150,62 +140,57 @@ const CirclesManagement: React.FC = () => {
 
     return (
         <>
-            {/* Modal التعديل - يستقبل circleId ويحمل البيانات الأصلية أوتوماتيك */}
-            {showUpdateModal && selectedCircleId && (
-                <UpdateCirclePage
-                    circleId={selectedCircleId}
+            {showUpdateModal && selectedPlanId && (
+                <UpdatePlanPage
+                    planId={selectedPlanId}
                     onClose={handleCloseUpdateModal}
                     onSuccess={handleUpdateSuccess}
                 />
             )}
 
-            {/* Modal الإنشاء */}
             {showCreateModal && (
-                <CreateCirclePage
+                <CreatePlanPage
                     onClose={handleCloseCreateModal}
                     onSuccess={handleCreateSuccess}
                 />
             )}
 
             <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                {/* باقي الكود كما هو... */}
                 <div className="plan__stats">
                     <div className="stat-card">
-                        <div className="stat-icon redColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
+                        <div className="stat-icon purpleColor">
+                            <i className="stat-icon-inner">📋</i>
                         </div>
                         <div>
-                            <h3>إجمالي الحلقات</h3>
-                            <p className="text-2xl font-bold text-red-600">
+                            <h3>إجمالي الخطط</h3>
+                            <p className="text-2xl font-bold text-purple-600">
                                 {stats.total}
                             </p>
                         </div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-icon yellowColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
+                        <div className="stat-icon blueColor">
+                            <i className="stat-icon-inner">▶️</i>
                         </div>
                         <div>
-                            <h3>نشطة</h3>
-                            <p className="text-2xl font-bold text-yellow-600">
+                            <h3>نشطة حالياً</h3>
+                            <p className="text-2xl font-bold text-blue-600">
                                 {stats.active}
                             </p>
                         </div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-icon greenColor">
-                            <i>
-                                <PiWhatsappLogoDuotone />
-                            </i>
+                            <i className="stat-icon-inner">📊</i>
                         </div>
                         <div>
-                            <h3>حلقات معتمدة</h3>
+                            <h3>متوسط المدة</h3>
                             <p className="text-2xl font-bold text-green-600">
-                                {stats.total}
+                                {plans.reduce(
+                                    (sum, p) => sum + p.total_months,
+                                    0,
+                                ) / plans.length || 0}{" "}
+                                شهر
                             </p>
                         </div>
                     </div>
@@ -217,19 +202,16 @@ const CirclesManagement: React.FC = () => {
                 >
                     <div className="plan__header">
                         <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            الحلقات الجديدة تخضع لمراجعة المشرف قبل الاعتماد
-                            الرسمي
+                            <i>🤖</i>
+                            كل خطة تحتوي على تفاصيل يومية للحفظ والمراجعة
                         </div>
                         <div className="plan__current">
-                            <h2>قائمة الحلقات</h2>
+                            <h2>قائمة الخطط</h2>
                             <div className="plan__date-range">
                                 <div className="date-picker to">
                                     <input
                                         type="search"
-                                        placeholder="البحث بالحلقة أو المجمع أو المسجد أو المعلم..."
+                                        placeholder="البحث بالخطة أو المجمع..."
                                         value={search}
                                         onChange={handleSearch}
                                         disabled={loading}
@@ -240,11 +222,11 @@ const CirclesManagement: React.FC = () => {
                                     onClick={handleAddNew}
                                     disabled={loading}
                                 >
-                                    <IoMdAdd
+                                    <FiTrash2
                                         size={20}
                                         className="inline mr-2"
                                     />
-                                    حلقة جديدة
+                                    خطة جديدة
                                 </button>
                             </div>
                         </div>
@@ -256,38 +238,33 @@ const CirclesManagement: React.FC = () => {
                         <thead>
                             <tr>
                                 <th>الشعار</th>
-                                <th>اسم الحلقة</th>
+                                <th>اسم الخطة</th>
                                 <th>المجمع</th>
-                                <th>المسجد</th>
-                                <th>المعلم</th>
-                                <th>الحالة</th>
+                                <th>المدة</th>
+                                <th>عدد الأيام</th>
+                                <th>اليوم الحالي</th>
                                 <th>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {circles.map((item) => (
+                            {plans.map((item) => (
                                 <tr key={item.id} className="plan__row active">
                                     <td className="teacherStudent__img">
                                         <div className="w-12 h-12 rounded-lg overflow-hidden">
-                                            {renderLogo(item.name)}
+                                            {renderLogo(item.plan_name)}
                                         </div>
                                     </td>
-                                    <td>{item.name}</td>
+                                    <td>{item.plan_name}</td>
                                     <td>{item.center.name}</td>
-                                    <td>{item.mosque?.name || "-"}</td>
-                                    <td>{item.teacher?.name || "-"}</td>
-                                    <td>
-                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            نشطة
-                                        </span>
-                                    </td>
+                                    <td>{item.total_months} شهر</td>
+                                    <td>{item.details_count}</td>
+                                    <td>{item.current_day || "-"}</td>
                                     <td>
                                         <div className="teacherStudent__btns">
                                             <button
                                                 className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
                                                 onClick={() => handleEdit(item)}
-                                                disabled={loading}
-                                                title="تعديل بيانات الحلقة"
+                                                title="تعديل بيانات الخطة"
                                             >
                                                 <FiEdit3 />
                                             </button>
@@ -296,8 +273,7 @@ const CirclesManagement: React.FC = () => {
                                                 onClick={() =>
                                                     handleDelete(item.id)
                                                 }
-                                                disabled={loading}
-                                                title="حذف الحلقة"
+                                                title="حذف الخطة"
                                             >
                                                 <FiTrash2 />
                                             </button>
@@ -305,13 +281,13 @@ const CirclesManagement: React.FC = () => {
                                     </td>
                                 </tr>
                             ))}
-                            {circles.length === 0 && !loading && (
+                            {plans.length === 0 && !loading && (
                                 <tr>
                                     <td
                                         colSpan={7}
                                         className="text-center py-8 text-gray-500"
                                     >
-                                        لا يوجد حلقات حالياً
+                                        لا يوجد خطط حالياً
                                     </td>
                                 </tr>
                             )}
@@ -327,8 +303,8 @@ const CirclesManagement: React.FC = () => {
                     >
                         <div className="flex justify-between items-center p-4">
                             <div className="text-sm text-gray-600">
-                                عرض {circles.length} من {pagination.total} حلقة
-                                • الصفحة <strong>{currentPage}</strong> من{" "}
+                                عرض {plans.length} من {pagination.total} خطة •
+                                الصفحة <strong>{currentPage}</strong> من{" "}
                                 <strong>{pagination.last_page}</strong>
                             </div>
                             <div className="flex items-center gap-2">
@@ -339,7 +315,7 @@ const CirclesManagement: React.FC = () => {
                                 >
                                     السابق
                                 </button>
-                                <span className="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold">
+                                <span className="px-4 py-2 bg-purple-500 text-white rounded-lg font-bold">
                                     {currentPage}
                                 </span>
                                 <button
@@ -353,38 +329,9 @@ const CirclesManagement: React.FC = () => {
                         </div>
                     </div>
                 )}
-
-                {/* Progress Bars */}
-                <div
-                    className="inputs__verifyOTPBirth"
-                    style={{ width: "100%" }}
-                >
-                    <div className="userProfile__progressContent">
-                        <div className="userProfile__progressTitle">
-                            <h1>معدل النشاط</h1>
-                        </div>
-                        <p>94%</p>
-                        <div className="userProfile__progressBar">
-                            <span style={{ width: "94%" }}></span>
-                        </div>
-                    </div>
-                    <div className="userProfile__progressContent">
-                        <div className="userProfile__progressTitle">
-                            <h1>عدد الحلقات</h1>
-                        </div>
-                        <p>{circles.length}</p>
-                        <div className="userProfile__progressBar">
-                            <span
-                                style={{
-                                    width: `${Math.min((circles.length / 50) * 100, 100)}%`,
-                                }}
-                            ></span>
-                        </div>
-                    </div>
-                </div>
             </div>
         </>
     );
 };
 
-export default CirclesManagement;
+export default PlansManagement;

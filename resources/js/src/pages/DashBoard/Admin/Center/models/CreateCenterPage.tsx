@@ -1,8 +1,16 @@
-// models/CreateCenterPage.tsx
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { FiX } from "react-icons/fi";
 import { useCenterFormCreate } from "../hooks/useCenterFormCreate";
+
+// ✅ CSRF Token Helper
+const getCsrfToken = (): string => {
+    const cookies = document.cookie.split(";");
+    const csrfCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("XSRF-TOKEN="),
+    );
+    return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
+};
 
 interface CreateCenterPageProps {
     onClose: () => void;
@@ -21,21 +29,41 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
         handleFileChange,
         submitForm,
         logoPreview,
+        resetForm,
     } = useCenterFormCreate();
 
+    // ✅ الـ Route الصحيح من ملف routes/api.php بتاعك
     const handleSubmit = async (formDataSubmit: FormData) => {
         try {
-            const response = await fetch("/api/super/centers/register", {
+            // ✅ CSRF Token أولاً
+            if (!document.cookie.includes("XSRF-TOKEN=")) {
+                await fetch("/sanctum/csrf-cookie", {
+                    credentials: "include",
+                });
+            }
+
+            console.log(
+                "🌐 POST → /api/v1/super/centers/register ← الـ Route الصحيح",
+            );
+
+            const response = await fetch("/api/v1/super/centers/register", {
                 method: "POST",
-                headers: { Accept: "application/json" },
+                credentials: "include",
+                headers: {
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-XSRF-TOKEN": getCsrfToken(),
+                },
                 body: formDataSubmit,
             });
+
+            console.log("📡 Status:", response.status);
 
             if (!response.ok) {
                 const errorData = await response
                     .json()
                     .catch(() => response.text());
-                console.error("Error response:", errorData);
+                console.error("❌ Error response:", errorData);
 
                 if (typeof errorData === "object" && errorData.errors) {
                     const errorMessages = Object.values(
@@ -48,16 +76,17 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
             }
 
             const result = await response.json();
-            console.log("Create response:", result);
+            console.log("✅ Create response:", result);
 
             if (result.success) {
                 toast.success("تم إضافة المجمع بنجاح!");
+                resetForm();
                 onSuccess();
             } else {
                 toast.error(result.message || "فشل في الإضافة");
             }
         } catch (error: any) {
-            console.error("Create error:", error);
+            console.error("💥 Create error:", error);
             toast.error(error.message || "حدث خطأ في الإضافة");
         }
     };
@@ -93,6 +122,7 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                         </div>
 
                         <div className="ParentModel__container">
+                            {/* اسم المجمع */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>اسم المجمع *</label>
@@ -102,9 +132,9 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                         name="circle_name"
                                         value={formData.circle_name}
                                         onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black ${
                                             errors.circle_name
-                                                ? "border-red-300 bg-red-50"
+                                                ? "border-red-300 bg-red-50 text-red-900"
                                                 : "border-gray-200 hover:border-gray-300"
                                         }`}
                                         placeholder="أدخل اسم المجمع"
@@ -118,6 +148,7 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                 </div>
                             </div>
 
+                            {/* اسم المدير */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>اسم المدير *</label>
@@ -127,9 +158,9 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                         name="manager_name"
                                         value={formData.manager_name}
                                         onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black ${
                                             errors.manager_name
-                                                ? "border-red-300 bg-red-50"
+                                                ? "border-red-300 bg-red-50 text-red-900"
                                                 : "border-gray-200 hover:border-gray-300"
                                         }`}
                                         placeholder="أدخل اسم المدير"
@@ -143,6 +174,7 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                 </div>
                             </div>
 
+                            {/* بريد المدير */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>بريد المدير *</label>
@@ -152,9 +184,9 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                         name="manager_email"
                                         value={formData.manager_email}
                                         onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black ${
                                             errors.manager_email
-                                                ? "border-red-300 bg-red-50"
+                                                ? "border-red-300 bg-red-50 text-red-900"
                                                 : "border-gray-200 hover:border-gray-300"
                                         }`}
                                         placeholder="example@email.com"
@@ -168,6 +200,7 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                 </div>
                             </div>
 
+                            {/* رقم الجوال */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>رقم الجوال *</label>
@@ -176,19 +209,21 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                             name="country_code"
                                             value={formData.country_code}
                                             onChange={handleInputChange}
-                                            className="w-24 px-3 py-3 border-r-0 border rounded-l-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                            className="w-24 px-3 py-3 border-r-0 border rounded-l-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-black font-medium text-base"
                                             disabled={isSubmitting}
                                         >
                                             <option value="966">966+</option>
                                             <option value="20">20+</option>
+                                            <option value="971">971+</option>
+                                            <option value="966">966+</option>
                                         </select>
                                         <input
                                             name="manager_phone"
                                             value={formData.manager_phone}
                                             onChange={handleInputChange}
-                                            className={`flex-1 px-4 py-3 border rounded-r-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                                            className={`flex-1 px-4 py-3 border rounded-r-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black ${
                                                 errors.manager_phone
-                                                    ? "border-red-300 bg-red-50"
+                                                    ? "border-red-300 bg-red-50 text-red-900"
                                                     : "border-gray-200 hover:border-gray-300 border-l-0"
                                             }`}
                                             placeholder="0551234567"
@@ -203,6 +238,7 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                 </div>
                             </div>
 
+                            {/* الدومين */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>الدومين</label>
@@ -211,13 +247,14 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                         name="domain"
                                         value={formData.domain}
                                         onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black"
                                         placeholder="test-center"
                                         disabled={isSubmitting}
                                     />
                                 </div>
                             </div>
 
+                            {/* رابط المجمع */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>رابط المجمع</label>
@@ -226,13 +263,14 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                         name="circle_link"
                                         value={formData.circle_link}
                                         onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black"
                                         placeholder="https://test.yourapp.com"
                                         disabled={isSubmitting}
                                     />
                                 </div>
                             </div>
 
+                            {/* شعار المجمع */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>شعار المجمع</label>
@@ -284,6 +322,7 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                 </div>
                             </div>
 
+                            {/* ملاحظات */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>ملاحظات</label>
@@ -292,13 +331,14 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                         value={formData.notes}
                                         onChange={handleInputChange}
                                         rows={3}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black"
                                         placeholder="أي ملاحظات إضافية..."
                                         disabled={isSubmitting}
                                     />
                                 </div>
                             </div>
 
+                            {/* زر الإضافة */}
                             <div
                                 className="inputs__submitBtn"
                                 id="ParentModel__btn"
@@ -307,11 +347,11 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                                     type="button"
                                     onClick={() => submitForm(handleSubmit)}
                                     disabled={isSubmitting}
-                                    className="w-full"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 px-6 rounded-xl transition-all focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center"
                                 >
                                     {isSubmitting ? (
                                         <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                                             جاري الإضافة...
                                         </>
                                     ) : (

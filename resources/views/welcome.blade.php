@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- ✅ CSRF Token - ضروري للـ POST requests -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet"/>
     <link rel="shortcut icon" href="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png" type="image/x-icon">
     <title>إتقان</title>

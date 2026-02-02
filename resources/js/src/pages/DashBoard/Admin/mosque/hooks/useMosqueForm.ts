@@ -1,5 +1,6 @@
 // hooks/useMosqueForm.ts
 import { useState, useEffect, useCallback, useRef } from "react";
+import toast from "react-hot-toast";
 
 export interface MosqueFormData {
     mosque_name: string;
@@ -21,6 +22,47 @@ export interface UserOption {
     email: string;
 }
 
+// ✅ CSRF Token Helper
+const getCsrfToken = (): string => {
+    const cookies = document.cookie.split(";");
+    const csrfCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("XSRF-TOKEN="),
+    );
+    return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
+};
+
+// ✅ API Fetch Helper
+const apiFetch = async (url: string, options: RequestInit = {}) => {
+    // CSRF Token أولاً
+    if (!document.cookie.includes("XSRF-TOKEN=")) {
+        await fetch("/sanctum/csrf-cookie", {
+            credentials: "include",
+            headers: { Accept: "application/json" },
+        });
+    }
+
+    const response = await fetch(url, {
+        ...options,
+        credentials: "include",
+        headers: {
+            Accept: "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-XSRF-TOKEN": getCsrfToken(),
+            ...(options.headers as any),
+        },
+    });
+
+    console.log(`🌐 ${url} → Status: ${response.status}`);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ ${response.status}:`, errorText.substring(0, 200));
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    return await response.json();
+};
+
 export const useMosqueForm = (initialData?: Partial<MosqueFormData> | null) => {
     const [formData, setFormData] = useState<MosqueFormData>({
         mosque_name: "",
@@ -36,19 +78,28 @@ export const useMosqueForm = (initialData?: Partial<MosqueFormData> | null) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const logoPreviewUrl = useRef<string | null>(null);
 
-    // Fetch centers and users
+    // ✅ Fetch centers and users - مُصحح
     useEffect(() => {
         const fetchOptions = async () => {
             try {
-                const response = await fetch("/api/super/mosques");
-                const result = await response.json();
+                setLoadingOptions(true);
+                console.log("📥 Loading centers & users...");
 
-                if (result.success) {
-                    setCenters(result.centers || []);
-                    setUsers(result.users || []);
-                }
-            } catch (error) {
+                // ✅ Centers
+                const centersRes = await apiFetch("/api/v1/super/centers");
+                setCenters(centersRes.data || []);
+
+                // ✅ Users/Teachers/Supervisors
+                const usersRes = await apiFetch("/api/v1/teachers");
+                setUsers(usersRes.data || []);
+
+                console.log("✅ Centers loaded:", centersRes.data?.length);
+                console.log("✅ Users loaded:", usersRes.data?.length);
+            } catch (error: any) {
                 console.error("Failed to fetch options:", error);
+                toast.error("فشل في تحميل البيانات");
+                setCenters([]);
+                setUsers([]);
             } finally {
                 setLoadingOptions(false);
             }
@@ -125,6 +176,7 @@ export const useMosqueForm = (initialData?: Partial<MosqueFormData> | null) => {
         [],
     );
 
+    // ✅ submitForm مع FormData headers صح
     const submitForm = useCallback(
         async (onSubmit: (data: FormData) => Promise<void>) => {
             if (!validateForm()) {
@@ -149,6 +201,7 @@ export const useMosqueForm = (initialData?: Partial<MosqueFormData> | null) => {
                 await onSubmit(formDataToSubmit);
             } catch (error) {
                 console.error("Submit failed:", error);
+                toast.error("حدث خطأ في الإرسال");
             } finally {
                 setIsSubmitting(false);
             }

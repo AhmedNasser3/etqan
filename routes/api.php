@@ -1,10 +1,14 @@
 <?php
+// Routes كاملة مع إضافة circles
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\TeacherRegisterController;
+use App\Http\Controllers\Plans\PlanController;
 use App\Http\Controllers\Centers\CenterController;
 use App\Http\Controllers\Centers\MosqueController;
+use App\Http\Controllers\Circles\CirclesController;
+use App\Http\Controllers\Plans\PlanDetailController;
 use App\Http\Controllers\Teachers\TeacherController;
 use App\Http\Controllers\Users\UserSuspendController;
+use App\Http\Controllers\Auth\TeacherRegisterController;
 use App\Http\Controllers\Students\PendingStudentController;
 use App\Http\Controllers\Routes\RouteCustomizationController;
 
@@ -41,7 +45,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         });
     });
 
+    // إضافة Circles Routes داخل centers
     Route::prefix('centers')->name('centers.')->group(function () {
+        // Circles Routes الجديدة
+        // Route::prefix('circles')->name('circles.')->group(function () {
+        //     Route::get('/', [CirclesController::class, 'index']);
+        //     Route::post('/', [CirclesController::class, 'store']);
+        //     Route::get('/{circle}', [CirclesController::class, 'show']);
+        //     Route::put('/{circle}', [CirclesController::class, 'update']);
+        //     Route::delete('/{circle}', [CirclesController::class, 'destroy']);
+        // });
+
         Route::prefix('pending-students')->name('pending-students.')->group(function () {
             Route::get('/', [PendingStudentController::class, 'index']);
             Route::get('/{student}', [PendingStudentController::class, 'show']);
@@ -72,4 +86,41 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::put('/{id}', [RouteCustomizationController::class, 'update']);
         Route::delete('/{id}', [RouteCustomizationController::class, 'destroy']);
     });
+});
+Route::middleware('web')->prefix('v1')->group(function () {
+    Route::prefix('centers')->group(function () {
+        // ✅ Index, Show, Update, Destroy → web middleware (للـ Auth)
+        Route::get('circles', [CirclesController::class, 'index']);
+        Route::get('circles/{circle}', [CirclesController::class, 'show']);
+        Route::put('circles/{circle}', [CirclesController::class, 'update']);
+        Route::delete('circles/{circle}', [CirclesController::class, 'destroy']);
+
+        // ✅ Store بس → api middleware (بدون CSRF)
+        Route::post('circles', [CirclesController::class, 'store'])->middleware('api');
+    });
+
+    // ✅ الـ endpoints الجديدة → web middleware (للـ Auth)
+    Route::get('/centers', [CirclesController::class, 'getCenters'])->name('centers.index');
+    Route::get('/mosques', [CirclesController::class, 'getMosques'])->name('mosques.index');
+    Route::get('/teachers', [CirclesController::class, 'getTeachers'])->name('teachers.index');
+});
+// في routes/api.php
+Route::prefix('v1')->name('api.v1.')->group(function () {
+    // ✅ Plans Routes - هنا بس!
+    Route::prefix('plans')->name('plans.')->group(function () {
+        Route::get('/', [PlanController::class, 'index']);
+        Route::post('/', [PlanController::class, 'store']);        // ← POST /api/v1/plans
+        Route::get('/{plan}', [PlanController::class, 'show']);
+        Route::put('/{plan}', [PlanController::class, 'update']);
+        Route::delete('/{plan}', [PlanController::class, 'destroy']);
+        Route::patch('/{plan}/next-day', [PlanController::class, 'nextDay']);
+    });
+
+    // ✅ Plan Details Routes
+    Route::prefix('plans')->name('plan-details.')->group(function () {
+        Route::get('/{plan}/details', [PlanDetailController::class, 'index']);
+        Route::post('/{plan}/details', [PlanDetailController::class, 'store']);
+    });
+
+    // باقي الـ routes اللي شغالة...
 });

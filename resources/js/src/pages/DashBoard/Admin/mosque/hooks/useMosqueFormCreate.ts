@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import toast from "react-hot-toast";
 
 interface MosqueFormData {
@@ -20,6 +20,48 @@ interface UserOption {
     name: string;
     email: string;
 }
+
+// ✅ CSRF Token Helper
+const getCsrfToken = (): string => {
+    const cookies = document.cookie.split(";");
+    const csrfCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("XSRF-TOKEN="),
+    );
+    return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
+};
+
+// ✅ API Fetch Helper مع Auth كامل
+const apiFetch = async (url: string, options: RequestInit = {}) => {
+    // 1️⃣ CSRF Token أولاً
+    if (!document.cookie.includes("XSRF-TOKEN=")) {
+        await fetch("/sanctum/csrf-cookie", {
+            credentials: "include",
+            headers: { Accept: "application/json" },
+        });
+    }
+
+    const response = await fetch(url, {
+        ...options,
+        credentials: "include",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-XSRF-TOKEN": getCsrfToken(),
+            ...(options.headers as any),
+        },
+    });
+
+    console.log(`🌐 ${url} → Status: ${response.status}`);
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ ${response.status}:`, errorText.substring(0, 200));
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    return await response.json();
+};
 
 export const useMosqueFormCreate = () => {
     const [formData, setFormData] = useState<MosqueFormData>({
@@ -78,23 +120,27 @@ export const useMosqueFormCreate = () => {
         [errors],
     );
 
+    // ✅ loadData محدث مع apiFetch
     const loadData = useCallback(async () => {
         setLoadingData(true);
         try {
-            const mosquesRes = await fetch("/api/super/mosques");
+            console.log("📥 Loading centers & teachers...");
 
-            if (!mosquesRes.ok) {
-                throw new Error(`HTTP ${mosquesRes.status}`);
-            }
+            // ✅ Centers
+            const centersRes = await apiFetch("/api/v1/super/centers");
+            setCenters(centersRes.data || []);
 
-            const result = await mosquesRes.json();
+            // ✅ Teachers/Supervisors
+            const teachersRes = await apiFetch("/api/v1/teachers");
+            setUsers(teachersRes.data || []);
 
-            if (result.success) {
-                setUsers(result.users || []);
-                setCenters(result.centers || []);
-            }
-        } catch (error) {
+            console.log("✅ Centers:", centersRes.data?.length);
+            console.log("✅ Teachers:", teachersRes.data?.length);
+        } catch (error: any) {
             console.error("خطأ في تحميل البيانات:", error);
+            toast.error("خطأ في تحميل البيانات");
+            setCenters([]);
+            setUsers([]);
         } finally {
             setLoadingData(false);
         }
@@ -127,6 +173,11 @@ export const useMosqueFormCreate = () => {
         },
         [formData, validateForm, errors],
     );
+
+    // ✅ Auto load data on mount
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     return {
         formData,

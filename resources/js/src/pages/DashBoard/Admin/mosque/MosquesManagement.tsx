@@ -48,7 +48,7 @@ const MosquesManagement: React.FC = () => {
 
     const handleDelete = async (id: number) => {
         try {
-            const response = await fetch(`/api/super/mosques/${id}`, {
+            const response = await fetch(`/api/v1/super/mosques/${id}`, {
                 method: "DELETE",
                 headers: { Accept: "application/json" },
             });
