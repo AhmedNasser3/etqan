@@ -57,6 +57,7 @@ import Mosque from "./src/pages/DashBoard/Admin/mosque/MosquesManagement";
 import CirclesManagement from "./src/pages/DashBoard/Center/Circles/CirclesManagement";
 import PlansManagement from "./src/pages/DashBoard/Center/Plans/PlansManagement";
 import PlanDetailsManagement from "./src/pages/DashBoard/Center/PlansDetails/PlanDetailsManagement";
+import SchedulesManagement from "./src/pages/DashBoard/Center/PlanCircleSchedule/SchedulesManagement";
 
 function UserLayout() {
     return (
@@ -204,6 +205,10 @@ function App() {
                         <Route
                             path="plans-details-manegment"
                             element={<PlanDetailsManagement />}
+                        />
+                        <Route
+                            path="shedule-manegment"
+                            element={<SchedulesManagement />}
                         />
                         <Route path="mosque-manegment" element={<Mosque />} />
                         <Route path="audit-log" element={<AuditLogPage />} />

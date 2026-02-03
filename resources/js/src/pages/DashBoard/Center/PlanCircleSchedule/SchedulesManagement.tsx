@@ -1,3 +1,4 @@
+// SchedulesManagement.tsx
 import { useState, useCallback, useMemo } from "react";
 import toast from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
@@ -5,53 +6,43 @@ import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
 import { PiWhatsappLogoDuotone } from "react-icons/pi";
 import { FiEdit3, FiTrash2 } from "react-icons/fi";
 import { IoMdAdd } from "react-icons/io";
-import CreatePlanPage from "./models/CreatePlanPage";
-import UpdatePlanPage from "./models/UpdatePlanPage";
-import { usePlans } from "./hooks/usePlans";
+import { usePlanSchedules, ScheduleType } from "./hooks/usePlanSchedules";
+import CreateSchedulePage from "./models/CreateSchedulePage";
 
-interface PlanType {
-    id: number;
-    plan_name: string;
-    total_months: number;
-    center?: { id: number; name: string };
-    center_id: number;
-    details_count: number;
-    current_day?: number;
-    created_at: string;
-}
-
-const PlansManagement: React.FC = () => {
+const SchedulesManagement: React.FC = () => {
     const {
-        plans = [],
+        schedules = [],
         loading = false,
         pagination,
         currentPage,
-        searchPlans,
+        searchSchedules,
         goToPage,
         refetch,
-    } = usePlans();
+    } = usePlanSchedules();
 
     const [search, setSearch] = useState("");
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+    const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(
+        null,
+    );
 
     const handleSearch = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const value = e.target.value;
             setSearch(value);
-            searchPlans(value);
+            searchSchedules(value);
         },
-        [searchPlans],
+        [searchSchedules],
     );
 
-    const handleEdit = useCallback((plan: PlanType) => {
-        setSelectedPlanId(plan.id);
+    const handleEdit = useCallback((schedule: ScheduleType) => {
+        setSelectedScheduleId(schedule.id);
         setShowUpdateModal(true);
     }, []);
 
     const handleDelete = async (id: number) => {
-        if (!confirm("هل أنت متأكد من حذف هذه الخطة؟")) return;
+        if (!confirm("هل أنت متأكد من حذف هذا الموعد؟")) return;
 
         try {
             const csrfToken =
@@ -59,7 +50,7 @@ const PlansManagement: React.FC = () => {
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content") || "";
 
-            const response = await fetch(`/api/v1/plans/${id}`, {
+            const response = await fetch(`/api/v1/plans/schedules/${id}`, {
                 method: "DELETE",
                 credentials: "include",
                 headers: {
@@ -70,11 +61,11 @@ const PlansManagement: React.FC = () => {
                 },
             });
 
-            const result = await response.json();
             if (response.ok) {
-                toast.success("تم حذف الخطة بنجاح ✅");
+                toast.success("تم حذف الموعد بنجاح ✅");
                 refetch();
             } else {
+                const result = await response.json();
                 toast.error(result.message || "فشل في الحذف");
             }
         } catch {
@@ -84,11 +75,11 @@ const PlansManagement: React.FC = () => {
 
     const handleCloseUpdateModal = useCallback(() => {
         setShowUpdateModal(false);
-        setSelectedPlanId(null);
+        setSelectedScheduleId(null);
     }, []);
 
     const handleUpdateSuccess = useCallback(() => {
-        toast.success("تم تحديث بيانات الخطة بنجاح! ✨");
+        toast.success("تم تحديث الموعد بنجاح! ✨");
         refetch();
         handleCloseUpdateModal();
     }, [refetch, handleCloseUpdateModal]);
@@ -98,7 +89,7 @@ const PlansManagement: React.FC = () => {
     }, []);
 
     const handleCreateSuccess = useCallback(() => {
-        toast.success("تم إضافة الخطة بنجاح! 🎉");
+        toast.success("تم إضافة الموعد بنجاح! 🎉");
         refetch();
         handleCloseCreateModal();
     }, [refetch, handleCloseCreateModal]);
@@ -110,16 +101,32 @@ const PlansManagement: React.FC = () => {
     const stats = useMemo(
         () => ({
             total: pagination?.total || 0,
-            active: plans.filter((p) => p.current_day && p.current_day > 0)
-                .length,
+            available: schedules.filter((s) => s.is_available).length,
             currentPage,
             totalPages: pagination?.last_page || 1,
         }),
-        [pagination?.total, plans.length, currentPage, pagination?.last_page],
+        [
+            pagination?.total,
+            schedules.length,
+            currentPage,
+            pagination?.last_page,
+        ],
     );
 
-    const getCenterName = useCallback((plan: PlanType) => {
-        return plan.center?.name || `مركز #${plan.center_id}` || "غير محدد";
+    const getTeacherName = useCallback((schedule: ScheduleType) => {
+        return schedule.teacher?.name || "غير محدد";
+    }, []);
+
+    const getCircleName = useCallback((schedule: ScheduleType) => {
+        return schedule.circle?.name || "غير محدد";
+    }, []);
+
+    const getAvailabilityStatus = useCallback((schedule: ScheduleType) => {
+        if (!schedule.is_available) return "غير متاح";
+        if (schedule.max_students === null) return "مفتوح";
+        const remaining =
+            (schedule.max_students || 0) - schedule.booked_students;
+        return `${remaining}/${schedule.max_students}`;
     }, []);
 
     const renderLogo = useCallback((name: string) => {
@@ -131,7 +138,7 @@ const PlansManagement: React.FC = () => {
             .slice(0, 2)
             .toUpperCase();
         return (
-            <div className="w-full h-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white rounded-lg">
+            <div className="w-full h-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white rounded-lg">
                 {initials}
             </div>
         );
@@ -145,7 +152,7 @@ const PlansManagement: React.FC = () => {
             <div className="flex items-center justify-center min-h-[400px] p-8">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                    <p className="text-gray-600">جاري تحميل الخطط...</p>
+                    <p className="text-gray-600">جاري تحميل المواعيد...</p>
                 </div>
             </div>
         );
@@ -153,16 +160,16 @@ const PlansManagement: React.FC = () => {
 
     return (
         <>
-            {showUpdateModal && selectedPlanId && (
-                <UpdatePlanPage
-                    planId={selectedPlanId}
+            {/* {showUpdateModal && selectedScheduleId && (
+                <UpdateSchedulePage
+                    scheduleId={selectedScheduleId}
                     onClose={handleCloseUpdateModal}
                     onSuccess={handleUpdateSuccess}
                 />
-            )}
+            )} */}
 
             {showCreateModal && (
-                <CreatePlanPage
+                <CreateSchedulePage
                     onClose={handleCloseCreateModal}
                     onSuccess={handleCreateSuccess}
                 />
@@ -177,7 +184,7 @@ const PlansManagement: React.FC = () => {
                             </i>
                         </div>
                         <div>
-                            <h3>إجمالي الخطط</h3>
+                            <h3>إجمالي المواعيد</h3>
                             <p className="text-2xl font-bold text-purple-600">
                                 {stats.total}
                             </p>
@@ -190,9 +197,9 @@ const PlansManagement: React.FC = () => {
                             </i>
                         </div>
                         <div>
-                            <h3>نشطة حالياً</h3>
+                            <h3>متاحة حالياً</h3>
                             <p className="text-2xl font-bold text-blue-600">
-                                {stats.active}
+                                {stats.available}
                             </p>
                         </div>
                     </div>
@@ -203,9 +210,9 @@ const PlansManagement: React.FC = () => {
                             </i>
                         </div>
                         <div>
-                            <h3>خطط معتمدة</h3>
+                            <h3>محجوزة</h3>
                             <p className="text-2xl font-bold text-green-600">
-                                {stats.total}
+                                {stats.total - stats.available}
                             </p>
                         </div>
                     </div>
@@ -220,15 +227,15 @@ const PlansManagement: React.FC = () => {
                             <i>
                                 <RiRobot2Fill />
                             </i>
-                            كل خطة تحتوي على تفاصيل يومية للحفظ والمراجعة
+                            مواعيد الحلقات للخطط الخاصة بمجمعك
                         </div>
                         <div className="plan__current">
-                            <h2>قائمة الخطط</h2>
+                            <h2>جدول المواعيد</h2>
                             <div className="plan__date-range">
                                 <div className="date-picker to">
                                     <input
                                         type="search"
-                                        placeholder="البحث بالخطة أو المجمع..."
+                                        placeholder="البحث بالخطة أو الحلقة..."
                                         value={search}
                                         onChange={handleSearch}
                                         disabled={loading}
@@ -243,7 +250,7 @@ const PlansManagement: React.FC = () => {
                                         size={20}
                                         className="inline mr-2"
                                     />
-                                    خطة جديدة
+                                    موعد جديد
                                 </button>
                             </div>
                         </div>
@@ -255,40 +262,60 @@ const PlansManagement: React.FC = () => {
                         <thead>
                             <tr>
                                 <th>الشعار</th>
-                                <th>اسم الخطة</th>
-                                <th>المجمع</th>
+                                <th>الخطة</th>
+                                <th>الحلقة</th>
+                                <th>المدرس</th>
+                                <th>التاريخ</th>
+                                <th>الوقت</th>
                                 <th>المدة</th>
-                                <th>عدد الأيام</th>
-                                <th>اليوم الحالي</th>
+                                <th>الحالة</th>
                                 <th>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {plans.length === 0 && !loading ? (
+                            {schedules.length === 0 && !loading ? (
                                 <tr>
                                     <td
-                                        colSpan={7}
+                                        colSpan={9}
                                         className="text-center py-8 text-gray-500"
                                     >
-                                        لا يوجد خطط حالياً
+                                        لا يوجد مواعيد حالياً
                                     </td>
                                 </tr>
                             ) : (
-                                plans.map((item) => (
+                                schedules.map((item) => (
                                     <tr
                                         key={item.id}
                                         className="plan__row active"
                                     >
                                         <td className="teacherStudent__img">
                                             <div className="w-12 h-12 rounded-lg overflow-hidden">
-                                                {renderLogo(item.plan_name)}
+                                                {renderLogo(item.circle.name)}
                                             </div>
                                         </td>
-                                        <td>{item.plan_name}</td>
-                                        <td>{getCenterName(item)}</td>
-                                        <td>{item.total_months} شهر</td>
-                                        <td>{item.details_count || 0}</td>
-                                        <td>{item.current_day || "-"}</td>
+                                        <td>{item.plan.plan_name}</td>
+                                        <td>{getCircleName(item)}</td>
+                                        <td>{getTeacherName(item)}</td>
+                                        <td>
+                                            {new Date(
+                                                item.schedule_date,
+                                            ).toLocaleDateString("ar-EG")}
+                                        </td>
+                                        <td>
+                                            {item.start_time} - {item.end_time}
+                                        </td>
+                                        <td>{item.duration_minutes} د</td>
+                                        <td>
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                                    item.is_available
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-red-100 text-red-800"
+                                                }`}
+                                            >
+                                                {getAvailabilityStatus(item)}
+                                            </span>
+                                        </td>
                                         <td>
                                             <div className="teacherStudent__btns">
                                                 <button
@@ -297,7 +324,7 @@ const PlansManagement: React.FC = () => {
                                                         handleEdit(item)
                                                     }
                                                     disabled={loading}
-                                                    title="تعديل بيانات الخطة"
+                                                    title="تعديل الموعد"
                                                 >
                                                     <FiEdit3 />
                                                 </button>
@@ -307,7 +334,7 @@ const PlansManagement: React.FC = () => {
                                                         handleDelete(item.id)
                                                     }
                                                     disabled={loading}
-                                                    title="حذف الخطة"
+                                                    title="حذف الموعد"
                                                 >
                                                     <FiTrash2 />
                                                 </button>
@@ -327,8 +354,8 @@ const PlansManagement: React.FC = () => {
                     >
                         <div className="flex justify-between items-center p-4">
                             <div className="text-sm text-gray-600">
-                                عرض {plans.length} من {pagination.total} خطة •
-                                الصفحة <strong>{currentPage}</strong> من{" "}
+                                عرض {schedules.length} من {pagination.total}{" "}
+                                موعد • الصفحة <strong>{currentPage}</strong> من{" "}
                                 <strong>{pagination.last_page}</strong>
                             </div>
                             <div className="flex items-center gap-2">
@@ -360,22 +387,34 @@ const PlansManagement: React.FC = () => {
                 >
                     <div className="userProfile__progressContent">
                         <div className="userProfile__progressTitle">
-                            <h1>معدل النشاط</h1>
+                            <h1>معدل الإشغال</h1>
                         </div>
-                        <p>94%</p>
+                        <p>
+                            {Math.round(
+                                (1 -
+                                    stats.available /
+                                        Math.max(stats.total, 1)) *
+                                    100,
+                            )}
+                            %
+                        </p>
                         <div className="userProfile__progressBar">
-                            <span style={{ width: "94%" }}></span>
+                            <span
+                                style={{
+                                    width: `${Math.min((1 - stats.available / Math.max(stats.total, 1)) * 100, 100)}%`,
+                                }}
+                            ></span>
                         </div>
                     </div>
                     <div className="userProfile__progressContent">
                         <div className="userProfile__progressTitle">
-                            <h1>عدد الخطط</h1>
+                            <h1>عدد المواعيد</h1>
                         </div>
-                        <p>{plans.length}</p>
+                        <p>{schedules.length}</p>
                         <div className="userProfile__progressBar">
                             <span
                                 style={{
-                                    width: `${Math.min((plans.length / 50) * 100, 100)}%`,
+                                    width: `${Math.min((schedules.length / 50) * 100, 100)}%`,
                                 }}
                             ></span>
                         </div>
@@ -386,4 +425,4 @@ const PlansManagement: React.FC = () => {
     );
 };
 
-export default PlansManagement;
+export default SchedulesManagement;

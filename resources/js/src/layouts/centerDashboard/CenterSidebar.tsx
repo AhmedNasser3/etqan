@@ -17,6 +17,9 @@ import { FaBullhorn } from "react-icons/fa";
 import { FaDoorOpen } from "react-icons/fa";
 import { FaFileAlt } from "react-icons/fa";
 import { FaHistory } from "react-icons/fa";
+import { FaMosque } from "react-icons/fa";
+import { FaBookOpen } from "react-icons/fa";
+import { MdOutlineDomain } from "react-icons/md";
 
 const CenterSidebar: React.FC = () => {
     const [activePage, setActivePage] = useState("dashboard");
@@ -27,9 +30,9 @@ const CenterSidebar: React.FC = () => {
         const currentPath = window.location.pathname;
 
         if (currentPath.includes("students/approval")) {
-            setActivePage("students");
+            setActivePage("mosque");
             setActiveSubPage("/center-dashboard/students/approval");
-            setOpenMenus((prev) => ({ ...prev, students: true }));
+            setOpenMenus((prev) => ({ ...prev, mosque: true }));
         } else if (currentPath.includes("staff-approval")) {
             setActivePage("staff");
             setActiveSubPage("/center-dashboard/staff-approval");
@@ -117,22 +120,31 @@ const CenterSidebar: React.FC = () => {
         },
         {
             key: "mosque",
-            href: "/center-dashboard/mosque-manegment",
-            icon: <TbLayoutDashboardFilled />,
-            title: "المساجد",
-            activePage: "mosque",
-        },
-        {
-            key: "students",
             href: "#",
             icon: (
                 <IoIosArrowDown
-                    className={`arrow-icon ${openMenus.students ? "rotated" : ""}`}
+                    className={`arrow-icon ${openMenus.mosque ? "rotated" : ""}`}
                 />
             ),
-            title: "الطلاب",
-            activePage: "students",
+            title: "إدارة المساجد والحلقات",
+            activePage: "mosque",
             submenu: [
+                {
+                    href: "/center-dashboard/mosque-manegment",
+                    title: "المساجد",
+                },
+                {
+                    href: "/center-dashboard/circle-manegment",
+                    title: "إدارة الحلقات",
+                },
+                {
+                    href: "/center-dashboard/plans-manegment",
+                    title: "إدارة الخطط",
+                },
+                {
+                    href: "/center-dashboard/plans-details-manegment",
+                    title: "تفاصيل الخطط",
+                },
                 {
                     href: "/center-dashboard/students/approval",
                     title: "اعتماد الطلاب",
@@ -147,7 +159,7 @@ const CenterSidebar: React.FC = () => {
                     className={`arrow-icon ${openMenus.staff ? "rotated" : ""}`}
                 />
             ),
-            title: "موظفين",
+            title: "إدارة الموظفين",
             activePage: "staff",
             submenu: [
                 {
@@ -172,7 +184,7 @@ const CenterSidebar: React.FC = () => {
                     className={`arrow-icon ${openMenus.financial ? "rotated" : ""}`}
                 />
             ),
-            title: "ادارة مالية",
+            title: "الإدارة المالية",
             activePage: "financial",
             submenu: [
                 {
@@ -194,38 +206,38 @@ const CenterSidebar: React.FC = () => {
             ],
         },
         {
-            key: "doamin",
+            key: "domain",
             href: "/center-dashboard/domian-links",
-            icon: <FaLink />,
+            icon: <MdOutlineDomain />,
             title: "روابط مهمة",
-            activePage: "doamin",
+            activePage: "domain",
         },
         {
             key: "education",
             href: "/center-dashboard/education-supervisor",
             icon: <FaChalkboardTeacher />,
-            title: "ادارة معلمين وحلقات",
+            title: "إدارة معلمين وحلقات",
             activePage: "education",
         },
         {
             key: "attendance",
             href: "/center-dashboard/motivation-supervisor",
             icon: <FaBullhorn />,
-            title: "ادارة التحفيزات",
+            title: "إدارة التحفيزات",
             activePage: "attendance",
         },
         {
             key: "room",
             href: "/center-dashboard/rooms-supervisor",
             icon: <FaDoorOpen />,
-            title: "ادارة الغرف",
+            title: "إدارة الغرف",
             activePage: "room",
         },
         {
             key: "reports",
             href: "/center-dashboard/student-supervisor",
             icon: <FaUsers />,
-            title: "ادارة الطلاب",
+            title: "إدارة الطلاب",
             activePage: "reports",
         },
         {
@@ -239,7 +251,7 @@ const CenterSidebar: React.FC = () => {
             key: "messages",
             href: "/center-dashboard/audit-log",
             icon: <FaHistory />,
-            title: "سجل الاجراءات",
+            title: "سجل الإجراءات",
             activePage: "messages",
         },
     ];

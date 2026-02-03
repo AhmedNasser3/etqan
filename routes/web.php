@@ -1,11 +1,12 @@
 <?php
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\EmailLoginController;
-use App\Http\Controllers\Auth\StudentRegistrationController;
 use App\Http\Controllers\Auth\TeacherRegisterController;
+use App\Http\Controllers\Auth\StudentRegistrationController;
+use App\Http\Controllers\Plans\PlanCircleScheduleController;
 
 Route::middleware('web')->group(function () {
     // ✅ Auth Routes - هنا عشان الـ session تشتغل
@@ -41,3 +42,23 @@ Route::middleware('web')->group(function () {
 Route::get('/{path?}', function () {
     return view('app');
 })->where('path', '.*');
+
+// ✅ TEST ROUTE - ضعه في أول web middleware group
+Route::middleware('web')->prefix('v1')->group(function () {
+    // ✅ DEBUG ENDPOINT - اختبره الأول
+    Route::get('debug-user', function () {
+        $user = auth()->user();
+        return response()->json([
+            'user' => $user,
+            'center_id' => $user?->center_id,
+            'raw_user' => $user->toArray()
+        ]);
+    });
+
+    // ✅ Schedule Create (الأساسي)
+    Route::prefix('schedule-create')->name('schedule-create.')->group(function () {
+        Route::get('plans', [PlanCircleScheduleController::class, 'getPlansForCreate']);
+        Route::get('circles', [PlanCircleScheduleController::class, 'getCirclesForCreate']);
+        Route::get('teachers', [PlanCircleScheduleController::class, 'getTeachersForCreate']);
+    });
+});

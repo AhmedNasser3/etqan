@@ -4,13 +4,11 @@ import { FiX } from "react-icons/fi";
 import { usePlanDetailFormCreate } from "../hooks/usePlanDetailFormCreate";
 
 interface CreatePlanDetailPageProps {
-    planId: number;
     onClose: () => void;
     onSuccess: () => void;
 }
 
 const CreatePlanDetailPage: React.FC<CreatePlanDetailPageProps> = ({
-    planId,
     onClose,
     onSuccess,
 }) => {
@@ -21,8 +19,9 @@ const CreatePlanDetailPage: React.FC<CreatePlanDetailPageProps> = ({
         handleInputChange,
         submitForm,
         existingDays,
-        loadingDays,
-    } = usePlanDetailFormCreate(planId);
+        availablePlans,
+        loadingPlans,
+    } = usePlanDetailFormCreate();
 
     const handleSubmit = async (formDataSubmit: FormData) => {
         try {
@@ -31,7 +30,9 @@ const CreatePlanDetailPage: React.FC<CreatePlanDetailPageProps> = ({
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content") || "";
 
-            const response = await fetch(`/api/v1/plans/${planId}/details`, {
+            console.log("📤 إرسال بيانات اليوم الجديد...");
+
+            const response = await fetch(`/api/v1/plans/details`, {
                 method: "POST",
                 credentials: "include",
                 headers: {
@@ -42,11 +43,13 @@ const CreatePlanDetailPage: React.FC<CreatePlanDetailPageProps> = ({
                 body: formDataSubmit,
             });
 
+            console.log("📡 Response status:", response.status);
+
             if (!response.ok) {
                 const errorData = await response
                     .json()
                     .catch(() => response.text());
-                console.error("Error response:", errorData);
+                console.error("❌ Error response:", errorData);
 
                 if (typeof errorData === "object" && errorData.errors) {
                     const errorMessages = Object.values(
@@ -55,16 +58,20 @@ const CreatePlanDetailPage: React.FC<CreatePlanDetailPageProps> = ({
                     toast.error(errorMessages[0] || "حدث خطأ في الإضافة");
                     return;
                 }
+                if (response.status === 401) {
+                    toast.error("⚠️ يرجى تسجيل الدخول مرة أخرى");
+                    return;
+                }
                 throw new Error(`HTTP ${response.status}`);
             }
 
             const result = await response.json();
-            console.log("Create plan detail response:", result);
+            console.log("✅ Create plan detail success:", result);
 
             toast.success("تم إضافة اليوم بنجاح!");
             onSuccess();
         } catch (error: any) {
-            console.error("Create plan detail error:", error);
+            console.error("❌ Create plan detail error:", error);
             toast.error(error.message || "حدث خطأ في الإضافة");
         }
     };
@@ -72,19 +79,6 @@ const CreatePlanDetailPage: React.FC<CreatePlanDetailPageProps> = ({
     const isDayExists = existingDays.some(
         (day) => day.day_number === parseInt(formData.day_number || "0"),
     );
-
-    if (loadingDays) {
-        return (
-            <div className="ParentModel">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <div className="text-center">
-                        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                        <p>جاري تحميل الأيام الموجودة...</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="ParentModel">
@@ -110,11 +104,82 @@ const CreatePlanDetailPage: React.FC<CreatePlanDetailPageProps> = ({
                             </div>
                             <div className="ParentModel__innerTitle">
                                 <h1>إضافة يوم جديد للخطة</h1>
-                                <p>أدخل تفاصيل الحفظ والمراجعة لليوم</p>
+                                <p>
+                                    اختر الخطة وأدخل تفاصيل الحفظ والمراجعة
+                                    لليوم
+                                </p>
                             </div>
                         </div>
 
                         <div className="ParentModel__container">
+                            {/* ✅ اختيار الخطة */}
+                            <div className="inputs__verifyOTPBirth">
+                                <div className="inputs__email">
+                                    <label>الخطة *</label>
+                                    <select
+                                        required
+                                        name="plan_id"
+                                        value={formData.plan_id}
+                                        onChange={handleInputChange}
+                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                                            errors.plan_id || loadingPlans
+                                                ? "border-red-300 bg-red-50"
+                                                : "border-gray-200 hover:border-gray-300"
+                                        }`}
+                                        disabled={isSubmitting || loadingPlans}
+                                    >
+                                        <option value={0}>
+                                            -- اختر خطة --
+                                        </option>
+                                        {availablePlans.map((plan, index) => (
+                                            <option
+                                                key={`plan-${plan.id}-${index}`} // ✅ key فريد 100%
+                                                value={plan.id}
+                                            >
+                                                {plan.plan_name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.plan_id && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {errors.plan_id}
+                                        </p>
+                                    )}
+                                    {loadingPlans && (
+                                        <div className="mt-1 text-sm text-blue-600 flex items-center">
+                                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                                            جاري تحميل الخطط...
+                                        </div>
+                                    )}
+                                    {availablePlans.length === 0 &&
+                                        !loadingPlans && (
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                لا توجد خطط متاحة
+                                            </p>
+                                        )}
+                                </div>
+                            </div>
+
+                            {/* ✅ الأيام الموجودة */}
+                            {formData.plan_id > 0 &&
+                                existingDays.length > 0 && (
+                                    <div className="inputs__verifyOTPBirth">
+                                        <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                                            <p className="text-sm text-yellow-800 font-medium mb-1">
+                                                الأيام الموجودة في الخطة:
+                                            </p>
+                                            <p className="text-xs text-yellow-700">
+                                                {existingDays
+                                                    .map(
+                                                        (d) =>
+                                                            `يوم ${d.day_number}`,
+                                                    )
+                                                    .join(", ")}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                             {/* رقم اليوم */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
@@ -137,7 +202,8 @@ const CreatePlanDetailPage: React.FC<CreatePlanDetailPageProps> = ({
                                     />
                                     {isDayExists && (
                                         <p className="mt-1 text-sm text-red-600">
-                                            هذا اليوم موجود بالفعل
+                                            هذا اليوم موجود بالفعل في الخطة
+                                            المختارة
                                         </p>
                                     )}
                                     {errors.day_number && (
@@ -208,7 +274,13 @@ const CreatePlanDetailPage: React.FC<CreatePlanDetailPageProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => submitForm(handleSubmit)}
-                                    disabled={isSubmitting || isDayExists}
+                                    disabled={
+                                        isSubmitting ||
+                                        isDayExists ||
+                                        !formData.plan_id ||
+                                        loadingPlans ||
+                                        availablePlans.length === 0
+                                    }
                                     className="w-full"
                                 >
                                     {isSubmitting ? (

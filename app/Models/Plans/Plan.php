@@ -1,17 +1,19 @@
 <?php
 
 namespace App\Models\Plans;
+
 use App\Models\Tenant\Center;
 use App\Models\Plans\PlanDetail;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Plans\PlanCircleSchedule;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Plans\CircleStudentBooking; // ✅ اختياري
 
 class Plan extends Model
 {
     use HasFactory;
 
-    protected $table = 'plans';  // تأكد من الجدول
-
+    protected $table = 'plans';
     protected $fillable = [
         'center_id',
         'plan_name',
@@ -22,38 +24,42 @@ class Plan extends Model
         'total_months' => 'integer'
     ];
 
-    /**
-     * علاقة المجمع
-     */
+    // ✅ العلاقات الموجودة
     public function center()
     {
         return $this->belongsTo(Center::class);
     }
 
-    /**
-     * تفاصيل الخطة
-     */
     public function details()
     {
         return $this->hasMany(PlanDetail::class);
     }
 
-    /**
-     * اليوم الحالي
-     */
+    // ✅ العلاقة الجديدة المطلوبة 👈
+    public function circleSchedules()
+    {
+        return $this->hasMany(PlanCircleSchedule::class);
+    }
+
+    // ✅ علاقة إضافية (اختيارية - مفيدة جداً)
+    public function bookings()
+    {
+        return $this->hasManyThrough(
+            CircleStudentBooking::class,
+            PlanCircleSchedule::class
+        );
+    }
+
+    // ✅ Methods الموجودة
     public function currentDay()
     {
         return $this->details()->where('status', 'current')->first();
     }
 
-    /**
-     * نسبة الإنجاز
-     */
     public function completionPercentage()
     {
         $total = $this->details()->count();
         $completed = $this->details()->where('status', 'completed')->count();
-
         return $total > 0 ? round(($completed / $total) * 100, 2) : 0;
     }
 }

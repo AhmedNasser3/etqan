@@ -28,9 +28,7 @@ export const usePlans = () => {
     const [pagination, setPagination] = useState<Pagination | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
-
-    // ✅ الحل النهائي - number | null (للـ browser)
-    const searchTimeoutRef = useRef<number | null>(null);
+    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const fetchPlans = useCallback(
         async (pageNum: number = 1, search: string = "") => {
@@ -39,7 +37,9 @@ export const usePlans = () => {
                 const params = new URLSearchParams({
                     page: pageNum.toString(),
                 });
-                if (search.trim()) params.append("search", search.trim());
+                if (search.trim()) {
+                    params.append("search", search.trim());
+                }
 
                 const response = await fetch(
                     `/api/v1/plans?${params.toString()}`,
@@ -55,13 +55,15 @@ export const usePlans = () => {
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     toast.error(errorData.message || "حدث خطأ");
+                    setPlans([]);
+                    setPagination(null);
                     return;
                 }
 
                 const data = await response.json();
                 console.log("✅ Plans loaded:", data);
 
-                setPlans(data.data || []);
+                setPlans(Array.isArray(data.data) ? data.data : []);
                 setPagination({
                     current_page: data.current_page || 1,
                     last_page: data.last_page || 1,
@@ -70,9 +72,12 @@ export const usePlans = () => {
                     from: data.from || null,
                     to: data.to || null,
                 });
+                setCurrentPage(data.current_page || 1);
             } catch (error) {
                 console.error("❌ Error:", error);
                 toast.error("فشل في الاتصال");
+                setPlans([]);
+                setPagination(null);
             } finally {
                 setLoading(false);
             }
@@ -83,12 +88,12 @@ export const usePlans = () => {
     const searchPlans = useCallback(
         (term: string) => {
             // Clear previous timeout
-            if (searchTimeoutRef.current !== null) {
-                window.clearTimeout(searchTimeoutRef.current);
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
             }
 
             // Set new timeout
-            searchTimeoutRef.current = window.setTimeout(() => {
+            searchTimeoutRef.current = setTimeout(() => {
                 setSearchTerm(term);
                 setCurrentPage(1);
                 fetchPlans(1, term);
@@ -109,24 +114,19 @@ export const usePlans = () => {
         fetchPlans(currentPage, searchTerm);
     }, [fetchPlans, currentPage, searchTerm]);
 
-    // Cleanup effect
-    useEffect(() => {
-        return () => {
-            if (searchTimeoutRef.current !== null) {
-                window.clearTimeout(searchTimeoutRef.current);
-            }
-        };
-    }, []);
-
-    // Initial load
+    // ✅ Initial load - بس مرة واحدة
     useEffect(() => {
         fetchPlans(1, "");
     }, [fetchPlans]);
 
-    // Pagination effect
+    // ✅ Cleanup timeout
     useEffect(() => {
-        fetchPlans(currentPage, searchTerm);
-    }, [currentPage, searchTerm, fetchPlans]);
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, []);
 
     return {
         plans,
