@@ -69,32 +69,59 @@ class PlanCircleScheduleController extends Controller
         return response()->json($circles);
     }
 
-    // ✅ 3️⃣ جلب المدرسين - Debug كامل
-    public function getTeachersForCreate(Request $request)
-    {
-        Log::info('👨‍🏫 [STEP 1] getTeachersForCreate');
+public function getTeachersForCreate(Request $request)
+{
+    Log::info('👨‍🏫 [STEP 1] getTeachersForCreate START', ['user_id' => Auth::id()]);
 
+    try {
         $user = Auth::user();
-        $teachers = DB::table('users as t')
-            ->leftJoin('user_centers as uc', 't.id', '=', 'uc.user_id')
-            ->where(function($q) use ($user) {
-                $q->where('t.center_id', $user->center_id)
-                  ->orWhere('uc.center_id', $user->center_id);
-            })
-            ->where('t.role_id', 2) // المدرسين
-            ->where('t.active', 1)
-            ->select('t.id', 't.name')
-            ->distinct()
-            ->orderBy('t.name')
+        Log::info('👤 [STEP 2] User check', [
+            'user_id' => $user?->id,
+            'center_id' => $user?->center_id,
+        ]);
+
+        if (!$user || !$user->center_id) {
+            Log::error('❌ [STEP 3] No user/center_id');
+            return response()->json(['error' => 'لا يوجد مركز'], 403);
+        }
+
+        Log::info('🔍 [STEP 4] Querying TEACHERS table', ['center_id' => $user->center_id]);
+
+        // ✅ الحل الكامل - status من users
+        $teachers = DB::table('teachers as t')
+            ->join('users as u', 't.user_id', '=', 'u.id')
+            ->where('u.center_id', $user->center_id)
+            ->where('t.role', 'teacher')
+            ->where('u.status', 'active') // ✅ status = 'active' مش active = 1
+            ->select(
+                'u.id',
+                'u.name'
+            )
+            ->orderBy('u.name')
+            ->limit(50)
             ->get();
 
-        Log::info('✅ [STEP 2 SUCCESS] Teachers loaded', [
+        Log::info('✅ [STEP 5 SUCCESS] Teachers loaded', [
             'count' => $teachers->count(),
-            'center_id' => $user->center_id
+            'center_id' => $user->center_id,
+            'sample' => $teachers->take(2)->toArray()
         ]);
 
         return response()->json($teachers);
+
+    } catch (\Exception $e) {
+        Log::error('💥 [STEP 6 ERROR] Teachers EXCEPTION', [
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+        return response()->json(['error' => 'خطأ في جلب المدرسين'], 500);
     }
+}
+
+
+
+
 
     // ✅ 4️⃣ إنشاء موعد - مُصحح مع validation مرن + Debug
     public function store(Request $request)

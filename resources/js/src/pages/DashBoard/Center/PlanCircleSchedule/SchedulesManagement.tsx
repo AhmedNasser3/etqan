@@ -8,6 +8,7 @@ import { FiEdit3, FiTrash2 } from "react-icons/fi";
 import { IoMdAdd } from "react-icons/io";
 import { usePlanSchedules, ScheduleType } from "./hooks/usePlanSchedules";
 import CreateSchedulePage from "./models/CreateSchedulePage";
+import UpdateSchedulePage from "./models/UpdateSchedulePage";
 
 const SchedulesManagement: React.FC = () => {
     const {
@@ -160,13 +161,13 @@ const SchedulesManagement: React.FC = () => {
 
     return (
         <>
-            {/* {showUpdateModal && selectedScheduleId && (
+            {showUpdateModal && selectedScheduleId && (
                 <UpdateSchedulePage
                     scheduleId={selectedScheduleId}
                     onClose={handleCloseUpdateModal}
                     onSuccess={handleUpdateSuccess}
                 />
-            )} */}
+            )}
 
             {showCreateModal && (
                 <CreateSchedulePage

@@ -9,10 +9,25 @@ use App\Http\Controllers\Plans\PlanDetailController;
 use App\Http\Controllers\Teachers\TeacherController;
 use App\Http\Controllers\Users\UserSuspendController;
 use App\Http\Controllers\Auth\TeacherRegisterController;
+use App\Http\Controllers\Student\StudentPlansController;
+use App\Http\Controllers\Student\StudentBookingsController;
 use App\Http\Controllers\Students\PendingStudentController;
 use App\Http\Controllers\Plans\PlanCircleScheduleController;
 use App\Http\Controllers\Routes\RouteCustomizationController;
+use App\Http\Controllers\Plans\CircleStudentBookingController;
 
+
+
+
+Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
+    // ... باقي الـ routes ...
+
+    // ✅ Student Bookings Routes - بدون nested prefix
+    Route::get('plans/student-bookings', [StudentBookingsController::class, 'index'])->name('plans.student-bookings.index');
+    Route::post('plans/student-bookings/{booking}/confirm', [StudentBookingsController::class, 'confirm'])->name('plans.student-bookings.confirm');
+
+    // ... باقي الـ routes ...
+});
 // ✅ 1. API Routes (بدون web middleware)
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::post('centers/{center}/teacher/register', [TeacherRegisterController::class, 'register']);
@@ -89,6 +104,11 @@ Route::middleware('web')->prefix('v1')->group(function () {
         Route::get('/teachers', [PlanCircleScheduleController::class, 'getTeachersForCreate']);
     });
 
+    // ✅ PLAN DETAILS CREATE - أضف ده 👇
+    Route::prefix('plans')->name('plans.')->group(function () {
+        Route::post('/details', [PlanDetailController::class, 'store']);
+    });
+
     // ✅ Centers & Circles
     Route::prefix('centers')->group(function () {
         Route::get('circles', [CirclesController::class, 'index']);
@@ -147,5 +167,41 @@ Route::middleware('web')->prefix('v1')->group(function () {
         Route::put('{planDetail}', [PlanDetailController::class, 'update']);
         Route::patch('{planDetail}/status', [PlanDetailController::class, 'updateStatus']);
         Route::delete('{planDetail}', [PlanDetailController::class, 'destroy']);
+    });
+});
+
+Route::middleware('web')->prefix('v1')->group(function () {
+    // ... باقي الـ routes
+
+    // ✅ حجوزات الطلاب - ضعها هنا 👇
+    Route::prefix('bookings')->name('bookings.')->group(function () {
+        Route::get('/', [CircleStudentBookingController::class, 'myBookings']);
+        Route::get('/{scheduleId}', [CircleStudentBookingController::class, 'scheduleBookings']);
+        Route::post('/', [CircleStudentBookingController::class, 'store']);
+        Route::delete('/{bookingId}', [CircleStudentBookingController::class, 'cancel']);
+        Route::patch('/{bookingId}/progress', [CircleStudentBookingController::class, 'updateProgress']);
+        Route::get('/stats', [CircleStudentBookingController::class, 'centerStats']);
+    });
+
+    // ... باقي الـ routes
+});
+
+Route::middleware('web')->prefix('v1')->group(function () {
+    Route::prefix('student')->name('student.')->group(function () {
+        Route::prefix('plans')->name('plans.')->group(function () {
+            // ✅ الـ Routes القديمة
+            Route::get('/available', [StudentPlansController::class, 'availablePlans'])->name('available');
+            Route::get('/my-plans', [StudentPlansController::class, 'myPlans'])->name('my-plans');
+            Route::get('/{plan}', [StudentPlansController::class, 'planDetails'])->name('details');
+
+            // ✅ الـ Routes الجديدة للحجوزات
+            Route::post('/schedules/{scheduleId}/book', [StudentPlansController::class, 'bookSchedule'])->name('book-schedule');
+            Route::delete('/bookings/{bookingId}', [StudentPlansController::class, 'cancelBooking'])->name('cancel-booking');
+            Route::get('/bookings', [StudentPlansController::class, 'myBookings'])->name('my-bookings');
+        });
+
+        // ✅ باقي الـ Routes خارج plans
+        Route::get('/centers', [StudentPlansController::class, 'availableCenters'])->name('centers');
+        Route::get('/stats', [StudentPlansController::class, 'studentStats'])->name('stats');
     });
 });

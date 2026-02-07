@@ -1,3 +1,5 @@
+import PlanCards from "../plans/models/PlanCards";
+import Schedules from "../plans/models/Sheduls";
 import UserMeetCard from "../userMeet/UserMeetCard";
 import UserPlans from "../userPlans/UserPlans";
 import EmailVerifyWidget from "./EmailVerifyWidget";
@@ -35,6 +37,8 @@ const UserProfile: React.FC = () => {
                     </div>
                     <EmailVerifyWidget />
                 </div>
+                <PlanCards />
+                {/* <Schedules /> */}
                 <div className="userProfile__doupleSide">
                     <Medals />
                     <div className="userProfile__progress">
