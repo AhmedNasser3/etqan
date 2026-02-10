@@ -1,8 +1,6 @@
-// CreateCirclePage.tsx - كاملة مع CSRF Token ✅
-import { useState, useEffect } from "react";
+import { useRef } from "react";
 import toast from "react-hot-toast";
 import { FiX } from "react-icons/fi";
-import { useAuthUser } from "../../../../../layouts/hooks/useAuthUser";
 import { useCircleFormCreate } from "../hooks/useCircleFormCreate";
 
 interface CreateCirclePageProps {
@@ -21,28 +19,25 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
         handleInputChange,
         submitForm,
         centersData,
+        mosquesData,
+        teachersData,
         loadingData,
-        getCurrentCenterMosques,
-        getCurrentCenterTeachers,
-        user, // ✅ من الهوك الجديد
+        user,
     } = useCircleFormCreate();
 
     const handleSubmit = async (formDataSubmit: FormData) => {
         try {
-            // ✅ جيب الـ CSRF token من meta tag
             const csrfToken =
                 document
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content") || "";
 
-            // ✅ صحح الـ URL للـ POST route
             const response = await fetch("/api/v1/centers/circles", {
                 method: "POST",
                 credentials: "include",
                 headers: {
                     Accept: "application/json",
                     "X-Requested-With": "XMLHttpRequest",
-                    // ✅ CSRF Token - الحل النهائي!
                     "X-CSRF-TOKEN": csrfToken,
                 },
                 body: formDataSubmit,
@@ -66,7 +61,6 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
 
             const result = await response.json();
             console.log("Create response:", result);
-
             toast.success("تم إضافة الحلقة بنجاح!");
             onSuccess();
         } catch (error: any) {
@@ -75,16 +69,27 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
         }
     };
 
-    // ✅ المساجد والمعلمين حسب المجمع المختار
-    const currentMosques = getCurrentCenterMosques(formData.center_id);
-    const currentTeachers = getCurrentCenterTeachers(formData.center_id);
-    const currentCenter = centersData.find(
-        (c) => c.id.toString() === formData.center_id,
-    );
+    const isLoading = loadingData || !user;
+    const currentCenter = centersData[0];
 
-    // ✅ Center Owner Logic - مركز واحد بس
-    const isCenterOwner = user?.role?.id === 1;
-    const showSingleCenter = centersData.length === 1 && isCenterOwner;
+    if (isLoading) {
+        return (
+            <div className="ParentModel">
+                <div className="ParentModel__overlay">
+                    <div className="ParentModel__content">
+                        <div className="flex items-center justify-center min-h-[400px] p-8">
+                            <div className="text-center">
+                                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                <p className="text-lg text-gray-600">
+                                    جاري تحميل بيانات المجمع...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="ParentModel">
@@ -110,24 +115,18 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                             </div>
                             <div className="ParentModel__innerTitle">
                                 <h1>إضافة حلقة جديدة</h1>
-                                <p>
-                                    يرجى إدخال بيانات الحلقة بشكل صحيح
-                                    {loadingData && (
-                                        <span className="block text-sm text-blue-600 mt-1">
-                                            جاري تحميل البيانات...
-                                        </span>
-                                    )}
-                                    {showSingleCenter && (
-                                        <span className="block text-sm text-green-600 mt-1">
-                                            مجمعك: {centersData[0]?.name}
-                                        </span>
-                                    )}
+                                <p className="flex items-center gap-2 flex-wrap">
+                                    مجمعك:
+                                    <span className="font-semibold text-green-600">
+                                        {currentCenter?.name ||
+                                            user?.center?.name ||
+                                            "غير محدد"}
+                                    </span>
                                 </p>
                             </div>
                         </div>
 
                         <div className="ParentModel__container">
-                            {/* اسم الحلقة */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>اسم الحلقة *</label>
@@ -143,7 +142,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                                 : "border-gray-200 hover:border-gray-300"
                                         }`}
                                         placeholder="أدخل اسم الحلقة"
-                                        disabled={isSubmitting || loadingData}
+                                        disabled={isSubmitting}
                                     />
                                     {errors.name && (
                                         <p className="mt-1 text-sm text-red-600">
@@ -153,53 +152,22 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* المجمع */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
-                                    <label>المجمع التابع له *</label>
-                                    <select
-                                        required
-                                        name="center_id"
-                                        value={formData.center_id}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.center_id || loadingData
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            showSingleCenter
+                                    <label>المجمع:</label>
+                                    <input
+                                        type="text"
+                                        value={
+                                            currentCenter?.name ||
+                                            user?.center?.name ||
+                                            "جاري التحميل..."
                                         }
-                                    >
-                                        <option value="">
-                                            {loadingData
-                                                ? "جاري التحميل..."
-                                                : centersData.length === 0
-                                                  ? "لا توجد مجمعات"
-                                                  : showSingleCenter
-                                                    ? centersData[0].name
-                                                    : "اختر المجمع"}
-                                        </option>
-                                        {centersData.map((center) => (
-                                            <option
-                                                key={center.id}
-                                                value={center.id}
-                                            >
-                                                {center.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {errors.center_id && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.center_id}
-                                        </p>
-                                    )}
+                                        className="w-full px-4 py-3 border border-green-200 bg-green-50 rounded-xl text-green-800 font-medium"
+                                        disabled
+                                    />
                                 </div>
                             </div>
 
-                            {/* المسجد */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>المسجد (اختياري)</label>
@@ -208,35 +176,29 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                         value={formData.mosque_id}
                                         onChange={handleInputChange}
                                         className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.mosque_id ||
-                                            loadingData ||
-                                            !currentCenter
+                                            errors.mosque_id
                                                 ? "border-red-300 bg-red-50"
                                                 : "border-gray-200 hover:border-gray-300"
                                         }`}
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            !currentCenter
-                                        }
+                                        disabled={isSubmitting}
                                     >
                                         <option value="">
-                                            {loadingData
-                                                ? "جاري التحميل..."
-                                                : !currentCenter
-                                                  ? "اختر المجمع أولاً"
-                                                  : currentMosques.length === 0
-                                                    ? "لا توجد مساجد"
-                                                    : "اختر المسجد (اختياري)"}
+                                            اختر المسجد (اختياري)
                                         </option>
-                                        {currentMosques.map((mosque) => (
-                                            <option
-                                                key={mosque.id}
-                                                value={mosque.id}
-                                            >
-                                                {mosque.name}
+                                        {mosquesData.length === 0 ? (
+                                            <option disabled>
+                                                لا توجد مساجد في هذا المجمع
                                             </option>
-                                        ))}
+                                        ) : (
+                                            mosquesData.map((mosque) => (
+                                                <option
+                                                    key={mosque.id}
+                                                    value={mosque.id}
+                                                >
+                                                    {mosque.name}
+                                                </option>
+                                            ))
+                                        )}
                                     </select>
                                     {errors.mosque_id && (
                                         <p className="mt-1 text-sm text-red-600">
@@ -246,7 +208,6 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* المعلم */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>المعلم (اختياري)</label>
@@ -255,35 +216,29 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                         value={formData.teacher_id}
                                         onChange={handleInputChange}
                                         className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.teacher_id ||
-                                            loadingData ||
-                                            !currentCenter
+                                            errors.teacher_id
                                                 ? "border-red-300 bg-red-50"
                                                 : "border-gray-200 hover:border-gray-300"
                                         }`}
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            !currentCenter
-                                        }
+                                        disabled={isSubmitting}
                                     >
                                         <option value="">
-                                            {loadingData
-                                                ? "جاري التحميل..."
-                                                : !currentCenter
-                                                  ? "اختر المجمع أولاً"
-                                                  : currentTeachers.length === 0
-                                                    ? "لا يوجد معلمين"
-                                                    : "اختر المعلم (اختياري)"}
+                                            اختر المعلم (اختياري)
                                         </option>
-                                        {currentTeachers.map((teacher) => (
-                                            <option
-                                                key={teacher.id}
-                                                value={teacher.id}
-                                            >
-                                                {teacher.name}
+                                        {teachersData.length === 0 ? (
+                                            <option disabled>
+                                                لا يوجد معلمين في هذا المجمع
                                             </option>
-                                        ))}
+                                        ) : (
+                                            teachersData.map((teacher) => (
+                                                <option
+                                                    key={teacher.id}
+                                                    value={teacher.id}
+                                                >
+                                                    {teacher.name}
+                                                </option>
+                                            ))
+                                        )}
                                     </select>
                                     {errors.teacher_id && (
                                         <p className="mt-1 text-sm text-red-600">
@@ -293,7 +248,6 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* الملاحظات */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>ملاحظات</label>
@@ -304,12 +258,11 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                         rows={3}
                                         className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                         placeholder="أي ملاحظات إضافية..."
-                                        disabled={isSubmitting || loadingData}
+                                        disabled={isSubmitting}
                                     />
                                 </div>
                             </div>
 
-                            {/* زر الإرسال */}
                             <div
                                 className="inputs__submitBtn"
                                 id="ParentModel__btn"
@@ -317,7 +270,9 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => submitForm(handleSubmit)}
-                                    disabled={isSubmitting || loadingData}
+                                    disabled={
+                                        isSubmitting || !formData.center_id
+                                    }
                                     className="w-full"
                                 >
                                     {isSubmitting ? (

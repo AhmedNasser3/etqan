@@ -5,9 +5,7 @@ import { toast, Toaster } from "react-hot-toast";
 import { useCenterRegister } from "../hooks/useCenterRegister";
 
 const CenterRegister = () => {
-    const [selectedGender, setSelectedGender] = useState<"male" | "female">(
-        "male",
-    );
+    const [countryCode, setCountryCode] = useState<string>("+966");
     const {
         form,
         errors,
@@ -69,7 +67,7 @@ const CenterRegister = () => {
                                                 <div className="inputs__name">
                                                     <div className="inputs__Lastname">
                                                         <label>
-                                                            اسم المجمع
+                                                            اسم المجمع *
                                                         </label>
                                                         <input
                                                             required
@@ -97,7 +95,9 @@ const CenterRegister = () => {
                                                         )}
                                                     </div>
                                                     <div className="inputs__Firstname">
-                                                        <label>Subdomain</label>
+                                                        <label>
+                                                            Subdomain *
+                                                        </label>
                                                         <div className="flex">
                                                             <input
                                                                 required
@@ -138,7 +138,7 @@ const CenterRegister = () => {
                                                 <div className="inputs__verifyOTPBirth">
                                                     <div className="inputs__verifyOTP">
                                                         <label>
-                                                            بريد مدير المجمع
+                                                            بريد مدير المجمع *
                                                         </label>
                                                         <input
                                                             required
@@ -171,7 +171,7 @@ const CenterRegister = () => {
                                                     </div>
                                                     <div className="inputs__verifyOTP">
                                                         <label>
-                                                            اسم مدير المجمع
+                                                            اسم مدير المجمع *
                                                         </label>
                                                         <input
                                                             required
@@ -207,17 +207,28 @@ const CenterRegister = () => {
                                                 <div className="inputs__verifyOTPBirth">
                                                     <div className="inputs__verifyOTP">
                                                         <label>
-                                                            رقم الجوال
+                                                            رقم الجوال *
                                                         </label>
                                                         <div className="inputs__phone-container">
-                                                            <select name="country_code">
-                                                                <option value="20">
+                                                            <select
+                                                                name="country_code"
+                                                                value={
+                                                                    countryCode
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setCountryCode(
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <option value="+20">
                                                                     20+
                                                                 </option>
-                                                                <option value="966">
+                                                                <option value="+966">
                                                                     966+
                                                                 </option>
-                                                                <option value="971">
+                                                                <option value="+971">
                                                                     971+
                                                                 </option>
                                                             </select>
@@ -262,6 +273,11 @@ const CenterRegister = () => {
                                                         <span className="file-preview">
                                                             تم اختيار:{" "}
                                                             {form.avatar.name}
+                                                        </span>
+                                                    )}
+                                                    {errors.avatar && (
+                                                        <span className="error-message">
+                                                            {errors.avatar}
                                                         </span>
                                                     )}
                                                 </div>

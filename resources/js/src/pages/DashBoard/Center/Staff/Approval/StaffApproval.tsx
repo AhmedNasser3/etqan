@@ -178,6 +178,7 @@ const StaffApproval: React.FC = () => {
                                         <td>{item.name || "غير محدد"}</td>
                                         <td>{item.email || "---"}</td>
                                         <td>
+                                            {/* ✅ نفس الـ roles من صفحة التسجيل - مُحدث للصفحة الحالية */}
                                             <span
                                                 className={`role-badge ${
                                                     item.teacher?.role ===
@@ -186,7 +187,15 @@ const StaffApproval: React.FC = () => {
                                                         : item.teacher?.role ===
                                                             "supervisor"
                                                           ? "supervisor"
-                                                          : "financial"
+                                                          : item.teacher
+                                                                  ?.role ===
+                                                              "motivator"
+                                                            ? "motivator"
+                                                            : item.teacher
+                                                                    ?.role ===
+                                                                "student_affairs"
+                                                              ? "student_affairs"
+                                                              : "financial"
                                                 }`}
                                             >
                                                 {item.teacher?.role ===
@@ -195,7 +204,13 @@ const StaffApproval: React.FC = () => {
                                                     : item.teacher?.role ===
                                                         "supervisor"
                                                       ? "مشرف تعليمي"
-                                                      : "مشرف مالي"}
+                                                      : item.teacher?.role ===
+                                                          "motivator"
+                                                        ? "مشرف تحفيز"
+                                                        : item.teacher?.role ===
+                                                            "student_affairs"
+                                                          ? "شؤون الطلاب"
+                                                          : "مشرف مالي"}
                                             </span>
                                         </td>
                                         <td>

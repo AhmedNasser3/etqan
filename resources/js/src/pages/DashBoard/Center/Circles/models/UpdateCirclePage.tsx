@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import toast from "react-hot-toast";
 import { FiX } from "react-icons/fi";
-import { useCircleFormUpdate } from "../hooks/useCircleFormUpdate";
+import { useCircleFormUpdate } from "../hooks/useCircleFormUpdate"; // ✅ استخدم الـ Hook
 
 interface UpdateCirclePageProps {
     onClose: () => void;
@@ -14,6 +14,7 @@ const UpdateCirclePage: React.FC<UpdateCirclePageProps> = ({
     onSuccess,
     circleId,
 }) => {
+    // ✅ استخدم الـ Hook اللي عندك
     const {
         formData,
         errors,
@@ -28,10 +29,12 @@ const UpdateCirclePage: React.FC<UpdateCirclePageProps> = ({
         loadCircleData,
     } = useCircleFormUpdate(circleId);
 
+    // ✅ تحميل البيانات عند تحميل الصفحة
     useEffect(() => {
-        loadCircleData(); // يحمل بيانات الحلقة الأصلية تلقائياً
+        loadCircleData();
     }, [loadCircleData]);
 
+    // ✅ دالة الإرسال
     const handleSubmit = async (formDataSubmit: FormData) => {
         try {
             const csrfToken =
@@ -42,7 +45,7 @@ const UpdateCirclePage: React.FC<UpdateCirclePageProps> = ({
             const response = await fetch(
                 `/api/v1/centers/circles/${circleId}`,
                 {
-                    method: "POST", // أو "PUT" حسب API
+                    method: "POST",
                     credentials: "include",
                     headers: {
                         Accept: "application/json",
@@ -57,8 +60,6 @@ const UpdateCirclePage: React.FC<UpdateCirclePageProps> = ({
                 const errorData = await response
                     .json()
                     .catch(() => response.text());
-                console.error("Update error response:", errorData);
-
                 if (typeof errorData === "object" && errorData.errors) {
                     const errorMessages = Object.values(
                         errorData.errors,
@@ -70,8 +71,6 @@ const UpdateCirclePage: React.FC<UpdateCirclePageProps> = ({
             }
 
             const result = await response.json();
-            console.log("Update response:", result);
-
             toast.success("تم تعديل الحلقة بنجاح! ✅");
             onSuccess();
         } catch (error: any) {
@@ -80,13 +79,28 @@ const UpdateCirclePage: React.FC<UpdateCirclePageProps> = ({
         }
     };
 
-    const currentMosques = getCurrentCenterMosques(formData.center_id);
-    const currentTeachers = getCurrentCenterTeachers(formData.center_id);
     const currentCenter = centersData.find(
         (c) => c.id.toString() === formData.center_id,
     );
+    const currentMosques = getCurrentCenterMosques(formData.center_id);
+    const currentTeachers = getCurrentCenterTeachers(formData.center_id);
     const isCenterOwner = user?.role?.id === 1;
     const showSingleCenter = centersData.length === 1 && isCenterOwner;
+
+    if (loadingData) {
+        return (
+            <div className="ParentModel">
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                        <p className="text-gray-600">
+                            جاري تحميل بيانات الحلقة...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="ParentModel">
@@ -114,11 +128,6 @@ const UpdateCirclePage: React.FC<UpdateCirclePageProps> = ({
                                 <h1>تعديل الحلقة</h1>
                                 <p>
                                     البيانات الحالية محملة في الحقول أدناه
-                                    {loadingData && (
-                                        <span className="block text-sm text-blue-600 mt-1">
-                                            جاري تحميل البيانات...
-                                        </span>
-                                    )}
                                     {showSingleCenter && (
                                         <span className="block text-sm text-green-600 mt-1">
                                             مجمعك: {centersData[0]?.name}
@@ -318,7 +327,7 @@ const UpdateCirclePage: React.FC<UpdateCirclePageProps> = ({
                                         onChange={handleInputChange}
                                         rows={3}
                                         className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="الملاحظات الحالية..."
+                                        placeholder="الملاحظات الحالية"
                                         disabled={isSubmitting || loadingData}
                                     />
                                 </div>

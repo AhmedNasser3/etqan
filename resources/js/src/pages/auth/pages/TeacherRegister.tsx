@@ -1,4 +1,4 @@
-// TeacherRegister.tsx
+// TeacherRegister.tsx - ✅ الحلقات مع المواعيد فقط (بدون تاريخ)
 import React, { useState } from "react";
 import { useTeacherRegister } from "../hooks/useTeacherRegister";
 import Men from "../../../assets/images/facelessAvatar.png";
@@ -8,22 +8,29 @@ const TeacherRegister: React.FC = () => {
     const [selectedGender, setSelectedGender] = useState<"male" | "female">(
         "male",
     );
+
     const {
         data,
         loading,
         success,
         error,
+        circles,
+        schedules,
+        selectedCircleId,
+        circlesLoading,
+        schedulesLoading,
         handleInputChange,
+        handleCircleChange,
+        handleScheduleChange,
         setGender,
         submitRegister,
+        centerSlug,
+        formatTimeToArabic,
+        formatCircleWithTime, // 🔥 الدالة الجديدة (وقت فقط بدون تاريخ)
     } = useTeacherRegister();
 
     const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         handleInputChange("role", e.target.value);
-    };
-
-    const handleSessionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        handleInputChange("session_time", e.target.value);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -31,6 +38,16 @@ const TeacherRegister: React.FC = () => {
         setGender(selectedGender);
         submitRegister();
     };
+
+    // 🔥 Debug info
+    console.log("🎨 RENDER DEBUG:", {
+        centerSlug,
+        circlesCount: circles.length,
+        selectedCircleId,
+        schedulesCount: schedules.length,
+        schedulesLoading,
+        role: data.role,
+    });
 
     return (
         <div className="auth">
@@ -50,6 +67,7 @@ const TeacherRegister: React.FC = () => {
                                         <div className="inputs">
                                             <div className="inputs__inner">
                                                 <div className="inputs__container">
+                                                    {/* الاسم الرباعي */}
                                                     <div className="inputs__name">
                                                         <div className="inputs__Firstname">
                                                             <label>
@@ -74,6 +92,7 @@ const TeacherRegister: React.FC = () => {
                                                         </div>
                                                     </div>
 
+                                                    {/* الدور المطلوب */}
                                                     <div className="inputs__verifyOTPBirth">
                                                         <div className="inputs__verifyOTP">
                                                             <label>
@@ -89,7 +108,7 @@ const TeacherRegister: React.FC = () => {
                                                                 }
                                                             >
                                                                 <option value="">
-                                                                    اختر الدور
+                                                                    اختتر الدور
                                                                 </option>
                                                                 <option value="teacher">
                                                                     معلم
@@ -110,44 +129,206 @@ const TeacherRegister: React.FC = () => {
                                                         </div>
                                                     </div>
 
+                                                    {/* ✅ الحلقات مع المواعيد فقط (بدون تاريخ) */}
                                                     {data.role ===
                                                         "teacher" && (
                                                         <div className="inputs__verifyOTPBirth">
                                                             <div className="inputs__verifyOTP">
                                                                 <label>
                                                                     الحلقات
-                                                                    المتاحة
+                                                                    المتاحة في{" "}
+                                                                    <strong>
+                                                                        {
+                                                                            centerSlug
+                                                                        }
+                                                                    </strong>
                                                                 </label>
-                                                                <select
-                                                                    name="session_time"
-                                                                    value={
-                                                                        data.session_time
-                                                                    }
-                                                                    onChange={
-                                                                        handleSessionChange
-                                                                    }
-                                                                >
-                                                                    <option value="">
-                                                                        اختر
-                                                                        الوقت
-                                                                    </option>
-                                                                    <option value="asr">
-                                                                        حلقة
-                                                                        العصر (5
-                                                                        أماكن
-                                                                        شاغرة)
-                                                                    </option>
-                                                                    <option value="maghrib">
-                                                                        حلقة
-                                                                        المغرب
-                                                                        (3 أماكن
-                                                                        شاغرة)
-                                                                    </option>
-                                                                </select>
+
+                                                                {/* تحميل الحلقات */}
+                                                                {circlesLoading ? (
+                                                                    <div className="flex items-center justify-center p-3 text-gray-500">
+                                                                        جاري
+                                                                        تحميل
+                                                                        الحلقات...
+                                                                    </div>
+                                                                ) : circles.length >
+                                                                  0 ? (
+                                                                    <>
+                                                                        {/* قائمة الحلقات مع الوقت فقط */}
+                                                                        <select
+                                                                            name="circle_id"
+                                                                            value={
+                                                                                selectedCircleId ||
+                                                                                ""
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) =>
+                                                                                handleCircleChange(
+                                                                                    Number(
+                                                                                        e
+                                                                                            .target
+                                                                                            .value,
+                                                                                    ),
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <option value="">
+                                                                                اختيار
+                                                                                حلقة
+                                                                                (اختياري)
+                                                                            </option>
+                                                                            {circles.map(
+                                                                                (
+                                                                                    circle,
+                                                                                ) => (
+                                                                                    <option
+                                                                                        key={
+                                                                                            circle.id
+                                                                                        }
+                                                                                        value={
+                                                                                            circle.id
+                                                                                        }
+                                                                                    >
+                                                                                        {formatCircleWithTime(
+                                                                                            circle,
+                                                                                        )}
+                                                                                    </option>
+                                                                                ),
+                                                                            )}
+                                                                        </select>
+
+                                                                        {/* المواعيد - تحت الحلقة مباشرة */}
+                                                                        {data.circle_id &&
+                                                                            schedulesLoading && (
+                                                                                <div className="mt-2 p-2 text-sm text-gray-500 bg-gray-50 rounded">
+                                                                                    ⏳
+                                                                                    جاري
+                                                                                    تحميل
+                                                                                    المواعيد...
+                                                                                </div>
+                                                                            )}
+
+                                                                        {data.circle_id &&
+                                                                            !schedulesLoading &&
+                                                                            schedules.length >
+                                                                                0 && (
+                                                                                <div className="mt-2">
+                                                                                    <label className="block text-xs text-gray-600 mb-1">
+                                                                                        المواعيد
+                                                                                        المتاحة
+                                                                                        لهذه
+                                                                                        الحلقة:
+                                                                                    </label>
+                                                                                    <select
+                                                                                        name="schedule_id"
+                                                                                        value={
+                                                                                            data.schedule_id ||
+                                                                                            ""
+                                                                                        }
+                                                                                        onChange={(
+                                                                                            e,
+                                                                                        ) =>
+                                                                                            handleScheduleChange(
+                                                                                                Number(
+                                                                                                    e
+                                                                                                        .target
+                                                                                                        .value,
+                                                                                                ),
+                                                                                            )
+                                                                                        }
+                                                                                    >
+                                                                                        <option value="">
+                                                                                            اختيار
+                                                                                            موعد
+                                                                                            (اختياري)
+                                                                                        </option>
+                                                                                        {schedules.map(
+                                                                                            (
+                                                                                                schedule: any,
+                                                                                            ) => {
+                                                                                                const isFull =
+                                                                                                    schedule.is_full;
+                                                                                                const seatsText =
+                                                                                                    isFull
+                                                                                                        ? `مليان (${schedule.seats_available})`
+                                                                                                        : `${schedule.seats_available} متاح`;
+
+                                                                                                return (
+                                                                                                    <option
+                                                                                                        key={
+                                                                                                            schedule.id
+                                                                                                        }
+                                                                                                        value={
+                                                                                                            schedule.id
+                                                                                                        }
+                                                                                                        disabled={
+                                                                                                            isFull
+                                                                                                        }
+                                                                                                    >
+                                                                                                        من{" "}
+                                                                                                        {schedule.start_time_ar ||
+                                                                                                            schedule.start_time}
+                                                                                                        إلى{" "}
+                                                                                                        {schedule.end_time_ar ||
+                                                                                                            schedule.end_time}
+
+                                                                                                        (
+                                                                                                        {
+                                                                                                            seatsText
+                                                                                                        }
+
+                                                                                                        )
+                                                                                                    </option>
+                                                                                                );
+                                                                                            },
+                                                                                        )}
+                                                                                    </select>
+                                                                                </div>
+                                                                            )}
+
+                                                                        {data.circle_id &&
+                                                                            !schedulesLoading &&
+                                                                            schedules.length ===
+                                                                                0 && (
+                                                                                <div className="mt-2 p-2 text-sm text-blue-600 bg-blue-50 rounded-lg">
+                                                                                    📅
+                                                                                    لا
+                                                                                    توجد
+                                                                                    مواعيد
+                                                                                    متاحة
+                                                                                    حالياً
+                                                                                    لهذه
+                                                                                    الحلقة
+                                                                                    <br />
+                                                                                    <small>
+                                                                                        يمكنك
+                                                                                        التسجيل
+                                                                                        بدون
+                                                                                        موعد
+                                                                                        وسيتم
+                                                                                        التواصل
+                                                                                        معك
+                                                                                        لاحقاً
+                                                                                    </small>
+                                                                                </div>
+                                                                            )}
+                                                                    </>
+                                                                ) : (
+                                                                    <p className="text-sm text-gray-500 p-3">
+                                                                        لا توجد
+                                                                        حلقات
+                                                                        متاحة في
+                                                                        هذا
+                                                                        المجمع
+                                                                        حالياً
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     )}
 
+                                                    {/* البريد الإلكتروني */}
                                                     <div className="inputs__verifyOTPBirth">
                                                         <div className="inputs__email">
                                                             <label>
@@ -173,6 +354,7 @@ const TeacherRegister: React.FC = () => {
                                                         </div>
                                                     </div>
 
+                                                    {/* الملاحظات */}
                                                     <div className="inputs__verifyOTP">
                                                         <label>
                                                             ملاحظات/خبرات
@@ -193,6 +375,7 @@ const TeacherRegister: React.FC = () => {
                                                         />
                                                     </div>
 
+                                                    {/* رسائل الخطأ */}
                                                     {error && (
                                                         <div
                                                             className="error-message"
@@ -214,6 +397,7 @@ const TeacherRegister: React.FC = () => {
                                                         </div>
                                                     )}
 
+                                                    {/* رسائل النجاح */}
                                                     {success && (
                                                         <div
                                                             className="success-message"
@@ -232,10 +416,12 @@ const TeacherRegister: React.FC = () => {
                                                             }}
                                                         >
                                                             ✅ تم إرسال طلب
-                                                            التسجيل بنجاح!
+                                                            التسجيل بنجاح! سيتم
+                                                            مراجعته قريباً
                                                         </div>
                                                     )}
 
+                                                    {/* زر الإرسال */}
                                                     <div className="inputs__submitBtn">
                                                         <button
                                                             type="submit"
@@ -269,16 +455,6 @@ const TeacherRegister: React.FC = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div
-                                            className="inputs__verifyOTPtimer"
-                                            id="verifyPopout__verifyOTPtimer"
-                                        >
-                                            <a href="/login">
-                                                <span className="resend-link">
-                                                    لديك حساب بالفعل؟
-                                                </span>
-                                            </a>
                                         </div>
                                     </div>
                                 </div>

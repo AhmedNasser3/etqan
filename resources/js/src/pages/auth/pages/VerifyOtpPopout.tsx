@@ -17,12 +17,14 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
     const { timer, resendCode, isTimerActive } = useOtpTimer();
     const { inputsRef, otpValue, otpFilled, handleInputChange, handleKeyDown } =
         useOtpInputs();
-    const { verified, error, loading, verifyOtp } = useOtpVerification();
+    const { verified, error, loading, verifyOtp, shieldRef } =
+        useOtpVerification();
 
     const handleVerify = () => {
         const otpString = Array.isArray(otpValue)
             ? otpValue.join("")
             : String(otpValue);
+        if (!otpString || otpString.length !== 4) return; // فقط 4 أرقام.
         verifyOtp(otpString, onSuccess);
     };
 
@@ -36,6 +38,7 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                         </i>
                     </div>
                 </div>
+
                 <div className="verifyPopout__content">
                     <div className="verifyPopout__data">
                         <div className="verifyPopout__header">
@@ -52,9 +55,7 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                         </div>
 
                         <div
-                            className={`verifyPopout__OTP ${
-                                error ? "error" : ""
-                            }`}
+                            className={`verifyPopout__OTP ${error ? "error" : ""}`}
                         >
                             {Array.from({ length: 4 }, (_, index) => (
                                 <input
@@ -79,6 +80,7 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                                     onDragStart={(e) => e.preventDefault()}
                                     onDrop={(e) => e.preventDefault()}
                                     spellCheck="false"
+                                    autoComplete="off"
                                     style={{
                                         textAlign: "center",
                                         userSelect: "none",
@@ -86,7 +88,6 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                                         MozUserSelect: "none",
                                         msUserSelect: "none",
                                     }}
-                                    autoComplete="off"
                                     inputMode="numeric"
                                     pattern="[0-9]*"
                                     className={verified ? "verified" : ""}
@@ -100,14 +101,14 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                         >
                             {isTimerActive ? (
                                 <p>
-                                    {timer} ث <span>اعد ارسال الكود؟</span>
+                                    {timer} ث <span>اعد إرسال الكود؟</span>
                                 </p>
                             ) : (
                                 <span
                                     className="resend-link"
                                     onClick={resendCode}
                                 >
-                                    اعد ارسال الكود؟
+                                    اعد إرسال الكود؟
                                 </span>
                             )}
                         </div>

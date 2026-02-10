@@ -54,7 +54,7 @@ class CircleStudentBooking extends Model
         return $this->belongsTo(PlanDetail::class, 'plan_details_id');
     }
 
-    public function planCircleSchedule(): BelongsTo  // ✅ غيّر من schedule() لـ planCircleSchedule()
+    public function planCircleSchedule(): BelongsTo
     {
         return $this->belongsTo(PlanCircleSchedule::class, 'plan_circle_schedule_id');
     }

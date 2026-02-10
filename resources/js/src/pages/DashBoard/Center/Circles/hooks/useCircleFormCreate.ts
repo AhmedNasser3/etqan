@@ -1,5 +1,5 @@
-// src/pages/DashBoard/Center/Circles/hooks/useCircleFormCreate.ts
-import { useState, useEffect, useCallback, useMemo } from "react";
+// src/pages/DashBoard/Center/Circles/hooks/useCircleFormCreate.ts - **رسالة مرة واحدة** ✅
+import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 
 interface CenterType {
@@ -48,35 +48,56 @@ export const useCircleFormCreate = () => {
     const [loadingData, setLoadingData] = useState(true);
     const [user, setUser] = useState<any>(null);
 
-    // ✅ Fetch User info أولاً
+    // ✅ Toast ID لمنع التكرار
+    const toastRef = useRef<string | null>(null);
+
+    // ✅ Fetch User info أولاً - مصحح!
     useEffect(() => {
         fetchUser();
     }, []);
 
     const fetchUser = useCallback(async () => {
         try {
+            console.log("🔍 Fetching user...");
             const response = await fetch("/api/user", {
                 credentials: "include",
                 headers: { Accept: "application/json" },
             });
             if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
+                const responseData = await response.json();
+                // ✅ الحل! الـ API بيرجع {success: true, user: {...}}
+                const actualUser = responseData.user || responseData;
+                console.log("✅ ACTUAL USER:", actualUser);
+                console.log("🔍 USER CENTER_ID:", actualUser.center_id);
+                setUser(actualUser);
             }
         } catch (error) {
-            console.error("Failed to fetch user:", error);
+            console.error("❌ Failed to fetch user:", error);
         }
     }, []);
+
+    // ✅ تعيين center_id تلقائياً - dependency مُصحح
+    useEffect(() => {
+        if (user?.center_id && !formData.center_id) {
+            console.log("🏢 Auto-setting center_id:", user.center_id);
+            setFormData((prev) => ({
+                ...prev,
+                center_id: user.center_id.toString(),
+            }));
+        }
+    }, [user?.center_id]);
 
     // ✅ Fetch Centers حسب الـ role
     useEffect(() => {
         if (user) {
+            console.log("🚀 User loaded, fetching centers...");
             fetchCenters();
         }
     }, [user]);
 
     const fetchCenters = useCallback(async () => {
         try {
+            console.log("📥 Fetching centers...");
             setLoadingData(true);
             const response = await fetch("/api/v1/centers", {
                 credentials: "include",
@@ -85,87 +106,94 @@ export const useCircleFormCreate = () => {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log("📊 Centers response:", data);
                 let centers: CenterType[] = [];
 
+                // ✅ استخدم actual user data
+                const actualUser = user?.user || user;
+
                 // ✅ Center Owner → مركزه بس
-                if (user?.role?.id === 1 && user.center_id) {
+                if (actualUser?.role?.id === 1 && actualUser.center_id) {
                     const userCenter = data.data?.find(
-                        (c: any) => c.id === user.center_id,
+                        (c: any) => c.id === actualUser.center_id,
                     );
                     if (userCenter) {
                         centers = [userCenter];
+                        console.log(
+                            "🏢 Center Owner - single center:",
+                            userCenter,
+                        );
                     }
                 } else {
                     // ✅ Admin → كل المراكز
                     centers = data.data || [];
+                    console.log("👑 Admin - all centers:", centers.length);
                 }
 
                 setCentersData(centers);
 
-                // ✅ Fetch mosques لكل المراكز
-                if (centers.length > 0) {
-                    fetchMosques();
+                // ✅ تحميل المساجد والمعلمين لمركز اليوزر بس
+                if (actualUser?.center_id) {
+                    console.log(
+                        "🕌👨‍🏫 Fetching mosques & teachers for center:",
+                        actualUser.center_id,
+                    );
+                    fetchCenterMosques();
+                    fetchCenterTeachers();
                 }
             }
         } catch (error) {
-            console.error("Failed to fetch centers:", error);
+            console.error("❌ Failed to fetch centers:", error);
             toast.error("فشل في تحميل المراكز");
         } finally {
+            console.log("✅ Centers loading finished");
             setLoadingData(false);
         }
     }, [user]);
 
-    const fetchMosques = useCallback(async () => {
+    // ✅ مساجد مركز اليوزر بس
+    const fetchCenterMosques = useCallback(async () => {
+        if (!user?.center_id) return;
         try {
-            const response = await fetch("/api/v1/mosques", {
-                credentials: "include",
-                headers: { Accept: "application/json" },
-            });
+            console.log("🕌 Fetching mosques for center:", user.center_id);
+            const response = await fetch(
+                `/api/v1/mosques?center_id=${user.center_id}`,
+                {
+                    credentials: "include",
+                    headers: { Accept: "application/json" },
+                },
+            );
             if (response.ok) {
                 const data = await response.json();
+                console.log("✅ Mosques loaded:", data.data?.length || 0);
                 setMosquesData(data.data || []);
             }
         } catch (error) {
-            console.error("Failed to fetch mosques:", error);
+            console.error("❌ Failed to fetch center mosques:", error);
         }
-    }, []);
+    }, [user?.center_id]);
 
-    const fetchTeachers = useCallback(async () => {
+    // ✅ معلمي مركز اليوزر بس
+    const fetchCenterTeachers = useCallback(async () => {
+        if (!user?.center_id) return;
         try {
-            const response = await fetch("/api/v1/teachers", {
-                credentials: "include",
-                headers: { Accept: "application/json" },
-            });
+            console.log("👨‍🏫 Fetching teachers for center:", user.center_id);
+            const response = await fetch(
+                `/api/v1/teachers?center_id=${user.center_id}`,
+                {
+                    credentials: "include",
+                    headers: { Accept: "application/json" },
+                },
+            );
             if (response.ok) {
                 const data = await response.json();
+                console.log("✅ Teachers loaded:", data.data?.length || 0);
                 setTeachersData(data.data || []);
             }
         } catch (error) {
-            console.error("Failed to fetch teachers:", error);
+            console.error("❌ Failed to fetch center teachers:", error);
         }
-    }, []);
-
-    // ✅ Helper: مساجد المركز المحدد
-    const getCurrentCenterMosques = useCallback(
-        (centerId?: string): MosqueType[] => {
-            if (!centerId) return [];
-            return mosquesData.filter(
-                (mosque) => mosque.center_id.toString() === centerId,
-            );
-        },
-        [mosquesData],
-    );
-
-    // ✅ Helper: معلمي المركز المحدد (من جدول teachers)
-    const getCurrentCenterTeachers = useCallback(
-        (centerId?: string): TeacherType[] => {
-            if (!centerId) return [];
-            return teachersData.filter(
-                (teacher) => teacher.center_id?.toString() === centerId,
-            );
-        },
-        [teachersData],
-    );
+    }, [user?.center_id]);
 
     // ✅ Form handlers
     const handleInputChange = useCallback(
@@ -187,15 +215,26 @@ export const useCircleFormCreate = () => {
         const newErrors: FormErrors = {};
 
         if (!formData.name.trim()) newErrors.name = "اسم الحلقة مطلوب";
-        if (!formData.center_id) newErrors.center_id = "المجمع مطلوب";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }, [formData]);
 
     const submitForm = useCallback(
-        async (onSubmit: (formData: FormData) => Promise<void>) => {
-            if (!validateForm()) return;
+        async (onSubmit: (formDataSubmit: FormData) => Promise<void>) => {
+            console.log("🚀 SUBMIT FORM - formData:", formData);
+            if (!validateForm()) {
+                console.log("❌ Validation failed");
+                return;
+            }
+
+            if (!formData.center_id) {
+                toast.error("المجمع غير محدد");
+                return;
+            }
+
+            // ✅ منع الـ double submit
+            if (isSubmitting) return;
 
             setIsSubmitting(true);
             try {
@@ -209,6 +248,13 @@ export const useCircleFormCreate = () => {
                 if (formData.notes)
                     formDataSubmit.append("notes", formData.notes);
 
+                console.log("📤 Sending FormData:", {
+                    name: formData.name,
+                    center_id: formData.center_id,
+                    hasMosque: !!formData.mosque_id,
+                    hasTeacher: !!formData.teacher_id,
+                });
+
                 await onSubmit(formDataSubmit);
             } catch (error) {
                 console.error("Submit error:", error);
@@ -216,13 +262,15 @@ export const useCircleFormCreate = () => {
                 setIsSubmitting(false);
             }
         },
-        [formData, validateForm],
+        [formData, validateForm, isSubmitting],
     );
 
-    // ✅ تحميل المعلمين عند تحميل الصفحة
-    useEffect(() => {
-        fetchTeachers();
-    }, [fetchTeachers]);
+    console.log(
+        "🎯 FINAL RETURN - user.center_id:",
+        user?.center_id,
+        "formData.center_id:",
+        formData.center_id,
+    );
 
     return {
         formData,
@@ -235,7 +283,5 @@ export const useCircleFormCreate = () => {
         teachersData,
         loadingData,
         user,
-        getCurrentCenterMosques,
-        getCurrentCenterTeachers,
     };
 };

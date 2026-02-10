@@ -44,27 +44,35 @@ class PendingStudentController extends Controller
             'data' => $students
         ]);
     }
+public function confirm($id)
+{
+    $student = Student::with(['user', 'guardian.user'])->findOrFail($id);
 
-    public function confirm($id)
-    {
-        $student = Student::with('user')->findOrFail($id);
+    // تحديث status لـ user الطالب
+    $student->user->update([
+        'status' => 'active'
+    ]);
 
-        $student->user->update([
+    // تحديث status لـ user ولي الأمر إذا كان موجود
+    if ($student->guardian && $student->guardian->user) {
+        $student->guardian->user->update([
             'status' => 'active'
         ]);
-
-        $student->load([
-            'user:id,name,email,phone,avatar,birth_date,status',
-            'guardian:id,name,email,phone',
-            'center:id,name,subdomain'
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'تم تأكيد الطالب بنجاح',
-            'data' => $student
-        ]);
     }
+
+    $student->load([
+        'user:id,name,email,phone,avatar,birth_date,status',
+        'guardian:id,name,email,phone',
+        'guardian.user:id,name,email,phone,status',
+        'center:id,name,subdomain'
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم تأكيد الطالب وولي الأمر بنجاح',
+        'data' => $student
+    ]);
+}
 
     public function reject($id)
     {

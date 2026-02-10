@@ -2,7 +2,6 @@
 
 namespace App\Models\Tenant;
 
-use App\Models\Auth\User;
 use App\Models\Auth\Teacher;
 use App\Models\Tenant\Center;
 use App\Models\Tenant\Mosque;
@@ -35,14 +34,16 @@ class Circle extends Model
         return $this->belongsTo(Teacher::class, 'teacher_id');
     }
 
+    // ❌ امسح students() خالص - مفيش pivot table دلوقتي
+    /*
     public function students()
     {
-        return $this->belongsToMany(User::class, 'circle_students', 'circle_id', 'student_id');
+        return $this->belongsToMany(Student::class);
     }
+    */
 
-    // ✅ Scope مبسّط - كل الحلقات للاختبار
     public function scopeForCurrentUser($query)
     {
-        return $query; // شيلنا كل الشروط المُعقّدة
+        return $query;
     }
 }

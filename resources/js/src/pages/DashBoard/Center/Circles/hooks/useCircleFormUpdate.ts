@@ -1,3 +1,4 @@
+// src/hooks/useCircleFormUpdate.ts
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -14,23 +15,9 @@ interface MosqueType {
 
 interface TeacherType {
     id: number;
-    name: string | null;
-    user?: { name: string } | null;
+    name: string;
     role: string;
     center_id?: number;
-}
-
-interface FormData {
-    id?: number;
-    name: string;
-    center_id: string;
-    mosque_id: string;
-    teacher_id: string;
-    notes?: string;
-}
-
-interface FormErrors {
-    [key: string]: string;
 }
 
 interface CircleData {
@@ -40,6 +27,18 @@ interface CircleData {
     mosque_id?: number;
     teacher_id?: number;
     notes?: string;
+}
+
+interface FormData {
+    name: string;
+    center_id: string;
+    mosque_id: string;
+    teacher_id: string;
+    notes?: string;
+}
+
+interface FormErrors {
+    [key: string]: string;
 }
 
 export const useCircleFormUpdate = (circleId: number) => {
@@ -52,11 +51,60 @@ export const useCircleFormUpdate = (circleId: number) => {
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingCircle, setIsLoadingCircle] = useState(true);
     const [centersData, setCentersData] = useState<CenterType[]>([]);
     const [mosquesData, setMosquesData] = useState<MosqueType[]>([]);
     const [teachersData, setTeachersData] = useState<TeacherType[]>([]);
     const [loadingData, setLoadingData] = useState(true);
     const [user, setUser] = useState<any>(null);
+    const [circleData, setCircleData] = useState<CircleData | null>(null);
+
+    useEffect(() => {
+        if (circleId) {
+            loadCircleData();
+        }
+    }, [circleId]);
+
+    const loadCircleData = useCallback(async () => {
+        try {
+            console.log("🔍 Loading circle data for ID:", circleId);
+            const response = await fetch(
+                `/api/v1/centers/circles/${circleId}`,
+                {
+                    credentials: "include",
+                    headers: { Accept: "application/json" },
+                },
+            );
+
+            console.log("Circle response status:", response.status);
+
+            if (!response.ok) {
+                const errorData = await response
+                    .json()
+                    .catch(() => response.text());
+                console.error("Circle API error:", response.status, errorData);
+                toast.error("فشل في تحميل الحلقة");
+                return;
+            }
+
+            const circle = await response.json();
+            console.log("✅ Circle loaded:", circle);
+            setCircleData(circle);
+
+            setFormData({
+                name: circle.name || "",
+                center_id: circle.center_id?.toString() || "",
+                mosque_id: circle.mosque_id?.toString() || "",
+                teacher_id: circle.teacher_id?.toString() || "",
+                notes: circle.notes || "",
+            });
+        } catch (error) {
+            console.error("❌ Load circle data error:", error);
+            toast.error("فشل في تحميل الحلقة");
+        } finally {
+            setIsLoadingCircle(false);
+        }
+    }, [circleId]);
 
     useEffect(() => {
         fetchUser();
@@ -69,43 +117,14 @@ export const useCircleFormUpdate = (circleId: number) => {
                 headers: { Accept: "application/json" },
             });
             if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
+                const responseData = await response.json();
+                const actualUser = responseData.user || responseData;
+                setUser(actualUser);
             }
         } catch (error) {
             console.error("Failed to fetch user:", error);
         }
     }, []);
-
-    const loadCircleData = useCallback(async () => {
-        try {
-            setLoadingData(true);
-            const response = await fetch(
-                `/api/v1/centers/circles/${circleId}`,
-                {
-                    credentials: "include",
-                    headers: { Accept: "application/json" },
-                },
-            );
-
-            if (response.ok) {
-                const circleData: CircleData = await response.json();
-                setFormData({
-                    id: circleData.id,
-                    name: circleData.name || "",
-                    center_id: circleData.center_id.toString(),
-                    mosque_id: circleData.mosque_id?.toString() || "",
-                    teacher_id: circleData.teacher_id?.toString() || "",
-                    notes: circleData.notes || "",
-                });
-            }
-        } catch (error) {
-            console.error("Failed to fetch circle data:", error);
-            toast.error("فشل في تحميل بيانات الحلقة");
-        } finally {
-            setLoadingData(false);
-        }
-    }, [circleId]);
 
     useEffect(() => {
         if (user) {
@@ -116,18 +135,23 @@ export const useCircleFormUpdate = (circleId: number) => {
     const fetchCenters = useCallback(async () => {
         try {
             setLoadingData(true);
-            const response = await fetch("/api/v1/centers", {
-                credentials: "include",
-                headers: { Accept: "application/json" },
-            });
+            const response = await fetch(
+                "/api/v1/centers/circles/get-centers",
+                {
+                    credentials: "include",
+                    headers: { Accept: "application/json" },
+                },
+            );
 
             if (response.ok) {
                 const data = await response.json();
                 let centers: CenterType[] = [];
 
-                if (user?.role?.id === 1 && user.center_id) {
+                const actualUser = user?.user || user;
+
+                if (actualUser?.role?.id === 1 && actualUser.center_id) {
                     const userCenter = data.data?.find(
-                        (c: any) => c.id === user.center_id,
+                        (c: any) => c.id === actualUser.center_id,
                     );
                     if (userCenter) {
                         centers = [userCenter];
@@ -138,8 +162,9 @@ export const useCircleFormUpdate = (circleId: number) => {
 
                 setCentersData(centers);
 
-                if (centers.length > 0) {
-                    fetchMosques();
+                if (circleData?.center_id) {
+                    fetchCenterMosques(circleData.center_id);
+                    fetchCenterTeachers(circleData.center_id);
                 }
             }
         } catch (error) {
@@ -148,61 +173,43 @@ export const useCircleFormUpdate = (circleId: number) => {
         } finally {
             setLoadingData(false);
         }
-    }, [user]);
+    }, [user, circleData?.center_id]);
 
-    const fetchMosques = useCallback(async () => {
+    const fetchCenterMosques = useCallback(async (centerId: number) => {
         try {
-            const response = await fetch("/api/v1/mosques", {
-                credentials: "include",
-                headers: { Accept: "application/json" },
-            });
+            const response = await fetch(
+                `/api/v1/centers/${centerId}/mosques`,
+                {
+                    credentials: "include",
+                    headers: { Accept: "application/json" },
+                },
+            );
             if (response.ok) {
                 const data = await response.json();
                 setMosquesData(data.data || []);
             }
         } catch (error) {
-            console.error("Failed to fetch mosques:", error);
+            console.error("Failed to fetch center mosques:", error);
         }
     }, []);
 
-    const fetchTeachers = useCallback(async () => {
+    const fetchCenterTeachers = useCallback(async (centerId: number) => {
         try {
-            const response = await fetch("/api/v1/teachers", {
-                credentials: "include",
-                headers: { Accept: "application/json" },
-            });
+            const response = await fetch(
+                `/api/v1/centers/${centerId}/teachers`,
+                {
+                    credentials: "include",
+                    headers: { Accept: "application/json" },
+                },
+            );
             if (response.ok) {
                 const data = await response.json();
                 setTeachersData(data.data || []);
             }
         } catch (error) {
-            console.error("Failed to fetch teachers:", error);
+            console.error("Failed to fetch center teachers:", error);
         }
     }, []);
-
-    const getCurrentCenterMosques = useCallback(
-        (centerId?: string): MosqueType[] => {
-            if (!centerId) return [];
-            return mosquesData.filter(
-                (mosque) => mosque.center_id.toString() === centerId,
-            );
-        },
-        [mosquesData],
-    );
-
-    const getCurrentCenterTeachers = useCallback(
-        (centerId?: string): TeacherType[] => {
-            if (!centerId) return [];
-            return teachersData.filter(
-                (teacher) => teacher.center_id?.toString() === centerId,
-            );
-        },
-        [teachersData],
-    );
-
-    useEffect(() => {
-        fetchTeachers();
-    }, [fetchTeachers]);
 
     const handleInputChange = useCallback(
         (
@@ -223,22 +230,30 @@ export const useCircleFormUpdate = (circleId: number) => {
         const newErrors: FormErrors = {};
 
         if (!formData.name.trim()) newErrors.name = "اسم الحلقة مطلوب";
-        if (!formData.center_id) newErrors.center_id = "المجمع مطلوب";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }, [formData]);
 
     const submitForm = useCallback(
-        async (onSubmit: (formData: FormData) => Promise<void>) => {
-            if (!validateForm()) return;
+        async (onSubmit: (formDataSubmit: FormData) => Promise<void>) => {
+            if (!validateForm()) {
+                return;
+            }
+
+            if (!formData.center_id) {
+                toast.error("المجمع غير محدد");
+                return;
+            }
+
+            if (isSubmitting) return;
 
             setIsSubmitting(true);
             try {
                 const formDataSubmit = new FormData();
+                formDataSubmit.append("_method", "PUT");
                 formDataSubmit.append("name", formData.name);
                 formDataSubmit.append("center_id", formData.center_id);
-                formDataSubmit.append("_method", "PUT");
                 if (formData.mosque_id)
                     formDataSubmit.append("mosque_id", formData.mosque_id);
                 if (formData.teacher_id)
@@ -248,25 +263,26 @@ export const useCircleFormUpdate = (circleId: number) => {
 
                 await onSubmit(formDataSubmit);
             } catch (error) {
-                console.error("Submit error:", error);
+                console.error("Update error:", error);
             } finally {
                 setIsSubmitting(false);
             }
         },
-        [formData, validateForm],
+        [formData, validateForm, isSubmitting],
     );
 
     return {
         formData,
         errors,
         isSubmitting,
+        isLoadingCircle,
         handleInputChange,
         submitForm,
         centersData,
+        mosquesData,
+        teachersData,
         loadingData,
-        getCurrentCenterMosques,
-        getCurrentCenterTeachers,
         user,
-        loadCircleData,
+        circleData,
     };
 };

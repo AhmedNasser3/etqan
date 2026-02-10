@@ -59,6 +59,11 @@ import PlansManagement from "./src/pages/DashBoard/Center/Plans/PlansManagement"
 import PlanDetailsManagement from "./src/pages/DashBoard/Center/PlansDetails/PlanDetailsManagement";
 import SchedulesManagement from "./src/pages/DashBoard/Center/PlanCircleSchedule/SchedulesManagement";
 import StudentBookingsManagement from "./src/pages/DashBoard/Center/useStudentBookings/StudentBookingsManagement";
+import StudentAchievementsManagement from "./src/pages/DashBoard/Center/StudentAchievements/StudentAchievementsManagement";
+import DomainRequestsManagement from "./src/pages/DashBoard/Center/useDomainRequests/DomainRequestsManagement";
+import SalaryRulesManagement from "./src/pages/DashBoard/Center/SalaryRules/SalaryRulesManagement";
+import SpecialRequestsManagement from "./src/pages/DashBoard/Center/SpecialRequests/SpecialRequestsManagement";
+import PendingCentersApproval from "./src/pages/DashBoard/Center/PendingCenters/PendingCentersApproval";
 
 function UserLayout() {
     return (
@@ -215,6 +220,26 @@ function App() {
                         <Route
                             path="booking-manegment"
                             element={<StudentBookingsManagement />}
+                        />
+                        <Route
+                            path="achieve-manegment"
+                            element={<StudentAchievementsManagement />}
+                        />
+                        <Route
+                            path="request-domain-manegment"
+                            element={<DomainRequestsManagement />}
+                        />
+                        <Route
+                            path="teaceher-salary-manegment"
+                            element={<SalaryRulesManagement />}
+                        />
+                        <Route
+                            path="special-request-manegment"
+                            element={<SpecialRequestsManagement />}
+                        />
+                        <Route
+                            path="centers-approval"
+                            element={<PendingCentersApproval />}
                         />
                         <Route path="audit-log" element={<AuditLogPage />} />
                     </Route>

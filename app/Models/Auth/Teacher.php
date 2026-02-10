@@ -4,6 +4,7 @@ namespace App\Models\Auth;
 
 use App\Models\Auth\User;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Plans\PlanCircleSchedule;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Teacher extends Model
@@ -21,4 +22,8 @@ class Teacher extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function schedule()
+{
+    return $this->belongsTo(PlanCircleSchedule::class, 'schedule_id');
+}
 }

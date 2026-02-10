@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
@@ -7,6 +7,7 @@ import { FiEdit3, FiTrash2 } from "react-icons/fi";
 import { IoMdAdd } from "react-icons/io";
 import CreateCirclePage from "./models/CreateCirclePage";
 import UpdateCirclePage from "./models/UpdateCirclePage";
+import ModalNotification from "./components/ModalNotification";
 import { useCircles } from "./hooks/useCircles";
 
 interface CircleType {
@@ -36,6 +37,7 @@ const CirclesManagement: React.FC = () => {
     const [search, setSearch] = useState("");
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [isDeleteConfirm, setIsDeleteConfirm] = useState(false);
     const [selectedCircleId, setSelectedCircleId] = useState<number | null>(
         null,
     );
@@ -49,16 +51,12 @@ const CirclesManagement: React.FC = () => {
         [searchCircles],
     );
 
-    // تمرير ID الحلقة للـ Modal عشان يحمل البيانات الأصلية
     const handleEdit = useCallback((circle: CircleType) => {
-        console.log("تحديد حلقة للتعديل:", circle); // للتأكد من البيانات
         setSelectedCircleId(circle.id);
         setShowUpdateModal(true);
     }, []);
 
     const handleDelete = async (id: number) => {
-        if (!confirm("هل أنت متأكد من حذف هذه الحلقة؟")) return;
-
         try {
             const csrfToken =
                 document
@@ -104,7 +102,6 @@ const CirclesManagement: React.FC = () => {
     }, []);
 
     const handleCreateSuccess = useCallback(() => {
-        toast.success("تم إضافة الحلقة بنجاح! 🎉");
         refetch();
         handleCloseCreateModal();
     }, [refetch, handleCloseCreateModal]);
@@ -112,6 +109,19 @@ const CirclesManagement: React.FC = () => {
     const handleAddNew = useCallback(() => {
         setShowCreateModal(true);
     }, []);
+
+    const handleDeleteClick = useCallback((id: number) => {
+        setSelectedCircleId(id);
+        setIsDeleteConfirm(true);
+    }, []);
+
+    const handleConfirmDelete = useCallback(() => {
+        if (selectedCircleId) {
+            handleDelete(selectedCircleId);
+            setIsDeleteConfirm(false);
+            setSelectedCircleId(null);
+        }
+    }, [selectedCircleId, handleDelete]);
 
     const stats = {
         total: pagination?.total || 0,
@@ -150,7 +160,6 @@ const CirclesManagement: React.FC = () => {
 
     return (
         <>
-            {/* Modal التعديل - يستقبل circleId ويحمل البيانات الأصلية أوتوماتيك */}
             {showUpdateModal && selectedCircleId && (
                 <UpdateCirclePage
                     circleId={selectedCircleId}
@@ -159,7 +168,6 @@ const CirclesManagement: React.FC = () => {
                 />
             )}
 
-            {/* Modal الإنشاء */}
             {showCreateModal && (
                 <CreateCirclePage
                     onClose={handleCloseCreateModal}
@@ -167,8 +175,17 @@ const CirclesManagement: React.FC = () => {
                 />
             )}
 
+            <ModalNotification
+                show={isDeleteConfirm}
+                title="هل أنت متأكد؟"
+                message="هل أنت متأكد من حذف هذه الحلقة؟ هذا الإجراء لا يمكن التراجع عنه."
+                onClose={() => setIsDeleteConfirm(false)}
+                onConfirm={handleConfirmDelete}
+                confirmText="نعم، احذفها"
+                showConfirm={true}
+            />
+
             <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                {/* باقي الكود كما هو... */}
                 <div className="plan__stats">
                     <div className="stat-card">
                         <div className="stat-icon redColor">
@@ -294,7 +311,7 @@ const CirclesManagement: React.FC = () => {
                                             <button
                                                 className="teacherStudent__status-btn delete-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
                                                 onClick={() =>
-                                                    handleDelete(item.id)
+                                                    handleDeleteClick(item.id)
                                                 }
                                                 disabled={loading}
                                                 title="حذف الحلقة"
@@ -319,7 +336,6 @@ const CirclesManagement: React.FC = () => {
                     </table>
                 </div>
 
-                {/* Pagination */}
                 {pagination && pagination.last_page > 1 && (
                     <div
                         className="inputs__verifyOTPBirth"
@@ -354,7 +370,6 @@ const CirclesManagement: React.FC = () => {
                     </div>
                 )}
 
-                {/* Progress Bars */}
                 <div
                     className="inputs__verifyOTPBirth"
                     style={{ width: "100%" }}

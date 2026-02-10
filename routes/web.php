@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\EmailLoginController;
+use App\Http\Controllers\Teachers\AttendanceController;
 use App\Http\Controllers\Auth\TeacherRegisterController;
 use App\Http\Controllers\Auth\StudentRegistrationController;
 use App\Http\Controllers\Plans\PlanCircleScheduleController;
@@ -61,4 +62,10 @@ Route::middleware('web')->prefix('v1')->group(function () {
         Route::get('circles', [PlanCircleScheduleController::class, 'getCirclesForCreate']);
         Route::get('teachers', [PlanCircleScheduleController::class, 'getTeachersForCreate']);
     });
+});
+
+// في نهاية routes/web.php
+Route::get('/run-scheduler', function () {
+    \Artisan::call('schedule:run');
+    return '✅ Scheduler ran at ' . now();
 });

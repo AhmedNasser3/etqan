@@ -1,4 +1,12 @@
+// hooks/useOtpVerification.ts
+
 import { useState, useCallback, useRef } from "react";
+
+interface ModalState {
+    show: boolean;
+    title?: string;
+    message: string;
+}
 
 interface UseOtpVerificationReturn {
     verified: boolean;
@@ -7,18 +15,37 @@ interface UseOtpVerificationReturn {
     verifyOtp: (otp: string, onSuccess?: () => void) => Promise<void>;
     sendOtp: (email: string) => Promise<void>;
     shieldRef: React.RefObject<HTMLDivElement>;
+    modal: ModalState;
+    closeModal: () => void;
 }
 
 export const useOtpVerification = (): UseOtpVerificationReturn => {
     const [verified, setVerified] = useState<boolean>(false);
     const [error, setError] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
+    const [modal, setModal] = useState<ModalState>({
+        show: false,
+        message: "",
+    });
+
     const shieldRef = useRef<HTMLDivElement>(null);
 
-    const showAlert = useCallback((message: string) => {
-        alert(message);
+    const closeModal = useCallback(() => {
+        setModal((m) => ({ ...m, show: false }));
     }, []);
 
+    const showAlert = useCallback(
+        (message: string): void => {
+            setModal({
+                show: true,
+                title: "تنبيه",
+                message,
+            });
+        },
+        [], // تنگدیني عن Dependcy
+    );
+
+    // ✅ إرسال OTP مباشرة
     const sendOtp = useCallback(
         async (email: string) => {
             setLoading(true);
@@ -32,26 +59,45 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                         "Content-Type": "application/json",
                         Accept: "application/json",
                         "X-Requested-With": "XMLHttpRequest",
-                    } as HeadersInit, // ✅ إصلاح TypeScript
+                    },
                     body: JSON.stringify({ email }),
                 });
 
                 const data = await response.json();
 
-                if (response.ok && data.success) {
-                    showAlert(
-                        `رمز التحقق: ${data.otp} - ادخله في الحقول أدناه`,
-                    );
+                if (response.ok && data.success === true) {
+                    // ✅ إذا كان الـ OTP ظاهر في الـ Response (dev/testing)
+                    if (data.otp != null) {
+                        showAlert(
+                            `رمز التحقق المؤقت: ${data.otp} - ادخله في الحقول أدناه`,
+                        );
+                    } else {
+                        showAlert("تم إرسال رمز التحقق للبريد الإلكتروني.");
+                    }
                 } else {
-                    const errorMessage = Array.isArray(data.message)
-                        ? (Object.values(data.message)[0] as string[])[0]
-                        : (data.message as string) || "فشل في ارسال OTP";
-                    showAlert(errorMessage);
-                    setError(true);
-                    setTimeout(() => setError(false), 2000);
+                    // ✅ handle all fail cases
+                    let msg = Array.isArray(data.message)
+                        ? String(
+                              Object.values(data.message)[0] ??
+                                  "فشل في إرسال OTP",
+                          )
+                        : String(data.message ?? "فشل في إرسال OTP");
+
+                    // ✅ خاص بالرسالة "الحساب لم يتم قبوله بعد"
+                    if (data.reason === "pending") {
+                        setModal({
+                            show: true,
+                            title: "تنبيه",
+                            message:
+                                "الحساب لم يتم قبوله بعد، انتظر التفعيل من الإدارة",
+                        });
+                    } else {
+                        setError(true);
+                        showAlert(msg);
+                        setTimeout(() => setError(false), 2000);
+                    }
                 }
-            } catch (err: unknown) {
-                // ✅ إصلاح any type
+            } catch (err) {
                 console.error("Send OTP Error:", err);
                 showAlert("فشل في الاتصال بالخادم، تأكد من تشغيل Laravel");
                 setError(true);
@@ -63,6 +109,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
         [showAlert],
     );
 
+    // ✅ التحقق من OTP
     const verifyOtp = useCallback(
         async (otp: string, onSuccess?: () => void) => {
             setLoading(true);
@@ -76,7 +123,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                         "Content-Type": "application/json",
                         Accept: "application/json",
                         "X-Requested-With": "XMLHttpRequest",
-                    } as HeadersInit, // ✅ إصلاح TypeScript
+                    },
                     body: JSON.stringify({ otp }),
                 });
 
@@ -95,29 +142,34 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                         }, 1500);
                     }
 
-                    setTimeout(() => {
-                        onSuccess?.();
-                    }, 1500);
+                    setTimeout(() => onSuccess?.(), 1500);
                 } else {
-                    let errorMessage = "رمز التحقق غير صحيح";
-                    if (response.status === 422 && data.message) {
-                        errorMessage = Array.isArray(data.message)
-                            ? (Object.values(data.message)[0] as string[])[0]
-                            : (data.message as string);
-                    } else if (data.message) {
-                        errorMessage = data.message as string;
-                    }
+                    let eMsg = Array.isArray(data.message)
+                        ? String(
+                              Object.values(data.message)[0] ??
+                                  "رمز التحقق غير صحيح",
+                          )
+                        : String(data.message ?? "رمز التحقق غير صحيح");
 
-                    setError(true);
-                    showAlert(errorMessage);
-                    setTimeout(() => setError(false), 2000);
+                    // ✅ مثال خاص برسالة معلّقة
+                    if (data.reason === "pending") {
+                        setModal({
+                            show: true,
+                            title: "طلب تفعيل من الإدارة",
+                            message:
+                                "الحساب لم يتم قبوله بعد، انتظر التفعيل من الإدارة",
+                        });
+                    } else {
+                        setError(true);
+                        showAlert(eMsg);
+                        setTimeout(() => setError(false), 3000);
+                    }
                 }
-            } catch (err: unknown) {
-                // ✅ إصلاح any type
+            } catch (err) {
                 console.error("Verify OTP Error:", err);
                 setError(true);
                 showAlert("فشل في الاتصال بالخادم");
-                setTimeout(() => setError(false), 2000);
+                setTimeout(() => setError(false), 3000);
             } finally {
                 setLoading(false);
             }
@@ -132,5 +184,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
         verifyOtp,
         sendOtp,
         shieldRef,
+        modal,
+        closeModal,
     };
 };
