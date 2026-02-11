@@ -1,8 +1,11 @@
 import { MdUnfoldMore } from "react-icons/md";
 import { BsSkipStartFill } from "react-icons/bs";
+import { useFeaturedCenter } from "./hooks/useFeaturedCenter";
 import QURANN from "../../../../assets/images/qurann.png";
 
 const CentersPage: React.FC = () => {
+    const { name, loading } = useFeaturedCenter();
+
     return (
         <div className="home">
             <img
@@ -31,12 +34,12 @@ const CentersPage: React.FC = () => {
                 </div>
                 <div className="home__content">
                     <div className="home__title">
-                        <h1>أهلاً بك في مجمع الرحمن</h1>
+                        <h1>أهلاً بك في {loading ? "..." : name}</h1>
                         <p>
-                            مجمع الرحمن ، مجمع قرآني إلكتروني، عبارة عن منصة
-                            إلكترونية مستقلة تتيح تعلم القرآن الكريم وتعليمه
-                            للجميع حول العالم عبر وسائل التواصل الاجتماعي
-                            المختلفة.
+                            {loading ? "جاري التحميل..." : name} ، مجمع قرآني
+                            مميز، عبارة عن منصة إلكترونية مستقلة تتيح تعلم
+                            القرآن الكريم وتعليمه للجميع حول العالم عبر وسائل
+                            التواصل الاجتماعي المختلفة.
                         </p>
                     </div>
                     <div className="home__btns">

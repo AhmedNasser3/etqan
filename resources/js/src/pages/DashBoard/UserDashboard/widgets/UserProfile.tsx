@@ -1,7 +1,7 @@
 import PlanCards from "../plans/models/PlanCards";
 import Schedules from "../plans/models/Sheduls";
 import UserMeetCard from "../userMeet/UserMeetCard";
-import UserPlans from "../userPlans/UserPlans";
+// ❌ import UserPlans from "../userPlans/UserPlans"; // احذف الخط ده
 import EmailVerifyWidget from "./EmailVerifyWidget";
 import Medals from "./medals";
 
@@ -37,8 +37,13 @@ const UserProfile: React.FC = () => {
                     </div>
                     <EmailVerifyWidget />
                 </div>
-                <PlanCards />
-                {/* <Schedules /> */}
+
+                {/* خططي الخاصة */}
+                <PlanCards type="my-plans" />
+
+                {/* خطط متاحة للحجز */}
+                {/* <PlanCards type="available" /> */}
+
                 <div className="userProfile__doupleSide">
                     <Medals />
                     <div className="userProfile__progress">
@@ -52,24 +57,16 @@ const UserProfile: React.FC = () => {
                                     <span></span>
                                 </div>
                             </div>
-                            {/* <div className="userProfile__progressContent">
-                                <div className="userProfile__progressTitle">
-                                    <h1>مستوي تقدم الطالب</h1>
-                                </div>
-                                <p>23%</p>
-                                <div
-                                    className="userProfile__progressBar"
-                                    id="userProfile__low"
-                                >
-                                    <span></span>
-                                </div>
-                            </div> */}
                         </div>
                     </div>
                 </div>
-                <UserPlans />
-                <UserMeetCard />
             </div>
+
+            {/* ✅ خطط متاحة للحجز */}
+            <PlanCards type="available" />
+
+            {/* <Schedules /> */}
+            <UserMeetCard />
         </div>
     );
 };

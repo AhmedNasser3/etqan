@@ -64,6 +64,10 @@ import DomainRequestsManagement from "./src/pages/DashBoard/Center/useDomainRequ
 import SalaryRulesManagement from "./src/pages/DashBoard/Center/SalaryRules/SalaryRulesManagement";
 import SpecialRequestsManagement from "./src/pages/DashBoard/Center/SpecialRequests/SpecialRequestsManagement";
 import PendingCentersApproval from "./src/pages/DashBoard/Center/PendingCenters/PendingCentersApproval";
+import CenterPage from "./src/pages/DashBoard/Center/pages/Center";
+import CentersPage from "./src/pages/DashBoard/Center/pages/CentersPage";
+import EditAccountPage from "./src/pages/DashBoard/AccountEdit/EditAccountPage";
+import MeetingsManagement from "./src/pages/DashBoard/Meeting/MeetingsManagement";
 
 function UserLayout() {
     return (
@@ -106,6 +110,19 @@ function CenterLayout() {
         </>
     );
 }
+function PublicLayout() {
+    return (
+        <>
+            <TeacherNavbar />
+            <CenterSidebar />
+            <main className="page">
+                <div className="page__container">
+                    <Outlet />
+                </div>
+            </main>
+        </>
+    );
+}
 function DashLayout() {
     return (
         <>
@@ -124,7 +141,9 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/*" element={<DashLayout />}>
+                <Route path="/" element={<DashLayout />}>
+                    {" "}
+                    {/* غيرت من /* لـ / */}
                     <Route index element={<Dashboard />} />
                     <Route path="teacher-view" element={<TestimonialsView />} />
                     <Route
@@ -140,6 +159,14 @@ function App() {
                         path=":centerSlug?/teacher-register"
                         element={<TeacherRegister />}
                     />
+                    {/* ضعه في الأول عشان priority عالي */}
+                    <Route index element={<CentersPage />} />
+                    <Route path=":centerSlug" element={<CenterPage />} />
+                </Route>
+
+                {/* خارج DashLayout - للصفحات العامة */}
+                <Route path="/public/*" element={<PublicLayout />}>
+                    <Route path=":centerSlug" element={<CenterPage />} />
                 </Route>
 
                 <Route path="/:complexSlug?">
@@ -241,6 +268,10 @@ function App() {
                             path="centers-approval"
                             element={<PendingCentersApproval />}
                         />
+                        <Route
+                            path="meeting-management"
+                            element={<MeetingsManagement />}
+                        />
                         <Route path="audit-log" element={<AuditLogPage />} />
                     </Route>
 
@@ -270,6 +301,10 @@ function App() {
                         <Route
                             path="user-progress"
                             element={<UserProgress />}
+                        />
+                        <Route
+                            path="user-setting"
+                            element={<EditAccountPage />}
                         />
                         <Route
                             path="user-complexes"

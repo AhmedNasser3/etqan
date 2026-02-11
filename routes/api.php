@@ -3,8 +3,10 @@
 use App\Models\Auth\User;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Plans\PlanController;
+use App\Http\Controllers\User\FeaturedController;
 use App\Http\Controllers\Centers\CenterController;
 use App\Http\Controllers\Centers\MosqueController;
+use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Circles\CirclesController;
 use App\Http\Controllers\Plans\PlanDetailController;
 use App\Http\Controllers\Teachers\TeacherController;
@@ -26,6 +28,7 @@ use App\Http\Controllers\Routes\RouteCustomizationController;
 use App\Http\Controllers\Plans\CircleStudentBookingController;
 use App\Http\Controllers\Student\StudentAchievementController;
 use App\Http\Controllers\Permissions\UserPermissionsController;
+use App\Http\Controllers\Meetings\TeacherStudentMeetingController;
 
 Route::prefix('super/centers')->group(function () {
     Route::get('/pending', [PendingCentersController::class, 'index']);
@@ -379,4 +382,33 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 Route::middleware(['web'])->group(function () {
     Route::get('/user/permissions', [UserPermissionsController::class, 'getPermissions'])
          ->name('user.permissions');
+});
+Route::get('/featured', [FeaturedController::class, 'show']);
+Route::prefix('v1')->name('api.v1.')->middleware('web')->group(function () {
+    // Account Management (Authenticated)
+    Route::prefix('account')->name('account.')->group(function () {
+        Route::get('/edit', [AccountController::class, 'edit']);
+        Route::post('/update', [AccountController::class, 'update']);
+        Route::delete('/delete', [AccountController::class, 'destroy']);
+    });
+});
+Route::prefix('v1')->name('api.v1.')->middleware('web')->group(function () {
+    // Account Management (Authenticated)
+    Route::prefix('account')->name('account.')->group(function () {
+        Route::get('/edit', [AccountController::class, 'edit']);
+        Route::post('/update', [AccountController::class, 'update']);
+        Route::delete('/delete', [AccountController::class, 'destroy']);
+    });
+
+    // ✅ Teacher-Student Meetings Routes
+    Route::prefix('meetings')->name('meetings.')->group(function () {
+        Route::get('/', [TeacherStudentMeetingController::class, 'index']);
+        Route::post('/', [TeacherStudentMeetingController::class, 'store']);
+        Route::get('/student/{studentId}', [TeacherStudentMeetingController::class, 'getStudentMeetings']);
+        Route::get('/teacher/{teacherId}', [TeacherStudentMeetingController::class, 'getTeacherMeetings']);
+
+        Route::get('{id}', [TeacherStudentMeetingController::class, 'show']);
+        Route::patch('{id}/join', [TeacherStudentMeetingController::class, 'updateJoinStatus']);
+        Route::delete('{id}', [TeacherStudentMeetingController::class, 'destroy']);
+    });
 });

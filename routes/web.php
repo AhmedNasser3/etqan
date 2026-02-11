@@ -3,9 +3,11 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\User\FeaturedController;
 use App\Http\Controllers\Auth\EmailLoginController;
 use App\Http\Controllers\Teachers\AttendanceController;
 use App\Http\Controllers\Auth\TeacherRegisterController;
+use App\Http\Controllers\User\CenterPublicPlansController;
 use App\Http\Controllers\Auth\StudentRegistrationController;
 use App\Http\Controllers\Plans\PlanCircleScheduleController;
 use App\Http\Controllers\Permissions\UserPermissionsController;
@@ -69,4 +71,4 @@ Route::middleware('web')->prefix('v1')->group(function () {
 Route::get('/run-scheduler', function () {
     \Artisan::call('schedule:run');
     return '✅ Scheduler ran at ' . now();
-});
+});// routes/web.php
