@@ -7,6 +7,7 @@ import { FiEdit3, FiTrash2 } from "react-icons/fi";
 import { IoMdAdd } from "react-icons/io";
 import CreatePlanPage from "./models/CreatePlanPage";
 import UpdatePlanPage from "./models/UpdatePlanPage";
+import DeleteModal from "../PlansDetails/components/DeleteModal"; // ✅ Import DeleteModal
 import { usePlans } from "./hooks/usePlans";
 
 interface PlanType {
@@ -36,6 +37,10 @@ const PlansManagement: React.FC = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
 
+    // ✅ Modal Delete State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletePlanId, setDeletePlanId] = useState<number | null>(null);
+
     const handleSearch = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const value = e.target.value;
@@ -45,13 +50,9 @@ const PlansManagement: React.FC = () => {
         [searchPlans],
     );
 
-    const handleEdit = useCallback((plan: PlanType) => {
-        setSelectedPlanId(plan.id);
-        setShowUpdateModal(true);
-    }, []);
-
-    const handleDelete = async (id: number) => {
-        if (!confirm("هل أنت متأكد من حذف هذه الخطة؟")) return;
+    // ✅ handleDeleteConfirm - مع Modal
+    const handleDeleteConfirm = async () => {
+        if (!deletePlanId) return;
 
         try {
             const csrfToken =
@@ -59,7 +60,7 @@ const PlansManagement: React.FC = () => {
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content") || "";
 
-            const response = await fetch(`/api/v1/plans/${id}`, {
+            const response = await fetch(`/api/v1/plans/${deletePlanId}`, {
                 method: "DELETE",
                 credentials: "include",
                 headers: {
@@ -74,6 +75,8 @@ const PlansManagement: React.FC = () => {
             if (response.ok) {
                 toast.success("تم حذف الخطة بنجاح ✅");
                 refetch();
+                setShowDeleteModal(false);
+                setDeletePlanId(null);
             } else {
                 toast.error(result.message || "فشل في الحذف");
             }
@@ -81,6 +84,16 @@ const PlansManagement: React.FC = () => {
             toast.error("حدث خطأ في الحذف");
         }
     };
+
+    const handleDelete = (id: number) => {
+        setDeletePlanId(id);
+        setShowDeleteModal(true);
+    };
+
+    const handleEdit = useCallback((plan: PlanType) => {
+        setSelectedPlanId(plan.id);
+        setShowUpdateModal(true);
+    }, []);
 
     const handleCloseUpdateModal = useCallback(() => {
         setShowUpdateModal(false);
@@ -153,6 +166,20 @@ const PlansManagement: React.FC = () => {
 
     return (
         <>
+            {/* ✅ DeleteModal Component */}
+            <DeleteModal
+                show={showDeleteModal}
+                title="تأكيد الحذف"
+                message="هل أنت متأكد من حذف هذه الخطة؟ هذا الإجراء لا يمكن التراجع عنه."
+                onClose={() => {
+                    setShowDeleteModal(false);
+                    setDeletePlanId(null);
+                }}
+                onConfirm={handleDeleteConfirm}
+                confirmText="حذف الخطة"
+                showConfirm={true}
+            />
+
             {showUpdateModal && selectedPlanId && (
                 <UpdatePlanPage
                     planId={selectedPlanId}

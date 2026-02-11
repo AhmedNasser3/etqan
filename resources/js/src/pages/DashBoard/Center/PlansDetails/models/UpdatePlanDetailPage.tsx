@@ -179,7 +179,11 @@ const UpdatePlanDetailPage: React.FC<UpdatePlanDetailPageProps> = ({
                                 </div>
                             </div>
 
-                            <div className="inputs__submitBtn">
+                            <div
+                                className="inputs__submitBtn"
+                                id="ParentModel__btn"
+                            >
+                                {" "}
                                 <button
                                     type="button"
                                     onClick={() => submitForm(handleSubmit)}
@@ -192,7 +196,7 @@ const UpdatePlanDetailPage: React.FC<UpdatePlanDetailPageProps> = ({
                                             جاري التحديث...
                                         </>
                                     ) : (
-                                        <>تحديث اليوم</>
+                                        <>تحديث التفاصيل</>
                                     )}
                                 </button>
                             </div>

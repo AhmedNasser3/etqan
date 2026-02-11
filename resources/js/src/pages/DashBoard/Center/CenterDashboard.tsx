@@ -15,15 +15,6 @@ import {
     Tooltip,
     Legend,
 } from "recharts";
-import StudentAffairs from "../Supervisors/Students/StudentsAffairs";
-import EducationalSupervisor from "../Supervisors/Education/EducationSupervisor";
-import MotivationSupervisor from "../Supervisors/Motivation/MotivationSupervisor";
-import ListeningRooms from "../Supervisors/Rooms/ListeningRooms";
-import ReportsDashboard from "../Reports/ReportsDashboard";
-import AuditLogPage from "../AuditLogs";
-import CircleManagement from "../Admin/Circles/CircleMangement";
-import Mosque from "../Admin/mosque/MosquesManagement";
-import CentersMangement from "../Admin/Center/CentersMangement";
 
 const CenterDashboard: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -377,14 +368,6 @@ const CenterDashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <AuditLogPage />
-            <ReportsDashboard />
-            <ListeningRooms />
-            <MotivationSupervisor />
-            <EducationalSupervisor />
-            <StudentAffairs />
-            <CentersMangement />
-            <Mosque />
         </div>
     );
 };

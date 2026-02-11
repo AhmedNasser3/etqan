@@ -8,6 +8,7 @@ use App\Http\Controllers\Centers\MosqueController;
 use App\Http\Controllers\Circles\CirclesController;
 use App\Http\Controllers\Plans\PlanDetailController;
 use App\Http\Controllers\Teachers\TeacherController;
+use App\Http\Controllers\Plans\StudentPlanController;
 use App\Http\Controllers\Users\UserSuspendController;
 use App\Http\Controllers\Teachers\AttendanceController;
 use App\Http\Controllers\Auth\TeacherRegisterController;
@@ -18,11 +19,13 @@ use App\Http\Controllers\Student\StudentAffairsController;
 use App\Http\Controllers\Teachers\TeacherSalaryController;
 use App\Http\Controllers\Student\StudentBookingsController;
 use App\Http\Controllers\Students\PendingStudentController;
+use App\Http\Controllers\Teachers\TeacherPayrollController;
 use App\Http\Controllers\Center\IdeaDomainRequestController;
 use App\Http\Controllers\Plans\PlanCircleScheduleController;
 use App\Http\Controllers\Routes\RouteCustomizationController;
 use App\Http\Controllers\Plans\CircleStudentBookingController;
 use App\Http\Controllers\Student\StudentAchievementController;
+use App\Http\Controllers\Permissions\UserPermissionsController;
 
 Route::prefix('super/centers')->group(function () {
     Route::get('/pending', [PendingCentersController::class, 'index']);
@@ -141,11 +144,33 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
         return response()->json(['message' => 'Achievements API شغالة!']);
     });
 });
+// ✅ في routes/api.php - أضف مع student-bookings
+Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
+    // 🔥 🔥 PAYROLL ROUTES ✅ ✅
+    Route::get('teacher/payrolls', [TeacherPayrollController::class, 'index'])
+        ->name('teacher.payrolls.index');
+
+    // ✅ أضف POST للإنشاء ← هنا المشكلة!
+    Route::post('teacher/payrolls', [TeacherPayrollController::class, 'store'])
+        ->name('teacher.payrolls.store');
+
+    Route::patch('teacher/payrolls/{id}/paid', [TeacherPayrollController::class, 'markPaid'])
+        ->name('teacher.payrolls.paid');
+});
+
 
 // ✅ 6. STUDENT BOOKINGS Routes
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
-    Route::get('plans/student-bookings', [StudentBookingsController::class, 'index'])->name('plans.student-bookings.index');
-    Route::post('plans/student-bookings/{booking}/confirm', [StudentBookingsController::class, 'confirm'])->name('plans.student-bookings.confirm');
+    // ✅ Student Bookings Routes (الحالية)
+    Route::get('plans/student-bookings', [StudentBookingsController::class, 'index'])
+        ->name('plans.student-bookings.index');
+
+    Route::post('plans/student-bookings/{booking}/confirm', [StudentBookingsController::class, 'confirm'])
+        ->name('plans.student-bookings.confirm');
+
+    // ✅ Student Plans Routes (الجديدة)
+    Route::middleware('web')->get('student/plans', [StudentPlanController::class, 'getUserPlans'])
+        ->name('student.plans.index');
 });
 
 // ✅ 7. MAIN WEB ROUTES (الأساسية مع web middleware) - جميع الـ routes الرئيسية
@@ -350,4 +375,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::put('/{id}', [RouteCustomizationController::class, 'update']);
         Route::delete('/{id}', [RouteCustomizationController::class, 'destroy']);
     });
+});
+Route::middleware(['web'])->group(function () {
+    Route::get('/user/permissions', [UserPermissionsController::class, 'getPermissions'])
+         ->name('user.permissions');
 });

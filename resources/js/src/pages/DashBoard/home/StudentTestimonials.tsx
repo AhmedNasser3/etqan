@@ -19,13 +19,13 @@ const StudentTestimonials: React.FC = () => {
     const testimonials: Testimonial[] = [
         {
             id: 1,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png",
+            img: facelessAvatar,
             name: "محمد أحمد العتيبي",
             title: "طالب حفظ قرآن - الجزء الثلاثون",
         },
         {
             id: 2,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/070/221/098/small_2x/confident-saudi-arabian-man-in-traditional-attire-portrait-against-isolated-backdrop-presenting-png.png",
+            img: facelessAvatar,
             name: "عبدالله صالح القحطاني",
             title: "طالب تجويد - المرتل",
         },
@@ -37,25 +37,25 @@ const StudentTestimonials: React.FC = () => {
         },
         {
             id: 4,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/921/small/a-smiling-saudi-arabian-man-in-a-white-thobe-and-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             name: "أحمد سعود الشمري",
             title: "طالب تلاوة - السور القصيرة",
         },
         {
             id: 5,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/974/small/front-view-a-happy-arab-man-in-traditional-white-thobe-and-red-and-white-checkered-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             name: "سعيد عبدالرحمن الحربي",
             title: "طالب حفظ - الجزء الخامس",
         },
         {
             id: 6,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/921/small/a-smiling-saudi-arabian-man-in-a-white-thobe-and-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             name: "يوسف ناصر الغامدي",
             title: "طالب تجويد - القراءات السبع",
         },
         {
             id: 7,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/921/small/a-smiling-saudi-arabian-man-in-a-white-thobe-and-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             name: "عمر فيصل الزهراني",
             title: "حافظ قرآن - المرتل المتقن",
         },

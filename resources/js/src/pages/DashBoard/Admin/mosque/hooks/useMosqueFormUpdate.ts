@@ -1,34 +1,47 @@
-// src/pages/DashBoard/Center/Plans/hooks/usePlanFormCreate.ts
+// hooks/useMosqueFormUpdate.ts
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
+
+interface MosqueFormData {
+    mosque_name: string;
+    center_id: string;
+    supervisor_id: string;
+    logo: File | null | string;
+    notes: string;
+}
 
 interface CenterType {
     id: number;
     name: string;
+    subdomain?: string;
+    circle_name?: string;
 }
 
-interface FormData {
-    plan_name: string;
-    center_id: string;
-    total_months: string;
-    notes?: string;
+interface UserOption {
+    id: number;
+    name: string;
+    email: string;
+    center_id?: number;
 }
 
 interface FormErrors {
     [key: string]: string;
 }
 
-export const usePlanFormCreate = () => {
-    const [formData, setFormData] = useState<FormData>({
-        plan_name: "",
-        center_id: "",
-        total_months: "",
-        notes: "",
+export const useMosqueFormUpdate = (initialData?: any) => {
+    const [formData, setFormData] = useState<MosqueFormData>({
+        mosque_name: initialData?.name || "",
+        center_id: initialData?.circleId?.toString() || "",
+        supervisor_id: initialData?.supervisorId?.toString() || "",
+        logo: initialData?.logo || null,
+        notes: initialData?.notes || "",
     });
     const [errors, setErrors] = useState<FormErrors>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false); // ✅ مضاف
     const [centersData, setCentersData] = useState<CenterType[]>([]);
+    const [usersData, setUsersData] = useState<UserOption[]>([]);
     const [loadingData, setLoadingData] = useState(true);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
@@ -53,21 +66,22 @@ export const usePlanFormCreate = () => {
         }
     }, []);
 
-    // Auto-set center_id for center owners
+    // Auto-set center_id for center owners (فقط لو مفيش initialData)
     useEffect(() => {
-        if (user?.center_id && !formData.center_id) {
+        if (user?.center_id && !formData.center_id && !initialData) {
             console.log("🏢 Auto-setting center_id:", user.center_id);
             setFormData((prev) => ({
                 ...prev,
                 center_id: user.center_id.toString(),
             }));
         }
-    }, [user?.center_id, formData.center_id]);
+    }, [user?.center_id, formData.center_id, initialData]);
 
     useEffect(() => {
         if (user) {
-            console.log("🚀 User loaded, fetching centers...");
+            console.log("🚀 User loaded, fetching centers & teachers...");
             fetchCenters();
+            fetchTeachers();
         }
     }, [user]);
 
@@ -110,10 +124,29 @@ export const usePlanFormCreate = () => {
             toast.error("فشل في تحميل المراكز");
             setCentersData([]);
         } finally {
-            console.log("✅ Centers loading finished");
             setLoadingData(false);
         }
     }, [user]);
+
+    const fetchTeachers = useCallback(async () => {
+        try {
+            console.log("📥 Fetching teachers...");
+            const response = await fetch("/api/v1/teachers", {
+                credentials: "include",
+                headers: { Accept: "application/json" },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log("✅ Teachers loaded:", data.data?.length);
+                setUsersData(data.data || []);
+            }
+        } catch (error) {
+            console.error("❌ Failed to fetch teachers:", error);
+            toast.error("فشل في تحميل المشرفين");
+            setUsersData([]);
+        }
+    }, []);
 
     const handleInputChange = useCallback(
         (
@@ -123,8 +156,23 @@ export const usePlanFormCreate = () => {
         ) => {
             const { name, value } = e.target;
             setFormData((prev) => ({ ...prev, [name]: value }));
-            if (errors[name]) {
+            if (errors[name as keyof MosqueFormData]) {
                 setErrors((prev) => ({ ...prev, [name]: "" }));
+            }
+        },
+        [errors],
+    );
+
+    const handleFileChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (file && file.size <= 2 * 1024 * 1024) {
+                setFormData((prev) => ({ ...prev, logo: file }));
+                const preview = URL.createObjectURL(file);
+                setLogoPreview(preview);
+                if (errors.logo) setErrors((prev) => ({ ...prev, logo: "" }));
+            } else {
+                toast.error("الملف كبير جداً (الحد الأقصى 2 ميجا بايت)");
             }
         },
         [errors],
@@ -133,11 +181,10 @@ export const usePlanFormCreate = () => {
     const validateForm = useCallback((): boolean => {
         const newErrors: FormErrors = {};
 
-        if (!formData.plan_name.trim()) newErrors.plan_name = "اسم الخطة مطلوب";
+        if (!formData.mosque_name.trim())
+            newErrors.mosque_name = "اسم المسجد مطلوب";
         if (!formData.center_id) newErrors.center_id = "المجمع مطلوب";
-        if (!formData.total_months || parseInt(formData.total_months) < 1) {
-            newErrors.total_months = "مدة الخطة يجب أن تكون أكبر من 0";
-        }
+        if (!formData.supervisor_id) newErrors.supervisor_id = "المشرف مطلوب";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -145,7 +192,7 @@ export const usePlanFormCreate = () => {
 
     const submitForm = useCallback(
         async (onSubmit: (formDataSubmit: FormData) => Promise<void>) => {
-            console.log("🚀 SUBMIT FORM - formData:", formData);
+            console.log("🚀 SUBMIT UPDATE FORM - formData:", formData);
             if (!validateForm()) {
                 console.log("❌ Validation failed");
                 return;
@@ -156,21 +203,23 @@ export const usePlanFormCreate = () => {
                 return;
             }
 
-            if (isSubmitting) return;
+            if (isSubmitting) return; // ✅ الآن isSubmitting معرّف
 
             setIsSubmitting(true);
             try {
                 const formDataSubmit = new FormData();
-                formDataSubmit.append("plan_name", formData.plan_name);
+                formDataSubmit.append("mosque_name", formData.mosque_name);
                 formDataSubmit.append("center_id", formData.center_id);
-                formDataSubmit.append("total_months", formData.total_months);
+                formDataSubmit.append("supervisor_id", formData.supervisor_id);
+                if (formData.logo instanceof File)
+                    formDataSubmit.append("logo", formData.logo as File);
                 if (formData.notes)
                     formDataSubmit.append("notes", formData.notes);
 
                 console.log("📤 Sending FormData:", {
-                    plan_name: formData.plan_name,
+                    mosque_name: formData.mosque_name,
                     center_id: formData.center_id,
-                    total_months: formData.total_months,
+                    supervisor_id: formData.supervisor_id,
                 });
 
                 await onSubmit(formDataSubmit);
@@ -180,17 +229,20 @@ export const usePlanFormCreate = () => {
                 setIsSubmitting(false);
             }
         },
-        [formData, validateForm, isSubmitting],
+        [formData, validateForm, isSubmitting], // ✅ مضاف isSubmitting
     );
 
     return {
         formData,
         errors,
-        isSubmitting,
-        handleInputChange,
-        submitForm,
+        isSubmitting, // ✅ موجود الآن
         centersData,
+        usersData,
         loadingData,
+        logoPreview,
         user,
+        handleInputChange,
+        handleFileChange,
+        submitForm,
     };
 };

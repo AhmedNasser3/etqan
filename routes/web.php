@@ -8,6 +8,7 @@ use App\Http\Controllers\Teachers\AttendanceController;
 use App\Http\Controllers\Auth\TeacherRegisterController;
 use App\Http\Controllers\Auth\StudentRegistrationController;
 use App\Http\Controllers\Plans\PlanCircleScheduleController;
+use App\Http\Controllers\Permissions\UserPermissionsController;
 
 Route::middleware('web')->group(function () {
     // ✅ Auth Routes - هنا عشان الـ session تشتغل

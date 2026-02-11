@@ -1,113 +1,26 @@
 import { RiRobot2Fill } from "react-icons/ri";
-import { SiBookstack } from "react-icons/si";
 import { GrStatusGood } from "react-icons/gr";
 import { PiTimerDuotone } from "react-icons/pi";
 import { PiWhatsappLogoDuotone } from "react-icons/pi";
 import { FaStar } from "react-icons/fa";
 import { GoGoal } from "react-icons/go";
-import { useState, useEffect } from "react";
+import { useStudentPlans } from "./hooks/useStudentPlans";
 
 const UserPlans: React.FC = () => {
+    const {
+        planData,
+        stats,
+        loading,
+        dateFrom,
+        setDateFrom,
+        dateTo,
+        setDateTo,
+    } = useStudentPlans();
+
     const today = new Date();
-    const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const [dateFrom, setDateFrom] = useState(
-        sevenDaysAgo.toISOString().split("T")[0],
-    );
-    const [dateTo, setDateTo] = useState(today.toISOString().split("T")[0]);
-    const [planData, setPlanData] = useState([
-        {
-            id: 1,
-            date: "2026-01-07",
-            day: "الأربعاء",
-            hifz: "البقرة ٤٦-٥٠",
-            review: "البقرة ١-١٠",
-            status: "completed",
-        },
-        {
-            id: 2,
-            date: "2026-01-08",
-            day: "الخميس",
-            hifz: "البقرة ٥١-٥٥",
-            review: "البقرة ١١-٢٠",
-            status: "completed",
-        },
-        {
-            id: 3,
-            date: "2026-01-09",
-            day: "الجمعة",
-            hifz: "البقرة ٥٦-٦٠",
-            review: "البقرة ٢١-٣٠",
-            status: "completed",
-        },
-        {
-            id: 4,
-            date: "2026-01-10",
-            day: "السبت",
-            hifz: "البقرة ٦١-٦٥",
-            review: "البقرة ٣١-٤٠",
-            status: "completed",
-        },
-        {
-            id: 1,
-            date: "2026-01-07",
-            day: "الأربعاء",
-            hifz: "البقرة ٤٦-٥٠",
-            review: "البقرة ١-١٠",
-            status: "completed",
-        },
-        {
-            id: 2,
-            date: "2026-01-08",
-            day: "الخميس",
-            hifz: "البقرة ٥١-٥٥",
-            review: "البقرة ١١-٢٠",
-            status: "active",
-        },
-        {
-            id: 3,
-            date: "2026-01-09",
-            day: "الجمعة",
-            hifz: "البقرة ٥٦-٦٠",
-            review: "البقرة ٢١-٣٠",
-            status: "pending",
-        },
-        {
-            id: 4,
-            date: "2026-01-28",
-            day: "السبت",
-            hifz: "البقرة ٦١-٦٥",
-            review: "البقرة ٣١-٤٠",
-            status: "pending",
-        },
-        {
-            id: 2,
-            date: "2026-01-22",
-            day: "الخميس",
-            hifz: "البقرة ٥١-٥٥",
-            review: "البقرة ١١-٢٠",
-            status: "active",
-        },
-        {
-            id: 3,
-            date: "2026-01-09",
-            day: "الجمعة",
-            hifz: "البقرة ٥٦-٦٠",
-            review: "البقرة ٢١-٣٠",
-            status: "pending",
-        },
-        {
-            id: 4,
-            date: "2026-01-10",
-            day: "السبت",
-            hifz: "البقرة ٦١-٦٥",
-            review: "البقرة ٣١-٤٠",
-            status: "pending",
-        },
-    ]);
-    const [filteredData, setFilteredData] = useState(planData);
-
-    const getArabicDayName = (date: Date) => {
+    const getArabicDayName = (date: string): string => {
+        const dateObj = new Date(date);
         const days = [
             "الأحد",
             "الإثنين",
@@ -117,56 +30,60 @@ const UserPlans: React.FC = () => {
             "الجمعة",
             "السبت",
         ];
-        return days[date.getDay()];
+        return days[dateObj.getDay()];
     };
 
-    const formatDate = (dateString: string) => {
+    const formatDate = (dateString: string): string => {
         const date = new Date(dateString);
         const todayDate = new Date(today.toDateString());
         const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-        const dayBeforeYesterday = new Date(
-            today.getTime() - 2 * 24 * 60 * 60 * 1000,
-        );
-        const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-        const dayAfterTomorrow = new Date(
-            today.getTime() + 2 * 24 * 60 * 60 * 1000,
-        );
 
         if (date.toDateString() === todayDate.toDateString()) return "اليوم";
         if (date.toDateString() === yesterday.toDateString()) return "أمس";
-        if (date.toDateString() === dayBeforeYesterday.toDateString())
-            return "قبل أمس";
-        if (date.toDateString() === tomorrow.toDateString()) return "غداً";
-        if (date.toDateString() === dayAfterTomorrow.toDateString())
-            return "بعد غد";
-
         return dateString.split("-").reverse().join("/");
     };
 
-    const fetchPlanData = () => {
-        const filtered = planData.filter(
-            (item) => item.date >= dateFrom && item.date <= dateTo,
-        );
-        setFilteredData(filtered);
+    // 🔥 Filter داخل الـ Component
+    const filteredData = planData.filter(
+        (item) => item.date >= dateFrom && item.date <= dateTo,
+    );
+
+    // 🔥 Format الوقت
+    const formatSessionTime = (time: string | undefined): string => {
+        if (!time) return "غير محدد";
+        try {
+            const [hours, minutes] = time.split(":");
+            const hour = parseInt(hours);
+            const period = hour >= 12 ? "م" : "ص";
+            const displayHour = hour % 12 || 12;
+            return `${displayHour}:${minutes} ${period}`;
+        } catch {
+            return time;
+        }
     };
 
-    useEffect(() => {
-        fetchPlanData();
-    }, [dateFrom, dateTo]);
+    if (loading) {
+        return (
+            <div className="loading flex items-center justify-center py-12">
+                جاري تحميل خطتك...
+            </div>
+        );
+    }
 
     return (
         <div className="userProfile__plan">
             <div className="userProfile__planTitle">
                 <h1>
-                    تختيم القرأن في <span>12 شهر</span>
+                    خطتك الدراسية <span>{stats?.total_days || 0} يوم</span>
                 </h1>
             </div>
+
             <div className="plan__header">
                 <div className="plan__ai-suggestion">
                     <i>
                         <RiRobot2Fill />
                     </i>
-                    راجع آية ٤٨ مرة تانية
+                    راجع {stats?.today_goal?.hifz || "الدرس اليومي"}
                 </div>
                 <div className="plan__current">
                     <h2>خطتك اليومية</h2>
@@ -191,48 +108,70 @@ const UserPlans: React.FC = () => {
                 </div>
             </div>
 
-            <div className="plan__daily-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>التاريخ</th>
-                            <th>اليوم</th>
-                            <th>الحفظ الجديد</th>
-                            <th>المراجعة</th>
-                            <th>الحالة</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredData.map((item) => (
-                            <tr
-                                key={item.id}
-                                className={`plan__row ${item.status}`}
-                            >
-                                <td>{formatDate(item.date)}</td>
-                                <td>{item.day}</td>
-                                <td>{item.hifz}</td>
-                                <td>{item.review}</td>
-                                <td>
-                                    <span>
-                                        <i>
-                                            {item.status === "completed" ? (
-                                                <GrStatusGood />
-                                            ) : (
-                                                <PiTimerDuotone />
-                                            )}
-                                        </i>
-                                        {item.status === "completed"
-                                            ? "مكتمل"
-                                            : item.status === "active"
-                                              ? "قيد التنفيذ"
-                                              : "قيد الانتظار"}
-                                    </span>
-                                </td>
+            {/* 🔥 Empty State */}
+            {filteredData.length === 0 ? (
+                <div className="empty-state text-center py-16">
+                    <SiBookstack className="mx-auto text-6xl text-gray-300 mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                        لا توجد خطط دراسية
+                    </h3>
+                    <p className="text-gray-500 mb-8">
+                        قم بالحجز في حلقة لتبدأ خطتك الدراسية
+                    </p>
+                </div>
+            ) : (
+                <div className="plan__daily-table">
+                    <div className="table-header flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">
+                            {filteredData.length} يوم في النطاق المحدد
+                        </h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>اليوم</th>
+                                <th>الحفظ الجديد</th>
+                                <th>المراجعة</th>
+                                <th>الوقت</th>
+                                <th>الحالة</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            {filteredData.map((item) => (
+                                <tr
+                                    key={item.id}
+                                    className={`plan__row ${item.status}`}
+                                >
+                                    <td>{formatDate(item.date)}</td>
+                                    <td>{item.day}</td>
+                                    <td>{item.hifz}</td>
+                                    <td>{item.review}</td>
+                                    <td>
+                                        {formatSessionTime(item.session_time)}
+                                    </td>
+                                    <td>
+                                        <span className="status-badge">
+                                            <i>
+                                                {item.status === "completed" ? (
+                                                    <GrStatusGood />
+                                                ) : (
+                                                    <PiTimerDuotone />
+                                                )}
+                                            </i>
+                                            {item.status === "completed"
+                                                ? "مكتمل"
+                                                : item.status === "retry"
+                                                  ? "إعادة"
+                                                  : "قيد الانتظار"}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             <div className="plan__stats">
                 <div className="stat-card">
@@ -243,7 +182,7 @@ const UserPlans: React.FC = () => {
                     </div>
                     <div>
                         <h3>هدف اليوم</h3>
-                        <p>البقرة ٥١-٥٥</p>
+                        <p>{stats?.today_goal?.hifz || "لا يوجد"}</p>
                     </div>
                 </div>
                 <div className="stat-card">
@@ -253,8 +192,8 @@ const UserPlans: React.FC = () => {
                         </i>
                     </div>
                     <div>
-                        <h3>نقاط اليوم</h3>
-                        <p>٢٥/٥٠</p>
+                        <h3>نقاطك</h3>
+                        <p>{stats?.points || "0/0"}</p>
                     </div>
                 </div>
                 <div className="stat-card">
@@ -264,40 +203,24 @@ const UserPlans: React.FC = () => {
                         </i>
                     </div>
                     <div>
-                        <h3>تم إرسالها</h3>
-                        <p>على الواتساب</p>
+                        <h3>التقدم</h3>
+                        <p>{stats?.progress_percentage || 0}%</p>
                     </div>
                 </div>
             </div>
-            <div
-                className="inputs__verifyOTPBirth"
-                id="userProfile__verifyOTPBirth"
-            >
-                <div
-                    className="userProfile__progressContent"
-                    id="userProfile__progressContent"
-                >
+
+            <div className="inputs__verifyOTPBirth">
+                <div className="userProfile__progressContent">
                     <div className="userProfile__progressTitle">
-                        <h1>القرأن كامل</h1>
+                        <h1>القرآن كامل</h1>
                     </div>
-                    <p>25%</p>
+                    <p>{stats?.progress_percentage || 0}%</p>
                     <div className="userProfile__progressBar">
-                        <span></span>
-                    </div>
-                </div>
-                <div
-                    className="userProfile__progressContent"
-                    id="userProfile__progressContent"
-                >
-                    <div className="userProfile__progressTitle">
-                        <h1>الجزء الثاني</h1>
-                    </div>
-                    <p>98%</p>
-                    <div
-                        className="userProfile__progressBar"
-                        id="userProfile__progressBar"
-                    >
-                        <span></span>
+                        <span
+                            style={{
+                                width: `${stats?.progress_percentage || 0}%`,
+                            }}
+                        ></span>
                     </div>
                 </div>
             </div>

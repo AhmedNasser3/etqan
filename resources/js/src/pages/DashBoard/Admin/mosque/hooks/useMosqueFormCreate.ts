@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
 interface MosqueFormData {
@@ -9,7 +9,7 @@ interface MosqueFormData {
     notes: string;
 }
 
-interface CenterOption {
+interface CenterType {
     id: number;
     name: string;
     subdomain?: string;
@@ -19,49 +19,12 @@ interface UserOption {
     id: number;
     name: string;
     email: string;
+    center_id?: number; // مهم لو جاي من الـ API
 }
 
-// ✅ CSRF Token Helper
-const getCsrfToken = (): string => {
-    const cookies = document.cookie.split(";");
-    const csrfCookie = cookies.find((cookie) =>
-        cookie.trim().startsWith("XSRF-TOKEN="),
-    );
-    return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
-};
-
-// ✅ API Fetch Helper مع Auth كامل
-const apiFetch = async (url: string, options: RequestInit = {}) => {
-    // 1️⃣ CSRF Token أولاً
-    if (!document.cookie.includes("XSRF-TOKEN=")) {
-        await fetch("/sanctum/csrf-cookie", {
-            credentials: "include",
-            headers: { Accept: "application/json" },
-        });
-    }
-
-    const response = await fetch(url, {
-        ...options,
-        credentials: "include",
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            "X-Requested-With": "XMLHttpRequest",
-            "X-XSRF-TOKEN": getCsrfToken(),
-            ...(options.headers as any),
-        },
-    });
-
-    console.log(`🌐 ${url} → Status: ${response.status}`);
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ ${response.status}:`, errorText.substring(0, 200));
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    return await response.json();
-};
+interface FormErrors {
+    [key: string]: string;
+}
 
 export const useMosqueFormCreate = () => {
     const [formData, setFormData] = useState<MosqueFormData>({
@@ -71,29 +34,123 @@ export const useMosqueFormCreate = () => {
         logo: null,
         notes: "",
     });
-
-    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [errors, setErrors] = useState<FormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [loadingData, setLoadingData] = useState(false);
+    const [centersData, setCentersData] = useState<CenterType[]>([]);
+    const [usersData, setUsersData] = useState<UserOption[]>([]);
+    const [loadingData, setLoadingData] = useState(true);
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
-    const [centers, setCenters] = useState<CenterOption[]>([]);
-    const [users, setUsers] = useState<UserOption[]>([]);
+    const [user, setUser] = useState<any>(null);
 
-    const validateForm = useCallback((data: MosqueFormData) => {
-        const newErrors: Record<string, string> = {};
+    useEffect(() => {
+        fetchUser();
+    }, []);
 
-        if (!data.mosque_name.trim())
-            newErrors.mosque_name = "اسم المسجد مطلوب";
-        if (!data.center_id) newErrors.center_id = "المجمع مطلوب";
-        if (!data.supervisor_id) newErrors.supervisor_id = "المشرف مطلوب";
+    const fetchUser = useCallback(async () => {
+        try {
+            console.log("🔍 Fetching user...");
+            const response = await fetch("/api/user", {
+                credentials: "include",
+                headers: { Accept: "application/json" },
+            });
+            if (response.ok) {
+                const responseData = await response.json();
+                const actualUser = responseData.user || responseData;
+                console.log("✅ ACTUAL USER:", actualUser);
+                setUser(actualUser);
+            }
+        } catch (error) {
+            console.error("❌ Failed to fetch user:", error);
+        }
+    }, []);
 
-        return newErrors;
+    // Auto-set center_id for center owners
+    useEffect(() => {
+        if (user?.center_id && !formData.center_id) {
+            console.log("🏢 Auto-setting center_id:", user.center_id);
+            setFormData((prev) => ({
+                ...prev,
+                center_id: user.center_id.toString(),
+            }));
+        }
+    }, [user?.center_id, formData.center_id]);
+
+    useEffect(() => {
+        if (user) {
+            console.log("🚀 User loaded, fetching centers & teachers...");
+            fetchCenters();
+            fetchTeachers();
+        }
+    }, [user]);
+
+    const fetchCenters = useCallback(async () => {
+        try {
+            console.log("📥 Fetching centers...");
+            setLoadingData(true);
+            const response = await fetch("/api/v1/centers", {
+                credentials: "include",
+                headers: { Accept: "application/json" },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log("📊 Centers response:", data);
+                let centers: CenterType[] = [];
+
+                const actualUser = user?.user || user;
+
+                if (actualUser?.role?.id === 1 && actualUser.center_id) {
+                    const userCenter = data.data?.find(
+                        (c: any) => c.id === actualUser.center_id,
+                    );
+                    if (userCenter) {
+                        centers = [userCenter];
+                        console.log(
+                            "🏢 Center Owner - single center:",
+                            userCenter,
+                        );
+                    }
+                } else {
+                    centers = data.data || [];
+                    console.log("👑 Admin - all centers:", centers.length);
+                }
+
+                setCentersData(centers);
+            }
+        } catch (error) {
+            console.error("❌ Failed to fetch centers:", error);
+            toast.error("فشل في تحميل المراكز");
+            setCentersData([]);
+        } finally {
+            // مهم جدًا عشان الـ "جاري التحميل" تختفي
+            setLoadingData(false);
+        }
+    }, [user]);
+
+    const fetchTeachers = useCallback(async () => {
+        try {
+            console.log("📥 Fetching teachers...");
+            const response = await fetch("/api/v1/teachers", {
+                credentials: "include",
+                headers: { Accept: "application/json" },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log("✅ Teachers loaded:", data.data?.length);
+                setUsersData(data.data || []);
+            }
+        } catch (error) {
+            console.error("❌ Failed to fetch teachers:", error);
+            toast.error("فشل في تحميل المشرفين");
+            setUsersData([]);
+        }
     }, []);
 
     const handleInputChange = useCallback(
         (
             e: React.ChangeEvent<
-                HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+                HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
             >,
         ) => {
             const { name, value } = e.target;
@@ -120,76 +177,70 @@ export const useMosqueFormCreate = () => {
         [errors],
     );
 
-    // ✅ loadData محدث مع apiFetch
-    const loadData = useCallback(async () => {
-        setLoadingData(true);
-        try {
-            console.log("📥 Loading centers & teachers...");
+    const validateForm = useCallback((): boolean => {
+        const newErrors: FormErrors = {};
 
-            // ✅ Centers
-            const centersRes = await apiFetch("/api/v1/super/centers");
-            setCenters(centersRes.data || []);
+        if (!formData.mosque_name.trim())
+            newErrors.mosque_name = "اسم المسجد مطلوب";
+        if (!formData.center_id) newErrors.center_id = "المجمع مطلوب";
+        if (!formData.supervisor_id) newErrors.supervisor_id = "المشرف مطلوب";
 
-            // ✅ Teachers/Supervisors
-            const teachersRes = await apiFetch("/api/v1/teachers");
-            setUsers(teachersRes.data || []);
-
-            console.log("✅ Centers:", centersRes.data?.length);
-            console.log("✅ Teachers:", teachersRes.data?.length);
-        } catch (error: any) {
-            console.error("خطأ في تحميل البيانات:", error);
-            toast.error("خطأ في تحميل البيانات");
-            setCenters([]);
-            setUsers([]);
-        } finally {
-            setLoadingData(false);
-        }
-    }, []);
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    }, [formData]);
 
     const submitForm = useCallback(
-        async (submitHandler: (formData: FormData) => Promise<void>) => {
-            const validationErrors = validateForm(formData);
-            if (Object.keys(validationErrors).length > 0) {
-                setErrors(validationErrors);
-                toast.error("يرجى تصحيح الأخطاء الموجودة");
+        async (onSubmit: (formDataSubmit: FormData) => Promise<void>) => {
+            console.log("🚀 SUBMIT FORM - formData:", formData);
+            if (!validateForm()) {
+                console.log("❌ Validation failed");
                 return;
             }
 
-            setIsSubmitting(true);
-            const formDataToSubmit = new FormData();
-            Object.entries(formData).forEach(([key, value]) => {
-                if (value instanceof File) {
-                    formDataToSubmit.append(key, value);
-                } else if (value) {
-                    formDataToSubmit.append(key, value);
-                }
-            });
+            if (!formData.center_id) {
+                toast.error("المجمع غير محدد");
+                return;
+            }
 
+            if (isSubmitting) return;
+
+            setIsSubmitting(true);
             try {
-                await submitHandler(formDataToSubmit);
+                const formDataSubmit = new FormData();
+                formDataSubmit.append("mosque_name", formData.mosque_name);
+                formDataSubmit.append("center_id", formData.center_id);
+                formDataSubmit.append("supervisor_id", formData.supervisor_id);
+                if (formData.logo) formDataSubmit.append("logo", formData.logo);
+                if (formData.notes)
+                    formDataSubmit.append("notes", formData.notes);
+
+                console.log("📤 Sending FormData:", {
+                    mosque_name: formData.mosque_name,
+                    center_id: formData.center_id,
+                    supervisor_id: formData.supervisor_id,
+                });
+
+                await onSubmit(formDataSubmit);
+            } catch (error) {
+                console.error("Submit error:", error);
             } finally {
                 setIsSubmitting(false);
             }
         },
-        [formData, validateForm, errors],
+        [formData, validateForm, isSubmitting],
     );
-
-    // ✅ Auto load data on mount
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
 
     return {
         formData,
         errors,
         isSubmitting,
-        loadingData,
-        logoPreview,
-        centers,
-        users,
-        loadData,
         handleInputChange,
         handleFileChange,
         submitForm,
+        centersData,
+        usersData,
+        loadingData,
+        logoPreview,
+        user,
     };
 };

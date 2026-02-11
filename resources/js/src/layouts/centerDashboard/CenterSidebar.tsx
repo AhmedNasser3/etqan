@@ -1,47 +1,70 @@
 import { useState, useEffect } from "react";
+import { usePermissions } from "./hooks/usePermissions";
 import { TbLayoutDashboardFilled } from "react-icons/tb";
-import { FaRegCalendarAlt } from "react-icons/fa";
-import { FaStar } from "react-icons/fa";
-import { FaComments } from "react-icons/fa";
-import { FaChartBar } from "react-icons/fa";
-import { FaClock } from "react-icons/fa";
-import { FaVideo } from "react-icons/fa";
-import { GrCertificate } from "react-icons/gr";
 import { IoIosArrowDown } from "react-icons/io";
-import { FaUsers } from "react-icons/fa";
-import { FaUserTie } from "react-icons/fa";
-import { FaDollarSign } from "react-icons/fa";
-import { FaLink } from "react-icons/fa";
+import { MdOutlineDomain } from "react-icons/md";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import { FaBullhorn } from "react-icons/fa";
-import { FaDoorOpen } from "react-icons/fa";
+import { FaUsers } from "react-icons/fa";
 import { FaFileAlt } from "react-icons/fa";
 import { FaHistory } from "react-icons/fa";
 import { FaMosque } from "react-icons/fa";
-import { FaBookOpen } from "react-icons/fa";
-import { MdOutlineDomain } from "react-icons/md";
+
+// ✅ Types للـ menu items
+interface SubMenuItem {
+    href: string;
+    title: string;
+}
+
+interface MenuItem {
+    key: string;
+    href: string;
+    icon: React.ReactNode;
+    title: string;
+    activePage: string;
+    submenu?: SubMenuItem[];
+    alwaysShow?: boolean;
+}
 
 const CenterSidebar: React.FC = () => {
     const [activePage, setActivePage] = useState("dashboard");
     const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
     const [activeSubPage, setActiveSubPage] = useState("");
 
+    // ✅ Permissions
+    const { loading, hasPermission } = usePermissions();
+
+    // ✅ Active page logic مع permissions
     useEffect(() => {
+        if (loading) return;
+
         const currentPath = window.location.pathname;
 
-        if (currentPath.includes("students/approval")) {
+        if (
+            currentPath.includes("students/approval") &&
+            hasPermission("mosque", "/center-dashboard/students/approval")
+        ) {
             setActivePage("mosque");
             setActiveSubPage("/center-dashboard/students/approval");
             setOpenMenus((prev) => ({ ...prev, mosque: true }));
-        } else if (currentPath.includes("staff-approval")) {
+        } else if (
+            currentPath.includes("staff-approval") &&
+            hasPermission("staff", "/center-dashboard/staff-approval")
+        ) {
             setActivePage("staff");
             setActiveSubPage("/center-dashboard/staff-approval");
             setOpenMenus((prev) => ({ ...prev, staff: true }));
-        } else if (currentPath.includes("staff-attendance")) {
+        } else if (
+            currentPath.includes("staff-attendance") &&
+            hasPermission("staff", "/center-dashboard/staff-attendance")
+        ) {
             setActivePage("staff");
             setActiveSubPage("/center-dashboard/staff-attendance");
             setOpenMenus((prev) => ({ ...prev, staff: true }));
-        } else if (currentPath.includes("user-suspend")) {
+        } else if (
+            currentPath.includes("user-suspend") &&
+            hasPermission("staff", "/center-dashboard/user-suspend")
+        ) {
             setActivePage("staff");
             setActiveSubPage("/center-dashboard/user-suspend");
             setOpenMenus((prev) => ({ ...prev, staff: true }));
@@ -51,35 +74,50 @@ const CenterSidebar: React.FC = () => {
             currentPath.includes("payroll-reports") ||
             currentPath.includes("payroll-settings")
         ) {
-            setActivePage("financial");
-            setActiveSubPage(currentPath);
-            setOpenMenus((prev) => ({ ...prev, financial: true }));
-        } else if (currentPath.includes("education")) {
+            if (hasPermission("financial")) {
+                setActivePage("financial");
+                setActiveSubPage(currentPath);
+                setOpenMenus((prev) => ({ ...prev, financial: true }));
+            }
+        } else if (
+            currentPath.includes("education") &&
+            hasPermission("education")
+        ) {
             setActivePage("education");
             setActiveSubPage("");
-        } else if (currentPath.includes("certificates")) {
+        } else if (
+            currentPath.includes("certificates") &&
+            hasPermission("certificates")
+        ) {
             setActivePage("certificates");
             setActiveSubPage("");
-        } else if (currentPath.includes("messages")) {
+        } else if (
+            currentPath.includes("messages") &&
+            hasPermission("messages")
+        ) {
             setActivePage("messages");
             setActiveSubPage("");
-        } else if (currentPath.includes("reports")) {
+        } else if (
+            currentPath.includes("reports") &&
+            hasPermission("reports")
+        ) {
             setActivePage("reports");
             setActiveSubPage("");
-        } else if (currentPath.includes("attendance")) {
+        } else if (
+            currentPath.includes("attendance") &&
+            hasPermission("attendance")
+        ) {
             setActivePage("attendance");
-            setActiveSubPage("");
-        } else if (currentPath.includes("room")) {
-            setActivePage("room");
             setActiveSubPage("");
         } else {
             setActivePage("dashboard");
             setActiveSubPage("");
         }
-    }, []);
+    }, [loading]);
 
     const toggleMenu = (menuKey: string, e: React.MouseEvent) => {
         e.preventDefault();
+        e.stopPropagation();
         setOpenMenus((prev) => ({
             ...prev,
             [menuKey]: !prev[menuKey],
@@ -91,15 +129,19 @@ const CenterSidebar: React.FC = () => {
         activePageKey: string,
         e: React.MouseEvent,
     ) => {
+        e.preventDefault();
+        e.stopPropagation();
+
         if (href === "#") {
-            e.preventDefault();
             toggleMenu(activePageKey, e);
         } else {
             setActivePage(activePageKey);
             setActiveSubPage("");
+            // إغلاق كل الـ menus عدا الـ active
             Object.keys(openMenus).forEach((key) => {
-                if (key !== activePageKey)
+                if (key !== activePageKey) {
                     setOpenMenus((prev) => ({ ...prev, [key]: false }));
+                }
             });
         }
     };
@@ -110,13 +152,15 @@ const CenterSidebar: React.FC = () => {
         setOpenMenus((prev) => ({ ...prev, [parentKey]: true }));
     };
 
-    const menuItems = [
+    // ✅ Menu items مع permissions
+    const baseMenuItems: MenuItem[] = [
         {
             key: "dashboard",
             href: "/center-dashboard",
             icon: <TbLayoutDashboardFilled />,
             title: "مجمعي",
             activePage: "dashboard",
+            alwaysShow: true,
         },
         {
             key: "mosque",
@@ -148,6 +192,14 @@ const CenterSidebar: React.FC = () => {
                 {
                     href: "/center-dashboard/students/approval",
                     title: "اعتماد الطلاب",
+                },
+                {
+                    href: "/center-dashboard/shedule-manegment",
+                    title: "مواعيد الحلقات",
+                },
+                {
+                    href: "/center-dashboard/booking-manegment",
+                    title: "طلبات الطلاب للخطط",
                 },
             ],
         },
@@ -200,16 +252,16 @@ const CenterSidebar: React.FC = () => {
                     title: "تقارير الدوام",
                 },
                 {
-                    href: "/center-dashboard/payroll-settings",
+                    href: "/center-dashboard/teaceher-salary-manegment",
                     title: "قواعد الراتب",
                 },
             ],
         },
         {
             key: "domain",
-            href: "/center-dashboard/domian-links",
+            href: "/center-dashboard/centers-approval",
             icon: <MdOutlineDomain />,
-            title: "روابط مهمة",
+            title: "اعتماد المجمعات",
             activePage: "domain",
         },
         {
@@ -225,13 +277,6 @@ const CenterSidebar: React.FC = () => {
             icon: <FaBullhorn />,
             title: "إدارة التحفيزات",
             activePage: "attendance",
-        },
-        {
-            key: "room",
-            href: "/center-dashboard/rooms-supervisor",
-            icon: <FaDoorOpen />,
-            title: "إدارة الغرف",
-            activePage: "room",
         },
         {
             key: "reports",
@@ -255,6 +300,29 @@ const CenterSidebar: React.FC = () => {
             activePage: "messages",
         },
     ];
+
+    // ✅ Filter حسب الصلاحيات
+    const menuItems: MenuItem[] = baseMenuItems.filter(
+        (item) => item.alwaysShow || hasPermission(item.key),
+    );
+
+    if (loading) {
+        return (
+            <div className="sidebar">
+                <div className="sidebar__features">
+                    <div className="sidebar__inner">
+                        <div className="sidebar__container">
+                            <div className="sidebar__data loading">
+                                <div className="sidebar__title">
+                                    <div className="loading-skeleton"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="sidebar">
@@ -286,31 +354,38 @@ const CenterSidebar: React.FC = () => {
                                         <h2>{item.title}</h2>
                                     </a>
                                 </div>
-                                {item.submenu && (
+                                {item.submenu && hasPermission(item.key) && (
                                     <ul
                                         className={`sub-menu ${openMenus[item.key as string] ? "open" : ""}`}
                                     >
-                                        {item.submenu.map((subItem, index) => (
-                                            <li
-                                                key={index}
-                                                className={
-                                                    activeSubPage ===
-                                                    subItem.href
-                                                        ? "active"
-                                                        : ""
-                                                }
-                                                onClick={() =>
-                                                    handleSubLinkClick(
-                                                        subItem.href,
-                                                        item.key,
-                                                    )
-                                                }
-                                            >
-                                                <a href={subItem.href}>
-                                                    {subItem.title}
-                                                </a>
-                                            </li>
-                                        ))}
+                                        {item.submenu
+                                            .filter((subItem) =>
+                                                hasPermission(
+                                                    item.key,
+                                                    subItem.href,
+                                                ),
+                                            )
+                                            .map((subItem, index) => (
+                                                <li
+                                                    key={index}
+                                                    className={
+                                                        activeSubPage ===
+                                                        subItem.href
+                                                            ? "active"
+                                                            : ""
+                                                    }
+                                                    onClick={() =>
+                                                        handleSubLinkClick(
+                                                            subItem.href,
+                                                            item.key,
+                                                        )
+                                                    }
+                                                >
+                                                    <a href={subItem.href}>
+                                                        {subItem.title}
+                                                    </a>
+                                                </li>
+                                            ))}
                                     </ul>
                                 )}
                             </div>

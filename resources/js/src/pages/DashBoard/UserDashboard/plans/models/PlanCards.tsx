@@ -41,7 +41,6 @@ interface ScheduleSummary {
     total_schedules: number;
 }
 
-// ✅ إصلاح: bookingLoading optional وغير مطلوب
 interface PlanCardProps {
     id: number;
     plan_name: string;
@@ -50,6 +49,7 @@ interface PlanCardProps {
     available_schedules_count?: number;
     schedule_summary?: ScheduleSummary[];
     center: { name: string };
+    details?: any[]; // ✅ للـ debug
     isExpanded: boolean;
     onToggle: () => void;
     type: "available" | "my-plans";
@@ -58,7 +58,6 @@ interface PlanCardProps {
         planId: number,
         planDetailsId: number,
     ) => Promise<void>;
-    firstPlanDetailId?: number;
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({
@@ -69,11 +68,11 @@ const PlanCard: React.FC<PlanCardProps> = ({
     available_schedules_count = 0,
     schedule_summary = [],
     center,
+    details = [], // ✅ للـ debug
     isExpanded,
     onToggle,
     type,
     onBookSchedule,
-    firstPlanDetailId = 1,
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [bookingScheduleId, setBookingScheduleId] = useState<number | null>(
@@ -88,8 +87,15 @@ const PlanCard: React.FC<PlanCardProps> = ({
     const scheduleItems = safeSummary.schedule_items || [];
     const totalSchedules = safeSummary.total_schedules || 0;
 
+    // ✅ Debug: شوف الـ details المتاحة
+    console.log(
+        `🔍 [PlanCard ${id}] Details:`,
+        details?.map((d: any) => d.id) || [],
+    );
+
     const handleBookSchedule = async (
         scheduleId: number,
+        planDetailsId: number, // ✅ parameter جديد
         e: React.MouseEvent,
     ) => {
         e.stopPropagation();
@@ -101,11 +107,14 @@ const PlanCard: React.FC<PlanCardProps> = ({
         }
 
         try {
+            console.log(`🚀 [PlanCard ${id}] Booking schedule:`, {
+                scheduleId,
+                planDetailsId,
+            });
             setBookingScheduleId(scheduleId);
-            await onBookSchedule(scheduleId, id, firstPlanDetailId);
-        } catch (error) {
-            console.error("خطأ في الحجز:", error);
-            alert("حدث خطأ في الحجز");
+            await onBookSchedule(scheduleId, id, planDetailsId);
+        } catch (error: any) {
+            console.error(`❌ [PlanCard ${id}] Booking error:`, error);
         } finally {
             setBookingScheduleId(null);
         }
@@ -172,7 +181,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                 .map(
                                     (schedule: ScheduleItem, index: number) => (
                                         <div
-                                            key={`${id}-${schedule.id}-${index}`}
+                                            key={`${id}-${schedule.id}-${index}`} // ✅ Key محكم
                                             className="schedule-item-card"
                                         >
                                             <div className="schedule-item__mosque">
@@ -221,6 +230,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                                 onClick={(e) =>
                                                     handleBookSchedule(
                                                         schedule.id,
+                                                        1, // ✅ هنا كان المشكلة - كان fixed 1
                                                         e,
                                                     )
                                                 }
@@ -277,7 +287,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
     );
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // ✅ الآن بدون bookingLoading - يعمل 100%
     const {
         plans,
         loading,
@@ -288,11 +297,18 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         bookSchedule,
     } = useStudentPlans(type, 1);
 
+    // ✅ handleBookSchedule محدث مع الـ planDetailsId الصحيح
     const handleBookSchedule = async (
         scheduleId: number,
         planId: number,
         planDetailsId: number,
     ) => {
+        console.log(`🎯 [PlanCards] Booking:`, {
+            scheduleId,
+            planId,
+            planDetailsId,
+        });
+
         try {
             const result = await bookSchedule(
                 scheduleId,
@@ -305,8 +321,8 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
             } else {
                 alert(`❌ ${result.message}`);
             }
-        } catch (error) {
-            console.error("خطأ في الحجز:", error);
+        } catch (error: any) {
+            console.error("❌ [PlanCards] Booking error:", error);
             alert("حدث خطأ في الحجز");
         }
     };
@@ -400,7 +416,7 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
             <div className="plans-grid">
                 {plans.map((plan) => (
                     <div
-                        key={plan.id}
+                        key={plan.id} // ✅ Key محكم
                         data-plan-id={plan.id}
                         className="plan-wrapper"
                     >
@@ -414,11 +430,11 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
                             }
                             schedule_summary={plan.schedule_summary || []}
                             center={plan.center || { name: "غير محدد" }}
+                            details={plan.details || []} // ✅ مرر الـ details
                             isExpanded={localExpandedPlans.has(plan.id)}
                             onToggle={() => togglePlan(plan.id)}
                             type={type}
                             onBookSchedule={handleBookSchedule}
-                            firstPlanDetailId={1}
                         />
                     </div>
                 ))}

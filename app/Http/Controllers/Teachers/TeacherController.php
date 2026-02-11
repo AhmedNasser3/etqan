@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Teachers;
 
-use App\Models\Auth\Teacher;
+use Carbon\Carbon;
 use App\Models\Auth\User;
+use App\Models\Auth\Teacher;
 use Illuminate\Http\Request;
+use App\Models\Tenant\Circle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\Plans\PlanCircleSchedule;
 
 class TeacherController extends Controller
 {
@@ -16,29 +19,24 @@ class TeacherController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::with(['teacher'])
-            ->whereHas('teacher'); // ✅ فقط المستخدمين اللي عندهم سجل في teachers
+        $query = User::with(['teacher'])->whereHas('teacher');
 
-        // فلترة حسب status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // 🔥 فلترة حسب teacher role (من جدول teachers فقط)
         if ($request->filled('teacher_role')) {
             $query->whereHas('teacher', function ($q) use ($request) {
                 $q->where('role', $request->teacher_role);
             });
         }
 
-        // 🔥 فلترة حسب role name (من عمود role في teachers)
         if ($request->filled('role')) {
             $query->whereHas('teacher', function ($q) use ($request) {
                 $q->where('role', $request->role);
             });
         }
 
-        // بحث بالاسم أو الإيميل أو الـ teacher role
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -51,9 +49,7 @@ class TeacherController extends Controller
             });
         }
 
-        $teachers = $query
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $teachers = $query->orderBy('created_at', 'desc')->paginate(15);
 
         return response()->json([
             'success' => true,
@@ -70,7 +66,7 @@ class TeacherController extends Controller
     }
 
     /**
-     * جلب المعلمين المعلقين فقط ✅
+     * جلب المعلمين المعلقين فقط
      */
     public function pending()
     {
@@ -97,9 +93,7 @@ class TeacherController extends Controller
      */
     public function show(string $id)
     {
-        $teacher = User::with(['teacher'])
-            ->whereHas('teacher')
-            ->findOrFail($id);
+        $teacher = User::with(['teacher'])->whereHas('teacher')->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -108,7 +102,7 @@ class TeacherController extends Controller
     }
 
     /**
-     * قبول معلم (تفعيل الحساب) ✅
+     * ✅ قبول معلم + توزيع تلقائي على الحلقة المطلوبة
      */
     public function accept(string $id)
     {
@@ -116,7 +110,7 @@ class TeacherController extends Controller
         try {
             $user = User::with('teacher')->findOrFail($id);
 
-            // ✅ التحقق من وجود teacher record فقط
+            // التحقق من وجود teacher record
             if (!$user->teacher) {
                 return response()->json([
                     'success' => false,
@@ -131,37 +125,133 @@ class TeacherController extends Controller
                 ], 400);
             }
 
+            // ✅ 1. تفعيل المعلم
             $user->update([
                 'status' => 'active',
                 'email_verified_at' => now(),
             ]);
 
+            // ✅ 2. البحث عن الحلقة بـ name (العمود الصحيح)
+            $targetCircleTitle = "حلقة حفظ نصف وجه يوميا - الجزء 27";
+            $targetCircle = Circle::where('name', 'like', '%' . $targetCircleTitle . '%')->first();
+
+            $circleAssigned = false;
+            $scheduleInfo = null;
+
+            if ($targetCircle) {
+                Log::info("✅ تم العثور على الحلقة", [
+                    'circle_id' => $targetCircle->id,
+                    'circle_name' => $targetCircle->name,
+                    'teacher_id' => $user->id
+                ]);
+
+                // ✅ 3. البحث عن مواعيد متاحة مع بحث ساعات 07:18 و 22:22
+                $timeKeywords = ['07:18', '7:18', '22:22'];
+
+                $nextAvailableSchedule = PlanCircleSchedule::where('circle_id', $targetCircle->id)
+                    ->whereNull('teacher_id')
+                    ->where('is_available', true)
+                    ->where('schedule_date', '>=', now()->format('Y-m-d'))
+                    ->where(function($q) use ($timeKeywords) {
+                        foreach ($timeKeywords as $time) {
+                            $q->orWhere('start_time', 'like', '%' . $time . '%')
+                              ->orWhere('end_time', 'like', '%' . $time . '%');
+                        }
+                    })
+                    ->orderBy('schedule_date', 'asc')
+                    ->orderBy('start_time', 'asc')
+                    ->first();
+
+                // ✅ Fallback: أي موعد متاح لو مفيش بالساعات المطلوبة
+                if (!$nextAvailableSchedule) {
+                    $nextAvailableSchedule = PlanCircleSchedule::where('circle_id', $targetCircle->id)
+                        ->whereNull('teacher_id')
+                        ->where('is_available', true)
+                        ->where('schedule_date', '>=', now()->format('Y-m-d'))
+                        ->orderBy('schedule_date', 'asc')
+                        ->orderBy('start_time', 'asc')
+                        ->first();
+                }
+
+                if ($nextAvailableSchedule) {
+                    // ✅ 4. تعيين المعلم مع التأكد من التحديث
+                    $result = $nextAvailableSchedule->update([
+                        'teacher_id' => $user->id,
+                        'is_available' => false
+                    ]);
+
+                    if ($result) {
+                        $nextAvailableSchedule->refresh();
+
+                        $circleAssigned = true;
+                        $scheduleInfo = [
+                            'id' => $nextAvailableSchedule->id,
+                            'circle_id' => $targetCircle->id,
+                            'circle_name' => $targetCircle->name,
+                            'date' => $nextAvailableSchedule->schedule_date,
+                            'start_time' => $nextAvailableSchedule->start_time,
+                            'end_time' => $nextAvailableSchedule->end_time,
+                            'duration_minutes' => $nextAvailableSchedule->duration_minutes ?? 0,
+                            'teacher_id' => $nextAvailableSchedule->teacher_id,
+                            'is_available' => $nextAvailableSchedule->is_available
+                        ];
+
+                        Log::info("✅ تم تعيين المعلم بنجاح", $scheduleInfo);
+                    } else {
+                        Log::error("❌ فشل في تحديث الجدولة", [
+                            'schedule_id' => $nextAvailableSchedule->id
+                        ]);
+                    }
+                } else {
+                    Log::warning("⚠️ لا توجد مواعيد متاحة", ['circle_id' => $targetCircle->id]);
+                }
+            } else {
+                Log::warning("⚠️ لم يتم العثور على الحلقة", [
+                    'search_term' => $targetCircleTitle
+                ]);
+            }
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'تم قبول المعلم وتفعيل الحساب بنجاح'
+                'message' => 'تم قبول المعلم وتفعيل الحساب بنجاح',
+                'circle_assigned' => $circleAssigned,
+                'schedule_info' => $scheduleInfo,
+                'circle_found' => $targetCircle ? true : false,
+                'circle_name' => $targetCircle->name ?? 'غير محدد',
+                'teacher_id' => $user->id
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Accept Teacher Error: ' . $e->getMessage(), ['user_id' => $id]);
+            Log::error('Accept Teacher Error: ' . $e->getMessage(), [
+                'user_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ أثناء قبول المعلم'
+                'message' => 'حدث خطأ أثناء قبول المعلم: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * رفض معلم (حذف الحساب) ✅
+     * رفض معلم (حذف الحساب)
      */
     public function reject(string $id)
     {
         DB::beginTransaction();
         try {
             $user = User::findOrFail($id);
-            $user->delete(); // ✅ cascade يحذف الـ teacher تلقائياً
+
+            // ✅ إزالة المعلم من أي جدولة قبل الحذف
+            PlanCircleSchedule::where('teacher_id', $id)->update([
+                'teacher_id' => null,
+                'is_available' => true
+            ]);
+
+            $user->delete();
 
             DB::commit();
 
@@ -189,30 +279,19 @@ class TeacherController extends Controller
 
         $request->validate([
             'name' => 'sometimes|required|string|max:255|min:3',
-            'email' => ['sometimes', 'required', 'email:rfc,dns', 'max:255',
-                       'unique:users,email,' . $id],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:20',
-                       'unique:users,phone,' . $id],
+            'email' => ['sometimes', 'required', 'email:rfc,dns', 'max:255', 'unique:users,email,' . $id],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:20', 'unique:users,phone,' . $id],
             'center_id' => 'sometimes|nullable|exists:centers,id',
             'status' => 'sometimes|in:pending,active,inactive,suspended',
             'notes' => 'sometimes|nullable|string|max:1000',
-            // ✅ teacher role من جدول teachers
             'teacher_role' => ['sometimes', 'nullable', 'in:teacher,supervisor,motivator,student_affairs,financial'],
             'session_time' => ['sometimes', 'nullable', 'in:asr,maghrib'],
-        ], [
-            'name.required' => 'الاسم مطلوب',
-            'email.required' => 'البريد الإلكتروني مطلوب',
-            'email.email' => 'البريد الإلكتروني غير صحيح',
-            'email.unique' => 'هذا البريد مستخدم من مستخدم آخر',
-            'phone.unique' => 'هذا الرقم مستخدم من مستخدم آخر',
-            'teacher_role.in' => 'دور المعلم غير صحيح',
         ]);
 
         DB::beginTransaction();
         try {
             $user->update($request->only(['name', 'email', 'phone', 'center_id', 'status']));
 
-            // ✅ تحديث بيانات الـ teacher
             if ($user->teacher) {
                 $teacherData = [];
                 if ($request->filled('notes')) {
@@ -256,6 +335,12 @@ class TeacherController extends Controller
         DB::beginTransaction();
         try {
             $user = User::findOrFail($id);
+
+            PlanCircleSchedule::where('teacher_id', $id)->update([
+                'teacher_id' => null,
+                'is_available' => true
+            ]);
+
             $user->update(['status' => 'suspended']);
 
             DB::commit();

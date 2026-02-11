@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Student;
 
-use App\Http\Controllers\Controller;
-use App\Models\Plans\CircleStudentBooking;
-use App\Models\Plans\PlanCircleSchedule;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Plans\PlanDetail;
+use App\Models\Auth\Teacher;
+use App\Models\Tenant\Circle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use App\Models\Plans\PlanCircleSchedule;
+use App\Models\Student\StudentPlanDetail;
+use App\Models\Plans\CircleStudentBooking;
 
 class StudentBookingsController extends Controller
 {
@@ -21,7 +24,6 @@ class StudentBookingsController extends Controller
                 'planDetail:id,day_number',
                 'planCircleSchedule:id,circle_id,schedule_date,start_time,end_time,duration_minutes,booked_students,max_students,is_available',
                 'planCircleSchedule.circle:id,name',
-                'planCircleSchedule.teacher:id,name'
             ])
             ->where('status', 'pending')
             ->latest('created_at');
@@ -49,7 +51,11 @@ class StudentBookingsController extends Controller
     {
         $booking = CircleStudentBooking::where('id', $bookingId)
             ->where('status', 'pending')
-            ->with(['planCircleSchedule'])
+            ->with([
+                'plan:id',
+                'planDetail:id,plan_id,day_number',
+                'planCircleSchedule:id,circle_id,schedule_date,start_time,end_time,teacher_id'
+            ])
             ->first();
 
         if (!$booking) {
@@ -77,25 +83,94 @@ class StudentBookingsController extends Controller
 
         try {
             DB::transaction(function () use ($booking, $schedule) {
+                // ✅ 1. تحديث حالة الحجز
                 $booking->update([
                     'status' => 'confirmed',
                     'started_at' => now(),
                 ]);
 
+                // ✅ 2. زيادة عدد الطلاب
                 $schedule->increment('booked_students');
+
+                // ✅ 3. إنشاء student_plan_details مع الـ teacher_id الصحيح
+                $this->createStudentPlanDetails($booking, $schedule);
             });
 
             return response()->json([
                 'success' => true,
-                'message' => 'تم قبول الطالب في الخطة بنجاح! 🎉'
+                'message' => 'تم قبول الطالب في الخطة بنجاح! 🎉 تم إنشاء جميع جلسات الخطة'
             ]);
         } catch (\Exception $e) {
-            Log::error('Booking confirm error: ' . $e->getMessage());
+            Log::error('Booking confirm error: ' . $e->getMessage(), [
+                'booking_id' => $bookingId,
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ أثناء قبول الطالب'
+                'message' => 'حدث خطأ أثناء قبول الطالب: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * ✅ إنشاء سجلات student_plan_details مع الـ teacher_id الحقيقي من جدول teachers
+     */
+    private function createStudentPlanDetails(CircleStudentBooking $booking, PlanCircleSchedule $schedule)
+    {
+        // ✅ جلب plan_details للخطة
+        $planDetails = PlanDetail::where('plan_id', $booking->plan_id)
+            ->orderBy('day_number')
+            ->get();
+
+        // 🔥 جلب الـ teacher الحقيقي من جدول teachers حسب user_id
+        $realTeacher = Teacher::where('user_id', $schedule->teacher_id)->first();
+
+        if (!$realTeacher) {
+            Log::error('Real teacher not found for user_id', [
+                'user_id' => $schedule->teacher_id,
+                'schedule_id' => $schedule->id
+            ]);
+            throw new \Exception("المعلم غير موجود في جدول teachers لـ user_id: {$schedule->teacher_id}");
+        }
+
+        Log::info('Creating student plan details', [
+            'booking_id' => $booking->id,
+            'plan_id' => $booking->plan_id,
+            'user_id_from_schedule' => $schedule->teacher_id,  // 11
+            'real_teacher_id' => $realTeacher->id,            // الـ ID الحقيقي من teachers
+            'circle_id' => $schedule->circle_id,
+            'total_days' => $planDetails->count()
+        ]);
+
+        // ✅ إنشاء سجل لكل يوم مع الـ teacher_id الصحيح
+        foreach ($planDetails as $detail) {
+            StudentPlanDetail::create([
+                // ✅ الـ 5 حقول أساسية
+                'circle_student_booking_id' => $booking->id,
+                'plan_id' => $booking->plan_id,
+                'teacher_id' => $realTeacher->id,        // 🔥 الـ ID الحقيقي من جدول teachers
+                'circle_id' => $schedule->circle_id,
+                'plan_circle_schedule_id' => $schedule->id,
+
+                // ✅ من plan_details
+                'day_number' => $detail->day_number,
+                'new_memorization' => $detail->new_memorization,
+                'review_memorization' => $detail->review_memorization,
+
+                // ✅ الوقت من الحلقة
+                'session_time' => $schedule->start_time,
+
+                // ✅ الحالة الافتراضية
+                'status' => 'قيد الانتظار',
+            ]);
+        }
+
+        Log::info('Student plan details created successfully', [
+            'booking_id' => $booking->id,
+            'real_teacher_id_used' => $realTeacher->id,
+            'created_count' => $planDetails->count()
+        ]);
     }
 
     private function formatBooking($booking)

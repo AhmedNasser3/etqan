@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+// src/pages/DashBoard/Center/Plans/CreatePlanPage.tsx
+import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { FiX } from "react-icons/fi";
-import { useAuthUser } from "../../../../../layouts/hooks/useAuthUser";
 import { usePlanFormCreate } from "../hooks/usePlanFormCreate";
 
 interface CreatePlanPageProps {
@@ -60,7 +60,6 @@ const CreatePlanPage: React.FC<CreatePlanPageProps> = ({
 
             const result = await response.json();
             console.log("Create plan response:", result);
-
             toast.success("تم إضافة الخطة بنجاح!");
             onSuccess();
         } catch (error: any) {
@@ -69,12 +68,27 @@ const CreatePlanPage: React.FC<CreatePlanPageProps> = ({
         }
     };
 
-    // Center Owner Logic
-    const isCenterOwner = user?.role?.id === 1;
-    const showSingleCenter = centersData.length === 1 && isCenterOwner;
-    const currentCenter = centersData.find(
-        (c) => c.id.toString() === formData.center_id,
-    );
+    const isLoading = loadingData || !user;
+    const currentCenter = centersData[0];
+
+    if (isLoading) {
+        return (
+            <div className="ParentModel">
+                <div className="ParentModel__overlay">
+                    <div className="ParentModel__content">
+                        <div className="flex items-center justify-center min-h-[400px] p-8">
+                            <div className="text-center">
+                                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                <p className="text-lg text-gray-600">
+                                    جاري تحميل بيانات المجمع...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="ParentModel">
@@ -100,24 +114,18 @@ const CreatePlanPage: React.FC<CreatePlanPageProps> = ({
                             </div>
                             <div className="ParentModel__innerTitle">
                                 <h1>إضافة خطة حفظ جديدة</h1>
-                                <p>
-                                    يرجى إدخال بيانات الخطة بشكل صحيح
-                                    {loadingData && (
-                                        <span className="block text-sm text-blue-600 mt-1">
-                                            جاري تحميل البيانات...
-                                        </span>
-                                    )}
-                                    {showSingleCenter && (
-                                        <span className="block text-sm text-green-600 mt-1">
-                                            مجمعك: {centersData[0]?.name}
-                                        </span>
-                                    )}
+                                <p className="flex items-center gap-2 flex-wrap">
+                                    مجمعك:
+                                    <span className="font-semibold text-green-600">
+                                        {currentCenter?.name ||
+                                            user?.center?.name ||
+                                            "غير محدد"}
+                                    </span>
                                 </p>
                             </div>
                         </div>
 
                         <div className="ParentModel__container">
-                            {/* اسم الخطة */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>اسم الخطة *</label>
@@ -133,7 +141,7 @@ const CreatePlanPage: React.FC<CreatePlanPageProps> = ({
                                                 : "border-gray-200 hover:border-gray-300"
                                         }`}
                                         placeholder="مثال: خطة حفظ سورة البقرة 12 شهر"
-                                        disabled={isSubmitting || loadingData}
+                                        disabled={isSubmitting}
                                     />
                                     {errors.plan_name && (
                                         <p className="mt-1 text-sm text-red-600">
@@ -143,53 +151,22 @@ const CreatePlanPage: React.FC<CreatePlanPageProps> = ({
                                 </div>
                             </div>
 
-                            {/* المجمع */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
-                                    <label>المجمع التابع له *</label>
-                                    <select
-                                        required
-                                        name="center_id"
-                                        value={formData.center_id}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.center_id || loadingData
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            showSingleCenter
+                                    <label>المجمع:</label>
+                                    <input
+                                        type="text"
+                                        value={
+                                            currentCenter?.name ||
+                                            user?.center?.name ||
+                                            "جاري التحميل..."
                                         }
-                                    >
-                                        <option value="">
-                                            {loadingData
-                                                ? "جاري التحميل..."
-                                                : centersData.length === 0
-                                                  ? "لا توجد مجمعات"
-                                                  : showSingleCenter
-                                                    ? centersData[0].name
-                                                    : "اختر المجمع"}
-                                        </option>
-                                        {centersData.map((center) => (
-                                            <option
-                                                key={center.id}
-                                                value={center.id}
-                                            >
-                                                {center.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {errors.center_id && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.center_id}
-                                        </p>
-                                    )}
+                                        className="w-full px-4 py-3 border border-green-200 bg-green-50 rounded-xl text-green-800 font-medium"
+                                        disabled
+                                    />
                                 </div>
                             </div>
 
-                            {/* عدد الشهور */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>مدة الخطة (بالشهور) *</label>
@@ -207,7 +184,7 @@ const CreatePlanPage: React.FC<CreatePlanPageProps> = ({
                                                 : "border-gray-200 hover:border-gray-300"
                                         }`}
                                         placeholder="12"
-                                        disabled={isSubmitting || loadingData}
+                                        disabled={isSubmitting}
                                     />
                                     {errors.total_months && (
                                         <p className="mt-1 text-sm text-red-600">
@@ -217,23 +194,21 @@ const CreatePlanPage: React.FC<CreatePlanPageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ملاحظات */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
-                                    <label>ملاحظات (اختياري)</label>
+                                    <label>ملاحظات</label>
                                     <textarea
                                         name="notes"
                                         value={formData.notes || ""}
                                         onChange={handleInputChange}
                                         rows={3}
                                         className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="مثال: خطة مكثفة - 4 أيام حفظ أسبوعياً"
-                                        disabled={isSubmitting || loadingData}
+                                        placeholder="أي ملاحظات إضافية..."
+                                        disabled={isSubmitting}
                                     />
                                 </div>
                             </div>
 
-                            {/* زر الإرسال */}
                             <div
                                 className="inputs__submitBtn"
                                 id="ParentModel__btn"
@@ -241,7 +216,9 @@ const CreatePlanPage: React.FC<CreatePlanPageProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => submitForm(handleSubmit)}
-                                    disabled={isSubmitting || loadingData}
+                                    disabled={
+                                        isSubmitting || !formData.center_id
+                                    }
                                     className="w-full"
                                 >
                                     {isSubmitting ? (

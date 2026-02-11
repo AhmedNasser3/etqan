@@ -24,14 +24,14 @@ const Testimonials: React.FC = () => {
     const testimonials: Testimonial[] = [
         {
             id: 1,
-            img: "https://png.pngtree.com/png-vector/20250705/ourmid/pngtree-a-saudi-man-traditional-attire-middle-aged-wearing-white-thobe-and-png-image_16610073.webp",
+            img: facelessAvatar,
             rating: 4.5,
             name: "الشيخ محمد البريدي",
             title: "قارئ القرآن الكريم - إمام مسجد الرحمة",
         },
         {
             id: 2,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/070/221/098/small_2x/confident-saudi-arabian-man-in-traditional-attire-portrait-against-isolated-backdrop-presenting-png.png",
+            img: facelessAvatar,
             rating: 4,
             name: "د/ أحمد السعدي",
             title: "أستاذ الفقه الإسلامي - جامعة الإمام",
@@ -45,28 +45,28 @@ const Testimonials: React.FC = () => {
         },
         {
             id: 4,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/921/small/a-smiling-saudi-arabian-man-in-a-white-thobe-and-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             rating: 3,
             name: "ش/ سالم العتيبي",
             title: "معلم حفظ القرآن - معهد التقوى",
         },
         {
             id: 6,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/974/small/front-view-a-happy-arab-man-in-traditional-white-thobe-and-red-and-white-checkered-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             rating: 5,
             name: "أ/ عبدالله القحطاني",
             title: "داعية وخطيب - مركز الدعوة والإرشاد",
         },
         {
             id: 7,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/921/small/a-smiling-saudi-arabian-man-in-a-white-thobe-and-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             rating: 3,
             name: "ش/ سالم العتيبي",
             title: "معلم حفظ القرآن - معهد التقوى",
         },
         {
             id: 8,
-            img: "https://static.vecteezy.com/system/resources/thumbnails/072/489/921/small/a-smiling-saudi-arabian-man-in-a-white-thobe-and-ghutra-isolated-on-transparent-background-free-png.png",
+            img: facelessAvatar,
             rating: 3,
             name: "ش/ سالم العتيبي",
             title: "معلم حفظ القرآن - معهد التقوى",
@@ -172,20 +172,20 @@ const Testimonials: React.FC = () => {
                                         {renderStars(testimonial.rating).map(
                                             (Star, index) => (
                                                 <i key={index}>{Star}</i>
-                                            )
+                                            ),
                                         )}
                                     </div>
                                     <div className="testimonials__name">
                                         <h2>
                                             <span>
                                                 {testimonial.name.startsWith(
-                                                    "أ/"
+                                                    "أ/",
                                                 ) ||
                                                 testimonial.name.startsWith(
-                                                    "د/"
+                                                    "د/",
                                                 ) ||
                                                 testimonial.name.startsWith(
-                                                    "ش/"
+                                                    "ش/",
                                                 )
                                                     ? ""
                                                     : "أ/"}

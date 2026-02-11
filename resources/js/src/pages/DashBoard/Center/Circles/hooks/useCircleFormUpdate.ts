@@ -1,4 +1,4 @@
-// src/hooks/useCircleFormUpdate.ts
+// src/hooks/useCircleFormUpdate.ts - ✅ محدث نهائياً
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -76,8 +76,6 @@ export const useCircleFormUpdate = (circleId: number) => {
                 },
             );
 
-            console.log("Circle response status:", response.status);
-
             if (!response.ok) {
                 const errorData = await response
                     .json()
@@ -135,23 +133,18 @@ export const useCircleFormUpdate = (circleId: number) => {
     const fetchCenters = useCallback(async () => {
         try {
             setLoadingData(true);
-            const response = await fetch(
-                "/api/v1/centers/circles/get-centers",
-                {
-                    credentials: "include",
-                    headers: { Accept: "application/json" },
-                },
-            );
+            const response = await fetch("/api/v1/centers", {
+                credentials: "include",
+                headers: { Accept: "application/json" },
+            });
 
             if (response.ok) {
                 const data = await response.json();
                 let centers: CenterType[] = [];
 
-                const actualUser = user?.user || user;
-
-                if (actualUser?.role?.id === 1 && actualUser.center_id) {
+                if (user?.role?.id === 1 && user.center_id) {
                     const userCenter = data.data?.find(
-                        (c: any) => c.id === actualUser.center_id,
+                        (c: any) => c.id === user.center_id,
                     );
                     if (userCenter) {
                         centers = [userCenter];
@@ -169,7 +162,7 @@ export const useCircleFormUpdate = (circleId: number) => {
             }
         } catch (error) {
             console.error("Failed to fetch centers:", error);
-            toast.error("فشل في تحميل المراكز");
+            setCentersData([]);
         } finally {
             setLoadingData(false);
         }

@@ -1,4 +1,4 @@
-// src/pages/DashBoard/Center/Circles/hooks/useCircleFormCreate.ts - **رسالة مرة واحدة** ✅
+// src/pages/DashBoard/Center/Circles/hooks/useCircleFormCreate.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 
@@ -13,11 +13,13 @@ interface MosqueType {
     center_id: number;
 }
 
+// ✅ Teacher من جدول users مع teacher.user_id
 interface TeacherType {
-    id: number;
-    name: string;
-    role: string;
-    center_id?: number;
+    id: number; // teacher.id
+    user_id: number; // teacher.user_id
+    name: string; // users.name
+    role: string; // users.role
+    center_id: number; // users.center_id
 }
 
 interface FormData {
@@ -47,36 +49,65 @@ export const useCircleFormCreate = () => {
     const [teachersData, setTeachersData] = useState<TeacherType[]>([]);
     const [loadingData, setLoadingData] = useState(true);
     const [user, setUser] = useState<any>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
-    // ✅ Toast ID لمنع التكرار
-    const toastRef = useRef<string | null>(null);
+    // ✅ CSRF Token helper
+    const getCsrfToken = useCallback((): string => {
+        const metaToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content");
+        if (metaToken) return metaToken;
 
-    // ✅ Fetch User info أولاً - مصحح!
-    useEffect(() => {
-        fetchUser();
+        const csrfMeta = document
+            .querySelector('meta[name="csrf"]')
+            ?.getAttribute("content");
+        if (csrfMeta) return csrfMeta;
+
+        const csrfCookie = document.cookie
+            .split(";")
+            .find((row) => row.startsWith("XSRF-TOKEN"))
+            ?.split("=")[1];
+        return csrfCookie ? decodeURIComponent(csrfCookie) : "";
     }, []);
 
+    // ✅ Fetch User
     const fetchUser = useCallback(async () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
         try {
             console.log("🔍 Fetching user...");
             const response = await fetch("/api/user", {
+                signal: abortControllerRef.current.signal,
                 credentials: "include",
-                headers: { Accept: "application/json" },
+                headers: {
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRF-TOKEN": getCsrfToken(),
+                },
             });
+
             if (response.ok) {
                 const responseData = await response.json();
-                // ✅ الحل! الـ API بيرجع {success: true, user: {...}}
                 const actualUser = responseData.user || responseData;
-                console.log("✅ ACTUAL USER:", actualUser);
-                console.log("🔍 USER CENTER_ID:", actualUser.center_id);
+                console.log("✅ User loaded:", actualUser);
                 setUser(actualUser);
             }
-        } catch (error) {
-            console.error("❌ Failed to fetch user:", error);
+        } catch (error: any) {
+            if (error.name !== "AbortError") {
+                console.error("❌ Failed to fetch user:", error);
+            }
         }
-    }, []);
+    }, [getCsrfToken]);
 
-    // ✅ تعيين center_id تلقائياً - dependency مُصحح
+    // ✅ Initial user fetch
+    useEffect(() => {
+        fetchUser();
+    }, [fetchUser]);
+
+    // ✅ Auto-set center_id
     useEffect(() => {
         if (user?.center_id && !formData.center_id) {
             console.log("🏢 Auto-setting center_id:", user.center_id);
@@ -87,30 +118,51 @@ export const useCircleFormCreate = () => {
         }
     }, [user?.center_id]);
 
-    // ✅ Fetch Centers حسب الـ role
+    // ✅ Fetch all data when user loads
     useEffect(() => {
-        if (user) {
-            console.log("🚀 User loaded, fetching centers...");
-            fetchCenters();
+        if (user?.center_id) {
+            console.log("🚀 User center loaded, fetching data...");
+            fetchAllCenterData(user.center_id);
         }
-    }, [user]);
+    }, [user?.center_id]);
+
+    // ✅ Fetch all center data مرة واحدة
+    const fetchAllCenterData = useCallback(
+        async (centerId: number) => {
+            setLoadingData(true);
+
+            // Parallel fetches ✅
+            const [mosquesPromise, teachersPromise] = await Promise.allSettled([
+                fetchCenterMosques(centerId),
+                fetchCenterTeachers(centerId), // ✅ معلمين من users مع teacher.user_id
+            ]);
+
+            // Centers
+            await fetchCenters();
+
+            setLoadingData(false);
+        },
+        [getCsrfToken],
+    );
 
     const fetchCenters = useCallback(async () => {
         try {
             console.log("📥 Fetching centers...");
-            setLoadingData(true);
             const response = await fetch("/api/v1/centers", {
                 credentials: "include",
-                headers: { Accept: "application/json" },
+                headers: {
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRF-TOKEN": getCsrfToken(),
+                },
             });
 
             if (response.ok) {
                 const data = await response.json();
                 console.log("📊 Centers response:", data);
-                let centers: CenterType[] = [];
 
-                // ✅ استخدم actual user data
-                const actualUser = user?.user || user;
+                let centers: CenterType[] = [];
+                const actualUser = user;
 
                 // ✅ Center Owner → مركزه بس
                 if (actualUser?.role?.id === 1 && actualUser.center_id) {
@@ -119,83 +171,96 @@ export const useCircleFormCreate = () => {
                     );
                     if (userCenter) {
                         centers = [userCenter];
-                        console.log(
-                            "🏢 Center Owner - single center:",
-                            userCenter,
-                        );
                     }
                 } else {
-                    // ✅ Admin → كل المراكز
+                    // Admin → كل المراكز
                     centers = data.data || [];
-                    console.log("👑 Admin - all centers:", centers.length);
                 }
 
                 setCentersData(centers);
-
-                // ✅ تحميل المساجد والمعلمين لمركز اليوزر بس
-                if (actualUser?.center_id) {
-                    console.log(
-                        "🕌👨‍🏫 Fetching mosques & teachers for center:",
-                        actualUser.center_id,
-                    );
-                    fetchCenterMosques();
-                    fetchCenterTeachers();
-                }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("❌ Failed to fetch centers:", error);
             toast.error("فشل في تحميل المراكز");
-        } finally {
-            console.log("✅ Centers loading finished");
-            setLoadingData(false);
         }
-    }, [user]);
+    }, [user, getCsrfToken]);
 
-    // ✅ مساجد مركز اليوزر بس
-    const fetchCenterMosques = useCallback(async () => {
-        if (!user?.center_id) return;
-        try {
-            console.log("🕌 Fetching mosques for center:", user.center_id);
-            const response = await fetch(
-                `/api/v1/mosques?center_id=${user.center_id}`,
-                {
-                    credentials: "include",
-                    headers: { Accept: "application/json" },
-                },
-            );
-            if (response.ok) {
-                const data = await response.json();
-                console.log("✅ Mosques loaded:", data.data?.length || 0);
-                setMosquesData(data.data || []);
+    // ✅ مساجد مجمع اليوزر
+    const fetchCenterMosques = useCallback(
+        async (centerId: number) => {
+            try {
+                console.log("🕌 Fetching mosques for center:", centerId);
+                const response = await fetch(
+                    `/api/v1/centers/${centerId}/mosques`,
+                    {
+                        credentials: "include",
+                        headers: {
+                            Accept: "application/json",
+                            "X-Requested-With": "XMLHttpRequest",
+                            "X-CSRF-TOKEN": getCsrfToken(),
+                        },
+                    },
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log("✅ Mosques loaded:", data.data?.length || 0);
+                    setMosquesData(Array.isArray(data.data) ? data.data : []);
+                } else {
+                    console.log("❌ No mosques for center:", centerId);
+                    setMosquesData([]);
+                }
+            } catch (error) {
+                console.error("❌ Failed to fetch mosques:", error);
+                setMosquesData([]);
             }
-        } catch (error) {
-            console.error("❌ Failed to fetch center mosques:", error);
-        }
-    }, [user?.center_id]);
+        },
+        [getCsrfToken],
+    );
 
-    // ✅ معلمي مركز اليوزر بس
-    const fetchCenterTeachers = useCallback(async () => {
-        if (!user?.center_id) return;
-        try {
-            console.log("👨‍🏫 Fetching teachers for center:", user.center_id);
-            const response = await fetch(
-                `/api/v1/teachers?center_id=${user.center_id}`,
-                {
-                    credentials: "include",
-                    headers: { Accept: "application/json" },
-                },
-            );
-            if (response.ok) {
-                const data = await response.json();
-                console.log("✅ Teachers loaded:", data.data?.length || 0);
-                setTeachersData(data.data || []);
+    // ✅ معلمين مجمع اليوزر من users مع teacher.user_id ✅
+    const fetchCenterTeachers = useCallback(
+        async (centerId: number) => {
+            try {
+                console.log("👨‍🏫 Fetching teachers for center:", centerId);
+                // ✅ endpoint جديد للمعلمين من users مع teacher.user_id
+                const response = await fetch(
+                    `/api/v1/centers/${centerId}/teachers`,
+                    {
+                        credentials: "include",
+                        headers: {
+                            Accept: "application/json",
+                            "X-Requested-With": "XMLHttpRequest",
+                            "X-CSRF-TOKEN": getCsrfToken(),
+                        },
+                    },
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log("✅ Teachers loaded:", data.data?.length || 0);
+
+                    // ✅ فلترة المعلمين اللي ليهم teacher.user_id
+                    const teachers = (
+                        Array.isArray(data.data) ? data.data : []
+                    ).filter(
+                        (teacher: any) =>
+                            teacher.user_id && teacher.center_id === centerId,
+                    );
+
+                    setTeachersData(teachers as TeacherType[]);
+                } else {
+                    console.log("❌ No teachers for center:", centerId);
+                    setTeachersData([]);
+                }
+            } catch (error) {
+                console.error("❌ Failed to fetch teachers:", error);
+                setTeachersData([]);
             }
-        } catch (error) {
-            console.error("❌ Failed to fetch center teachers:", error);
-        }
-    }, [user?.center_id]);
+        },
+        [getCsrfToken],
+    );
 
-    // ✅ Form handlers
     const handleInputChange = useCallback(
         (
             e: React.ChangeEvent<
@@ -213,27 +278,21 @@ export const useCircleFormCreate = () => {
 
     const validateForm = useCallback((): boolean => {
         const newErrors: FormErrors = {};
-
         if (!formData.name.trim()) newErrors.name = "اسم الحلقة مطلوب";
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    }, [formData]);
+    }, [formData.name]);
 
     const submitForm = useCallback(
         async (onSubmit: (formDataSubmit: FormData) => Promise<void>) => {
-            console.log("🚀 SUBMIT FORM - formData:", formData);
-            if (!validateForm()) {
-                console.log("❌ Validation failed");
-                return;
-            }
+            console.log("🚀 SUBMIT - formData:", formData);
+            if (!validateForm()) return;
 
             if (!formData.center_id) {
                 toast.error("المجمع غير محدد");
                 return;
             }
 
-            // ✅ منع الـ double submit
             if (isSubmitting) return;
 
             setIsSubmitting(true);
@@ -245,15 +304,8 @@ export const useCircleFormCreate = () => {
                     formDataSubmit.append("mosque_id", formData.mosque_id);
                 if (formData.teacher_id)
                     formDataSubmit.append("teacher_id", formData.teacher_id);
-                if (formData.notes)
-                    formDataSubmit.append("notes", formData.notes);
-
-                console.log("📤 Sending FormData:", {
-                    name: formData.name,
-                    center_id: formData.center_id,
-                    hasMosque: !!formData.mosque_id,
-                    hasTeacher: !!formData.teacher_id,
-                });
+                if (formData.notes?.trim())
+                    formDataSubmit.append("notes", formData.notes.trim());
 
                 await onSubmit(formDataSubmit);
             } catch (error) {
@@ -262,14 +314,7 @@ export const useCircleFormCreate = () => {
                 setIsSubmitting(false);
             }
         },
-        [formData, validateForm, isSubmitting],
-    );
-
-    console.log(
-        "🎯 FINAL RETURN - user.center_id:",
-        user?.center_id,
-        "formData.center_id:",
-        formData.center_id,
+        [formData, isSubmitting, validateForm],
     );
 
     return {
@@ -279,8 +324,8 @@ export const useCircleFormCreate = () => {
         handleInputChange,
         submitForm,
         centersData,
-        mosquesData,
-        teachersData,
+        mosquesData, // ✅ مساجد المجمع بس
+        teachersData, // ✅ معلمين المجمع بس مع teacher.user_id
         loadingData,
         user,
     };

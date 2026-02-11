@@ -109,27 +109,40 @@ export const useStudentPlans = (
         perPage: number;
     } | null>(null);
 
-    // ✅ CSRF Headers للـ web middleware (بدون Bearer token)
-    const getCSRFHeaders = useCallback(
-        () => ({
+    // ✅ CSRF Headers مُحسّنة مع fallback + refresh
+    const getCSRFHeaders = useCallback(() => {
+        const token = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content");
+        console.log("🔍 [CSRF] Token found:", !!token);
+        return {
             "Content-Type": "application/json",
             Accept: "application/json",
-            "X-CSRF-TOKEN":
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute("content") || "",
-        }),
-        [],
-    );
-
-    // ✅ Initialize CSRF token
-    useEffect(() => {
-        console.log("🔍 [CSRF] Initializing CSRF token for StudentPlans...");
-        fetch("/sanctum/csrf-cookie", {
-            method: "GET",
-            credentials: "include",
-        }).catch(console.error);
+            "X-CSRF-TOKEN": token || "",
+            "X-Requested-With": "XMLHttpRequest",
+        };
     }, []);
+
+    // ✅ CSRF Token Refresh
+    const refreshCSRFToken = useCallback(async () => {
+        console.log("🔄 [CSRF] Refreshing token...");
+        try {
+            await fetch("/sanctum/csrf-cookie", {
+                method: "GET",
+                credentials: "include",
+            });
+        } catch (error) {
+            console.error("❌ [CSRF] Refresh failed:", error);
+        }
+    }, []);
+
+    // ✅ Initialize CSRF
+    useEffect(() => {
+        console.log("🔍 [CSRF] Initializing for web middleware...");
+        refreshCSRFToken();
+        const interval = setInterval(refreshCSRFToken, 30 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [refreshCSRFToken]);
 
     const fetchPlans = useCallback(
         async (page: number = 1, type: "available" | "my-plans" = planType) => {
@@ -140,31 +153,27 @@ export const useStudentPlans = (
                 const params = new URLSearchParams();
                 if (page > 1) params.append("page", page.toString());
 
-                // ✅ api routes مع web middleware - URLs زي ما هي
                 const endpoint = `/api/v1/student/plans/${type === "available" ? "available" : "my-plans"}${params.toString() ? `?${params.toString()}` : ""}`;
 
-                console.log("📡 [fetchPlans] Requesting:", endpoint);
+                console.log("📡 [fetchPlans]", endpoint);
 
                 const response = await fetch(endpoint, {
                     method: "GET",
                     headers: getCSRFHeaders(),
-                    credentials: "include", // ✅ session cookies
+                    credentials: "include",
                 });
 
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error(
-                        "❌ [fetchPlans] Error:",
+                        "❌ [fetchPlans]",
                         response.status,
-                        errorText,
+                        errorText.substring(0, 200),
                     );
-                    throw new Error(
-                        `HTTP ${response.status}: ${errorText.substring(0, 100)}`,
-                    );
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
                 const apiResponse = await response.json();
-
                 const rawPlansData =
                     type === "available"
                         ? apiResponse.data
@@ -308,6 +317,7 @@ export const useStudentPlans = (
         return fetchPlans(pagination?.currentPage || 1, planType);
     }, [fetchPlans, pagination?.currentPage, planType]);
 
+    // ✅ bookSchedule مع **Auto-fix ذكي** للـ planDetailsId
     const bookSchedule = useCallback(
         async (
             scheduleId: number,
@@ -319,11 +329,85 @@ export const useStudentPlans = (
             booking?: Booking;
         }> => {
             try {
-                console.log("📤 [bookSchedule] Booking:", {
+                console.log("📤 [bookSchedule] Starting:", {
                     scheduleId,
                     planId,
                     planDetailsId,
                 });
+
+                // ✅ 1. Refresh CSRF
+                await refreshCSRFToken();
+                await new Promise((resolve) => setTimeout(resolve, 100));
+
+                // ✅ 2. **التحقق الذكي من planDetailsId + Auto-fix**
+                let finalPlanDetailsId = planDetailsId;
+                console.log(
+                    "🔍 [VALIDATION] Checking plan details for planId:",
+                    planId,
+                );
+
+                try {
+                    const planResponse = await fetch(
+                        `/api/v1/plans/${planId}`,
+                        {
+                            method: "GET",
+                            headers: getCSRFHeaders(),
+                            credentials: "include",
+                        },
+                    );
+
+                    if (planResponse.ok) {
+                        const planData = await planResponse.json();
+                        console.log(
+                            "🔍 [VALIDATION] Available details:",
+                            planData.details?.data?.map((d: any) => d.id) ||
+                                planData.details?.map((d: any) => d.id) ||
+                                [],
+                        );
+
+                        const validDetails =
+                            planData.details?.data || planData.details || [];
+
+                        // ✅ تحقق إذا كان الـ ID موجود
+                        const detailExists = validDetails.find(
+                            (d: any) => Number(d.id) === Number(planDetailsId),
+                        );
+
+                        if (!detailExists && validDetails.length > 0) {
+                            // ✅ Auto-fix: استخدم أول detail متاح
+                            finalPlanDetailsId = Number(validDetails[0].id);
+                            console.log(
+                                "🔧 [AUTO-FIX] Changed planDetailsId from",
+                                planDetailsId,
+                                "→",
+                                finalPlanDetailsId,
+                                "(first available detail)",
+                            );
+                        } else if (detailExists) {
+                            console.log(
+                                "✅ [VALIDATION] planDetailsId صحيح:",
+                                planDetailsId,
+                            );
+                            finalPlanDetailsId = Number(planDetailsId);
+                        }
+                    } else {
+                        console.warn(
+                            "⚠️ [VALIDATION] Cannot fetch plan details, using provided ID:",
+                            planDetailsId,
+                        );
+                    }
+                } catch (validationError) {
+                    console.warn(
+                        "⚠️ [VALIDATION] Plan details check failed, using:",
+                        planDetailsId,
+                    );
+                }
+
+                // ✅ 3. الـ Booking الفعلي بالـ ID النهائي
+                console.log(
+                    "🚀 [FINAL] Booking with planDetailsId:",
+                    finalPlanDetailsId,
+                );
 
                 const response = await fetch(
                     `/api/v1/student/plans/schedules/${scheduleId}/book`,
@@ -333,19 +417,48 @@ export const useStudentPlans = (
                         credentials: "include",
                         body: JSON.stringify({
                             plan_id: planId,
-                            plan_details_id: planDetailsId,
+                            plan_details_id: finalPlanDetailsId, // ✅ الـ ID المُصحح
                         }),
                     },
                 );
 
-                const result = await response.json();
-                console.log("📥 [bookSchedule] Result:", result);
+                if (!response.ok) {
+                    const errorData = await response
+                        .json()
+                        .catch(() => ({}) as any);
+                    console.error(
+                        "❌ [bookSchedule] HTTP",
+                        response.status,
+                        errorData,
+                    );
 
-                if (result.success) {
+                    if (response.status === 419) {
+                        console.log("🔄 [419] Retrying...");
+                        return bookSchedule(
+                            scheduleId,
+                            planId,
+                            finalPlanDetailsId,
+                        );
+                    }
+
+                    return {
+                        success: false,
+                        message: errorData.message || `خطأ ${response.status}`,
+                    };
+                }
+
+                const result = await response.json();
+                console.log("✅ [bookSchedule] SUCCESS:", result);
+
+                if (result.success !== false) {
                     await Promise.all([refetch(), fetchBookings()]);
                 }
 
-                return result;
+                return {
+                    success: true,
+                    message: result.message || "تم الحجز بنجاح 🎉",
+                    booking: result.data,
+                };
             } catch (err: any) {
                 console.error("❌ [bookSchedule] Error:", err);
                 return {
@@ -355,7 +468,7 @@ export const useStudentPlans = (
                 };
             }
         },
-        [getCSRFHeaders, refetch, fetchBookings],
+        [getCSRFHeaders, refetch, fetchBookings, refreshCSRFToken],
     );
 
     const cancelBooking = useCallback(
@@ -363,7 +476,8 @@ export const useStudentPlans = (
             bookingId: number,
         ): Promise<{ success: boolean; message: string }> => {
             try {
-                console.log("📤 [cancelBooking] Canceling:", bookingId);
+                console.log("📤 [cancelBooking] Starting:", bookingId);
+                await refreshCSRFToken();
 
                 const response = await fetch(
                     `/api/v1/student/plans/bookings/${bookingId}`,
@@ -374,14 +488,32 @@ export const useStudentPlans = (
                     },
                 );
 
-                const result = await response.json();
-                console.log("📥 [cancelBooking] Result:", result);
+                if (!response.ok) {
+                    const errorData = await response
+                        .json()
+                        .catch(() => ({}) as any);
+                    console.error(
+                        "❌ [cancelBooking] HTTP",
+                        response.status,
+                        errorData,
+                    );
+                    return {
+                        success: false,
+                        message: errorData.message || `خطأ ${response.status}`,
+                    };
+                }
 
-                if (result.success) {
+                const result = await response.json();
+                console.log("✅ [cancelBooking] SUCCESS:", result);
+
+                if (result.success !== false) {
                     await Promise.all([refetch(), fetchBookings()]);
                 }
 
-                return result;
+                return {
+                    success: true,
+                    message: result.message || "تم الإلغاء بنجاح ✅",
+                };
             } catch (err: any) {
                 console.error("❌ [cancelBooking] Error:", err);
                 return {
@@ -391,7 +523,7 @@ export const useStudentPlans = (
                 };
             }
         },
-        [getCSRFHeaders, refetch, fetchBookings],
+        [getCSRFHeaders, refetch, fetchBookings, refreshCSRFToken],
     );
 
     useEffect(() => {

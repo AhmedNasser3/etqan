@@ -2,11 +2,9 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { FiEdit3, FiX } from "react-icons/fi";
 import {
-    useMosqueForm,
+    useMosqueFormUpdate,
     MosqueFormData,
-    CenterOption,
-    UserOption,
-} from "../hooks/useMosqueForm";
+} from "../hooks/useMosqueFormUpdate";
 import { Mosque } from "./types";
 
 interface UpdateMosquePageProps {
@@ -16,15 +14,6 @@ interface UpdateMosquePageProps {
     onSuccess: () => void;
 }
 
-// ✅ CSRF Token Helper
-const getCsrfToken = (): string => {
-    const cookies = document.cookie.split(";");
-    const csrfCookie = cookies.find((cookie) =>
-        cookie.trim().startsWith("XSRF-TOKEN="),
-    );
-    return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
-};
-
 const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
     initialMosque,
     mosqueId,
@@ -33,18 +22,19 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
 }) => {
     const {
         formData,
-        centers,
-        users,
-        loadingOptions,
         errors,
         isSubmitting,
         handleInputChange,
         handleFileChange,
         submitForm,
         logoPreview,
-    } = useMosqueForm(initialMosque || undefined);
+        centersData,
+        usersData,
+        loadingData,
+        user,
+    } = useMosqueFormUpdate(initialMosque || undefined);
 
-    // ✅ handleSubmit محدث مع v1 + CSRF + Auth كامل
+    // ✅ handleSubmit للتحديث مع _method=PUT
     const handleSubmit = async (formDataSubmit: FormData) => {
         if (!mosqueId) {
             toast.error("معرف المسجد مطلوب");
@@ -52,14 +42,7 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
         }
 
         try {
-            // ✅ 1. CSRF Token أولاً
-            if (!document.cookie.includes("XSRF-TOKEN=")) {
-                await fetch("/sanctum/csrf-cookie", {
-                    credentials: "include",
-                });
-            }
-
-            // ✅ _method للـ PUT
+            // إضافة _method للـ PUT
             formDataSubmit.append("_method", "PUT");
 
             console.log("🌐 PUT → /api/v1/super/mosques/", mosqueId);
@@ -70,8 +53,6 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                 headers: {
                     Accept: "application/json",
                     "X-Requested-With": "XMLHttpRequest",
-                    "X-XSRF-TOKEN": getCsrfToken(),
-                    // لا Content-Type مع FormData
                 },
                 body: formDataSubmit,
             });
@@ -97,17 +78,24 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
             const result = await response.json();
             console.log("✅ Update response:", result);
 
-            if (result.success) {
-                toast.success("تم تحديث بيانات المسجد بنجاح!");
-                onSuccess();
-            } else {
-                toast.error(result.message || "فشل في التحديث");
-            }
+            toast;
+            onSuccess();
         } catch (error: any) {
             console.error("💥 Update error:", error);
             toast.error(error.message || "حدث خطأ في التحديث");
         }
     };
+
+    const isCenterOwner = user?.role?.id === 1;
+    const centerIsFixed = isCenterOwner && user?.center_id;
+
+    // فلترة المشرفين حسب center_id
+    const selectedCenterId = formData.center_id
+        ? parseInt(formData.center_id)
+        : null;
+    const filteredSupervisors = selectedCenterId
+        ? usersData.filter((u: any) => u.center_id === selectedCenterId)
+        : [];
 
     return (
         <div className="ParentModel">
@@ -129,7 +117,7 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
 
                         <div className="ParentModel__main">
                             <div className="ParentModel__date">
-                                <p>{initialMosque?.name || "مسجد جديد"}</p>
+                                <p>{initialMosque?.name || "مسجد"}</p>
                             </div>
                             <div className="ParentModel__innerTitle">
                                 <h1>تعديل بيانات المسجد</h1>
@@ -140,6 +128,7 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                         </div>
 
                         <div className="ParentModel__container">
+                            {/* اسم المسجد */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>اسم المسجد *</label>
@@ -165,39 +154,59 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ✅ المجمعات - لون أبيض واضح */}
+                            {/* المجمع */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>المجمع التابع له *</label>
-                                    <select
-                                        required
-                                        name="center_id"
-                                        value={formData.center_id}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black font-medium text-base ${
-                                            errors.center_id
-                                                ? "border-red-400 bg-red-50 text-red-900"
-                                                : "hover:border-gray-400 hover:bg-gray-50"
-                                        }`}
-                                        disabled={
-                                            isSubmitting || loadingOptions
-                                        }
-                                    >
-                                        <option value="" disabled>
-                                            {loadingOptions
-                                                ? "تحميل المجمعات..."
-                                                : "اختر المجمع"}
-                                        </option>
-                                        {!loadingOptions &&
-                                            centers.map((center) => (
+                                    {centerIsFixed ? (
+                                        <div className="w-full px-4 py-3 border border-green-300 bg-green-50 rounded-xl text-green-800 font-medium">
+                                            <span className="flex items-center gap-2">
+                                                ✅{" "}
+                                                {centersData[0]?.name ||
+                                                    centersData[0]
+                                                        ?.circle_name ||
+                                                    "مجمعك"}
+                                                <span className="text-xs bg-green-100 px-2 py-1 rounded-full">
+                                                    محدد تلقائياً
+                                                </span>
+                                            </span>
+                                            <input
+                                                type="hidden"
+                                                name="center_id"
+                                                value={formData.center_id}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <select
+                                            required
+                                            name="center_id"
+                                            value={formData.center_id}
+                                            onChange={handleInputChange}
+                                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                                                errors.center_id || loadingData
+                                                    ? "border-red-300 bg-red-50"
+                                                    : "border-gray-200 hover:border-gray-300"
+                                            }`}
+                                            disabled={
+                                                isSubmitting || loadingData
+                                            }
+                                        >
+                                            <option value="">
+                                                {loadingData
+                                                    ? "جاري التحميل..."
+                                                    : "اختر المجمع"}
+                                            </option>
+                                            {centersData.map((center) => (
                                                 <option
                                                     key={center.id}
-                                                    value={center.id.toString()}
+                                                    value={center.id}
                                                 >
-                                                    {center.name}
+                                                    {center.circle_name ||
+                                                        center.name}
                                                 </option>
                                             ))}
-                                    </select>
+                                        </select>
+                                    )}
                                     {errors.center_id && (
                                         <p className="mt-1 text-sm text-red-600">
                                             {errors.center_id}
@@ -206,7 +215,7 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ✅ المشرفين - لون أبيض واضح */}
+                            {/* المشرف */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>المشرف *</label>
@@ -215,29 +224,32 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                                         name="supervisor_id"
                                         value={formData.supervisor_id}
                                         onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black font-medium text-base ${
-                                            errors.supervisor_id
-                                                ? "border-red-400 bg-red-50 text-red-900"
-                                                : "hover:border-gray-400 hover:bg-gray-50"
+                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                                            errors.supervisor_id || loadingData
+                                                ? "border-red-300 bg-red-50"
+                                                : "border-gray-200 hover:border-gray-300"
                                         }`}
                                         disabled={
-                                            isSubmitting || loadingOptions
+                                            isSubmitting ||
+                                            loadingData ||
+                                            !formData.center_id
                                         }
                                     >
-                                        <option value="" disabled>
-                                            {loadingOptions
-                                                ? "تحميل المشرفين..."
-                                                : "اختر المشرف"}
+                                        <option value="">
+                                            {loadingData
+                                                ? "جاري التحميل..."
+                                                : !formData.center_id
+                                                  ? "اختر المجمع أولاً"
+                                                  : filteredSupervisors.length ===
+                                                      0
+                                                    ? "لا يوجد مشرفين لهذا المجمع"
+                                                    : "اختر المشرف"}
                                         </option>
-                                        {!loadingOptions &&
-                                            users.map((user) => (
-                                                <option
-                                                    key={user.id}
-                                                    value={user.id.toString()}
-                                                >
-                                                    {user.name} - {user.email}
-                                                </option>
-                                            ))}
+                                        {filteredSupervisors.map((u) => (
+                                            <option key={u.id} value={u.id}>
+                                                {u.name} - {u.email}
+                                            </option>
+                                        ))}
                                     </select>
                                     {errors.supervisor_id && (
                                         <p className="mt-1 text-sm text-red-600">
@@ -252,6 +264,7 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                                 <div className="inputs__email">
                                     <label>شعار المسجد</label>
                                     <div className="space-y-3">
+                                        {/* الصورة الحالية */}
                                         {typeof formData.logo === "string" &&
                                         formData.logo ? (
                                             <div className="text-center">
@@ -270,10 +283,13 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                                                     الصورة الحالية
                                                 </p>
                                             </div>
-                                        ) : formData.logo && logoPreview ? (
+                                        ) : null}
+
+                                        {/* معاينة الصورة الجديدة */}
+                                        {logoPreview && (
                                             <div className="text-center">
                                                 <img
-                                                    src={logoPreview!}
+                                                    src={logoPreview}
                                                     alt="معاينة الصورة الجديدة"
                                                     className="w-24 h-24 object-cover rounded-2xl mx-auto border-2 border-blue-200"
                                                 />
@@ -281,8 +297,9 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                                                     صورة جديدة محملة
                                                 </p>
                                             </div>
-                                        ) : null}
+                                        )}
 
+                                        {/* رفع صورة جديدة */}
                                         <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-all bg-gray-50">
                                             <input
                                                 name="logo"
@@ -297,7 +314,9 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                                                 htmlFor="logo-upload"
                                                 className="cursor-pointer flex flex-col items-center gap-3"
                                             >
-                                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white font-medium"></div>
+                                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white font-medium">
+                                                    +
+                                                </div>
                                                 <div>
                                                     <p className="text-lg font-medium text-gray-900">
                                                         {formData.logo instanceof
@@ -321,17 +340,17 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                                     <label>ملاحظات</label>
                                     <textarea
                                         name="notes"
-                                        value={formData.notes || ""}
+                                        value={formData.notes}
                                         onChange={handleInputChange}
                                         rows={3}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                         placeholder="أي ملاحظات إضافية..."
                                         disabled={isSubmitting}
                                     />
                                 </div>
                             </div>
 
-                            {/* ✅ زر التحديث */}
+                            {/* زر التحديث */}
                             <div
                                 className="inputs__submitBtn"
                                 id="ParentModel__btn"
@@ -339,8 +358,8 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => submitForm(handleSubmit)}
-                                    disabled={isSubmitting || loadingOptions}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 px-6 rounded-xl transition-all focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                    disabled={isSubmitting || loadingData}
+                                    className="w-full"
                                 >
                                     {isSubmitting ? (
                                         <>

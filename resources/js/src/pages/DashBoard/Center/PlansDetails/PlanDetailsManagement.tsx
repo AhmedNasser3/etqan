@@ -1,3 +1,4 @@
+// PlanDetailsManagement.tsx - محدث مع DeleteModal الجديد
 import { useState, useCallback, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -8,6 +9,8 @@ import { FiEdit3, FiTrash2, FiPlus } from "react-icons/fi";
 import { usePlanDetails } from "./hooks/usePlanDetails";
 import CreatePlanDetailPage from "./models/CreatePlanDetailPage";
 import UpdatePlanDetailPage from "./models/UpdatePlanDetailPage";
+import DeleteModal from "./components/DeleteModal"; // ✅ المسار الصحيح
+import "../../.../../../../assets/scss/main.scss";
 
 interface PlanDetailType {
     id: number;
@@ -39,6 +42,10 @@ const PlanDetailsManagement: React.FC = () => {
         null,
     );
 
+    // ✅ Modal Delete State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteDetailId, setDeleteDetailId] = useState<number | null>(null);
+
     // جلب اسم الخطة
     useEffect(() => {
         if (planIdNum > 0) {
@@ -66,9 +73,9 @@ const PlanDetailsManagement: React.FC = () => {
         );
     }
 
-    // ✅ handleDelete مُصحح - الـ URL الصحيح
-    const handleDelete = async (id: number) => {
-        if (!confirm("هل أنت متأكد من حذف هذا اليوم؟")) return;
+    // ✅ handleDeleteConfirm
+    const handleDeleteConfirm = async () => {
+        if (!deleteDetailId) return;
 
         try {
             const csrfToken =
@@ -76,16 +83,18 @@ const PlanDetailsManagement: React.FC = () => {
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content") || "";
 
-            // ✅ الـ URL الصحيح حسب الـ Routes اللي بعتها قبل كده
-            const response = await fetch(`/api/v1/plans/plan-details/${id}`, {
-                method: "DELETE",
-                credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRF-TOKEN": csrfToken,
+            const response = await fetch(
+                `/api/v1/plans/plan-details/${deleteDetailId}`,
+                {
+                    method: "DELETE",
+                    credentials: "include",
+                    headers: {
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRF-TOKEN": csrfToken,
+                    },
                 },
-            });
+            );
 
             console.log("🗑️ DELETE Response:", {
                 status: response.status,
@@ -93,8 +102,10 @@ const PlanDetailsManagement: React.FC = () => {
             });
 
             if (response.ok) {
-                toast.success("تم حذف اليوم بنجاح ✅");
-                refetch(); // ✅ يحدث الجدول
+                toast.success("تم حذف اليوم بنجاح!");
+                refetch();
+                setShowDeleteModal(false);
+                setDeleteDetailId(null);
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 console.error("❌ DELETE Error:", response.status, errorData);
@@ -104,6 +115,11 @@ const PlanDetailsManagement: React.FC = () => {
             console.error("💥 DELETE Network Error:", error);
             toast.error("حدث خطأ في الاتصال");
         }
+    };
+
+    const handleDelete = (id: number) => {
+        setDeleteDetailId(id);
+        setShowDeleteModal(true);
     };
 
     const handleEdit = (detailId: number) => {
@@ -140,6 +156,20 @@ const PlanDetailsManagement: React.FC = () => {
 
     return (
         <>
+            {/* ✅ DeleteModal Component - باستخدام الـ props الجديدة */}
+            <DeleteModal
+                show={showDeleteModal}
+                title="تأكيد الحذف"
+                message="هل أنت متأكد من حذف هذا اليوم؟"
+                onClose={() => {
+                    setShowDeleteModal(false);
+                    setDeleteDetailId(null);
+                }}
+                onConfirm={handleDeleteConfirm}
+                confirmText="حذف اليوم"
+                showConfirm={true}
+            />
+
             {/* Create Modal */}
             {showCreateModal && (
                 <CreatePlanDetailPage

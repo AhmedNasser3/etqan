@@ -35,74 +35,89 @@ export const usePlanFormUpdate = (planId: number) => {
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingPlan, setIsLoadingPlan] = useState(true);
     const [centersData, setCentersData] = useState<CenterType[]>([]);
+    const [mosquesData, setMosquesData] = useState<any[]>([]);
+    const [teachersData, setTeachersData] = useState<any[]>([]);
     const [loadingData, setLoadingData] = useState(true);
-    const [loadingPlan, setLoadingPlan] = useState(true);
     const [user, setUser] = useState<any>(null);
-    const [plan, setPlan] = useState<PlanType | null>(null);
+    const [planData, setPlanData] = useState<PlanType | null>(null);
 
-    // Fetch User info
+    useEffect(() => {
+        if (planId) {
+            loadPlanData();
+        }
+    }, [planId]);
+
+    const loadPlanData = useCallback(async () => {
+        try {
+            console.log("🔍 Loading plan data for ID:", planId);
+            const response = await fetch(`/api/v1/plans/${planId}`, {
+                credentials: "include",
+                headers: { Accept: "application/json" },
+            });
+
+            console.log("Plan response status:", response.status);
+
+            if (!response.ok) {
+                const errorData = await response
+                    .json()
+                    .catch(() => response.text());
+                console.error("Plan API error:", response.status, errorData);
+                toast.error("فشل في تحميل الخطة");
+                return;
+            }
+
+            const plan = await response.json();
+            console.log("✅ Plan loaded:", plan);
+            setPlanData(plan);
+
+            setFormData({
+                plan_name: plan.plan_name || "",
+                center_id: plan.center_id?.toString() || "",
+                total_months: plan.total_months?.toString() || "",
+                notes: plan.notes || "",
+            });
+        } catch (error) {
+            console.error("❌ Load plan data error:", error);
+            toast.error("فشل في تحميل الخطة");
+        } finally {
+            setIsLoadingPlan(false);
+        }
+    }, [planId]);
+
     useEffect(() => {
         fetchUser();
     }, []);
 
     const fetchUser = useCallback(async () => {
         try {
+            console.log("🔍 Fetching user...");
             const response = await fetch("/api/user", {
                 credentials: "include",
                 headers: { Accept: "application/json" },
             });
             if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
+                const responseData = await response.json();
+                const actualUser = responseData.user || responseData;
+                console.log("✅ ACTUAL USER:", actualUser);
+                setUser(actualUser);
             }
         } catch (error) {
-            console.error("Failed to fetch user:", error);
+            console.error("❌ Failed to fetch user:", error);
         }
     }, []);
 
-    // Fetch Plan data
-    useEffect(() => {
-        if (planId) {
-            fetchPlan();
-        }
-    }, [planId]);
-
-    const fetchPlan = useCallback(async () => {
-        try {
-            setLoadingPlan(true);
-            const response = await fetch(`/api/v1/plans/${planId}`, {
-                credentials: "include",
-                headers: { Accept: "application/json" },
-            });
-
-            if (response.ok) {
-                const planData = await response.json();
-                setPlan(planData);
-                setFormData({
-                    plan_name: planData.plan_name || "",
-                    center_id: planData.center_id.toString(),
-                    total_months: planData.total_months.toString(),
-                    notes: planData.notes || "",
-                });
-            }
-        } catch (error) {
-            console.error("Failed to fetch plan:", error);
-            toast.error("فشل في تحميل بيانات الخطة");
-        } finally {
-            setLoadingPlan(false);
-        }
-    }, [planId]);
-
-    // Fetch Centers
     useEffect(() => {
         if (user) {
+            console.log("🚀 User loaded, fetching centers...");
             fetchCenters();
         }
     }, [user]);
 
     const fetchCenters = useCallback(async () => {
         try {
+            console.log("📥 Fetching centers...");
             setLoadingData(true);
             const response = await fetch("/api/v1/centers", {
                 credentials: "include",
@@ -111,11 +126,14 @@ export const usePlanFormUpdate = (planId: number) => {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log("📊 Centers response:", data);
                 let centers: CenterType[] = [];
 
-                if (user?.role?.id === 1 && user.center_id) {
+                const actualUser = user?.user || user;
+
+                if (actualUser?.role?.id === 1 && actualUser.center_id) {
                     const userCenter = data.data?.find(
-                        (c: any) => c.id === user.center_id,
+                        (c: any) => c.id === actualUser.center_id,
                     );
                     if (userCenter) {
                         centers = [userCenter];
@@ -125,13 +143,21 @@ export const usePlanFormUpdate = (planId: number) => {
                 }
 
                 setCentersData(centers);
+
+                if (planData?.center_id) {
+                    console.log(
+                        "🕌👨‍🏫 Fetching center data for center:",
+                        planData.center_id,
+                    );
+                }
             }
         } catch (error) {
-            console.error("Failed to fetch centers:", error);
+            console.error("❌ Failed to fetch centers:", error);
+            toast.error("فشل في تحميل المراكز");
         } finally {
             setLoadingData(false);
         }
-    }, [user]);
+    }, [user, planData?.center_id]);
 
     const handleInputChange = useCallback(
         (
@@ -162,39 +188,56 @@ export const usePlanFormUpdate = (planId: number) => {
     }, [formData]);
 
     const submitForm = useCallback(
-        async (onSubmit: (formData: FormData) => Promise<void>) => {
-            if (!validateForm()) return;
+        async (onSubmit: (formDataSubmit: FormData) => Promise<void>) => {
+            console.log("🚀 UPDATE FORM - formData:", formData);
+            if (!validateForm()) {
+                console.log("❌ Validation failed");
+                return;
+            }
+
+            if (!formData.center_id) {
+                toast.error("المجمع غير محدد");
+                return;
+            }
+
+            if (isSubmitting) return;
 
             setIsSubmitting(true);
             try {
                 const formDataSubmit = new FormData();
-                formDataSubmit.append("_method", "PUT"); // Laravel method spoofing
+                formDataSubmit.append("_method", "PUT");
                 formDataSubmit.append("plan_name", formData.plan_name);
                 formDataSubmit.append("center_id", formData.center_id);
                 formDataSubmit.append("total_months", formData.total_months);
                 if (formData.notes)
                     formDataSubmit.append("notes", formData.notes);
 
+                console.log("📤 Sending UPDATE FormData:", {
+                    plan_name: formData.plan_name,
+                    center_id: formData.center_id,
+                    total_months: formData.total_months,
+                });
+
                 await onSubmit(formDataSubmit);
             } catch (error) {
-                console.error("Submit error:", error);
+                console.error("Update error:", error);
             } finally {
                 setIsSubmitting(false);
             }
         },
-        [formData, validateForm],
+        [formData, validateForm, isSubmitting],
     );
 
     return {
         formData,
         errors,
         isSubmitting,
+        isLoadingPlan,
         handleInputChange,
         submitForm,
         centersData,
         loadingData,
-        loadingPlan,
         user,
-        plan,
+        planData,
     };
 };

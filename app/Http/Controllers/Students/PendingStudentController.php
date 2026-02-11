@@ -43,27 +43,30 @@ class PendingStudentController extends Controller
             'success' => true,
             'data' => $students
         ]);
-    }
-public function confirm($id)
+    }public function confirm($id)
 {
-    $student = Student::with(['user', 'guardian.user'])->findOrFail($id);
+    $student = Student::with(['user', 'guardian'])->findOrFail($id);
 
-    // تحديث status لـ user الطالب
-    $student->user->update([
-        'status' => 'active'
-    ]);
-
-    // تحديث status لـ user ولي الأمر إذا كان موجود
-    if ($student->guardian && $student->guardian->user) {
-        $student->guardian->user->update([
-            'status' => 'active'
+    // ✅ 1. تحديث User status بس (مش Student)
+    if ($student->user) {
+        $student->user->update([
+            'status' => 'active'  // ✅ status في جدول users
         ]);
     }
 
+    // ✅ 2. تحديث Guardian status
+    if ($student->guardian) {
+        $student->guardian->update([
+            'status' => 'active'  // ✅ status في جدول users
+        ]);
+    }
+
+    // ✅ 3. مافيش status في students - خلاص تمام!
+
+    // Reload مع البيانات الكاملة
     $student->load([
         'user:id,name,email,phone,avatar,birth_date,status',
-        'guardian:id,name,email,phone',
-        'guardian.user:id,name,email,phone,status',
+        'guardian:id,name,email,phone,avatar,status',
         'center:id,name,subdomain'
     ]);
 

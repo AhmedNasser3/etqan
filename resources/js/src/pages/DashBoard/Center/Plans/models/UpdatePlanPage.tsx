@@ -1,28 +1,28 @@
-import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
+// UpdatePlanPage.tsx - نفس ديزاين CreatePlanPage بالضبط!
 import { FiX } from "react-icons/fi";
+import toast from "react-hot-toast";
 import { usePlanFormUpdate } from "../hooks/usePlanFormUpdate";
 
 interface UpdatePlanPageProps {
-    planId: number;
     onClose: () => void;
     onSuccess: () => void;
+    planId: number;
 }
 
 const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
-    planId,
     onClose,
     onSuccess,
+    planId,
 }) => {
     const {
         formData,
         errors,
         isSubmitting,
+        isLoadingPlan,
         handleInputChange,
         submitForm,
         centersData,
         loadingData,
-        loadingPlan,
         user,
     } = usePlanFormUpdate(planId);
 
@@ -34,7 +34,7 @@ const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
                     ?.getAttribute("content") || "";
 
             const response = await fetch(`/api/v1/plans/${planId}`, {
-                method: "POST", // Laravel PUT via POST + _method
+                method: "POST",
                 credentials: "include",
                 headers: {
                     Accept: "application/json",
@@ -48,36 +48,46 @@ const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
                 const errorData = await response
                     .json()
                     .catch(() => response.text());
+                console.error("Update error:", errorData);
+
                 if (typeof errorData === "object" && errorData.errors) {
                     const errorMessages = Object.values(
                         errorData.errors,
                     ).flat();
-                    toast.error(errorMessages[0] || "حدث خطأ في التحديث");
+                    toast.error(errorMessages[0] || "حدث خطأ في التعديل");
                     return;
                 }
                 throw new Error(`HTTP ${response.status}`);
             }
 
             const result = await response.json();
-            console.log("Update plan response:", result);
-            toast.success("تم تحديث الخطة بنجاح!");
+            console.log("Update response:", result);
+            toast.success("تم تعديل الخطة بنجاح!");
             onSuccess();
         } catch (error: any) {
-            console.error("Update plan error:", error);
-            toast.error(error.message || "حدث خطأ في التحديث");
+            console.error("Update error:", error);
+            toast.error(error.message || "حدث خطأ في التعديل");
         }
     };
 
-    const isCenterOwner = user?.role?.id === 1;
-    const showSingleCenter = centersData.length === 1 && isCenterOwner;
+    const currentCenter = centersData.find(
+        (c) => c.id.toString() === formData.center_id,
+    );
+    const isLoading = loadingData || isLoadingPlan || !user;
 
-    if (loadingPlan || loadingData) {
+    if (isLoading) {
         return (
             <div className="ParentModel">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <div className="text-center">
-                        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                        <p>جاري تحميل بيانات الخطة...</p>
+                <div className="ParentModel__overlay">
+                    <div className="ParentModel__content">
+                        <div className="flex items-center justify-center min-h-[400px] p-8">
+                            <div className="text-center">
+                                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                <p className="text-lg text-gray-600">
+                                    جاري تحميل بيانات الخطة...
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -104,11 +114,18 @@ const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
 
                         <div className="ParentModel__main">
                             <div className="ParentModel__date">
-                                <p>تعديل خطة حفظ</p>
+                                <p>تعديل خطة</p>
                             </div>
                             <div className="ParentModel__innerTitle">
-                                <h1>تعديل بيانات الخطة</h1>
-                                <p>قم بتعديل البيانات المطلوبة</p>
+                                <h1>تعديل الخطة</h1>
+                                <p className="flex items-center gap-2 flex-wrap">
+                                    البيانات الحالية محملة في الحقول أدناه
+                                    <span className="font-semibold text-green-600">
+                                        {currentCenter?.name ||
+                                            user?.center?.name ||
+                                            "غير محدد"}
+                                    </span>
+                                </p>
                             </div>
                         </div>
 
@@ -122,11 +139,12 @@ const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
                                         name="plan_name"
                                         value={formData.plan_name}
                                         onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 ${
+                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
                                             errors.plan_name
                                                 ? "border-red-300 bg-red-50"
-                                                : "border-gray-200"
+                                                : "border-gray-200 hover:border-gray-300"
                                         }`}
+                                        placeholder="اسم الخطة الحالي"
                                         disabled={isSubmitting}
                                     />
                                     {errors.plan_name && (
@@ -139,40 +157,17 @@ const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
 
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
-                                    <label>المجمع *</label>
-                                    <select
-                                        required
-                                        name="center_id"
-                                        value={formData.center_id}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 ${
-                                            errors.center_id
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200"
-                                        }`}
-                                        disabled={
-                                            isSubmitting || showSingleCenter
+                                    <label>المجمع:</label>
+                                    <input
+                                        type="text"
+                                        value={
+                                            currentCenter?.name ||
+                                            user?.center?.name ||
+                                            "جاري التحميل..."
                                         }
-                                    >
-                                        <option value="">
-                                            {showSingleCenter
-                                                ? centersData[0].name
-                                                : "اختر المجمع"}
-                                        </option>
-                                        {centersData.map((center) => (
-                                            <option
-                                                key={center.id}
-                                                value={center.id}
-                                            >
-                                                {center.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {errors.center_id && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.center_id}
-                                        </p>
-                                    )}
+                                        className="w-full px-4 py-3 border border-green-200 bg-green-50 rounded-xl text-green-800 font-medium"
+                                        disabled
+                                    />
                                 </div>
                             </div>
 
@@ -187,11 +182,12 @@ const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
                                         onChange={handleInputChange}
                                         min="1"
                                         max="36"
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 ${
+                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
                                             errors.total_months
                                                 ? "border-red-300 bg-red-50"
-                                                : "border-gray-200"
+                                                : "border-gray-200 hover:border-gray-300"
                                         }`}
+                                        placeholder="12"
                                         disabled={isSubmitting}
                                     />
                                     {errors.total_months && (
@@ -204,32 +200,40 @@ const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
 
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
-                                    <label>ملاحظات (اختياري)</label>
+                                    <label>ملاحظات</label>
                                     <textarea
                                         name="notes"
                                         value={formData.notes || ""}
                                         onChange={handleInputChange}
                                         rows={3}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                        placeholder="أي ملاحظات إضافية..."
                                         disabled={isSubmitting}
                                     />
                                 </div>
                             </div>
 
-                            <div className="inputs__submitBtn">
+                            <div
+                                className="inputs__submitBtn"
+                                id="ParentModel__btn"
+                            >
                                 <button
                                     type="button"
-                                    onClick={() => submitForm(handleSubmit)}
-                                    disabled={isSubmitting}
+                                    onClick={() =>
+                                        submitForm(handleSubmit as any)
+                                    }
+                                    disabled={
+                                        isSubmitting || !formData.center_id
+                                    }
                                     className="w-full"
                                 >
                                     {isSubmitting ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                                            جاري التحديث...
+                                            جاري التعديل...
                                         </>
                                     ) : (
-                                        <>تحديث الخطة</>
+                                        <>تعديل الخطة</>
                                     )}
                                 </button>
                             </div>

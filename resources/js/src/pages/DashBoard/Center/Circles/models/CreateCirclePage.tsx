@@ -27,6 +27,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
 
     const handleSubmit = async (formDataSubmit: FormData) => {
         try {
+            // ✅ نفس CSRF logic من usePermissions
             const csrfToken =
                 document
                     .querySelector('meta[name="csrf-token"]')
@@ -39,38 +40,37 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                     Accept: "application/json",
                     "X-Requested-With": "XMLHttpRequest",
                     "X-CSRF-TOKEN": csrfToken,
+                    "X-XSRF-TOKEN": csrfToken,
                 },
                 body: formDataSubmit,
             });
 
             if (!response.ok) {
-                const errorData = await response
-                    .json()
-                    .catch(() => response.text());
-                console.error("Error response:", errorData);
+                const errorData = await response.json().catch(() => ({}));
+                console.error("❌ Error response:", errorData);
 
-                if (typeof errorData === "object" && errorData.errors) {
+                if (errorData.errors) {
                     const errorMessages = Object.values(
                         errorData.errors,
                     ).flat();
                     toast.error(errorMessages[0] || "حدث خطأ في الإضافة");
                     return;
                 }
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error(errorData.message || `HTTP ${response.status}`);
             }
 
             const result = await response.json();
-            console.log("Create response:", result);
+            console.log("✅ Create response:", result);
             toast.success("تم إضافة الحلقة بنجاح!");
             onSuccess();
         } catch (error: any) {
-            console.error("Create error:", error);
+            console.error("❌ Create error:", error);
             toast.error(error.message || "حدث خطأ في الإضافة");
         }
     };
 
     const isLoading = loadingData || !user;
-    const currentCenter = centersData[0];
+    const currentCenter = centersData[0] || user?.center;
 
     if (isLoading) {
         return (
@@ -127,6 +127,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                         </div>
 
                         <div className="ParentModel__container">
+                            {/* اسم الحلقة */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>اسم الحلقة *</label>
@@ -152,6 +153,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 </div>
                             </div>
 
+                            {/* المجمع */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>المجمع:</label>
@@ -168,6 +170,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 </div>
                             </div>
 
+                            {/* المسجد - ✅ مساجد المجمع بس */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>المسجد (اختياري)</label>
@@ -186,8 +189,10 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                             اختر المسجد (اختياري)
                                         </option>
                                         {mosquesData.length === 0 ? (
-                                            <option disabled>
-                                                لا توجد مساجد في هذا المجمع
+                                            <option disabled value="">
+                                                {user?.center_id
+                                                    ? "لا توجد مساجد في مجمعك حالياً 🕌"
+                                                    : "جاري تحميل مساجد المجمع..."}
                                             </option>
                                         ) : (
                                             mosquesData.map((mosque) => (
@@ -208,6 +213,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 </div>
                             </div>
 
+                            {/* المعلم - ✅ معلمين المجمع بس */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>المعلم (اختياري)</label>
@@ -226,8 +232,10 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                             اختر المعلم (اختياري)
                                         </option>
                                         {teachersData.length === 0 ? (
-                                            <option disabled>
-                                                لا يوجد معلمين في هذا المجمع
+                                            <option disabled value="">
+                                                {user?.center_id
+                                                    ? "لا يوجد معلمين في مجمعك حالياً 👨‍🏫"
+                                                    : "جاري تحميل المعلمين..."}
                                             </option>
                                         ) : (
                                             teachersData.map((teacher) => (
@@ -248,6 +256,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 </div>
                             </div>
 
+                            {/* الملاحظات */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>ملاحظات</label>
@@ -263,6 +272,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 </div>
                             </div>
 
+                            {/* Submit */}
                             <div
                                 className="inputs__submitBtn"
                                 id="ParentModel__btn"
