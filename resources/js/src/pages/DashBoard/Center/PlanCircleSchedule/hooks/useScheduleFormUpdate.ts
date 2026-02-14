@@ -1,4 +1,4 @@
-// hooks/useScheduleFormUpdate.ts - الكامل المُصحح
+// hooks/useScheduleFormUpdate.ts - الكامل المُصحح مع دعم Jitsi
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -30,6 +30,8 @@ interface ScheduleType {
     max_students?: number;
     notes?: string;
     duration_minutes: number;
+    jitsi_room_name?: string;
+    jitsi_url?: string;
     plan?: { plan_name: string; name?: string };
     circle?: { name: string };
     teacher?: { name: string };
@@ -46,6 +48,7 @@ interface FormData {
     max_students: string;
     notes: string;
     duration_minutes: string;
+    jitsi_room_name: string;
 }
 
 interface FormErrors {
@@ -70,6 +73,7 @@ export const useScheduleFormUpdate = ({
         max_students: "",
         notes: "",
         duration_minutes: "60",
+        jitsi_room_name: "",
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,7 +130,7 @@ export const useScheduleFormUpdate = ({
         fetchUser();
     }, []);
 
-    // 🔍 STEP 2: Fetch Current Schedule - ✅ إصلاح pagination
+    // 🔍 STEP 2: Fetch Current Schedule - ✅ الإصلاح الكامل
     const fetchCurrentSchedule = useCallback(async () => {
         console.log("🔍 [UPDATE HOOK STEP 2] Fetching schedule:", scheduleId);
         try {
@@ -142,53 +146,79 @@ export const useScheduleFormUpdate = ({
 
             if (response.ok) {
                 const responseData = await response.json();
-                console.log("📋 [STEP 2 RAW] FULL response:", responseData);
+                console.log(
+                    "📋 [STEP 2 RAW] FULL response مع Jitsi:",
+                    responseData,
+                );
 
-                // ✅ Parse pagination أو single object
                 let schedule: ScheduleType | null = null;
 
-                if (
-                    responseData.data &&
-                    Array.isArray(responseData.data) &&
-                    responseData.data[0]
-                ) {
-                    // Pagination response: {data: [{id: 1, ...}]}
-                    schedule = responseData.data[0];
-                    console.log(
-                        "✅ [STEP 2] Schedule from pagination data[0]:",
-                        schedule,
-                    );
-                } else if (responseData.id) {
-                    // Single object response
+                // ✅ 1️⃣ Single object مباشرة (الأساسي)
+                if (responseData.id) {
                     schedule = responseData;
                     console.log(
                         "✅ [STEP 2] Single schedule object:",
                         schedule,
                     );
-                } else {
+                }
+                // ✅ 2️⃣ Pagination مع data[0] و id موجود
+                else if (
+                    responseData.data &&
+                    Array.isArray(responseData.data) &&
+                    responseData.data[0]?.id
+                ) {
+                    schedule = responseData.data[0];
+                    console.log(
+                        "✅ [STEP 2] Schedule from pagination data[0]:",
+                        schedule,
+                    );
+                }
+                // ✅ 3️⃣ Pagination مع data غير فارغ
+                else if (
+                    responseData.data &&
+                    Array.isArray(responseData.data) &&
+                    responseData.data.length > 0
+                ) {
+                    schedule = responseData.data[0];
+                    console.log(
+                        "✅ [STEP 2] Schedule from pagination (first item):",
+                        schedule,
+                    );
+                }
+                // ❌ 4️⃣ مفيش بيانات خالص
+                else {
                     console.error(
-                        "❌ [STEP 2] Invalid schedule format:",
+                        "❌ [STEP 2] Schedule not found - Empty response:",
                         responseData,
                     );
-                    toast.error("تنسيق بيانات الموعد غير صحيح");
+                    toast.error("الموعد غير موجود أو تم حذفه");
+                    setCurrentSchedule(null);
                     return null;
                 }
 
                 setCurrentSchedule(schedule);
+                console.log(
+                    "✅ [STEP 2 SUCCESS] Schedule loaded:",
+                    schedule.id,
+                    "Jitsi:",
+                    schedule.jitsi_room_name,
+                );
                 return schedule;
             } else {
                 const errorText = await response.text();
                 console.error(
-                    "❌ [STEP 2 FAILED] Schedule not found:",
+                    "❌ [STEP 2 FAILED] HTTP Error:",
                     response.status,
                     errorText,
                 );
-                toast.error("الموعد غير موجود");
+                toast.error(`الموعد غير موجود (${response.status})`);
+                setCurrentSchedule(null);
                 return null;
             }
         } catch (error) {
-            console.error("❌ [STEP 2 ERROR] Failed to fetch schedule:", error);
+            console.error("❌ [STEP 2 ERROR] Network error:", error);
             toast.error("فشل في تحميل بيانات الموعد");
+            setCurrentSchedule(null);
             return null;
         } finally {
             setLoadingSchedule(false);
@@ -233,7 +263,7 @@ export const useScheduleFormUpdate = ({
         } finally {
             setLoadingData(false);
         }
-    }, [user?.center_id]); // ✅ إصلاح dependency
+    }, [user?.center_id]);
 
     // 🔍 STEP 4: Fetch Circles ✅
     const fetchCircles = useCallback(async () => {
@@ -308,15 +338,14 @@ export const useScheduleFormUpdate = ({
         fetchCurrentSchedule,
     ]);
 
-    // ✅ Fill form with current schedule data ✅
+    // ✅ Fill form with current schedule data مع Jitsi ✅
     useEffect(() => {
         if (currentSchedule && plansData.length > 0 && circlesData.length > 0) {
             console.log(
-                "🎨 [UPDATE HOOK] Filling form with schedule data:",
+                "🎨 [UPDATE HOOK] Filling form مع Jitsi:",
                 currentSchedule,
             );
 
-            // ✅ تأكد من وجود البيانات قبل الـ fill
             const safeScheduleData = {
                 id: currentSchedule.id?.toString() || formData.id,
                 plan_id: currentSchedule.plan_id?.toString() || "",
@@ -329,12 +358,16 @@ export const useScheduleFormUpdate = ({
                 notes: currentSchedule.notes || "",
                 duration_minutes:
                     currentSchedule.duration_minutes?.toString() || "60",
+                jitsi_room_name: currentSchedule.jitsi_room_name || "",
             };
 
             setFormData(safeScheduleData);
-            console.log("✅ [FILL FORM] Safe data applied:", safeScheduleData);
+            console.log(
+                "✅ [FILL FORM] Safe data مع Jitsi applied:",
+                safeScheduleData,
+            );
         }
-    }, [currentSchedule, plansData.length, circlesData.length]);
+    }, [currentSchedule, plansData.length, circlesData.length, formData.id]);
 
     const handleInputChange = useCallback(
         (
@@ -377,7 +410,7 @@ export const useScheduleFormUpdate = ({
 
     const submitForm = useCallback(
         async (onSubmit: (formDataSubmit: FormData) => Promise<void>) => {
-            console.log("🚀 [UPDATE HOOK STEP 6] Update started");
+            console.log("🚀 [UPDATE HOOK STEP 6] Update started مع Jitsi");
 
             if (!validateForm()) {
                 console.log("❌ [STEP 6] Validation failed");
@@ -391,7 +424,7 @@ export const useScheduleFormUpdate = ({
                 formDataSubmit.append("circle_id", formData.circle_id);
                 if (formData.teacher_id)
                     formDataSubmit.append("teacher_id", formData.teacher_id);
-                formDataSubmit.append("_method", "PUT"); // ✅ Laravel PUT spoofing
+                formDataSubmit.append("_method", "PUT");
                 formDataSubmit.append("schedule_date", formData.schedule_date);
                 formDataSubmit.append("start_time", formData.start_time);
                 formDataSubmit.append("end_time", formData.end_time);
@@ -399,6 +432,15 @@ export const useScheduleFormUpdate = ({
                     "duration_minutes",
                     formData.duration_minutes,
                 );
+
+                // ✅ إرسال Jitsi room name لو اتغير
+                if (formData.jitsi_room_name) {
+                    formDataSubmit.append(
+                        "jitsi_room_name",
+                        formData.jitsi_room_name,
+                    );
+                }
+
                 if (formData.max_students)
                     formDataSubmit.append(
                         "max_students",
@@ -408,7 +450,7 @@ export const useScheduleFormUpdate = ({
                     formDataSubmit.append("notes", formData.notes);
 
                 console.log(
-                    "📤 [STEP 6] FormData:",
+                    "📤 [STEP 6] FormData مع Jitsi:",
                     Object.fromEntries(formDataSubmit.entries()),
                 );
                 await onSubmit(formDataSubmit);
@@ -421,7 +463,40 @@ export const useScheduleFormUpdate = ({
         [formData, validateForm],
     );
 
-    console.log("📊 [UPDATE HOOK] FINAL STATE:", {
+    // ✅ وظيفة إعادة توليد Jitsi room جديد
+    const regenerateJitsiRoom = useCallback(async () => {
+        try {
+            const response = await fetch(
+                `/api/v1/plans/schedules/${scheduleId}/jitsi-regenerate`,
+                {
+                    method: "PATCH",
+                    credentials: "include",
+                    headers: {
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                },
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log("✅ Jitsi room regenerated:", data);
+                toast.success("تم إنشاء رابط Jitsi جديد بنجاح! 🎉");
+                setFormData((prev) => ({
+                    ...prev,
+                    jitsi_room_name: data.jitsi_room_name || "",
+                }));
+                return data;
+            } else {
+                toast.error("فشل في إعادة توليد الرابط");
+            }
+        } catch (error) {
+            console.error("❌ Regenerate Jitsi failed:", error);
+            toast.error("حدث خطأ في إعادة التوليد");
+        }
+    }, [scheduleId]);
+
+    console.log("📊 [UPDATE HOOK] FINAL STATE مع Jitsi:", {
         scheduleId,
         userCenterId: user?.center_id,
         plansCount: plansData.length,
@@ -430,6 +505,7 @@ export const useScheduleFormUpdate = ({
         loadingData,
         loadingSchedule,
         formFilled: !!currentSchedule,
+        jitsiRoom: formData.jitsi_room_name,
         formDataKeys: Object.keys(formData),
     });
 
@@ -445,5 +521,7 @@ export const useScheduleFormUpdate = ({
         loadingData: loadingData || loadingSchedule,
         user,
         currentSchedule,
+        regenerateJitsiRoom,
+        jitsiRoomName: formData.jitsi_room_name,
     };
 };

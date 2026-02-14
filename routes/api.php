@@ -1,34 +1,51 @@
 <?php
 // Routes كاملة مع إصلاح Route Model Binding + Schedule Create
-use App\Models\Auth\User;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Plans\PlanController;
-use App\Http\Controllers\User\FeaturedController;
+use App\Http\Controllers\Account\AccountController;
+use App\Http\Controllers\Auth\TeacherRegisterController;
+use App\Http\Controllers\Center\IdeaDomainRequestController;
 use App\Http\Controllers\Centers\CenterController;
 use App\Http\Controllers\Centers\MosqueController;
-use App\Http\Controllers\Account\AccountController;
-use App\Http\Controllers\Circles\CirclesController;
-use App\Http\Controllers\Plans\PlanDetailController;
-use App\Http\Controllers\Teachers\TeacherController;
-use App\Http\Controllers\Plans\StudentPlanController;
-use App\Http\Controllers\Users\UserSuspendController;
-use App\Http\Controllers\Teachers\AttendanceController;
-use App\Http\Controllers\Auth\TeacherRegisterController;
-use App\Http\Controllers\Student\StudentPlansController;
 use App\Http\Controllers\Centers\PendingCentersController;
-use App\Http\Controllers\Student\SpecialRequestController;
-use App\Http\Controllers\Student\StudentAffairsController;
-use App\Http\Controllers\Teachers\TeacherSalaryController;
-use App\Http\Controllers\Student\StudentBookingsController;
-use App\Http\Controllers\Students\PendingStudentController;
-use App\Http\Controllers\Teachers\TeacherPayrollController;
-use App\Http\Controllers\Center\IdeaDomainRequestController;
-use App\Http\Controllers\Plans\PlanCircleScheduleController;
-use App\Http\Controllers\Routes\RouteCustomizationController;
-use App\Http\Controllers\Plans\CircleStudentBookingController;
-use App\Http\Controllers\Student\StudentAchievementController;
-use App\Http\Controllers\Permissions\UserPermissionsController;
+use App\Http\Controllers\Circles\CirclesController;
 use App\Http\Controllers\Meetings\TeacherStudentMeetingController;
+use App\Http\Controllers\Permissions\UserPermissionsController;
+use App\Http\Controllers\Plans\CircleStudentBookingController;
+use App\Http\Controllers\Plans\PlanCircleScheduleController;
+use App\Http\Controllers\Plans\PlanController;
+use App\Http\Controllers\Plans\PlanDetailController;
+use App\Http\Controllers\Plans\StudentPlanController;
+use App\Http\Controllers\Routes\RouteCustomizationController;
+use App\Http\Controllers\Student\SpecialRequestController;
+use App\Http\Controllers\Student\StudentAchievementController;
+use App\Http\Controllers\Student\StudentAffairsController;
+use App\Http\Controllers\Student\StudentBookingsController;
+use App\Http\Controllers\Student\StudentPlansController;
+use App\Http\Controllers\Students\PendingStudentController;
+use App\Http\Controllers\Students\TeacherStudentSessionsController;
+use App\Http\Controllers\Teachers\AttendanceController;
+use App\Http\Controllers\Teachers\TeacherController;
+use App\Http\Controllers\Teachers\TeacherPayrollController;
+use App\Http\Controllers\Teachers\TeacherRoomController;
+use App\Http\Controllers\Teachers\TeacherSalaryController;
+use App\Http\Controllers\User\FeaturedController;
+use App\Http\Controllers\Users\UserSuspendController;
+use App\Models\Auth\User;
+use Illuminate\Support\Facades\Route;
+// routes/api.php
+// routes/api.php - الكامل مع كل الـ routes
+Route::middleware(['web'])->prefix('v1/teachers')->group(function () {
+    Route::get('room', [TeacherRoomController::class, 'getTeacherRoom']);
+    Route::get('today-meet', [TeacherRoomController::class, 'getTodayMeet']);
+    Route::get('sessions', [TeacherRoomController::class, 'getTeacherSessions']);
+
+    // ✅ الجديد - جلسات الطلاب
+    Route::get('student-sessions', [TeacherStudentSessionsController::class, 'getTeacherStudentSessions']);
+    Route::post('student-sessions/update', [TeacherStudentSessionsController::class, 'updateSessionStatus']);
+    Route::get('student-sessions/attendance', [TeacherStudentSessionsController::class, 'getSessionAttendance']);
+});
+
+Route::middleware('web')->get('/v1/teacher-sessions', [TeacherStudentSessionsController::class, 'getTeacherStudentSessions'])
+    ->name('teacher.student.sessions'); // ✅ الخاص القديم محتفظ بيه
 
 Route::prefix('super/centers')->group(function () {
     Route::get('/pending', [PendingCentersController::class, 'index']);
@@ -37,6 +54,8 @@ Route::prefix('super/centers')->group(function () {
     Route::post('/pending/{id}/reject', [PendingCentersController::class, 'reject']);
     Route::delete('/pending/{id}', [PendingCentersController::class, 'destroy']);
 });
+// routes/api.php
+
 // ✅ 1. Debug Routes (في الأول)
 Route::get('/debug-students', function() {
     $user = auth()->user();
@@ -256,6 +275,10 @@ Route::middleware('web')->prefix('v1')->group(function () {
             Route::delete('{planDetail}', [PlanDetailController::class, 'destroy']);
         });
 
+    // 🔥 7️⃣ Jitsi Regenerate - **الناقص الأساسي** 🔥
+    Route::patch('schedules/{schedule}/jitsi-regenerate', [PlanCircleScheduleController::class, 'regenerateJitsiRoom'])
+        ->where('schedule', '[0-9]+')
+        ->name('schedules.jitsi-regenerate');
         // Schedules Routes (كاملة)
         Route::prefix('schedules')->name('schedules.')->group(function () {
             Route::get('/', [PlanCircleScheduleController::class, 'myCenterSchedules']);

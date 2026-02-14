@@ -4,8 +4,8 @@ import toast from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
 import { PiWhatsappLogoDuotone } from "react-icons/pi";
-import { FiEdit3, FiTrash2 } from "react-icons/fi";
-import { IoMdAdd } from "react-icons/io";
+import { FiEdit3, FiTrash2, FiLink2 } from "react-icons/fi";
+import { IoMdAdd, IoMdCopy } from "react-icons/io";
 import { usePlanSchedules, ScheduleType } from "./hooks/usePlanSchedules";
 import CreateSchedulePage from "./models/CreateSchedulePage";
 import UpdateSchedulePage from "./models/UpdateSchedulePage";
@@ -63,7 +63,7 @@ const SchedulesManagement: React.FC = () => {
             });
 
             if (response.ok) {
-                toast.success("تم حذف الموعد بنجاح ✅");
+                toast.success("تم حذف الموعد بنجاح ");
                 refetch();
             } else {
                 const result = await response.json();
@@ -73,6 +73,11 @@ const SchedulesManagement: React.FC = () => {
             toast.error("حدث خطأ في الحذف");
         }
     };
+
+    const handleCopyJitsiUrl = useCallback((url: string) => {
+        navigator.clipboard.writeText(url);
+        toast.success("تم نسخ رابط الغرفة! 📋");
+    }, []);
 
     const handleCloseUpdateModal = useCallback(() => {
         setShowUpdateModal(false);
@@ -270,6 +275,7 @@ const SchedulesManagement: React.FC = () => {
                                 <th>الوقت</th>
                                 <th>المدة</th>
                                 <th>الحالة</th>
+                                <th>رابط الغرفة</th> {/* ✅ عمود جديد */}
                                 <th>الإجراءات</th>
                             </tr>
                         </thead>
@@ -277,7 +283,7 @@ const SchedulesManagement: React.FC = () => {
                             {schedules.length === 0 && !loading ? (
                                 <tr>
                                     <td
-                                        colSpan={9}
+                                        colSpan={10}
                                         className="text-center py-8 text-gray-500"
                                     >
                                         لا يوجد مواعيد حالياً
@@ -318,6 +324,31 @@ const SchedulesManagement: React.FC = () => {
                                             </span>
                                         </td>
                                         <td>
+                                            {/* ✅ عمود رابط Jitsi الجديد */}
+                                            <div className="flex items-center gap-1">
+                                                <a
+                                                    href={item.jitsi_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-600 hover:text-blue-800 text-xs font-medium underline truncate max-w-[120px]"
+                                                    title={item.jitsi_url}
+                                                >
+                                                    غرفة {item.jitsi_room_name}
+                                                </a>
+                                                <button
+                                                    onClick={() =>
+                                                        handleCopyJitsiUrl(
+                                                            item.jitsi_url,
+                                                        )
+                                                    }
+                                                    className="p-1 hover:bg-gray-100 rounded-full transition-all"
+                                                    title="نسخ الرابط"
+                                                >
+                                                    <IoMdCopy size={14} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td>
                                             <div className="teacherStudent__btns">
                                                 <button
                                                     className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
@@ -355,8 +386,8 @@ const SchedulesManagement: React.FC = () => {
                     >
                         <div className="flex justify-between items-center p-4">
                             <div className="text-sm text-gray-600">
-                                عرض {schedules.length} من {pagination.total}{" "}
-                                موعد • الصفحة <strong>{currentPage}</strong> من{" "}
+                                عرض {schedules.length} من {pagination.total}
+                                موعد • الصفحة <strong>{currentPage}</strong> من
                                 <strong>{pagination.last_page}</strong>
                             </div>
                             <div className="flex items-center gap-2">
@@ -402,7 +433,13 @@ const SchedulesManagement: React.FC = () => {
                         <div className="userProfile__progressBar">
                             <span
                                 style={{
-                                    width: `${Math.min((1 - stats.available / Math.max(stats.total, 1)) * 100, 100)}%`,
+                                    width: `${Math.min(
+                                        (1 -
+                                            stats.available /
+                                                Math.max(stats.total, 1)) *
+                                            100,
+                                        100,
+                                    )}%`,
                                 }}
                             ></span>
                         </div>

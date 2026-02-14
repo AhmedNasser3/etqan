@@ -1,7 +1,7 @@
-// UpdateSchedulePage.tsx - كامل بكل التفاصيل
+// UpdateSchedulePage.tsx - كامل بكل التفاصيل مع Jitsi support
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { FiX } from "react-icons/fi";
+import { FiX, FiRefreshCw } from "react-icons/fi";
 import { useScheduleFormUpdate } from "../hooks/useScheduleFormUpdate";
 import { FormData as FormDataType } from "../hooks/useScheduleFormUpdate";
 
@@ -28,11 +28,13 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
         loadingData,
         user,
         currentSchedule,
+        regenerateJitsiRoom, // ✅ جديد
+        jitsiRoomName, // ✅ جديد
     } = useScheduleFormUpdate({ scheduleId });
 
-    // 🔍 Debug Console
+    // 🔍 Debug Console مع Jitsi
     useEffect(() => {
-        console.log("📊 [UPDATE PAGE] DEBUG:", {
+        console.log("📊 [UPDATE PAGE] DEBUG مع Jitsi:", {
             scheduleId,
             user: user?.center_id,
             plans: plansData.length,
@@ -40,6 +42,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
             teachers: teachersData.length,
             loading: loadingData,
             currentSchedule: currentSchedule?.id,
+            jitsiRoom: jitsiRoomName,
             formData,
         });
     }, [
@@ -51,11 +54,12 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
         loadingData,
         currentSchedule,
         formData,
+        jitsiRoomName,
     ]);
 
     const handleSubmit = async (formDataSubmit: FormDataType) => {
         console.log(
-            "🚀 [UPDATE PAGE SUBMIT] FormData:",
+            "🚀 [UPDATE PAGE SUBMIT] FormData مع Jitsi:",
             Object.fromEntries(formDataSubmit),
         );
 
@@ -108,7 +112,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
             }
 
             const result = await response.json();
-            console.log("✅ [UPDATE SUCCESS] Response:", result);
+            console.log("✅ [UPDATE SUCCESS] Response مع Jitsi:", result);
             toast.success("✅ تم تحديث الموعد بنجاح!");
             onSuccess();
         } catch (error: any) {
@@ -168,6 +172,12 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                     {!loadingData && !hasPlans && (
                                         <span className="block text-sm text-orange-600 mt-1">
                                             ⚠️ لا توجد خطط متاحة لمركزك
+                                        </span>
+                                    )}
+                                    {jitsiRoomName && (
+                                        <span className="block text-sm text-purple-600 mt-1">
+                                            🎥 غرفة Jitsi الحالية:{" "}
+                                            <strong>{jitsiRoomName}</strong>
                                         </span>
                                     )}
                                 </p>
@@ -435,7 +445,62 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ✅ 8. زر الإرسال */}
+                            {/* 🔥 8. خانة Jitsi Room - الجديدة ✅ */}
+                            <div className="inputs__verifyOTPBirth">
+                                <div className="inputs__email">
+                                    <label>غرفة Jitsi Meet</label>
+                                    <div className="flex gap-2 mb-2">
+                                        {/* عرض الرابط الحالي */}
+                                        {jitsiRoomName && (
+                                            <a
+                                                href={`https://meet.jit.si/${jitsiRoomName}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex-1 bg-purple-50 border border-purple-200 text-purple-800 px-4 py-2 rounded-xl text-sm hover:bg-purple-100 transition-all flex items-center justify-between"
+                                            >
+                                                <span>
+                                                    🔗 انقر للانضمام للغرفة
+                                                </span>
+                                                <span className="font-mono text-xs bg-white px-2 py-1 rounded">
+                                                    {jitsiRoomName}
+                                                </span>
+                                            </a>
+                                        )}
+                                        {/* زر إعادة التوليد */}
+                                        <button
+                                            type="button"
+                                            onClick={regenerateJitsiRoom}
+                                            disabled={
+                                                isSubmitting || loadingData
+                                            }
+                                            className="bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-1 transition-all whitespace-nowrap"
+                                            title="إنشاء غرفة Jitsi جديدة"
+                                        >
+                                            <FiRefreshCw
+                                                size={16}
+                                                className="animate-spin"
+                                            />
+                                            رابط جديد
+                                        </button>
+                                    </div>
+                                    {/* Input التعديل اليدوي */}
+                                    <input
+                                        type="text"
+                                        name="jitsi_room_name"
+                                        value={formData.jitsi_room_name}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-purple-50 hover:border-purple-300"
+                                        placeholder="abc123xyz - سيتم استخدامها في https://meet.jit.si/[اسم الغرفة]"
+                                        disabled={isSubmitting || loadingData}
+                                    />
+                                    <p className="mt-1 text-xs text-purple-600">
+                                        يمكنك تعديل اسم الغرفة يدوياً أو إنشاء
+                                        رابط جديد بالضغط على الزر
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* ✅ 9. زر الإرسال */}
                             <div
                                 className="inputs__submitBtn"
                                 id="ParentModel__btn"
@@ -458,7 +523,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                             جاري التحديث...
                                         </>
                                     ) : (
-                                        <>تحديث الموعد</>
+                                        <>تحديث الموعد 🎥</>
                                     )}
                                 </button>
                             </div>

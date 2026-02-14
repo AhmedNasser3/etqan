@@ -2,16 +2,16 @@
 // app/Models/Plans/CircleStudentBooking.php
 namespace App\Models\Plans;
 
-use App\Models\Auth\User;
+use App\Models\Auth\User;  // ✅ namespace صحيح
 use App\Models\Plans\Plan;
 use App\Models\Tenant\Student;
 use App\Models\Plans\PlanDetail;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Plans\PlanCircleSchedule;
 use App\Models\Student\StudentPlanDetail;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;  // ✅ أضف HasMany
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CircleStudentBooking extends Model
 {
@@ -41,7 +41,7 @@ class CircleStudentBooking extends Model
         'booked_at' => 'datetime',
     ];
 
-    // ✅ الـ RELATIONSHIPS الموجودة
+    // ✅ العلاقات - كلها صحيحة
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
@@ -62,12 +62,12 @@ class CircleStudentBooking extends Model
         return $this->belongsTo(PlanCircleSchedule::class, 'plan_circle_schedule_id');
     }
 
+    // ✅ العلاقة المهمة - User
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // 🔥 الـ RELATIONSHIP الجديدة المهمة 👇
     public function studentPlanDetails(): HasMany
     {
         return $this->hasMany(StudentPlanDetail::class, 'circle_student_booking_id');

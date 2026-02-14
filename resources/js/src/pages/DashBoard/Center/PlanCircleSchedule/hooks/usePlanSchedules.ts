@@ -1,4 +1,4 @@
-// hooks/usePlanSchedules.ts
+// hooks/usePlanSchedules.ts - محدث كامل مع Jitsi support
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 
@@ -19,9 +19,11 @@ export interface ScheduleType {
     booked_students: number;
     is_available: boolean;
     notes?: string;
+    jitsi_room_name?: string; // ✅ جديد - اسم الغرفة
+    jitsi_url: string; // ✅ جديد - الرابط الكامل
     created_at: string;
     updated_at: string;
-    bookings_count: number;
+    bookings_count?: number;
 }
 
 interface Pagination {
@@ -73,9 +75,12 @@ export const usePlanSchedules = () => {
                 }
 
                 const data = await response.json();
-                console.log("✅ Schedules loaded:", data);
+                console.log("✅ Schedules loaded مع Jitsi:", data);
 
-                setSchedules(Array.isArray(data.data) ? data.data : []);
+                // ✅ تحويل data للـ ScheduleType مع Jitsi fields
+                const scheduleData = Array.isArray(data.data) ? data.data : [];
+                setSchedules(scheduleData);
+
                 setPagination({
                     current_page: data.current_page || 1,
                     last_page: data.last_page || 1,

@@ -1,11 +1,13 @@
+import { useAuthUser } from "./hooks/useAuthUser"; // ضبط المسار حسب مكان الهوك
 import PlanCards from "../plans/models/PlanCards";
 import Schedules from "../plans/models/Sheduls";
 import UserMeetCard from "../userMeet/UserMeetCard";
-// ❌ import UserPlans from "../userPlans/UserPlans"; // احذف الخط ده
 import EmailVerifyWidget from "./EmailVerifyWidget";
 import Medals from "./medals";
 
 const UserProfile: React.FC = () => {
+    const { user, loading } = useAuthUser();
+
     return (
         <div className="userProfile">
             <div className="userProfile__features">
@@ -24,13 +26,28 @@ const UserProfile: React.FC = () => {
 
                                 <div className="testimonialsView__rating">
                                     <div className="testimonialsView__name">
-                                        <h1>عبدالله القحطاني</h1>
+                                        {loading ? (
+                                            <h1 className="animate-pulse bg-gray-200 h-8 w-64 rounded-md">
+                                                جاري التحميل...
+                                            </h1>
+                                        ) : (
+                                            <h1>
+                                                {user?.name ||
+                                                    "عبدالله القحطاني"}
+                                            </h1>
+                                        )}
                                     </div>
                                     <div className="testimonialsView__ratingStars"></div>
                                 </div>
+
+                                {/* ✅ صورة اليوزر */}
                                 <img
-                                    src="https://png.pngtree.com/png-vector/20250705/ourmid/pngtree-a-saudi-man-traditional-attire-middle-aged-wearing-white-thobe-and-png-image_16610073.webp"
-                                    alt="المعلم"
+                                    src={
+                                        user?.avatar ||
+                                        "https://png.pngtree.com/png-vector/20250705/ourmid/pngtree-a-saudi-man-traditional-attire-middle-aged-wearing-white-thobe-and-png-image_16610073.webp"
+                                    }
+                                    alt="المستخدم"
+                                    className="w-full h-full object-cover rounded-full"
                                 />
                             </div>
                         </div>
@@ -41,16 +58,13 @@ const UserProfile: React.FC = () => {
                 {/* خططي الخاصة */}
                 <PlanCards type="my-plans" />
 
-                {/* خطط متاحة للحجز */}
-                {/* <PlanCards type="available" /> */}
-
                 <div className="userProfile__doupleSide">
                     <Medals />
                     <div className="userProfile__progress">
                         <div className="userProfile__progressContainer">
                             <div className="userProfile__progressContent">
                                 <div className="userProfile__progressTitle">
-                                    <h1>مستوي تقدم الطالب</h1>
+                                    <h1>مستوى تقدم الطالب</h1>
                                 </div>
                                 <p>98%</p>
                                 <div className="userProfile__progressBar">

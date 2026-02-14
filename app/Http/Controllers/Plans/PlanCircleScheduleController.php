@@ -69,66 +69,57 @@ class PlanCircleScheduleController extends Controller
         return response()->json($circles);
     }
 
-public function getTeachersForCreate(Request $request)
-{
-    Log::info('👨‍🏫 [STEP 1] getTeachersForCreate START', ['user_id' => Auth::id()]);
+    public function getTeachersForCreate(Request $request)
+    {
+        Log::info('👨‍🏫 [STEP 1] getTeachersForCreate START', ['user_id' => Auth::id()]);
 
-    try {
-        $user = Auth::user();
-        Log::info('👤 [STEP 2] User check', [
-            'user_id' => $user?->id,
-            'center_id' => $user?->center_id,
-        ]);
+        try {
+            $user = Auth::user();
+            Log::info('👤 [STEP 2] User check', [
+                'user_id' => $user?->id,
+                'center_id' => $user?->center_id,
+            ]);
 
-        if (!$user || !$user->center_id) {
-            Log::error('❌ [STEP 3] No user/center_id');
-            return response()->json(['error' => 'لا يوجد مركز'], 403);
+            if (!$user || !$user->center_id) {
+                Log::error('❌ [STEP 3] No user/center_id');
+                return response()->json(['error' => 'لا يوجد مركز'], 403);
+            }
+
+            Log::info('🔍 [STEP 4] Querying TEACHERS table', ['center_id' => $user->center_id]);
+
+            $teachers = DB::table('teachers as t')
+                ->join('users as u', 't.user_id', '=', 'u.id')
+                ->where('u.center_id', $user->center_id)
+                ->where('t.role', 'teacher')
+                ->where('u.status', 'active')
+                ->select('u.id', 'u.name')
+                ->orderBy('u.name')
+                ->limit(50)
+                ->get();
+
+            Log::info('✅ [STEP 5 SUCCESS] Teachers loaded', [
+                'count' => $teachers->count(),
+                'center_id' => $user->center_id,
+                'sample' => $teachers->take(2)->toArray()
+            ]);
+
+            return response()->json($teachers);
+
+        } catch (\Exception $e) {
+            Log::error('💥 [STEP 6 ERROR] Teachers EXCEPTION', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return response()->json(['error' => 'خطأ في جلب المدرسين'], 500);
         }
-
-        Log::info('🔍 [STEP 4] Querying TEACHERS table', ['center_id' => $user->center_id]);
-
-        // ✅ الحل الكامل - status من users
-        $teachers = DB::table('teachers as t')
-            ->join('users as u', 't.user_id', '=', 'u.id')
-            ->where('u.center_id', $user->center_id)
-            ->where('t.role', 'teacher')
-            ->where('u.status', 'active') // ✅ status = 'active' مش active = 1
-            ->select(
-                'u.id',
-                'u.name'
-            )
-            ->orderBy('u.name')
-            ->limit(50)
-            ->get();
-
-        Log::info('✅ [STEP 5 SUCCESS] Teachers loaded', [
-            'count' => $teachers->count(),
-            'center_id' => $user->center_id,
-            'sample' => $teachers->take(2)->toArray()
-        ]);
-
-        return response()->json($teachers);
-
-    } catch (\Exception $e) {
-        Log::error('💥 [STEP 6 ERROR] Teachers EXCEPTION', [
-            'message' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-        ]);
-        return response()->json(['error' => 'خطأ في جلب المدرسين'], 500);
     }
-}
 
-
-
-
-
-    // ✅ 4️⃣ إنشاء موعد - مُصحح مع validation مرن + Debug
+    // ✅ 4️⃣ إنشاء موعد - مُصحح مع Jitsi room تلقائي + validation مرن + Debug
     public function store(Request $request)
     {
         Log::info('➕ [STEP 1] store() - Raw request data', $request->all());
 
-        // ✅ Validation مُصحح - duration_minutes nullable
         $validated = $request->validate([
             'plan_id' => 'required|exists:plans,id',
             'circle_id' => 'required|exists:circles,id',
@@ -143,7 +134,6 @@ public function getTeachersForCreate(Request $request)
 
         Log::info('✅ [STEP 2] Validation PASSED', $validated);
 
-        // ✅ تحقق أن الخطة للمركز
         $plan = DB::table('plans')->find($validated['plan_id']);
         if ($plan->center_id !== Auth::user()->center_id) {
             Log::error('❌ [STEP 3 FAILED] Plan not owned by center');
@@ -154,7 +144,6 @@ public function getTeachersForCreate(Request $request)
 
         DB::beginTransaction();
         try {
-            // ✅ حساب duration_minutes تلقائياً لو مش موجود
             $duration = $validated['duration_minutes'] ?? $this->calculateDuration(
                 $validated['start_time'],
                 $validated['end_time']
@@ -175,14 +164,18 @@ public function getTeachersForCreate(Request $request)
                 'booked_students' => 0,
             ]);
 
-            Log::info('✅ [STEP 5] Schedule record created', ['id' => $schedule->id]);
+            Log::info('✅ [STEP 5] Schedule record created مع Jitsi room', [
+                'id' => $schedule->id,
+                'jitsi_room_name' => $schedule->jitsi_room_name,
+                'jitsi_url' => $schedule->jitsi_url
+            ]);
 
             $schedule->load(['plan:id,plan_name', 'circle:id,name', 'teacher:id,name']);
 
             DB::commit();
-            Log::info('🎉 [STEP 6 SUCCESS] Schedule fully created + relations loaded', [
+            Log::info('🎉 [STEP 6 SUCCESS] Schedule fully created + Jitsi room', [
                 'id' => $schedule->id,
-                'plan' => $schedule->plan_name
+                'jitsi_room_name' => $schedule->jitsi_room_name
             ]);
 
             return response()->json($schedule, 201);
@@ -198,7 +191,6 @@ public function getTeachersForCreate(Request $request)
         }
     }
 
-    // ✅ Helper لحساب المدة
     private function calculateDuration($start, $end)
     {
         $start = DateTime::createFromFormat('H:i', $start);
@@ -206,7 +198,7 @@ public function getTeachersForCreate(Request $request)
         return $start->diff($end)->i;
     }
 
-    // ✅ باقي الـ methods بدون تغيير (كما هي عندك)
+    // ✅ باقي الـ methods محدثة ✅ $appends في Model مش محتاج append
     public function myCenterSchedules(Request $request)
     {
         Log::info('🔍 myCenterSchedules - START', ['user_id' => Auth::id()]);
@@ -218,7 +210,6 @@ public function getTeachersForCreate(Request $request)
                 'plan:id,plan_name,center_id',
                 'circle:id,name',
                 'teacher:id,name',
-                'bookings.student:id,name'
             ])
             ->whereHas('plan', fn($q) => $q->where('center_id', $centerId))
             ->where('is_available', true)
@@ -226,7 +217,7 @@ public function getTeachersForCreate(Request $request)
             ->orderBy('start_time')
             ->paginate(15);
 
-        Log::info('✅ myCenterSchedules - SUCCESS', [
+        Log::info('✅ myCenterSchedules - SUCCESS مع Jitsi', [
             'count' => $schedules->count(),
             'center_id' => $centerId
         ]);
@@ -242,7 +233,6 @@ public function getTeachersForCreate(Request $request)
                 'plan:id,plan_name,center_id',
                 'circle:id,name',
                 'teacher:id,name',
-                'bookings' => fn($q) => $q->whereIn('status', ['confirmed'])
             ])
             ->where('plan_id', $planId)
             ->where('is_available', true);
@@ -256,19 +246,36 @@ public function getTeachersForCreate(Request $request)
             ->orderBy('start_time')
             ->paginate(15);
 
-        Log::info('✅ Schedules loaded', ['count' => $schedules->count(), 'plan_id' => $planId]);
+        Log::info('✅ Schedules loaded مع Jitsi', [
+            'count' => $schedules->count(),
+            'plan_id' => $planId
+        ]);
 
         return response()->json($schedules);
     }
 
+    // ✅ إصلاح show() - Single object مش pagination
     public function show(PlanCircleSchedule $planCircleSchedule)
     {
         Log::info('👁️ Viewing schedule', ['id' => $planCircleSchedule->id]);
 
-        $schedule = $planCircleSchedule->loadCount('bookings')
-            ->load(['plan', 'circle', 'teacher', 'bookings.student']);
+        // ✅ تأكد من وجود الـ schedule
+        if (!$planCircleSchedule) {
+            Log::error('❌ Schedule not found', ['id' => $planCircleSchedule->id]);
+            return response()->json(['error' => 'الموعد غير موجود'], 404);
+        }
 
-        return response()->json($schedule);
+        $schedule = $planCircleSchedule
+            ->loadCount('bookings')
+            ->load(['plan:id,plan_name', 'circle:id,name', 'teacher:id,name']);
+
+        Log::info('✅ [SHOW] Single schedule مع Jitsi', [
+            'id' => $schedule->id,
+            'jitsi_room_name' => $schedule->jitsi_room_name ?? 'غير موجود',
+            'jitsi_url' => $schedule->jitsi_url ?? 'غير موجود'
+        ]);
+
+        return response()->json($schedule); // ✅ Single object مش pagination
     }
 
     public function update(Request $request, PlanCircleSchedule $planCircleSchedule)
@@ -282,22 +289,54 @@ public function getTeachersForCreate(Request $request)
             'circle_id' => 'sometimes|exists:circles,id',
             'teacher_id' => 'nullable|sometimes|exists:users,id',
             'schedule_date' => 'sometimes|date|after_or_equal:today',
-            'start_time' => 'sometimes',
-            'end_time' => 'sometimes|after:start_time',
-            'duration_minutes' => 'sometimes|integer|min:15',
-            'max_students' => 'nullable|sometimes|integer|min:1',
+            'start_time' => 'sometimes|date_format:H:i',
+            'end_time' => 'sometimes|date_format:H:i|after:start_time',
+            'duration_minutes' => 'sometimes|integer|min:15|max:300',
+            'max_students' => 'nullable|sometimes|integer|min:1|max:100',
             'is_available' => 'sometimes|boolean',
-            'notes' => 'nullable|sometimes'
+            'notes' => 'nullable|sometimes|string|max:1000',
+            'jitsi_room_name' => 'nullable|sometimes|string|max:50|unique:plan_circle_schedules,jitsi_room_name,' . $planCircleSchedule->id,
         ]);
+
+        // ✅ تحديث duration تلقائياً لو اتغيرت الأوقات
+        if (isset($validated['start_time']) && isset($validated['end_time'])) {
+            $validated['duration_minutes'] = $this->calculateDuration($validated['start_time'], $validated['end_time']);
+        }
 
         $planCircleSchedule->update($validated);
 
         $planCircleSchedule->refresh();
-        $planCircleSchedule->load(['plan', 'circle', 'teacher']);
+        $planCircleSchedule->load(['plan:id,plan_name', 'circle:id,name', 'teacher:id,name']);
 
-        Log::info('✅ Schedule updated', ['id' => $planCircleSchedule->id]);
+        Log::info('✅ Schedule updated مع Jitsi check', [
+            'id' => $planCircleSchedule->id,
+            'jitsi_room_name' => $planCircleSchedule->jitsi_room_name
+        ]);
 
         return response()->json($planCircleSchedule);
+    }
+
+    // ✅ 🔥 إضافة regenerateJitsiRoom method
+    public function regenerateJitsiRoom(PlanCircleSchedule $planCircleSchedule)
+    {
+        Log::info('🔄 Regenerating Jitsi room', ['schedule_id' => $planCircleSchedule->id]);
+
+        // ✅ إعادة توليد Jitsi room name جديد وفريد
+        $planCircleSchedule->generateUniqueJitsiRoom();
+        $planCircleSchedule->save();
+
+        Log::info('✅ Jitsi room regenerated successfully', [
+            'id' => $planCircleSchedule->id,
+            'old_room' => request()->old_jitsi_room ?? 'N/A',
+            'new_room' => $planCircleSchedule->jitsi_room_name,
+            'jitsi_url' => $planCircleSchedule->jitsi_url
+        ]);
+
+        return response()->json([
+            'message' => 'تم إنشاء غرفة Jitsi جديدة بنجاح',
+            'jitsi_room_name' => $planCircleSchedule->jitsi_room_name,
+            'jitsi_url' => $planCircleSchedule->jitsi_url
+        ]);
     }
 
     public function destroy(PlanCircleSchedule $planCircleSchedule)
@@ -345,3 +384,4 @@ public function getTeachersForCreate(Request $request)
         return response()->json(['message' => 'تم الحجز بنجاح!']);
     }
 }
+

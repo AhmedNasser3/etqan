@@ -1,6 +1,9 @@
+import { useAuthUser } from "./hooks/useAuthUser"; // ضبط المسار حسب مكان الهوك
 import EmailVerifyWidget from "../../../UserDashboard/widgets/EmailVerifyWidget";
 
 const Profile: React.FC = () => {
+    const { user, loading } = useAuthUser();
+
     return (
         <div className="userProfile">
             <div className="userProfile__features">
@@ -19,13 +22,28 @@ const Profile: React.FC = () => {
 
                                 <div className="testimonialsView__rating">
                                     <div className="testimonialsView__name">
-                                        <h1>عبدالله القحطاني</h1>
+                                        {loading ? (
+                                            <h1 className="animate-pulse bg-gray-200 h-8 w-48 rounded">
+                                                جاري التحميل...
+                                            </h1>
+                                        ) : (
+                                            <h1>
+                                                {user?.name ||
+                                                    "عبدالله القحطاني"}
+                                            </h1>
+                                        )}
                                     </div>
                                     <div className="testimonialsView__ratingStars"></div>
                                 </div>
+
+                                {/* ✅ صورة اليوزر */}
                                 <img
-                                    src="https://png.pngtree.com/png-vector/20250705/ourmid/pngtree-a-saudi-man-traditional-attire-middle-aged-wearing-white-thobe-and-png-image_16610073.webp"
-                                    alt="المعلم"
+                                    src={
+                                        user?.avatar ||
+                                        "https://png.pngtree.com/png-vector/20250705/ourmid/pngtree-a-saudi-man-traditional-attire-middle-aged-wearing-white-thobe-and-png-image_16610073.webp"
+                                    }
+                                    alt="المستخدم"
+                                    className="w-full h-full object-cover rounded-full"
                                 />
                             </div>
                         </div>
