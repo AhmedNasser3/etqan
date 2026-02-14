@@ -210,7 +210,7 @@ export const useStudentPlans = (
                                     circle_name:
                                         item.circle_name || "حلقة متاحة",
                                     mosque_name:
-                                        item.mosque_name || "مسجد التقوى",
+                                        item.mosque_name || "خاص بالمجمع",
                                     teacher_name:
                                         item.teacher_name || "معلم متاح",
                                     group: item.group || "",

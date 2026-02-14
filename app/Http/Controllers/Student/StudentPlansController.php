@@ -107,7 +107,7 @@ class StudentPlansController extends Controller
                     'time_range' => $startTime12Hour . ' - ' . $endTime12Hour,
                     'is_available' => $schedule->is_available,
                     'circle_name' => $schedule->circle->name ?? 'غير محدد',
-                    'mosque_name' => $schedule->circle->mosque->name ?? 'مسجد التقوى',
+                    'mosque_name' => $schedule->circle->mosque->name ?? 'خاص بالمجمع',
                     'teacher_name' => $schedule->teacher?->name ?? 'معلم متاح',
                     'group' => $schedule->circle->name . ' - ' . ($schedule->circle->mosque->name ?? 'مسجد'),
                     'plan_id' => $plan->id,

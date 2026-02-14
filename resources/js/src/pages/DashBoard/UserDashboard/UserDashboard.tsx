@@ -1,3 +1,4 @@
+import UserPlans from "./userPlans/UserPlans";
 import UserProfile from "./widgets/userProfile";
 
 const UserDashboard: React.FC = () => {
@@ -5,6 +6,7 @@ const UserDashboard: React.FC = () => {
         <div className="userDashboard">
             <div className="userDashboard__features">
                 <UserProfile />
+                <UserPlans />
             </div>
         </div>
     );

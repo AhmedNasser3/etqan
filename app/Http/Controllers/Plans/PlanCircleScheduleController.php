@@ -384,4 +384,3 @@ class PlanCircleScheduleController extends Controller
         return response()->json(['message' => 'تم الحجز بنجاح!']);
     }
 }
-

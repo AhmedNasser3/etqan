@@ -21,6 +21,7 @@ use App\Http\Controllers\Student\StudentAffairsController;
 use App\Http\Controllers\Student\StudentBookingsController;
 use App\Http\Controllers\Student\StudentPlansController;
 use App\Http\Controllers\Students\PendingStudentController;
+use App\Http\Controllers\Students\StudentUserController;
 use App\Http\Controllers\Students\TeacherStudentSessionsController;
 use App\Http\Controllers\Teachers\AttendanceController;
 use App\Http\Controllers\Teachers\TeacherController;
@@ -434,4 +435,9 @@ Route::prefix('v1')->name('api.v1.')->middleware('web')->group(function () {
         Route::patch('{id}/join', [TeacherStudentMeetingController::class, 'updateJoinStatus']);
         Route::delete('{id}', [TeacherStudentMeetingController::class, 'destroy']);
     });
+});
+// routes/api.php
+Route::middleware('web')->group(function () {
+    Route::get('/v1/user/next-meet', [StudentUserController::class, 'getNextMeet']);
+    Route::get('/v1/user/progress', [StudentUserController::class, 'getStudentProgress']); // ✅ نفس النمط
 });

@@ -56,7 +56,6 @@ const UserProfile: React.FC = () => {
                 </div>
 
                 {/* خططي الخاصة */}
-                <PlanCards type="my-plans" />
 
                 <div className="userProfile__doupleSide">
                     <Medals />
@@ -76,11 +75,11 @@ const UserProfile: React.FC = () => {
                 </div>
             </div>
 
-            {/* ✅ خطط متاحة للحجز */}
-            <PlanCards type="available" />
-
             {/* <Schedules /> */}
             <UserMeetCard />
+            <PlanCards type="my-plans" />
+            {/* ✅ خطط متاحة للحجز */}
+            <PlanCards type="available" />
         </div>
     );
 };

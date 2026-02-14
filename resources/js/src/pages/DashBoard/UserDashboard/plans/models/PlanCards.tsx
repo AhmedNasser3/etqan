@@ -380,23 +380,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         );
     }
 
-    if (!plans.length) {
-        return (
-            <div className="empty-state">
-                <h2 className="empty-state__title">
-                    {type === "available"
-                        ? "لا توجد خطط متاحة"
-                        : "لم تسجل في خطط بعد"}
-                </h2>
-                <p className="empty-state__subtitle">
-                    {type === "available"
-                        ? "تحقق من المراكز المتاحة لاحقاً"
-                        : "سجل في خطة لبدء رحلتك"}
-                </p>
-            </div>
-        );
-    }
-
     return (
         <div ref={containerRef} className="plan-cards-container">
             <header className="plan-cards-header">

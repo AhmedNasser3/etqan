@@ -128,12 +128,6 @@ const TeacherDashboard: React.FC = () => {
                                     {/* تفاصيل الحصة */}
                                     <div className="userProfile__meetDetails">
                                         <div className="userProfile__meetDate">
-                                            <h1>الحصة بعد:</h1>
-                                            <span>
-                                                {meetData.time_remaining}
-                                            </span>
-                                        </div>
-                                        <div className="userProfile__meetDate">
                                             <h1>الطالب/</h1>
                                             <span>{meetData.student_name}</span>
                                         </div>

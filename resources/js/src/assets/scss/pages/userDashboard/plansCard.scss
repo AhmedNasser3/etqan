@@ -114,10 +114,13 @@ $shadow-hover: 0 25px 60px rgba(0, 0, 0, 0.2);
 // MAIN PLAN CARD
 // ========================================
 .plan-card-container {
+    padding: 0 15%;
+    direction: rtl;
     position: relative;
 }
 
 .plan-card {
+    max-width: 600px;
     background: #fff;
     border: 1px solid rgba($dark-green, 0.1);
     border-radius: 20px;
