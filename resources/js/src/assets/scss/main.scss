@@ -464,3 +464,212 @@
     outline: 2px solid #3a854a;
     outline-offset: 2px;
 }
+// إحصائيات الحضور - التصميم الجديد
+.presence-stats-container {
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981, #f59e0b);
+    }
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    cursor: pointer;
+    overflow: hidden;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    &:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        border-color: rgba(75, 246, 59, 0.3);
+    }
+}
+
+// ✅ كلاسس مميزة لكل قسم
+.total-sessions {
+    .stat-icon {
+        .icon-circle {
+            background: linear-gradient(135deg, #6b7280, #9ca3af);
+        }
+
+        .stat-number {
+            color: #1e293b;
+        }
+
+        .stat-label {
+            color: #475569;
+        }
+    }
+
+    &::before {
+        background: linear-gradient(90deg, #6b7280, #9ca3af);
+    }
+}
+
+.present-sessions {
+    .stat-icon {
+        .icon-circle {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+
+        .stat-number {
+            color: #059669;
+        }
+
+        .stat-label {
+            color: #047857;
+        }
+    }
+
+    &::before {
+        background: linear-gradient(90deg, #10b981, #34d399);
+    }
+}
+
+.absent-sessions {
+    .stat-icon {
+        .icon-circle {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+        }
+
+        .stat-number {
+            color: #dc2626;
+        }
+
+        .stat-label {
+            color: #b91c1c;
+        }
+    }
+
+    &::before {
+        background: linear-gradient(90deg, #ef4444, #f87171);
+    }
+}
+
+// عناصر الـ stat card
+.stat-icon {
+    margin-bottom: 1rem;
+
+    .icon-circle {
+        display: block;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin: 0 auto 1rem;
+        position: relative;
+        animation: pulse 2s infinite;
+    }
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.9;
+}
+
+// ✅ سجلات معروضة
+.records-display {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(59, 246, 100, 0.1);
+    border-radius: 12px;
+    border: 2px solid rgba(81, 246, 59, 0.2);
+}
+
+.records-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #36612c, #36612c);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    margin-right: 0.5rem;
+    box-shadow: 0 4px 15px rgba(65, 246, 59, 0.3);
+}
+
+.records-count {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #36612c;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+// الـ Animations
+@keyframes pulse {
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    }
+}
+
+// Responsive
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .presence-stats-container {
+        padding: 1.5rem;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+    }
+}

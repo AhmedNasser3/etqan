@@ -2,22 +2,60 @@ import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
 import { PiTimerDuotone } from "react-icons/pi";
 import { FaStar } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-    studentsData,
-    upcomingSessionsData,
-    Student,
-    UpcomingSession,
-} from "./data";
+    useTeacherSchedules,
+    PlanSchedule,
+    TeacherStats,
+} from "./hooks/useTeacherSchedules";
+import axios from "axios";
+import toast from "react-hot-toast";
+
+// ✅ Mock Students data لحفظ الوظائف الموجودة
+interface Student {
+    id: number;
+    name: string;
+    sessionDate: string;
+    sessionTime: string;
+    attendance: "present" | "late" | "absent" | "pending";
+    recitation: "memorized" | "partial" | "failed" | "pending";
+    points: number;
+    notes: string;
+}
+
+const mockStudents: Student[] = [
+    {
+        id: 1,
+        name: "أحمد محمد",
+        sessionDate: "2026-02-15",
+        sessionTime: "10:00 - 11:00",
+        attendance: "present",
+        recitation: "memorized",
+        points: 25,
+        notes: "حفظ ممتاز",
+    },
+    {
+        id: 2,
+        name: "يوسف علي",
+        sessionDate: "2026-02-15",
+        sessionTime: "10:00 - 11:00",
+        attendance: "present",
+        recitation: "partial",
+        points: 15,
+        notes: "يحتاج مراجعة",
+    },
+];
 
 const TeacherTodayCircle: React.FC = () => {
-    const [students, setStudents] = useState<Student[]>(studentsData);
+    const [students, setStudents] = useState<Student[]>(mockStudents);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(
-        null
+        null,
     );
     const [quickRecitationModal, setQuickRecitationModal] = useState(false);
     const [aiReport, setAiReport] = useState("");
-    const upcomingSessions: UpcomingSession[] = upcomingSessionsData;
+
+    // ✅ جلب بيانات الخطط الحقيقية
+    const { schedules, stats, loading } = useTeacherSchedules();
 
     const getAttendanceIcon = (status: string) => {
         switch (status) {
@@ -49,21 +87,21 @@ const TeacherTodayCircle: React.FC = () => {
 
     const updateStudentAttendance = (
         studentId: number,
-        status: Student["attendance"]
+        status: Student["attendance"],
     ) => {
         setStudents((prev) =>
             prev.map((student) =>
                 student.id === studentId
                     ? { ...student, attendance: status }
-                    : student
-            )
+                    : student,
+            ),
         );
     };
 
     const updateStudentRecitation = (
         studentId: number,
         status: Student["recitation"],
-        notes?: string
+        notes?: string,
     ) => {
         setStudents((prev) =>
             prev.map((student) =>
@@ -73,36 +111,97 @@ const TeacherTodayCircle: React.FC = () => {
                           recitation: status,
                           notes: notes || student.notes,
                       }
-                    : student
-            )
+                    : student,
+            ),
         );
     };
 
-    const addPoints = (studentId: number, points: number) => {
-        setStudents((prev) =>
-            prev.map((student) =>
-                student.id === studentId
-                    ? { ...student, points: student.points + points }
-                    : student
-            )
-        );
+    const addPoints = async (studentId: number, points: number) => {
+        try {
+            // ✅ حفظ النقاط في API
+            await axios.post("/api/v1/teacher/achievements", {
+                user_id: studentId,
+                points,
+                points_action: "added",
+                reason: "تسميع اليوم",
+                achievement_type: "recitation",
+            });
+
+            setStudents((prev) =>
+                prev.map((student) =>
+                    student.id === studentId
+                        ? { ...student, points: student.points + points }
+                        : student,
+                ),
+            );
+            toast.success("تم إضافة النقاط بنجاح!");
+        } catch (error: any) {
+            toast.error(
+                "فشل في إضافة النقاط: " + error.response?.data?.message,
+            );
+        }
     };
 
-    const generateAIReport = () => {
+    const generateAIReport = (stats?: TeacherStats) => {
         const presentCount = students.filter(
-            (s) => s.attendance === "present"
+            (s) => s.attendance === "present",
         ).length;
         const totalPoints = students.reduce((sum, s) => sum + s.points, 0);
-        setAiReport(
-            `✅ جميع حصص 8/1 مكتملة بنجاح (${presentCount}/6 حضور). إجمالي النقاط: ${totalPoints}. أحسنت! الطلاب جاهزين للغد. راجع يوسف على الجزء الجزئي غداً.`
-        );
+
+        const report = `✅ جميع حصص اليوم مكتملة بنجاح (${presentCount}/${students.length} حضور).
+    إجمالي النقاط: ${totalPoints}.
+    ${stats ? `الحصص القادمة: ${stats.future_schedules}` : ""} أحسنت! الطلاب جاهزين للغد.`;
+
+        setAiReport(report);
     };
+
+    // ✅ تحديث التقرير عند تحميل الإحصائيات
+    useEffect(() => {
+        if (stats) {
+            generateAIReport(stats);
+        }
+    }, [stats]);
+
+    const todaySchedule = schedules.find(
+        (s) =>
+            new Date(s.schedule_date).toDateString() ===
+            new Date().toDateString(),
+    );
+
+    const getArabicDayName = (dayOfWeek: string) => {
+        const days = {
+            sunday: "الأحد",
+            monday: "الإثنين",
+            tuesday: "الثلاثاء",
+            wednesday: "الأربعاء",
+            thursday: "الخميس",
+            friday: "الجمعة",
+            saturday: "السبت",
+        };
+        return days[dayOfWeek as keyof typeof days] || dayOfWeek;
+    };
+
+    if (loading) {
+        return (
+            <div className="userProfile__plan flex items-center justify-center py-20">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p>جاري تحميل خططك...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="userProfile__plan" style={{ paddingBottom: "24px" }}>
             <div className="userProfile__planTitle">
                 <h1>
-                    حلقتي اليوم <span>السبت 11 يناير 2026</span>
+                    حلقتي اليوم{" "}
+                    <span>
+                        {todaySchedule
+                            ? `${getArabicDayName(todaySchedule.day_of_week)} ${new Date(todaySchedule.schedule_date).toLocaleDateString("ar-EG")}`
+                            : `${getArabicDayName("sunday")} ${new Date().toLocaleDateString("ar-EG")}`}
+                    </span>
                 </h1>
             </div>
 
@@ -116,6 +215,7 @@ const TeacherTodayCircle: React.FC = () => {
                 <div className="plan__current"></div>
             </div>
 
+            {/* ✅ جدول الطلاب (يبقى زي ما هو) */}
             <div className="plan__daily-table">
                 <table>
                     <thead>
@@ -135,9 +235,13 @@ const TeacherTodayCircle: React.FC = () => {
                             <tr
                                 key={student.id}
                                 className={`plan__row completed`}
+                                onClick={() => {
+                                    setSelectedStudent(student);
+                                    setQuickRecitationModal(true);
+                                }}
                             >
                                 <td>{index + 1}</td>
-                                <td className="font-semibold">
+                                <td className="font-semibold cursor-pointer">
                                     {student.name}
                                 </td>
                                 <td className="font-medium text-green-600">
@@ -150,7 +254,7 @@ const TeacherTodayCircle: React.FC = () => {
                                     <span className="flex justify-center">
                                         <span className="p-2 rounded-xl bg-green-100 text-green-700 border-2 border-green-200 w-10 h-10 flex items-center justify-center">
                                             {getAttendanceIcon(
-                                                student.attendance
+                                                student.attendance,
                                             )}
                                         </span>
                                     </span>
@@ -161,16 +265,16 @@ const TeacherTodayCircle: React.FC = () => {
                                             student.recitation === "memorized"
                                                 ? "bg-green-100 text-green-800"
                                                 : student.recitation ===
-                                                  "partial"
-                                                ? "bg-yellow-100 text-yellow-800"
-                                                : student.recitation ===
-                                                  "failed"
-                                                ? "bg-red-100 text-red-800"
-                                                : "bg-gray-100 text-gray-600"
+                                                    "partial"
+                                                  ? "bg-yellow-100 text-yellow-800"
+                                                  : student.recitation ===
+                                                      "failed"
+                                                    ? "bg-red-100 text-red-800"
+                                                    : "bg-gray-100 text-gray-600"
                                         }`}
                                     >
                                         {getRecitationStatus(
-                                            student.recitation
+                                            student.recitation,
                                         )}
                                     </span>
                                 </td>
@@ -188,6 +292,7 @@ const TeacherTodayCircle: React.FC = () => {
                 </table>
             </div>
 
+            {/* ✅ إحصائيات حقيقية من API */}
             <div className="plan__stats">
                 <div className="stat-card">
                     <div className="stat-icon greenColor">
@@ -197,7 +302,11 @@ const TeacherTodayCircle: React.FC = () => {
                     </div>
                     <div>
                         <h3>الحصص المكتملة</h3>
-                        <p className="text-2xl font-bold text-green-600">3/3</p>
+                        <p className="text-2xl font-bold text-green-600">
+                            {stats
+                                ? `${stats.available_schedules}/${stats?.total_schedules || 0}`
+                                : "0/0"}
+                        </p>
                     </div>
                 </div>
                 <div className="stat-card">
@@ -207,8 +316,18 @@ const TeacherTodayCircle: React.FC = () => {
                         </i>
                     </div>
                     <div>
-                        <h3>متوسط النقاط</h3>
-                        <p className="text-2xl font-bold text-blue-600">82</p>
+                        <h3>متوسط الحجوزات</h3>
+                        <p className="text-2xl font-bold text-blue-600">
+                            {stats
+                                ? Math.round(
+                                      ((stats.total_schedules -
+                                          stats.full_schedules) /
+                                          (stats.total_schedules || 1)) *
+                                          100,
+                                  )
+                                : 0}
+                            %
+                        </p>
                     </div>
                 </div>
                 <div className="stat-card">
@@ -219,11 +338,14 @@ const TeacherTodayCircle: React.FC = () => {
                     </div>
                     <div>
                         <h3>الحصص القادمة</h3>
-                        <p className="text-2xl font-bold text-yellow-600">5</p>
+                        <p className="text-2xl font-bold text-yellow-600">
+                            {stats?.future_schedules || 0}
+                        </p>
                     </div>
                 </div>
             </div>
 
+            {/* ✅ جدول الحلقات القادمة من API */}
             <div className="testimonials__mainTitle">
                 <h1>حلقاتك القادمة</h1>
             </div>
@@ -236,36 +358,50 @@ const TeacherTodayCircle: React.FC = () => {
                             <th>اليوم</th>
                             <th>وقت الحصة</th>
                             <th>عدد الطلاب</th>
-                            <th>الأسماء</th>
+                            <th>الخطة / الحلقة</th>
                             <th>الحالة</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {upcomingSessions.map((session, index) => (
-                            <tr key={session.id} className="plan__row pending">
+                        {schedules.slice(0, 5).map((schedule, index) => (
+                            <tr key={schedule.id} className="plan__row pending">
                                 <td>{index + 1}</td>
                                 <td className="font-semibold">
-                                    {session.date}
+                                    {new Date(
+                                        schedule.schedule_date,
+                                    ).toLocaleDateString("ar-EG")}
                                 </td>
-                                <td>{session.day}</td>
+                                <td>
+                                    {getArabicDayName(schedule.day_of_week)}
+                                </td>
                                 <td className="font-medium text-blue-600">
-                                    {session.time}
+                                    {schedule.start_time} - {schedule.end_time}
                                 </td>
                                 <td className="font-bold text-green-600 text-center">
-                                    {session.studentsCount}
+                                    {schedule.booked_students}/
+                                    {schedule.max_students}
                                 </td>
                                 <td className="text-sm">
                                     <span className="block truncate">
-                                        {session.students
-                                            .slice(0, 2)
-                                            .join("، ")}
-                                        {session.students.length > 2 &&
-                                            ` +${session.students.length - 2}`}
+                                        {schedule.plan_name} /{" "}
+                                        {schedule.circle_name}
                                     </span>
                                 </td>
                                 <td>
-                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
-                                        قادمة
+                                    <span
+                                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                            schedule.is_available
+                                                ? "bg-yellow-100 text-yellow-800"
+                                                : schedule.remaining_slots > 0
+                                                  ? "bg-green-100 text-green-800"
+                                                  : "bg-red-100 text-red-800"
+                                        }`}
+                                    >
+                                        {schedule.is_available
+                                            ? "متاحة"
+                                            : schedule.remaining_slots > 0
+                                              ? "قادمة"
+                                              : "ممتلئة"}
                                     </span>
                                 </td>
                             </tr>
@@ -274,6 +410,7 @@ const TeacherTodayCircle: React.FC = () => {
                 </table>
             </div>
 
+            {/* ✅ نفس Modal الخاص بالتسميع */}
             {quickRecitationModal && selectedStudent && (
                 <div
                     className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -307,7 +444,7 @@ const TeacherTodayCircle: React.FC = () => {
                                             .value as Student["recitation"];
                                         updateStudentRecitation(
                                             selectedStudent.id,
-                                            status
+                                            status,
                                         );
                                     }}
                                 >
@@ -332,7 +469,7 @@ const TeacherTodayCircle: React.FC = () => {
                                         updateStudentRecitation(
                                             selectedStudent.id,
                                             selectedStudent.recitation,
-                                            e.target.value
+                                            e.target.value,
                                         )
                                     }
                                 />

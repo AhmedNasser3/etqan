@@ -1,4 +1,4 @@
-// UserProgress.tsx - كاملة بكل حاجة
+// UserProgress.tsx - مُصححة نهائياً
 import { RiRobot2Fill } from "react-icons/ri";
 import { FaStar } from "react-icons/fa";
 import { useStudentProgress } from "./hooks/useStudentProgress";
@@ -68,6 +68,7 @@ const UserProgress: React.FC = () => {
                         <h1>ملاحظات المعلمين</h1>
                     </div>
 
+                    {/* ✅ إصلاح input warning - استخدم defaultValue + readOnly */}
                     <div className="userProfile__plan" id="userProfile__plan">
                         <div className="plan__header">
                             <div className="plan__ai-suggestion">
@@ -80,11 +81,19 @@ const UserProgress: React.FC = () => {
                                 <div className="plan__date-range">
                                     <div className="date-picker to">
                                         <label>إلى</label>
-                                        <input type="date" value="" />
+                                        <input
+                                            type="date"
+                                            defaultValue=""
+                                            readOnly
+                                        />
                                     </div>
                                     <div className="date-picker from">
                                         <label>من</label>
-                                        <input type="date" value="" />
+                                        <input
+                                            type="date"
+                                            defaultValue=""
+                                            readOnly
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -92,51 +101,85 @@ const UserProgress: React.FC = () => {
                     </div>
 
                     <div className="userProgress__content">
-                        {lessons.map((lesson) => (
-                            <div
-                                key={lesson.id}
-                                className="userProgress__comments"
-                            >
-                                <div className="userProgress__title">
-                                    <h1>
-                                        الحصة بتاريخ:{" "}
-                                        <span>{lesson.attendance_date}</span>
-                                    </h1>
-                                </div>
-                                <div className="userProgress__data">
-                                    <h4>{lesson.surah_name}</h4>
-                                    {lesson.new_memorization && (
-                                        <h2>
-                                            محتوي الحصة:{" "}
+                        {lessons.map((lesson: any) => {
+                            // ✅ Rating = 3 → 3 نجوم ذهبي + 2 رمادي
+                            const filledStars = Math.floor(
+                                Number(lesson.rating) || 0,
+                            );
+                            const emptyStars = 5 - filledStars;
+
+                            console.log(
+                                `درس ${lesson.id}: rating=${lesson.rating}, filledStars=${filledStars}`,
+                            );
+
+                            return (
+                                <div
+                                    key={lesson.id}
+                                    className="userProgress__comments"
+                                >
+                                    <div className="userProgress__title">
+                                        <h1>
+                                            الحصة بتاريخ:{" "}
                                             <span>
-                                                {lesson.new_memorization}
+                                                {lesson.attendance_date}
                                             </span>
-                                        </h2>
-                                    )}
-                                    {lesson.review_memorization && (
-                                        <h2>
-                                            مراجعة {lesson.review_memorization}
-                                        </h2>
-                                    )}
-                                </div>
-                                <div className="userProgress__comment">
-                                    <h1>تعليق المعلم :-</h1>
-                                    <h2>{lesson.note}</h2>
-                                </div>
-                                <h1>تقييم مستوي الطالب لهذه الحصة</h1>
-                                <div className="userProgress__rate">
-                                    <div className="testimonialsView__ratingStars">
-                                        {Array(5)
-                                            .fill(0)
-                                            .map((_, i) => (
-                                                <i key={i}>
-                                                    <FaStar />
-                                                </i>
-                                            ))}
+                                        </h1>
+                                    </div>
+                                    <div className="userProgress__data">
+                                        <h4>{lesson.surah_name}</h4>
+                                        {lesson.new_memorization && (
+                                            <h2>
+                                                محتوي الحصة:{" "}
+                                                <span>
+                                                    {lesson.new_memorization}
+                                                </span>
+                                            </h2>
+                                        )}
+                                        {lesson.review_memorization && (
+                                            <h2>
+                                                مراجعة{" "}
+                                                {lesson.review_memorization}
+                                            </h2>
+                                        )}
+                                    </div>
+                                    <div className="userProgress__comment">
+                                        <h1>تعليق المعلم :-</h1>
+                                        <h2>{lesson.note}</h2>
+                                    </div>
+                                    <h1>تقييم مستوي الطالب لهذه الحصة</h1>
+                                    <div className="userProgress__rate">
+                                        <div
+                                            className="testimonialsView__ratingStars"
+                                            dir="ltr"
+                                        >
+                                            {/* ✅ نجوم ملونة (filled) */}
+                                            {Array(filledStars)
+                                                .fill(0)
+                                                .map((_, i) => (
+                                                    <i
+                                                        key={`filled-${lesson.id}-${i}`}
+                                                        className="text-yellow-400 text-xl"
+                                                    >
+                                                        <FaStar />
+                                                    </i>
+                                                ))}
+
+                                            {/* ✅ نجوم رمادي (empty) */}
+                                            {Array(emptyStars)
+                                                .fill(0)
+                                                .map((_, i) => (
+                                                    <i
+                                                        key={`empty-${lesson.id}-${i}`}
+                                                        className="text-gray-300 text-xl"
+                                                    >
+                                                        <FaStar />
+                                                    </i>
+                                                ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>

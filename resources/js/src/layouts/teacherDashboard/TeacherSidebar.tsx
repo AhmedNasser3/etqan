@@ -56,7 +56,6 @@ const TeacherSidebar: React.FC = () => {
                                 </a>
                             </div>
                         </div>
-
                         {/* Students */}
                         <div
                             className={`sidebar__data ${
@@ -72,7 +71,6 @@ const TeacherSidebar: React.FC = () => {
                                 </a>
                             </div>
                         </div>
-
                         {/* Plans */}
                         <div
                             className={`sidebar__data ${
@@ -88,7 +86,6 @@ const TeacherSidebar: React.FC = () => {
                                 </a>
                             </div>
                         </div>
-
                         {/* Motivation */}
                         <div
                             className={`sidebar__data ${
@@ -104,7 +101,6 @@ const TeacherSidebar: React.FC = () => {
                                 </a>
                             </div>
                         </div>
-
                         {/* Attendance */}
                         <div
                             className={`sidebar__data ${
@@ -120,23 +116,6 @@ const TeacherSidebar: React.FC = () => {
                                 </a>
                             </div>
                         </div>
-
-                        {/* Room */}
-                        <div
-                            className={`sidebar__data ${
-                                activePage === "room" ? "active" : ""
-                            }`}
-                        >
-                            <div className="sidebar__title">
-                                <a href="/teacher-dashboard/room">
-                                    <i>
-                                        <FaVideo />
-                                    </i>
-                                    <h2>غرفة التسميع</h2>
-                                </a>
-                            </div>
-                        </div>
-
                         {/* Reports */}
                         <div
                             className={`sidebar__data ${
@@ -152,7 +131,6 @@ const TeacherSidebar: React.FC = () => {
                                 </a>
                             </div>
                         </div>
-
                         {/* Certificates */}
                         <div
                             className={`sidebar__data ${
@@ -168,9 +146,8 @@ const TeacherSidebar: React.FC = () => {
                                 </a>
                             </div>
                         </div>
-
                         {/* Messages */}
-                        <div
+                        {/* <div
                             className={`sidebar__data ${
                                 activePage === "messages" ? "active" : ""
                             }`}
@@ -183,7 +160,7 @@ const TeacherSidebar: React.FC = () => {
                                     <h2>الرسائل</h2>
                                 </a>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>

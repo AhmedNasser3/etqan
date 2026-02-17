@@ -68,6 +68,7 @@ import CenterPage from "./src/pages/DashBoard/Center/pages/Center";
 import CentersPage from "./src/pages/DashBoard/Center/pages/CentersPage";
 import EditAccountPage from "./src/pages/DashBoard/AccountEdit/EditAccountPage";
 import MeetingsManagement from "./src/pages/DashBoard/Meeting/MeetingsManagement";
+import TeacherAchievementList from "./src/pages/DashBoard/teacherDashboard/widgets/TeacherMotivate/TeacherAchievementList";
 
 function UserLayout() {
     return (
@@ -284,7 +285,7 @@ function App() {
                         <Route path="plan" element={<TeacherPlan />} />
                         <Route
                             path="motivation"
-                            element={<TeacherMotivate />}
+                            element={<TeacherAchievementList />}
                         />
                         <Route
                             path="attendance"

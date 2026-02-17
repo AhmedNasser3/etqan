@@ -28,6 +28,7 @@ use App\Http\Controllers\Teachers\TeacherController;
 use App\Http\Controllers\Teachers\TeacherPayrollController;
 use App\Http\Controllers\Teachers\TeacherRoomController;
 use App\Http\Controllers\Teachers\TeacherSalaryController;
+use App\Http\Controllers\Teachers\TeacherStudentsController;
 use App\Http\Controllers\User\FeaturedController;
 use App\Http\Controllers\Users\UserSuspendController;
 use App\Models\Auth\User;
@@ -439,5 +440,27 @@ Route::prefix('v1')->name('api.v1.')->middleware('web')->group(function () {
 // routes/api.php
 Route::middleware('web')->group(function () {
     Route::get('/v1/user/next-meet', [StudentUserController::class, 'getNextMeet']);
-    Route::get('/v1/user/progress', [StudentUserController::class, 'getStudentProgress']); // ✅ نفس النمط
+    Route::get('/v1/user/progress', [StudentUserController::class, 'getStudentProgress']);
+    Route::get('/v1/user/presence', [StudentUserController::class, 'getStudentPresence']);
+    Route::get('/v1/user/complex', [StudentUserController::class, 'getUserComplex']);
+
+    // ✅ روت الطلاب الفريدين للمعلم
+    Route::get('/v1/teacher/unique-students', [TeacherStudentsController::class, 'getUniqueStudents']);
+
+    // ✅ روت تغيير حالة الطالب
+    Route::post('/v1/teacher/students/{studentId}/toggle-status', [TeacherStudentsController::class, 'toggleStudentStatus']);
+
+    // ✅ ============ إنجازات طلاب المعلم ============
+
+    // جلب طلاب المعلم للإنجازات
+    Route::get('/v1/teacher/students', [TeacherStudentsController::class, 'getTeacherStudents']);
+
+    // عرض جميع إنجازات طلاب المعلم
+    Route::get('/v1/teacher/achievements', [TeacherStudentsController::class, 'index']);
+
+    // إضافة إنجاز جديد لطالب
+    Route::post('/v1/teacher/achievements', [TeacherStudentsController::class, 'store']);
+
+    // حساب النقاط الصافية للطالب
+    Route::get('/v1/teacher/students/{studentId}/points', [TeacherStudentsController::class, 'studentTotalPoints']);
 });

@@ -1,40 +1,49 @@
-// hooks/useStudentProgress.ts
+// hooks/useStudentPresence.ts - مع created_at صحيح
 import { useState, useEffect } from "react";
 
-interface LessonNote {
+interface PresenceRecord {
     id: number;
-    attendance_date: string;
-    note: string;
-    rating: number; // ✅ من student_attendance.rating (0-5)
+    attendance_date: string; // ✅ من sa.created_at
     surah_name: string;
     new_memorization: string | null;
     review_memorization: string | null;
+    status: "حاضر" | "غائب" | "لم يتم تسجيل";
+    note: string | null;
+    recorded_at: string; // ✅ وقت التسجيل الفعلي
 }
 
-interface ProgressData {
+interface PresenceStats {
+    total: number;
+    present: number;
+    absent: number;
+    attendance_rate: number;
+}
+
+interface PresenceData {
     success: boolean;
-    overall_progress: number;
-    lessons: LessonNote[];
+    presence_records: PresenceRecord[];
+    stats: PresenceStats;
 }
 
-export const useStudentProgress = () => {
-    const [data, setData] = useState<ProgressData | null>(null);
+export const useStudentPresence = () => {
+    const [data, setData] = useState<PresenceData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchProgress = async () => {
+        const fetchPresence = async () => {
             try {
                 setLoading(true);
                 setError(null);
 
-                console.log("🚀 بداية جلب بيانات التقدم...");
+                console.log("📋 بداية جلب بيانات الحضور والغياب...");
 
                 // ✅ 1. CSRF Cookie
                 await fetch("/sanctum/csrf-cookie", {
                     method: "GET",
                     credentials: "include",
                 });
+                console.log("✅ CSRF Cookie جاهز");
 
                 // ✅ 2. CSRF Token
                 const metaToken = document
@@ -52,28 +61,10 @@ export const useStudentProgress = () => {
                     getCookie("XSRF-TOKEN") ||
                     getCookie("csrf-token");
 
-                // ✅ 3. User session
-                const sessionResponse = await fetch("/api/user", {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        Accept: "application/json",
-                        "X-Requested-With": "XMLHttpRequest",
-                        ...(csrfToken && { "X-CSRF-TOKEN": csrfToken }),
-                    },
-                });
+                console.log("🔑 CSRF Token:", !!csrfToken);
 
-                const sessionData = await sessionResponse.json();
-                const userId = sessionData.id || sessionData.user?.id;
-
-                console.log("👤 User ID:", userId);
-
-                if (!userId) {
-                    throw new Error("غير مسجل دخول");
-                }
-
-                // ✅ 4. بيانات التقدم
-                const response = await fetch("/api/v1/user/progress", {
+                // ✅ 3. جلب بيانات الحضور
+                const response = await fetch("/api/v1/user/presence", {
                     method: "GET",
                     credentials: "include",
                     headers: {
@@ -84,40 +75,45 @@ export const useStudentProgress = () => {
                     },
                 });
 
-                console.log("📡 Response status:", response.status);
+                console.log("📡 Presence Response status:", response.status);
 
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error("❌ Response body:", errorText);
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
 
                 const result = await response.json();
-                console.log("✅ Result lessons:", result.lessons);
+                console.log("✅ Presence Result:", result);
 
-                // ✅ Debug الـ rating values
-                result.lessons?.forEach((lesson: any, index: number) => {
-                    console.log(
-                        `درس ${index + 1} - Rating:`,
-                        lesson.rating,
-                        typeof lesson.rating,
+                // ✅ Debug للتواريخ
+                if (result.success && result.presence_records) {
+                    result.presence_records.forEach(
+                        (record: any, index: number) => {
+                            console.log(`درس ${index + 1}:`, {
+                                id: record.id,
+                                attendance_date: record.attendance_date, // created_at
+                                recorded_at: record.recorded_at, // وقت التسجيل
+                                status: record.status,
+                            });
+                        },
                     );
-                });
+                }
 
                 if (result.success) {
                     setData(result);
                 } else {
-                    setError(result.message || "خطأ في جلب البيانات");
+                    setError(result.message || "خطأ في جلب بيانات الحضور");
                 }
             } catch (err: any) {
-                console.error("❌ Progress fetch error:", err);
-                setError(err.message || "حدث خطأ في جلب بيانات التقدم");
+                console.error("❌ Presence fetch error:", err);
+                setError(err.message || "حدث خطأ في جلب بيانات الحضور");
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchProgress();
+        fetchPresence();
     }, []);
 
     return { data, loading, error };

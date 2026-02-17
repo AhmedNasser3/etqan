@@ -5,6 +5,7 @@ import { PiWhatsappLogoDuotone } from "react-icons/pi";
 import { FaStar } from "react-icons/fa";
 import { GoGoal } from "react-icons/go";
 import { useStudentPlans } from "./hooks/useStudentPlans";
+import { SiBookstack } from "react-icons/si";
 
 const UserPlans: React.FC = () => {
     const {
