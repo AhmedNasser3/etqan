@@ -1,124 +1,142 @@
+// TeacherPlan.tsx - الكامل مع التاريخ واليوم الحالي من React ✅
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
 import { PiTimerDuotone } from "react-icons/pi";
 import { FaStar } from "react-icons/fa";
-import { useState } from "react";
-import {
-    studentsData,
-    upcomingSessionsData,
-    Student,
-    UpcomingSession,
-} from "./data.ts";
+import { useState, useMemo } from "react";
 import Profile from "../dashboard/profile.js";
+import { useTeacherPlan, UpcomingSession } from "./hooks/useTeacherPlan";
 
 const TeacherPlan: React.FC = () => {
-    const [students, setStudents] = useState<Student[]>(studentsData);
-    const [selectedStudent, setSelectedStudent] = useState<Student | null>(
-        null
-    );
+    const [students, setStudents] = useState<any[]>([]);
+    const [selectedStudent, setSelectedStudent] = useState<any>(null);
     const [quickRecitationModal, setQuickRecitationModal] = useState(false);
     const [aiReport, setAiReport] = useState("");
-    const upcomingSessions: UpcomingSession[] = upcomingSessionsData;
 
-    const getAttendanceIcon = (status: string) => {
-        switch (status) {
-            case "present":
-                return (
-                    <GrStatusGood className="teacherPlan__attendance-icon--present" />
-                );
-            case "late":
-                return (
-                    <PiTimerDuotone className="teacherPlan__attendance-icon--late" />
-                );
-            case "absent":
-                return (
-                    <GrStatusCritical className="teacherPlan__attendance-icon--absent" />
-                );
-            default:
-                return (
-                    <PiTimerDuotone className="teacherPlan__attendance-icon--pending" />
-                );
+    const { upcomingSessions, loading, error, refetch } = useTeacherPlan();
+
+    // ✅ التاريخ واليوم الحالي من React (ديناميكي)
+    const todayInfo = useMemo(() => {
+        const today = new Date();
+        const egyptTime = new Date(today.getTime() + 2 * 60 * 60 * 1000); // EET +2
+
+        const days = [
+            "الأحد",
+            "الإثنين",
+            "الثلاثاء",
+            "الأربعاء",
+            "الخميس",
+            "الجمعة",
+            "السبت",
+        ];
+        const months = [
+            "يناير",
+            "فبراير",
+            "مارس",
+            "أبريل",
+            "مايو",
+            "يونيو",
+            "يوليو",
+            "أغسطس",
+            "سبتمبر",
+            "أكتوبر",
+            "نوفمبر",
+            "ديسمبر",
+        ];
+
+        const dayName = days[egyptTime.getDay()];
+        const day = egyptTime.getDate();
+        const month = months[egyptTime.getMonth()];
+        const year = egyptTime.getFullYear();
+
+        return {
+            dayName,
+            formattedDate: `${day} ${month} ${year}`,
+            fullDate: `${dayName} ${day} ${month} ${year}`,
+        };
+    }, []);
+
+    // ✅ تنسيق الوقت 10:15:00 → 10:15 ص
+    const formatTime = (timeString: string): string => {
+        try {
+            const [hourStr, minuteStr] = timeString.split(":");
+            const hour = parseInt(hourStr);
+            const period = hour >= 12 ? "م" : "ص";
+            const displayHour = hour > 12 ? hour - 12 : hour || 12;
+            return `${displayHour}:${minuteStr} ${period}`;
+        } catch {
+            return timeString;
         }
     };
 
-    const getRecitationStatus = (status: string) => {
-        switch (status) {
-            case "memorized":
-                return "حفظ كامل";
-            case "partial":
-                return "حفظ جزئي";
-            case "failed":
-                return "غير محفوظ";
-            case "pending":
-                return "قيد الانتظار";
-            default:
-                return "غير محدد";
-        }
-    };
-
-    const getRecitationClass = (status: string) => {
-        switch (status) {
-            case "memorized":
-                return "teacherPlan__recitation memorized";
-            case "partial":
-                return "teacherPlan__recitation partial";
-            case "failed":
-                return "teacherPlan__recitation failed";
-            default:
-                return "teacherPlan__recitation pending";
-        }
-    };
-
-    const updateStudentAttendance = (
-        studentId: number,
-        status: Student["attendance"]
-    ) => {
-        setStudents((prev) =>
-            prev.map((student) =>
-                student.id === studentId
-                    ? { ...student, attendance: status }
-                    : student
-            )
+    // Loading State
+    if (loading) {
+        return (
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: "2rem",
+                    fontSize: "18px",
+                    color: "#666",
+                    minHeight: "400px",
+                }}
+            >
+                ⏳ جاري تحميل خطتك اليومية...
+            </div>
         );
-    };
+    }
 
-    const updateStudentRecitation = (
-        studentId: number,
-        status: Student["recitation"],
-        notes?: string
-    ) => {
-        setStudents((prev) =>
-            prev.map((student) =>
-                student.id === studentId
-                    ? {
-                          ...student,
-                          recitation: status,
-                          notes: notes || student.notes,
-                      }
-                    : student
-            )
+    // Error State
+    if (error) {
+        return (
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: "2rem",
+                    background: "#f8d7da",
+                    borderRadius: "8px",
+                    color: "#721c24",
+                    margin: "1rem",
+                }}
+            >
+                ❌ خطأ في تحميل الحلقات: {error}
+                <div style={{ marginTop: "1rem" }}>
+                    <button
+                        onClick={refetch}
+                        style={{
+                            padding: "10px 20px",
+                            background: "#007bff",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            marginRight: "10px",
+                        }}
+                    >
+                        🔄 إعادة المحاولة
+                    </button>
+                    <button
+                        onClick={() => window.location.reload()}
+                        style={{
+                            padding: "10px 20px",
+                            background: "#6c757d",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                        }}
+                    >
+                        🔄 إعادة تحميل الصفحة
+                    </button>
+                </div>
+            </div>
         );
-    };
-
-    const addPoints = (studentId: number, points: number) => {
-        setStudents((prev) =>
-            prev.map((student) =>
-                student.id === studentId
-                    ? { ...student, points: student.points + points }
-                    : student
-            )
-        );
-    };
-
-    const generateAIReport = () => {
-        const presentCount = students.filter(
-            (s) => s.attendance === "present"
-        ).length;
-        const totalPoints = students.reduce((sum, s) => sum + s.points, 0);
-        setAiReport(
-            `✅ جميع حصص 8/1 مكتملة بنجاح (${presentCount}/6 حضور). إجمالي النقاط: ${totalPoints}. أحسنت! الطلاب جاهزين للغد. راجع يوسف على الجزء الجزئي غداً.`
-        );
-    };
+    }
 
     return (
         <>
@@ -127,6 +145,7 @@ const TeacherPlan: React.FC = () => {
                 className="userProfile__plan"
                 style={{ paddingBottom: "24px" }}
             >
+                {/* Stats Cards */}
                 <div className="plan__stats">
                     <div className="stat-card">
                         <div className="stat-icon greenColor">
@@ -147,161 +166,134 @@ const TeacherPlan: React.FC = () => {
                             </i>
                         </div>
                         <div>
-                            <h3>الحصص القادمة</h3>
-                            <p className="teacherPlan__stat-number">5</p>
+                            <h3>الحصص المتاحة</h3>
+                            <p className="teacherPlan__stat-number">
+                                {upcomingSessions.length}
+                            </p>
                         </div>
                     </div>
                 </div>
 
+                {/* Title */}
                 <div className="testimonials__mainTitle">
-                    <h1>حلقاتك القادمة</h1>
-                </div>
-                <div className="plan__daily-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>التاريخ</th>
-                                <th>اليوم</th>
-                                <th>وقت الحصة</th>
-                                <th>عدد الطلاب</th>
-                                <th>الأسماء</th>
-                                <th>الحالة</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {upcomingSessions.map((session, index) => (
-                                <tr
-                                    key={session.id}
-                                    className="plan__row pending"
-                                >
-                                    <td>{index + 1}</td>
-                                    <td className="teacherPlan__session-date">
-                                        {session.date}
-                                    </td>
-                                    <td>{session.day}</td>
-                                    <td className="teacherPlan__session-time">
-                                        {session.time}
-                                    </td>
-                                    <td className="teacherPlan__students-count">
-                                        {session.studentsCount}
-                                    </td>
-                                    <td className="teacherPlan__students-names">
-                                        <span>
-                                            {session.students
-                                                .slice(0, 2)
-                                                .join("، ")}
-                                            {session.students.length > 2 &&
-                                                ` +${
-                                                    session.students.length - 2
-                                                }`}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className="teacherPlan__status-upcoming">
-                                            قادمة
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <h1>حلقاتك المتاحة</h1>
                 </div>
 
-                {quickRecitationModal && selectedStudent && (
+                {/* حالة عدم وجود حلقات */}
+                {upcomingSessions.length === 0 ? (
                     <div
-                        className="teacherPlan__modal-overlay"
-                        style={{ zIndex: 9999 }}
+                        style={{
+                            textAlign: "center",
+                            padding: "4rem 2rem",
+                            background: "#f8f9fa",
+                            borderRadius: "12px",
+                            border: "2px dashed #dee2e6",
+                            margin: "2rem 0",
+                        }}
                     >
-                        <div className="teacherPlan__modal">
-                            <div className="teacherPlan__modal-header">
-                                <h3>
-                                    تسميع سريع
-                                    <span>{selectedStudent.name}</span>
-                                </h3>
-                                <button
-                                    onClick={() =>
-                                        setQuickRecitationModal(false)
-                                    }
-                                    className="teacherPlan__modal-close"
-                                >
-                                    ×
-                                </button>
-                            </div>
-
-                            <div className="teacherPlan__modal-content">
-                                <div>
-                                    <label className="teacherPlan__modal-label">
-                                        نتيجة التسميع
-                                    </label>
-                                    <select
-                                        className="teacherPlan__modal-select"
-                                        onChange={(e) => {
-                                            const status = e.target
-                                                .value as Student["recitation"];
-                                            updateStudentRecitation(
-                                                selectedStudent.id,
-                                                status
-                                            );
-                                        }}
-                                    >
-                                        <option value="pending">
-                                            قيد الانتظار
-                                        </option>
-                                        <option value="memorized">
-                                            حفظ كامل
-                                        </option>
-                                        <option value="partial">
-                                            حفظ جزئي
-                                        </option>
-                                        <option value="failed">
-                                            غير محفوظ
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="teacherPlan__modal-label">
-                                        ملاحظات
-                                    </label>
-                                    <textarea
-                                        className="teacherPlan__modal-textarea"
-                                        rows={3}
-                                        defaultValue={selectedStudent.notes}
-                                        onBlur={(e) =>
-                                            updateStudentRecitation(
-                                                selectedStudent.id,
-                                                selectedStudent.recitation,
-                                                e.target.value
-                                            )
-                                        }
-                                    />
-                                </div>
-
-                                <div className="teacherPlan__modal-actions">
-                                    <button
-                                        className="teacherPlan__modal-save-btn"
-                                        onClick={() => {
-                                            addPoints(selectedStudent.id, 25);
-                                            setQuickRecitationModal(false);
-                                        }}
-                                    >
-                                        حفظ وإضافة 25 نقطة
-                                    </button>
-                                    <button
-                                        className="teacherPlan__modal-cancel-btn"
-                                        onClick={() =>
-                                            setQuickRecitationModal(false)
-                                        }
-                                    >
-                                        إلغاء
-                                    </button>
-                                </div>
-                            </div>
+                        <div style={{ fontSize: "24px", marginBottom: "1rem" }}>
+                            📭 لا توجد حلقات متاحة حالياً
                         </div>
+                        <div style={{ color: "#6c757d", marginBottom: "2rem" }}>
+                            تأكد من وجود حلقات بـ{" "}
+                            <strong>is_available = true</strong>
+                            <br />
+                            <small>اليوم: {todayInfo.fullDate}</small>
+                        </div>
+                        <button
+                            onClick={refetch}
+                            style={{
+                                padding: "12px 24px",
+                                background: "#28a745",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "8px",
+                                fontSize: "16px",
+                                cursor: "pointer",
+                            }}
+                        >
+                            🔄 تحديث البيانات
+                        </button>
+                    </div>
+                ) : (
+                    /* ✅ جدول مُحدث - التاريخ واليوم الحالي فقط */
+                    <div className="plan__daily-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>وقت الحصة</th>
+                                    <th>عدد الطلاب</th>
+                                    <th>التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {upcomingSessions.map(
+                                    (
+                                        session: UpcomingSession,
+                                        index: number,
+                                    ) => (
+                                        <tr
+                                            key={session.id}
+                                            className="plan__row pending"
+                                        >
+                                            <td>{index + 1}</td>
+                                            <td className="teacherPlan__session-time">
+                                                <span>من</span>
+                                                {formatTime(session.start_time)}
+                                                <br />
+                                                <span>الي</span>
+                                                {formatTime(session.end_time)}
+                                            </td>
+                                            <td className="teacherPlan__students-count">
+                                                {session.booked_students}/
+                                                {session.max_students || "∞"}
+                                            </td>
+                                            <td
+                                                colSpan={2}
+                                                style={{
+                                                    textAlign: "center",
+                                                    padding: "12px 0",
+                                                }}
+                                            >
+                                                {/* ✅ البيانات من Backend بس الوقت */}
+                                                <div
+                                                    colSpan={2}
+                                                    style={{
+                                                        textAlign: "center",
+                                                    }}
+                                                >
+                                                    {/* ✅ التاريخ واليوم الحالي ديناميكي */}
+                                                    <div
+                                                        style={{
+                                                            fontWeight: "600",
+                                                            color: "#495057",
+                                                            marginBottom: "5px",
+                                                        }}
+                                                    >
+                                                        {todayInfo.dayName}
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: "14px",
+                                                            color: "#6c757d",
+                                                        }}
+                                                    >
+                                                        {
+                                                            todayInfo.formattedDate
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ),
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 
+                {/* AI Report */}
                 {aiReport && (
                     <div className="plan__ai-suggestion teacherPlan__ai-report">
                         <i>

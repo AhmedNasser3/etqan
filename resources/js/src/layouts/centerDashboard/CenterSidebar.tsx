@@ -243,14 +243,14 @@ const CenterSidebar: React.FC = () => {
                     href: "/center-dashboard/financial-dashboard",
                     title: "اللوحة المالية",
                 },
-                {
-                    href: "/center-dashboard/payroll-exports",
-                    title: "مسيرات الرواتب",
-                },
-                {
-                    href: "/center-dashboard/payroll-reports",
-                    title: "تقارير الدوام",
-                },
+                // {
+                //     href: "/center-dashboard/payroll-exports",
+                //     title: "مسيرات الرواتب",
+                // },
+                // {
+                //     href: "/center-dashboard/payroll-reports",
+                //     title: "تقارير الدوام",
+                // },
                 {
                     href: "/center-dashboard/teaceher-salary-manegment",
                     title: "قواعد الراتب",

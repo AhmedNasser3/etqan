@@ -14,6 +14,7 @@ use App\Http\Controllers\Plans\PlanCircleScheduleController;
 use App\Http\Controllers\Plans\PlanController;
 use App\Http\Controllers\Plans\PlanDetailController;
 use App\Http\Controllers\Plans\StudentPlanController;
+use App\Http\Controllers\Reports\ReportsController;
 use App\Http\Controllers\Routes\RouteCustomizationController;
 use App\Http\Controllers\Student\SpecialRequestController;
 use App\Http\Controllers\Student\StudentAchievementController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Students\TeacherStudentSessionsController;
 use App\Http\Controllers\Teachers\AttendanceController;
 use App\Http\Controllers\Teachers\TeacherController;
 use App\Http\Controllers\Teachers\TeacherPayrollController;
+use App\Http\Controllers\Teachers\TeacherPlanSchedulesController;
 use App\Http\Controllers\Teachers\TeacherRoomController;
 use App\Http\Controllers\Teachers\TeacherSalaryController;
 use App\Http\Controllers\Teachers\TeacherStudentsController;
@@ -268,6 +270,8 @@ Route::middleware('web')->prefix('v1')->group(function () {
         // Plan Details Create
         Route::post('/details', [PlanDetailController::class, 'store']);
 
+    // ✅ BULK IMPORT - الجديد للـ Excel
+    Route::post('{plan}/bulk-import', [PlanDetailController::class, 'bulkImport']);
         // Plan Details CRUD
         Route::prefix('plan-details')->name('plan-details.')->group(function () {
             Route::post('/', [PlanDetailController::class, 'store']);
@@ -439,6 +443,9 @@ Route::prefix('v1')->name('api.v1.')->middleware('web')->group(function () {
 });
 // routes/api.php
 Route::middleware('web')->group(function () {
+    Route::get('/v1/teacher-plan-schedules', [TeacherPlanSchedulesController::class, 'getTeacherPlanSchedules']); // ✅ الجديد
+    });
+Route::middleware('web')->group(function () {
     Route::get('/v1/user/next-meet', [StudentUserController::class, 'getNextMeet']);
     Route::get('/v1/user/progress', [StudentUserController::class, 'getStudentProgress']);
     Route::get('/v1/user/presence', [StudentUserController::class, 'getStudentPresence']);
@@ -463,4 +470,27 @@ Route::middleware('web')->group(function () {
 
     // حساب النقاط الصافية للطالب
     Route::get('/v1/teacher/students/{studentId}/points', [TeacherStudentsController::class, 'studentTotalPoints']);
+});
+// routes/web.php
+Route::middleware('web')->prefix('v1/reports')->name('reports.')->group(function () {
+    // ✅ جلب كل التقارير
+    Route::get('/', [ReportsController::class, 'index'])->name('index');
+
+    // ✅ تقارير الحضور
+    Route::get('/attendance/{period}', [ReportsController::class, 'attendance'])->name('attendance');
+    Route::get('/attendance', [ReportsController::class, 'attendanceList'])->name('attendance.list');
+
+    // ✅ تقارير الرواتب
+    Route::get('/payroll/{period}', [ReportsController::class, 'payroll'])->name('payroll');
+    Route::get('/payroll', [ReportsController::class, 'payrollList'])->name('payroll.list');
+
+    // ✅ تقارير الإنجازات
+    Route::get('/achievements/{period}', [ReportsController::class, 'achievements'])->name('achievements');
+    Route::get('/achievements', [ReportsController::class, 'achievementsList'])->name('achievements.list');
+
+    // ✅ تقرير شامل (كل حاجة)
+    Route::get('/dashboard', [ReportsController::class, 'dashboard'])->name('dashboard');
+
+    // ✅ تصدير PDF/Excel
+    Route::get('/export/{type}/{period}', [ReportsController::class, 'export'])->name('export');
 });

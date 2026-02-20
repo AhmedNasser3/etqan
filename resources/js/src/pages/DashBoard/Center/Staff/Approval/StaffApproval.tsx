@@ -51,14 +51,16 @@ const StaffApproval: React.FC = () => {
         }
     }, [error]);
 
-    // ✅ Approve بدون loading spinner - فوري
+    // ✅ Approve - نظيف وبسيط
     const handleApprove = async (id: number) => {
         setApprovingIds((prev) => new Set([...prev, id]));
         try {
             await approveTeacher(id);
-            toast.success("تم اعتماد الموظف بنجاح!");
+            toast.success("✅ تم تفعيل المعلم بنجاح!");
         } catch (err: any) {
-            toast.error(err.response?.data?.message || "فشل في اعتماد الموظف");
+            toast.error(
+                err.response?.data?.message || "❌ فشل في تفعيل المعلم",
+            );
         } finally {
             setApprovingIds((prev) => {
                 const newSet = new Set(prev);
@@ -68,14 +70,14 @@ const StaffApproval: React.FC = () => {
         }
     };
 
-    // ✅ Reject بدون loading spinner - فوري
+    // ✅ Reject - نظيف وبسيط
     const handleReject = async (id: number) => {
         setRejectingIds((prev) => new Set([...prev, id]));
         try {
             await rejectTeacher(id);
-            toast.success("تم رفض طلب الموظف بنجاح!");
+            toast.success("✅ تم رفض طلب المعلم بنجاح!");
         } catch (err: any) {
-            toast.error(err.response?.data?.message || "فشل في رفض الموظف");
+            toast.error(err.response?.data?.message || "❌ فشل في رفض المعلم");
         } finally {
             setRejectingIds((prev) => {
                 const newSet = new Set(prev);
@@ -119,8 +121,8 @@ const StaffApproval: React.FC = () => {
                 >
                     <div className="userProfile__planTitle">
                         <h1>
-                            اعتماد الموظفين الجدد{" "}
-                            <span>{filteredStaffs.length} موظف</span>
+                            اعتماد المعلمين الجدد{" "}
+                            <span>{filteredStaffs.length} معلم</span>
                         </h1>
                     </div>
 
@@ -132,7 +134,7 @@ const StaffApproval: React.FC = () => {
                             تحقق من الخبرة والدور قبل الاعتماد النهائي
                         </div>
                         <div className="plan__current">
-                            <h2>قائمة الموظفين المعلقين</h2>
+                            <h2>قائمة المعلمين المعلقين</h2>
                             <div className="plan__date-range">
                                 <div className="date-picker to">
                                     <input
@@ -178,7 +180,6 @@ const StaffApproval: React.FC = () => {
                                         <td>{item.name || "غير محدد"}</td>
                                         <td>{item.email || "---"}</td>
                                         <td>
-                                            {/* ✅ نفس الـ roles من صفحة التسجيل - مُحدث للصفحة الحالية */}
                                             <span
                                                 className={`role-badge ${
                                                     item.teacher?.role ===
@@ -232,13 +233,13 @@ const StaffApproval: React.FC = () => {
                                                 }`}
                                             >
                                                 {item.status === "active"
-                                                    ? "معتمد"
-                                                    : "معلق"}
+                                                    ? "✅ معتمد"
+                                                    : "⏳ معلق"}
                                             </span>
                                         </td>
                                         <td>
                                             <div className="teacherStudent__btns">
-                                                {/* ✅ Approve - بدون loading spinner */}
+                                                {/* ✅ Approve Button */}
                                                 <button
                                                     className="teacherStudent__status-btn approve-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1"
                                                     onClick={() =>
@@ -247,7 +248,7 @@ const StaffApproval: React.FC = () => {
                                                     disabled={approvingIds.has(
                                                         item.id,
                                                     )}
-                                                    title="اعتماد الموظف"
+                                                    title="تفعيل المعلم"
                                                 >
                                                     {approvingIds.has(
                                                         item.id,
@@ -258,7 +259,7 @@ const StaffApproval: React.FC = () => {
                                                     )}
                                                 </button>
 
-                                                {/* ✅ Reject - بدون loading spinner */}
+                                                {/* ✅ Reject Button */}
                                                 <button
                                                     className="teacherStudent__status-btn reject-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
                                                     onClick={() =>
@@ -267,7 +268,7 @@ const StaffApproval: React.FC = () => {
                                                     disabled={rejectingIds.has(
                                                         item.id,
                                                     )}
-                                                    title="رفض الموظف"
+                                                    title="رفض المعلم"
                                                 >
                                                     {rejectingIds.has(
                                                         item.id,
@@ -278,12 +279,13 @@ const StaffApproval: React.FC = () => {
                                                     )}
                                                 </button>
 
+                                                {/* ✅ OTP Button */}
                                                 <button
                                                     className="teacherStudent__status-btn otp-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
                                                     onClick={() =>
                                                         handleSendOTP(
                                                             item.name ||
-                                                                "الموظف",
+                                                                "المعلم",
                                                         )
                                                     }
                                                     title="إرسال OTP"
@@ -291,6 +293,7 @@ const StaffApproval: React.FC = () => {
                                                     <RiMessage2Line />
                                                 </button>
 
+                                                {/* ✅ Payroll Link Button */}
                                                 <button
                                                     className="teacherStudent__status-btn link-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100"
                                                     onClick={() =>
@@ -310,7 +313,7 @@ const StaffApproval: React.FC = () => {
                                             colSpan={8}
                                             className="text-center py-8 text-gray-500"
                                         >
-                                            لا توجد طلبات موظفين معلقة حالياً
+                                            لا توجد طلبات معلمين معلقة حالياً
                                         </td>
                                     </tr>
                                 )}
@@ -318,7 +321,7 @@ const StaffApproval: React.FC = () => {
                         </table>
                     </div>
 
-                    {/* باقي الـ stats والـ progress bars زي ما هما */}
+                    {/* ✅ Stats Cards */}
                     <div className="plan__stats">
                         <div className="stat-card">
                             <div className="stat-icon redColor">
@@ -353,7 +356,7 @@ const StaffApproval: React.FC = () => {
                                 </i>
                             </div>
                             <div>
-                                <h3>تم الاعتماد</h3>
+                                <h3>تم التفعيل</h3>
                                 <p className="text-2xl font-bold text-green-600">
                                     18
                                 </p>
@@ -361,13 +364,14 @@ const StaffApproval: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* ✅ Progress Bars */}
                     <div
                         className="inputs__verifyOTPBirth"
                         id="userProfile__verifyOTPBirth"
                     >
                         <div className="userProfile__progressContent">
                             <div className="userProfile__progressTitle">
-                                <h1>معدل الاعتماد</h1>
+                                <h1>معدل التفعيل</h1>
                             </div>
                             <p>88%</p>
                             <div className="userProfile__progressBar">

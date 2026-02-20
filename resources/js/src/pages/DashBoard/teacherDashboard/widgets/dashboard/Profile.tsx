@@ -1,5 +1,6 @@
 import { useAuthUser } from "./hooks/useAuthUser"; // ضبط المسار حسب مكان الهوك
 import EmailVerifyWidget from "../../../UserDashboard/widgets/EmailVerifyWidget";
+import Men from "../../../../../assets/images/facelessAvatar.png";
 
 const Profile: React.FC = () => {
     const { user, loading } = useAuthUser();
@@ -38,10 +39,7 @@ const Profile: React.FC = () => {
 
                                 {/* ✅ صورة اليوزر */}
                                 <img
-                                    src={
-                                        user?.avatar ||
-                                        "https://png.pngtree.com/png-vector/20250705/ourmid/pngtree-a-saudi-man-traditional-attire-middle-aged-wearing-white-thobe-and-png-image_16610073.webp"
-                                    }
+                                    src={Men}
                                     alt="المستخدم"
                                     className="w-full h-full object-cover rounded-full"
                                 />

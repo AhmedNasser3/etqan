@@ -123,7 +123,7 @@ const UserNavbar: React.FC = () => {
                                             حسابي
                                         </li>
                                     </a>
-                                    <a href="/user-dashboard/settings">
+                                    <a href="/user-dashboard/user-setting">
                                         <li>
                                             <IoSettings />
                                             إعدادات

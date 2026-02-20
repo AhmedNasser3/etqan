@@ -8,7 +8,9 @@
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
-        "axios": "^1.13.2",
+        "@types/papaparse": "^5.5.2",
+        "@types/xlsx": "^0.0.35",
+        "axios": "^1.13.5",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.1",
         "sass": "^1.97.1",
@@ -30,12 +32,14 @@
         "framer-motion": "^12.23.26",
         "lucide-react": "^0.562.0",
         "motion": "^12.23.26",
+        "papaparse": "^5.5.3",
         "postcss": "^8.5.6",
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
         "react-hook-form": "^7.71.1",
         "react-hot-toast": "^2.6.0",
         "react-icons": "^5.5.0",
+        "react-media-recorder": "^1.7.2",
         "react-router-dom": "^7.11.0",
         "react-useanimations": "^2.10.0",
         "recharts": "^3.6.0",
@@ -43,6 +47,7 @@
         "tailwind-merge": "^3.4.0",
         "typescript": "^5.9.3",
         "vite-plugin-pwa": "^1.2.0",
+        "xlsx": "^0.18.5",
         "zustand": "^5.0.9"
     }
 }

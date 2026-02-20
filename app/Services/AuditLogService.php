@@ -7,11 +7,20 @@ use App\Models\Audit\AuditLog;
 
 class AuditLogService
 {
-    public static function log($user, string $action, string $modelType, int $modelId, array $oldValues = null, array $newValues = null): void
-    {
+    /**
+     * General logging for any model/table
+     */
+    public static function log(
+        $user,
+        string $action,
+        string $modelType,
+        int $modelId,
+        array $oldValues = null,
+        array $newValues = null
+    ): void {
         AuditLog::create([
             'user_id' => $user?->id,
-            'action' => $action,
+            'action_ar' => $action,           // العملية بالعربي
             'model_type' => $modelType,
             'model_id' => $modelId,
             'old_values' => $oldValues,
@@ -21,26 +30,53 @@ class AuditLogService
         ]);
     }
 
-    public static function logUserCreate($user, $newUserId, array $userData): void
+    /**
+     * Create new record (any table)
+     */
+    public static function logCreate($user, $newId, string $modelType, array $data): void
     {
-        self::log($user, 'create_user', 'App\\Models\\Auth\\User', $newUserId, null, $userData);
+        self::log($user, 'إنشاء', $modelType, $newId, null, $data);
     }
 
-    public static function logStudentUpdate($user, $studentId, array $oldData, array $newData, string $action = 'update_student'): void
+    /**
+     * Update record (any table)
+     */
+    public static function logUpdate($user, $id, array $oldData, array $newData, string $action = 'تعديل'): void
+    {
+        self::log($user, $action, '', $id, $oldData, $newData);
+    }
+
+    /**
+     * Delete record (any table)
+     */
+    public static function logDelete($user, $id, array $dataBeforeDelete): void
+    {
+        self::log($user, 'حذف', '', $id, $dataBeforeDelete, null);
+    }
+
+    /**
+     * Specific methods (keep English names, Arabic actions)
+     */
+    public static function logUserCreate($user, $newUserId, array $userData): void
+    {
+        self::log($user, 'إنشاء_مستخدم', 'App\\Models\\Auth\\User', $newUserId, null, $userData);
+    }
+
+    public static function logStudentUpdate($user, $studentId, array $oldData, array $newData, string $action = 'تعديل_طالب'): void
     {
         self::log($user, $action, 'App\\Models\\Tenant\\Student', $studentId, $oldData, $newData);
     }
 
     public static function logAttendance($user, $attendanceId, array $attendanceData): void
     {
-        self::log($user, 'mark_attendance', 'App\\Models\\Tenant\\Attendance', $attendanceId, null, $attendanceData);
+        self::log($user, 'تسجيل_حضور', 'App\\Models\\Tenant\\Attendance', $attendanceId, null, $attendanceData);
     }
 
     public static function logPointsChange($user, $studentId, int $oldPoints, int $newPoints, string $reason = null): void
     {
-        self::log($user, 'update_points', 'App\\Models\\Tenant\\Student', $studentId,
+        self::log($user, 'تغيير_نقاط', 'App\\Models\\Tenant\\Student', $studentId,
             ['points' => $oldPoints],
-            ['points' => $newPoints]
+            ['points' => $newPoints, 'سبب' => $reason]
         );
     }
 }

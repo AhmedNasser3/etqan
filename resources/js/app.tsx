@@ -114,8 +114,8 @@ function CenterLayout() {
 function PublicLayout() {
     return (
         <>
-            <TeacherNavbar />
-            <CenterSidebar />
+            <Navbar />
+            <Sidebar />
             <main className="page">
                 <div className="page__container">
                     <Outlet />

@@ -9,6 +9,7 @@ use App\Models\Auth\Teacher;
 use App\Models\Plans\PlanCircleSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TeacherPlanSchedulesController extends Controller
 {
@@ -172,4 +173,45 @@ class TeacherPlanSchedulesController extends Controller
             'availability_rate' => $totalSchedules > 0 ? round(($availableSchedules / $totalSchedules) * 100, 1) : 0
         ]);
     }
+
+public function getTeacherPlanSchedules(Request $request)
+{
+    $user = auth()->user();
+
+    if (!$user) {
+        return response()->json(['error' => 'غير مصرح'], 401);
+    }
+
+    $teacherId = $user->id;
+
+    // 🔥 الـ Query الجديد: **كل الحلقات المتاحة فقط** (بدون شرط التاريخ)
+    $schedules = DB::table('plan_circle_schedules as pcs')
+        ->leftJoin('circle_student_bookings as csb', 'pcs.id', '=', 'csb.plan_circle_schedule_id')
+        ->where('pcs.teacher_id', $teacherId)                    // شرط 1️⃣: حلقات المعلم
+        ->where('pcs.is_available', true)                        // شرط 2️⃣: متاحة للحجز ✅
+        // ✅ شيلنا: ->where('pcs.schedule_date', '>=', now()->format('Y-m-d'))
+        ->select(
+            'pcs.id',
+            'pcs.schedule_date',
+            'pcs.day_of_week',
+            'pcs.start_time',
+            'pcs.end_time',
+            DB::raw('COALESCE(COUNT(DISTINCT csb.user_id), 0) as booked_students'),
+            'pcs.max_students'
+        )
+        ->groupBy(
+            'pcs.id',
+            'pcs.schedule_date',
+            'pcs.day_of_week',
+            'pcs.start_time',
+            'pcs.end_time',
+            'pcs.max_students'
+        )
+        ->orderBy('pcs.schedule_date', 'desc')  // الأحدث الأول
+        ->orderBy('pcs.start_time')
+        ->limit(10)
+        ->get();
+
+    return response()->json($schedules);
+}
 }

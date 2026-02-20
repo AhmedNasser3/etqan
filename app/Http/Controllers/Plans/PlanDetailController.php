@@ -9,6 +9,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PlanDetailController extends Controller
 {
@@ -145,7 +147,92 @@ class PlanDetailController extends Controller
         return response()->json($detail, 201);
     }
 
-    // باقي الـ methods...
+    /**
+     * ✅ 5- استيراد جماعي من Excel (BULK IMPORT)
+     */
+    public function bulkImport(Request $request, int $planId): JsonResponse
+    {
+        $user = Auth::user();
+
+        // التحقق من الخطة
+        $plan = Plan::where('id', $planId)
+            ->where('center_id', $user->center_id)
+            ->first();
+
+        if (!$plan) {
+            return response()->json(['message' => 'الخطة غير موجودة أو غير مصرح لك'], 404);
+        }
+
+        $request->validate([
+            'details' => 'required|array|min:1',
+            'details.*.day_number' => 'required|integer|min:1|max:9999',
+            'details.*.new_memorization' => 'nullable|string|max:50',
+            'details.*.review_memorization' => 'nullable|string|max:50',
+            'details.*.status' => ['nullable', Rule::in(['pending', 'current', 'completed'])]
+        ]);
+
+        $detailsData = $request->input('details', []);
+        $imported = 0;
+        $skipped = 0;
+        $errors = [];
+
+        // استخدام transaction لضمان السلامة
+        DB::beginTransaction();
+
+        try {
+            foreach ($detailsData as $index => $data) {
+                $dayNumber = $data['day_number'];
+
+                // التحقق من تكرار اليوم
+                $exists = PlanDetail::where('plan_id', $planId)
+                    ->where('day_number', $dayNumber)
+                    ->exists();
+
+                if ($exists) {
+                    $skipped++;
+                    $errors[] = "اليوم {$dayNumber} موجود بالفعل";
+                    continue;
+                }
+
+                // إنشاء السجل الجديد
+                PlanDetail::create([
+                    'plan_id' => $planId,
+                    'day_number' => $dayNumber,
+                    'new_memorization' => $data['new_memorization'] ?? null,
+                    'review_memorization' => $data['review_memorization'] ?? null,
+                    'status' => $data['status'] ?? 'pending'
+                ]);
+
+                $imported++;
+            }
+
+            DB::commit();
+
+            Log::info("📊 Bulk Import - Plan: {$planId}, Imported: {$imported}, Skipped: {$skipped}");
+
+            return response()->json([
+                'message' => 'تم الاستيراد بنجاح',
+                'imported' => $imported,
+                'skipped' => $skipped,
+                'errors' => $errors
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("❌ Bulk Import Error - Plan: {$planId}: " . $e->getMessage());
+
+            return response()->json([
+                'message' => 'فشل في الاستيراد',
+                'error' => $e->getMessage(),
+                'imported' => $imported,
+                'skipped' => $skipped
+            ], 422);
+        }
+    }
+
+    /**
+     * عرض PlanDetail واحد
+     */
     public function show(PlanDetail $planDetail): JsonResponse
     {
         $plan = Plan::find($planDetail->plan_id);
@@ -157,6 +244,9 @@ class PlanDetailController extends Controller
         return response()->json($planDetail);
     }
 
+    /**
+     * تحديث حالة PlanDetail
+     */
     public function updateStatus(Request $request, PlanDetail $planDetail): JsonResponse
     {
         $plan = Plan::find($planDetail->plan_id);
@@ -169,6 +259,9 @@ class PlanDetailController extends Controller
         return response()->json($planDetail->fresh());
     }
 
+    /**
+     * تحديث PlanDetail كامل
+     */
     public function update(Request $request, PlanDetail $planDetail): JsonResponse
     {
         $plan = Plan::find($planDetail->plan_id);
@@ -190,6 +283,9 @@ class PlanDetailController extends Controller
         return response()->json($planDetail->fresh());
     }
 
+    /**
+     * حذف PlanDetail
+     */
     public function destroy(PlanDetail $planDetail): JsonResponse
     {
         $plan = Plan::find($planDetail->plan_id);

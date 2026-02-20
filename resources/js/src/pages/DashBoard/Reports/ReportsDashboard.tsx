@@ -1,15 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import {
-    RiRobot2Fill,
-    RiFileChartLine,
-    RiBarChartFill,
-    RiPieChartFill,
-} from "react-icons/ri";
+import { useReportsApi } from "./hooks/useReportsApi";
+import { RiRobot2Fill, RiFileChartLine, RiBarChartFill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical, GrDocumentText } from "react-icons/gr";
 import { PiStudent, PiBookOpen, PiUsers } from "react-icons/pi";
-import { FiDownload, FiFilter, FiCalendar, FiPrinter } from "react-icons/fi";
-import { IoCheckmarkCircleOutline } from "react-icons/io5";
+import { FiDownload, FiPrinter } from "react-icons/fi";
 
 interface Report {
     id: number;
@@ -24,58 +19,41 @@ interface Report {
 }
 
 const ReportsDashboard: React.FC = () => {
-    const [reports, setReports] = useState<Report[]>([
-        {
-            id: 1,
-            title: "تقرير الحضور الشهري",
-            type: "حضور",
-            date: "2026-01-23",
-            period: "يناير 2026",
-            status: "جاهز",
-            fileSize: "2.4 MB",
-            previewData: "95% حضور عام",
-            img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=150&h=150&fit=crop&crop=face",
-        },
-        {
-            id: 2,
-            title: "تقرير الإنجازات السنوية",
-            type: "إنجازات",
-            date: "2026-01-20",
-            period: "2025 كامل",
-            status: "جاهز",
-            fileSize: "5.8 MB",
-            previewData: "285 ختم قرآن",
-            img: "https://images.unsplash.com/photo-1516589178581-6cd7838b8f13?w=150&h=150&fit=crop&crop=face",
-        },
-        {
-            id: 3,
-            title: "تقرير الأداء التعليمي",
-            type: "أداء",
-            date: "2026-01-22",
-            period: "الشهر الحالي",
-            status: "قيد الإعداد",
-            fileSize: "—",
-            previewData: "88% متوسط أداء",
-            img: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-        },
-    ]);
-
+    const { reports: allReports, loading, fetchReports } = useReportsApi();
+    const [filteredReports, setFilteredReports] = useState<Report[]>([]);
     const [search, setSearch] = useState("");
     const [filterType, setFilterType] = useState("الكل");
     const [filterStatus, setFilterStatus] = useState("الكل");
 
-    const filteredReports = reports.filter(
-        (report) =>
-            (report.title.includes(search) || report.period.includes(search)) &&
-            (filterType === "الكل" || report.type === filterType) &&
-            (filterStatus === "الكل" || report.status === filterStatus),
-    );
+    // تحميل التقارير
+    useEffect(() => {
+        fetchReports();
+    }, [fetchReports]);
 
-    // إحصائيات عامة
-    const totalReports = reports.length;
-    const readyReports = reports.filter((r) => r.status === "جاهز").length;
-    const totalSize = reports.reduce((sum, r) => {
-        if (r.status === "جاهز" && r.fileSize !== "—") {
+    // فلترة التقارير
+    useEffect(() => {
+        const result = allReports.filter(
+            (report) =>
+                (report.title.includes(search) ||
+                    report.period.includes(search) ||
+                    report.previewData.includes(search)) &&
+                (filterType === "الكل" || report.type === filterType) &&
+                (filterStatus === "الكل" || report.status === filterStatus),
+        );
+        setFilteredReports(result);
+    }, [allReports, search, filterType, filterStatus]);
+
+    // إحصائيات
+    const totalReports = allReports.length;
+    const readyReports = filteredReports.filter(
+        (r) => r.status === "جاهز",
+    ).length;
+    const totalSize = allReports.reduce((sum, r) => {
+        if (
+            r.status === "جاهز" &&
+            r.fileSize !== "—" &&
+            !isNaN(parseFloat(r.fileSize))
+        ) {
             return sum + parseFloat(r.fileSize);
         }
         return sum;
@@ -87,6 +65,7 @@ const ReportsDashboard: React.FC = () => {
 
     const printReport = (id: number) => {
         toast.success("تم إرسال التقرير للطابعة!");
+        window.print();
     };
 
     const getStatusColor = (status: string) => {
@@ -106,12 +85,34 @@ const ReportsDashboard: React.FC = () => {
                 return <PiUsers />;
             case "إنجازات":
                 return <PiBookOpen />;
+            case "رواتب":
+                return <RiFileChartLine />;
             case "أداء":
                 return <GrStatusCritical />;
             default:
                 return <GrDocumentText />;
         }
     };
+
+    if (loading) {
+        return (
+            <div
+                className="teacherMotivate"
+                style={{
+                    padding: "0 15%",
+                    minHeight: "400px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p>جاري تحميل التقارير...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="teacherMotivate" style={{ padding: "0 15%" }}>
@@ -155,6 +156,7 @@ const ReportsDashboard: React.FC = () => {
                                     <option>الكل</option>
                                     <option>حضور</option>
                                     <option>إنجازات</option>
+                                    <option>رواتب</option>
                                     <option>أداء</option>
                                 </select>
                                 <select
@@ -336,15 +338,20 @@ const ReportsDashboard: React.FC = () => {
                                 <h1>نسبة التقارير الجاهزة</h1>
                             </div>
                             <p>
-                                {Math.round(
-                                    (readyReports / totalReports) * 100,
-                                )}
+                                {totalReports > 0
+                                    ? Math.round(
+                                          (readyReports / totalReports) * 100,
+                                      )
+                                    : 0}
                                 %
                             </p>
                             <div className="userProfile__progressBar">
                                 <span
                                     style={{
-                                        width: `${Math.round((readyReports / totalReports) * 100)}%`,
+                                        width:
+                                            totalReports > 0
+                                                ? `${Math.round((readyReports / totalReports) * 100)}%`
+                                                : "0%",
                                     }}
                                 ></span>
                             </div>

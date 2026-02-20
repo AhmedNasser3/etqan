@@ -56,7 +56,30 @@ const Navbar: React.FC = () => {
         }
     };
 
-    const isCenterOwner = user?.role_id === 1;
+    // 🔥 الدالة الجديدة لتحديد dashboard path حسب الـ role
+    const getDashboardPath = () => {
+        if (!user) return "/user-dashboard";
+
+        // Center Owner/Admin (role_id = 1 أو center_owner)
+        if (
+            user.role_id === 1 ||
+            user.role === "admin" ||
+            user.role === "center_owner"
+        ) {
+            return "/center-dashboard";
+        }
+
+        // Teacher (role_id = 2 أو teacher)
+        if (user.role_id === 2 || user.role === "teacher") {
+            return "/teacher-dashboard";
+        }
+
+        // Student أو أي role تاني
+        return "/user-dashboard";
+    };
+
+    const dashboardPath = getDashboardPath();
+    const isCenterOwner = dashboardPath === "/center-dashboard";
 
     if (loading) {
         return (
@@ -119,19 +142,15 @@ const Navbar: React.FC = () => {
                                     className={`navbar__dropdown ${dropdowns.profile ? "dropped" : ""}`}
                                     id="navbar__profileDropDown"
                                 >
-                                    <a
-                                        href={
-                                            isCenterOwner
-                                                ? "/center-dashboard"
-                                                : "/user-dashboard"
-                                        }
-                                    >
+                                    {/* 🔥 الرابط الرئيسي حسب الـ role */}
+                                    <a href={dashboardPath}>
                                         <li>
                                             <FaUserAlt />
                                             {isCenterOwner ? "مجمعي" : "حسابي"}
                                         </li>
                                     </a>
 
+                                    {/* 🔥 Center Owner options بس */}
                                     {isCenterOwner && (
                                         <>
                                             <a href="/center-dashboard/mosque-manegment">
@@ -149,6 +168,7 @@ const Navbar: React.FC = () => {
                                         </>
                                     )}
 
+                                    {/* 🔥 Plans للكل */}
                                     <a href="/user-dashboard/plans">
                                         <li>
                                             <BsTable />

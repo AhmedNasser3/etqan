@@ -3,14 +3,11 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\User\FeaturedController;
+use Illuminate\Support\Str;
 use App\Http\Controllers\Auth\EmailLoginController;
-use App\Http\Controllers\Teachers\AttendanceController;
 use App\Http\Controllers\Auth\TeacherRegisterController;
-use App\Http\Controllers\User\CenterPublicPlansController;
 use App\Http\Controllers\Auth\StudentRegistrationController;
 use App\Http\Controllers\Plans\PlanCircleScheduleController;
-use App\Http\Controllers\Permissions\UserPermissionsController;
 
 Route::middleware('web')->group(function () {
     // ✅ Auth Routes - هنا عشان الـ session تشتغل
@@ -19,14 +16,28 @@ Route::middleware('web')->group(function () {
     Route::post('/email/verify-otp', [EmailLoginController::class, 'verifyOtp']);
     Route::post('/teacher/register', [TeacherRegisterController::class, 'register']);
 
-    // ✅ User info
-    Route::get('/api/user', function () {
+    // 🔥 الـ API endpoint المحسن للـ React hook
+    Route::get('/api/user', function (Request $request) {
         if (Auth::check()) {
+            $user = Auth::user();
+
             return response()->json([
                 'success' => true,
-                'user' => Auth::user()
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'center_id' => $user->center_id,
+                    'center' => $user->center ? [
+                        'id' => $user->center->id,
+                        'subdomain' => $user->center->subdomain,
+                        'slug' => $user->center->subdomain ?? Str::slug($user->center->subdomain),  // ← Str::slug
+                    ] : null,
+                    'role' => $user->role ?? 'user',
+                ]
             ]);
         }
+
         return response()->json([
             'success' => false,
             'message' => 'غير مسجل دخول'
@@ -42,8 +53,18 @@ Route::middleware('web')->group(function () {
     });
 });
 
-// SPA catch-all
-Route::get('/{path?}', function () {
+// 🔥 SPA catch-all مع التوجيه التلقائي للـ center
+Route::get('/{path?}', function (Request $request) {
+    // لو الـ path هو "/" وفيه user مسجل دخول وفيه center
+    if ($request->path() === '/' && Auth::check()) {
+        $user = Auth::user();
+        if ($user->center) {
+            $centerSlug = $user->center->subdomain ?? Str::slug($user->center->subdomain);  // ← Str::slug بدل str_slug
+            return redirect("/{$centerSlug}", 302);
+        }
+    }
+
+    // باقي الحالات عادي
     return view('app');
 })->where('path', '.*');
 
@@ -55,7 +76,8 @@ Route::middleware('web')->prefix('v1')->group(function () {
         return response()->json([
             'user' => $user,
             'center_id' => $user?->center_id,
-            'raw_user' => $user->toArray()
+            'raw_user' => $user?->toArray(),
+            'current_path' => request()->path()
         ]);
     });
 
@@ -71,4 +93,4 @@ Route::middleware('web')->prefix('v1')->group(function () {
 Route::get('/run-scheduler', function () {
     \Artisan::call('schedule:run');
     return '✅ Scheduler ran at ' . now();
-});// routes/web.php
+});

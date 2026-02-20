@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers\Teachers;
 
+use App\Http\Controllers\Controller;
+use App\Models\Auth\Teacher;
+use App\Models\Teachers\AttendanceDay;
+use App\Models\Tenant\Center;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use App\Models\Tenant\Circle;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
-use App\Models\Teachers\AttendanceDay;
 use Illuminate\Support\Facades\Validator;
 
 class AttendanceController extends Controller
 {
     /**
-     * ✅ ADMIN: عرض سجلات حضور جميع الموظفين (شغال 100%)
+     * ✅ ADMIN: عرض سجلات حضور جميع الموظفين (محدث لـ center_id)
      */
     public function staffAttendance(Request $request)
     {
@@ -40,9 +41,9 @@ class AttendanceController extends Controller
         $nowDate = Carbon::now();
 
         try {
-            $query = AttendanceDay::with(['teacher.user', 'circle'])
+            $query = AttendanceDay::with(['teacher.user', 'center'])
                 ->select([
-                    'id', 'teacher_id', 'circle_id', 'date', 'status',
+                    'id', 'teacher_id', 'center_id', 'date', 'status',
                     'notes', 'delay_minutes'
                 ]);
 
@@ -85,7 +86,7 @@ class AttendanceController extends Controller
                         'teacher_id' => (int) $item->teacher_id,
                         'teacher_name' => $item->teacher?->name ?? 'غير معروف',
                         'role' => optional($item->teacher?->user)->role ?? 'معلم',
-                        'circle_name' => optional($item->circle)->name ?? '-',
+                        'center_name' => optional($item->center)->name ?? '-', // ✅ circle_name → center_name
                         'status' => $item->status ?? 'absent',
                         'notes' => $item->notes ?? 'غياب أوتوماتيك',
                         'date' => $item->date?->format('Y-m-d'),
@@ -105,30 +106,25 @@ class AttendanceController extends Controller
     }
 
     /**
-     * 🔥 MARK STAFF ATTENDANCE - مصحح 100%
+     * 🔥 MARK STAFF ATTENDANCE - محدث لـ center_id
      */
     public function markStaffAttendance(Request $request, $attendanceId)
     {
-        // 🔥 Debug كامل
         Log::info('🔥 markStaffAttendance called', [
             'attendanceId' => $attendanceId,
             'attendanceId_type' => gettype($attendanceId),
             'user_id' => Auth::id(),
             'request_data' => $request->all(),
-            'request_headers' => $request->headers->all()
         ]);
 
-        // ✅ Auth check
         if (!Auth::check()) {
             Log::warning('❌ No auth user');
             return response()->json(['success' => false, 'message' => 'غير مصرح'], 401);
         }
 
-        // ✅ Parse attendanceId لـ integer
         $attendanceId = (int) $attendanceId;
         Log::info('🔄 Parsed attendanceId', ['id' => $attendanceId]);
 
-        // ✅ Validation
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:present,late,absent',
             'notes' => 'nullable|string|max:500',
@@ -144,7 +140,6 @@ class AttendanceController extends Controller
         }
 
         try {
-            // ✅ استخدم find() مش findOrFail()
             $attendance = AttendanceDay::find($attendanceId);
 
             if (!$attendance) {
@@ -158,10 +153,10 @@ class AttendanceController extends Controller
             Log::info('✅ Attendance found', [
                 'id' => $attendance->id,
                 'teacher_id' => $attendance->teacher_id,
+                'center_id' => $attendance->center_id, // ✅ center_id
                 'current_status' => $attendance->status
             ]);
 
-            // ✅ Update data - شيلنا is_auto_created
             $updateData = [
                 'status' => $request->status,
                 'notes' => $request->status === 'present'
@@ -184,85 +179,115 @@ class AttendanceController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'تم تحديث حالة الحضور بنجاح',
-                'data' => $attendance->fresh()
+                'data' => $attendance->fresh()->load(['teacher.user', 'center']) // ✅ circle → center
             ], 200, [], JSON_UNESCAPED_UNICODE);
 
         } catch (\Exception $e) {
             Log::error('❌ Mark attendance EXCEPTION', [
                 'attendance_id' => $attendanceId,
                 'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => config('app.debug') ? $e->getMessage() : 'فشل في تحديث الحضور',
-                'debug' => config('app.debug') ? [
-                    'line' => $e->getLine(),
-                    'file' => $e->getFile()
-                ] : null
+                'message' => config('app.debug') ? $e->getMessage() : 'فشل في تحديث الحضور'
             ], 500);
         }
     }
 
-    // باقي الـ methods زي ما هي بدون تغيير...
+    /**
+     * ✅ عرض سجلات الحضور الخاصة بالمعلم المسجل (محدث لـ center_id)
+     */
     public function index(Request $request)
     {
-        $teacherId = Auth::id();
+        $user = Auth::user();
 
-        $query = AttendanceDay::with(['teacher', 'circle'])
-            ->where('teacher_id', $teacherId)
+        // ✅ جيب teacher_id من جدول teachers بناءً على user_id
+        $teacher = Teacher::where('user_id', $user->id)->first();
+
+        if (!$teacher) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لم يتم العثور على بيانات المعلم'
+            ], 404);
+        }
+
+        $centerId = $user->center_id; // ✅ من user.center_id
+
+        if (!$centerId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لم يتم تعيين مركز للمستخدم'
+            ], 400);
+        }
+
+        $query = AttendanceDay::with(['teacher', 'center']) // ✅ circle → center
+            ->where('teacher_id', $teacher->id)
+            ->where('center_id', $centerId) // ✅ center_id filter
             ->orderBy('date', 'desc');
 
         if ($request->filled('date')) {
             $query->whereDate('date', $request->date);
         }
 
-        if ($request->filled('circle_id')) {
-            $query->where('circle_id', $request->circle_id);
-        }
-
         $attendances = $query->paginate(20);
 
-        $circles = Circle::whereIn('id', function($q) use ($teacherId) {
-            $q->select('circle_id')
-              ->from('attendance_days')
-              ->where('teacher_id', $teacherId);
-        })->get();
-
-        if ($circles->isEmpty()) {
-            $circles = Circle::select('id', 'name')->limit(10)->get();
-        }
+        // ✅ جيب المركز الخاص باليوزر
+        $centers = Center::where('id', $centerId)->select('id', 'name')->get();
 
         return response()->json([
             'success' => true,
             'data' => $attendances,
-            'circles' => $circles,
-            'filters' => $request->only(['date', 'circle_id'])
+            'centers' => $centers, // ✅ بدل circles
+            'filters' => $request->only(['date'])
         ]);
     }
 
     public function show(AttendanceDay $attendanceDay)
     {
-        if ($attendanceDay->teacher_id !== Auth::id()) {
+        $user = Auth::user();
+        $teacher = Teacher::where('user_id', $user->id)->first();
+
+        // ✅ تحقق من teacher_id + center_id
+        if ($attendanceDay->teacher_id !== $teacher->id || $attendanceDay->center_id !== $user->center_id) {
             return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $attendanceDay->load(['teacher.user', 'circle'])
+            'data' => $attendanceDay->load(['teacher.user', 'center']) // ✅ circle → center
         ]);
     }
 
+    /**
+     * ✅ تسجيل حضور جديد للمعلم المسجل (محدث لـ center_id)
+     */
     public function store(Request $request)
     {
-        $teacherId = Auth::id();
+        $user = Auth::user();
+
+        // ✅ جيب teacher_id من جدول teachers
+        $teacher = Teacher::where('user_id', $user->id)->first();
+
+        if (!$teacher) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لم يتم العثور على بيانات المعلم'
+            ], 404);
+        }
+
+        $centerId = $user->center_id; // ✅ من user.center_id
+
+        if (!$centerId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لم يتم تعيين مركز للمستخدم'
+            ], 400);
+        }
+
         $todayDate = Carbon::today();
 
         $validator = Validator::make($request->all(), [
-            'circle_id' => 'required|exists:circles,id',
             'status' => 'required|in:present,late',
             'delay_minutes' => 'nullable|integer|min:1|max:120',
             'notes' => 'nullable|string|max:500',
@@ -276,8 +301,9 @@ class AttendanceController extends Controller
             ], 422);
         }
 
-        $existing = AttendanceDay::where('teacher_id', $teacherId)
-            ->where('circle_id', $request->circle_id)
+        // ✅ تحقق من عدم التكرار: teacher_id + center_id + date
+        $existing = AttendanceDay::where('teacher_id', $teacher->id)
+            ->where('center_id', $centerId)
             ->whereDate('date', $todayDate)
             ->first();
 
@@ -289,8 +315,8 @@ class AttendanceController extends Controller
         }
 
         $attendance = AttendanceDay::create([
-            'teacher_id' => $teacherId,
-            'circle_id' => $request->circle_id,
+            'teacher_id' => $teacher->id,
+            'center_id' => $centerId, // ✅ بدل circle_id
             'date' => $todayDate,
             'status' => $request->status,
             'delay_minutes' => $request->delay_minutes,
@@ -300,13 +326,17 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'تم تسجيل الحضور بنجاح',
-            'data' => $attendance->load(['teacher', 'circle'])
+            'data' => $attendance->load(['teacher', 'center']) // ✅ circle → center
         ], 201);
     }
 
     public function update(Request $request, AttendanceDay $attendanceDay)
     {
-        if ($attendanceDay->teacher_id !== Auth::id()) {
+        $user = Auth::user();
+        $teacher = Teacher::where('user_id', $user->id)->first();
+
+        // ✅ تحقق من teacher_id + center_id
+        if ($attendanceDay->teacher_id !== $teacher->id || $attendanceDay->center_id !== $user->center_id) {
             return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
         }
 
@@ -332,13 +362,17 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'تم تحديث سجل الحضور بنجاح',
-            'data' => $attendanceDay->fresh()->load(['teacher', 'circle'])
+            'data' => $attendanceDay->fresh()->load(['teacher', 'center']) // ✅ circle → center
         ]);
     }
 
     public function destroy(AttendanceDay $attendanceDay)
     {
-        if ($attendanceDay->teacher_id !== Auth::id()) {
+        $user = Auth::user();
+        $teacher = Teacher::where('user_id', $user->id)->first();
+
+        // ✅ تحقق من teacher_id + center_id
+        if ($attendanceDay->teacher_id !== $teacher->id || $attendanceDay->center_id !== $user->center_id) {
             return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
         }
 
@@ -352,12 +386,20 @@ class AttendanceController extends Controller
 
     public function stats(Request $request)
     {
-        $teacherId = Auth::id();
+        $user = Auth::user();
+        $teacher = Teacher::where('user_id', $user->id)->first();
 
-        $stats = AttendanceDay::where('teacher_id', $teacherId)
-            ->when($request->filled('circle_id'), function($q) use ($request) {
-                $q->where('circle_id', $request->circle_id);
-            })
+        if (!$teacher) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لم يتم العثور على المعلم'
+            ], 404);
+        }
+
+        $centerId = $user->center_id; // ✅ من user.center_id
+
+        $stats = AttendanceDay::where('teacher_id', $teacher->id)
+            ->where('center_id', $centerId) // ✅ center_id filter
             ->selectRaw('
                 COUNT(*) as total,
                 SUM(CASE WHEN status = "present" THEN 1 ELSE 0 END) as present,
@@ -376,12 +418,21 @@ class AttendanceController extends Controller
 
     public function today()
     {
-        $teacherId = Auth::id();
+        $user = Auth::user();
+        $teacher = Teacher::where('user_id', $user->id)->first();
         $todayDate = Carbon::today();
 
-        $todayAttendance = AttendanceDay::where('teacher_id', $teacherId)
+        if (!$teacher) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لم يتم العثور على المعلم'
+            ], 404);
+        }
+
+        $todayAttendance = AttendanceDay::where('teacher_id', $teacher->id)
+            ->where('center_id', $user->center_id) // ✅ center_id filter
             ->whereDate('date', $todayDate)
-            ->with('circle')
+            ->with('center') // ✅ circle → center
             ->get();
 
         return response()->json([

@@ -132,7 +132,7 @@ const TeacherSidebar: React.FC = () => {
                             </div>
                         </div>
                         {/* Certificates */}
-                        <div
+                        {/* <div
                             className={`sidebar__data ${
                                 activePage === "certificates" ? "active" : ""
                             }`}
@@ -145,7 +145,7 @@ const TeacherSidebar: React.FC = () => {
                                     <h2>الشهادات</h2>
                                 </a>
                             </div>
-                        </div>
+                        </div> */}
                         {/* Messages */}
                         {/* <div
                             className={`sidebar__data ${

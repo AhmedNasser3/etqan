@@ -4,6 +4,7 @@ namespace App\Models\Teachers;
 
 use App\Models\Auth\Teacher;
 use App\Models\Tenant\Circle;
+use App\Models\Auth\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,12 +21,12 @@ class AttendanceDay extends Model
      */
     protected $fillable = [
         'teacher_id',
-        'circle_id',
+        'center_id',
         'date',
-        'status',           // present, late, absent
+        'status',
         'delay_minutes',
         'notes',
-        'is_auto_created',  // ✅ الحقل المفقود المهم!
+        'is_auto_created',
     ];
 
     /**
@@ -34,7 +35,7 @@ class AttendanceDay extends Model
     protected $casts = [
         'date' => 'date:Y-m-d',
         'delay_minutes' => 'integer',
-        'is_auto_created' => 'boolean',  // ✅ مهم جداً
+        'is_auto_created' => 'boolean',
         'status' => 'string',
     ];
 
@@ -48,18 +49,25 @@ class AttendanceDay extends Model
 
     public function circle(): BelongsTo
     {
-        return $this->belongsTo(Circle::class);
+        return $this->belongsTo(Circle::class, 'center_id', 'id');
     }
 
     /**
-     * ✅ User relationship عبر Teacher (للـ role)
+     * ✅ User relationship عبر Teacher (الصحيح!)
      */
     public function user(): BelongsTo
     {
-        return $this->belongsToThrough(
-            \App\Models\Auth\User::class,  // افتراضي
-            Teacher::class
-        );
+        return $this->belongsTo(User::class, 'teacher_id', 'id')
+                   ->via('teacher.user');
+    }
+
+    /**
+     * ✅ Scope للحلقة (للـ ReportsController) - مصحح للأداء العالي
+     */
+    public function scopeForCenter(Builder $query, $centerId): Builder
+    {
+        // ✅ مباشرة على center_id (أسرع من whereHas)
+        return $query->where('center_id', $centerId);
     }
 
     /**
@@ -87,7 +95,7 @@ class AttendanceDay extends Model
 
     public function scopeForCircle(Builder $query, $circleId): Builder
     {
-        return $query->where('circle_id', $circleId);
+        return $query->where('center_id', $circleId);
     }
 
     public function scopeToday(Builder $query): Builder
@@ -187,7 +195,7 @@ class AttendanceDay extends Model
                     ->whereDate('date', $date);
 
         if ($circleId) {
-            $query->where('circle_id', $circleId);
+            $query->where('center_id', $circleId);
         }
 
         return $query->exists();
@@ -200,7 +208,7 @@ class AttendanceDay extends Model
     {
         return self::create([
             'teacher_id' => $teacherId,
-            'circle_id' => $circleId,
+            'center_id' => $circleId,
             'date' => today(),
             'status' => $data['status'] ?? 'absent',
             'delay_minutes' => $data['delay_minutes'] ?? 0,
@@ -210,16 +218,15 @@ class AttendanceDay extends Model
     }
 
     /**
-     * ✅ API Resource transformation
+     * ✅ API Resource transformation (محسّن للـ Reports)
      */
     public function toApiArray(): array
     {
         return [
             'id' => (int) $this->id,
             'teacher_id' => (int) $this->teacher_id,
-            'teacher_name' => $this->teacher?->name ?? 'غير معروف',
-            'role' => optional($this->teacher?->user)->role ?? 'معلم',
-            'circle_name' => optional($this->circle)->name ?? '-',
+            'teacher_name' => $this->teacher?->user?->name ?? 'غير معروف',
+            'circle_name' => $this->circle?->name ?? '-',
             'status' => $this->status ?? 'absent',
             'status_label' => $this->status_label,
             'status_color' => $this->status_color,

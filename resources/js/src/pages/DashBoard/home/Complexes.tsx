@@ -7,7 +7,7 @@ const complexesData = [
     {
         title: "مجمع القرآن الكريم بالشارقة",
         description:
-            "مجمع القرآن الكريم بالشارقة صرح حضاري عالمي يُعنى بخدمة القرآن وعلومه، يضم متاحف قرآنية متخصصة، ومكتبة علمية، وبرامج تعليمية وإجازات بالسند المتصل، في بيئة تجمع بين الأصالة والتقنية الحديثة.",
+            "مجمع قرآني يركز على حفظ القرآن الكريم وتدريسه للأطفال والكبار، مع برامج تدريبية متخصصة.",
         img: "https://yt3.googleusercontent.com/n6vRPQ0akipMZ1zkcCvEWUpU1reKrNfNESHncsQJsDFiIyPkQeEZuc-DXRnQ1pKIci7XFh_Oow=s900-c-k-c0x00ffffff-no-rj",
         stats: [
             { label: "الطلاب", value: "63", icon: <PiStudentDuotone /> },
@@ -23,7 +23,7 @@ const complexesData = [
     {
         title: "مجمع الملك فهد لطباعة المصحف",
         description:
-            "أكبر مجمع لطباعة وتوزيع المصاحف الشريفة في العالم، ينتج ملايين النسخ سنوياً بأعلى معايير الجودة والدقة.",
+            "مجمع قرآني يركز على حفظ القرآن الكريم وتدريسه للأطفال والكبار، مع برامج تدريبية متخصصة.",
         img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSMQpLentR96boXCSpy9Qvzf5TttQjgggkjhg&s",
         stats: [
             { label: "الطلاب", value: "1,250", icon: <PiStudentDuotone /> },
@@ -39,7 +39,7 @@ const complexesData = [
     {
         title: "مركز الإمام الشافعي",
         description:
-            "مركز متخصص في تدريس القراءات العشر وعلوم التجويد، يقدم إجازات بالسند المتصل للإمام الشافعي رحمه الله.",
+            "مجمع قرآني يركز على حفظ القرآن الكريم وتدريسه للأطفال والكبار، مع برامج تدريبية متخصصة.",
         img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5l66UixhcLVRMdW9S9CriXaQlN5CAubKrF9xR3KiBaXEDP218t3fpcHFH60QNqXF3f1s&usqp=CAU",
         stats: [
             { label: "الطلاب", value: "320", icon: <PiStudentDuotone /> },

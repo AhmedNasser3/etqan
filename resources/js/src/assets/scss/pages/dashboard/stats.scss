@@ -66,3 +66,12 @@
         }
     }
 }
+@media screen and (max-width: 1024px) {
+    .stats {
+        margin-top: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 6%;
+    }
+}

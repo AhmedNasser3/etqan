@@ -12,7 +12,7 @@ return new class extends Migration
         Schema::create('attendance_days', function (Blueprint $table) {
             $table->id();
             $table->foreignId('teacher_id')->constrained('teachers')->onDelete('cascade');
-            $table->foreignId('circle_id')->constrained('circles')->onDelete('cascade'); // الحلقة
+            $table->foreignId('center_id')->constrained('circles')->onDelete('cascade'); // الحلقة
             $table->date('date'); // التاريخ
 
             // الحالة: present=حاضر, absent=غائب, late=متأخر
@@ -27,11 +27,11 @@ return new class extends Migration
             $table->timestamps();
 
             // Unique constraint: معلم + حلقة + تاريخ = سجل واحد
-            $table->unique(['teacher_id', 'circle_id', 'date']);
+            $table->unique(['teacher_id', 'center_id', 'date']);
 
             // Indexes للبحث السريع
             $table->index(['teacher_id', 'date']);
-            $table->index(['circle_id', 'date']);
+            $table->index(['center_id', 'date']);
             $table->index(['teacher_id', 'status']);
         });
     }

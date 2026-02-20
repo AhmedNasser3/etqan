@@ -102,7 +102,7 @@ class TeacherController extends Controller
     }
 
     /**
-     * ✅ قبول معلم + توزيع تلقائي على الحلقة المطلوبة
+     * ✅ قبول معلم + توزيع تلقائي على الحلقة من teacher.notes
      */
     public function accept(string $id)
     {
@@ -110,105 +110,119 @@ class TeacherController extends Controller
         try {
             $user = User::with('teacher')->findOrFail($id);
 
-            // التحقق من وجود teacher record
             if (!$user->teacher) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'معلم غير صالح'
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'معلم غير صالح'], 404);
             }
 
             if ($user->status === 'active') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'المعلم مفعل بالفعل'
-                ], 400);
+                return response()->json(['success' => false, 'message' => 'المعلم مفعل بالفعل'], 400);
             }
 
             // ✅ 1. تفعيل المعلم
-            $user->update([
-                'status' => 'active',
-                'email_verified_at' => now(),
-            ]);
-
-            // ✅ 2. البحث عن الحلقة بـ name (العمود الصحيح)
-            $targetCircleTitle = "حلقة حفظ نصف وجه يوميا - الجزء 27";
-            $targetCircle = Circle::where('name', 'like', '%' . $targetCircleTitle . '%')->first();
+            $user->update(['status' => 'active', 'email_verified_at' => now()]);
 
             $circleAssigned = false;
             $scheduleInfo = null;
+            $targetCircle = null;
+            $extractedData = null;
 
-            if ($targetCircle) {
-                Log::info("✅ تم العثور على الحلقة", [
-                    'circle_id' => $targetCircle->id,
-                    'circle_name' => $targetCircle->name,
-                    'teacher_id' => $user->id
-                ]);
+            // 🆕 Debug: طباعة الـ notes الأصلية
+            Log::info("🔍 RAW NOTES", ['teacher_id' => $user->id, 'notes' => $user->teacher->notes]);
 
-                // ✅ 3. البحث عن مواعيد متاحة مع بحث ساعات 07:18 و 22:22
-                $timeKeywords = ['07:18', '7:18', '22:22'];
+            if ($user->teacher->notes) {
+                // 🆕 Regex محسّن لكل الحالات + تحليل الوقت
+                $patterns = [
+                    // Pattern 1: صباحا/مساءا
+                    '/حلقة:\s*([^\(]+?)\s*\(ID:\s*(\d+)\)\s*\|\s*من\s*(صباحا|مساءا)/iu',
+                    // Pattern 2: وقت محدد "10:00 ص"
+                    '/حلقة:\s*([^\(]+?)\s*\(ID:\s*(\d+)\)\s*\|\s*من\s*([\d:]+\s*(?:ص|م))/iu',
+                    // Pattern 3: بدون وقت محدد
+                    '/حلقة:\s*([^\(]+?)\s*\(ID:\s*(\d+)\)/iu',
+                ];
 
-                $nextAvailableSchedule = PlanCircleSchedule::where('circle_id', $targetCircle->id)
-                    ->whereNull('teacher_id')
-                    ->where('is_available', true)
-                    ->where('schedule_date', '>=', now()->format('Y-m-d'))
-                    ->where(function($q) use ($timeKeywords) {
-                        foreach ($timeKeywords as $time) {
-                            $q->orWhere('start_time', 'like', '%' . $time . '%')
-                              ->orWhere('end_time', 'like', '%' . $time . '%');
+                foreach ($patterns as $i => $pattern) {
+                    if (preg_match($pattern, $user->teacher->notes, $matches)) {
+                        $circleName = trim($matches[1]);
+                        $circleId = (int) $matches[2];
+                        $timeIndicator = $matches[3] ?? null;
+
+                        // 🆕 تحويل "10:00 ص" لـ "صباحا"
+                        if ($timeIndicator && preg_match('/\d+:\d+\s*ص/', $timeIndicator)) {
+                            $timeIndicator = 'صباحا';
+                        } elseif ($timeIndicator && preg_match('/\d+:\d+\s*م/', $timeIndicator)) {
+                            $timeIndicator = 'مساءا';
                         }
-                    })
-                    ->orderBy('schedule_date', 'asc')
-                    ->orderBy('start_time', 'asc')
-                    ->first();
 
-                // ✅ Fallback: أي موعد متاح لو مفيش بالساعات المطلوبة
-                if (!$nextAvailableSchedule) {
-                    $nextAvailableSchedule = PlanCircleSchedule::where('circle_id', $targetCircle->id)
-                        ->whereNull('teacher_id')
-                        ->where('is_available', true)
-                        ->where('schedule_date', '>=', now()->format('Y-m-d'))
-                        ->orderBy('schedule_date', 'asc')
-                        ->orderBy('start_time', 'asc')
-                        ->first();
-                }
-
-                if ($nextAvailableSchedule) {
-                    // ✅ 4. تعيين المعلم مع التأكد من التحديث
-                    $result = $nextAvailableSchedule->update([
-                        'teacher_id' => $user->id,
-                        'is_available' => false
-                    ]);
-
-                    if ($result) {
-                        $nextAvailableSchedule->refresh();
-
-                        $circleAssigned = true;
-                        $scheduleInfo = [
-                            'id' => $nextAvailableSchedule->id,
-                            'circle_id' => $targetCircle->id,
-                            'circle_name' => $targetCircle->name,
-                            'date' => $nextAvailableSchedule->schedule_date,
-                            'start_time' => $nextAvailableSchedule->start_time,
-                            'end_time' => $nextAvailableSchedule->end_time,
-                            'duration_minutes' => $nextAvailableSchedule->duration_minutes ?? 0,
-                            'teacher_id' => $nextAvailableSchedule->teacher_id,
-                            'is_available' => $nextAvailableSchedule->is_available
+                        $extractedData = [
+                            'circle_name' => $circleName,
+                            'circle_id' => $circleId,
+                            'time_indicator' => $timeIndicator,
+                            'pattern_used' => $i + 1
                         ];
 
-                        Log::info("✅ تم تعيين المعلم بنجاح", $scheduleInfo);
-                    } else {
-                        Log::error("❌ فشل في تحديث الجدولة", [
-                            'schedule_id' => $nextAvailableSchedule->id
+                        Log::info("✅ تم استخراج البيانات", array_merge($extractedData, [
+                            'teacher_id' => $user->id,
+                            'raw_notes' => $user->teacher->notes
+                        ]));
+
+                        break;
+                    }
+                }
+
+                if (!$extractedData) {
+                    Log::warning("⚠️ فشل استخراج البيانات", [
+                        'teacher_id' => $user->id,
+                        'notes' => $user->teacher->notes
+                    ]);
+                } else {
+                    // 🆕 جلب الحلقة
+                    $targetCircle = Circle::find($circleId);
+
+                    if (!$targetCircle) {
+                        $targetCircle = Circle::where('name', 'like', '%' . $extractedData['circle_name'] . '%')->first();
+                        Log::info("🔍 بحث بالاسم كـ fallback", [
+                            'search_name' => $extractedData['circle_name'],
+                            'found' => $targetCircle ? true : false
                         ]);
                     }
-                } else {
-                    Log::warning("⚠️ لا توجد مواعيد متاحة", ['circle_id' => $targetCircle->id]);
+
+                    Log::info("🏢 حالة الحلقة", [
+                        'circle_id_searched' => $extractedData['circle_id'],
+                        'circle_found' => $targetCircle ? true : false,
+                        'circle_exists_in_db' => Circle::where('id', $extractedData['circle_id'])->exists(),
+                        'circle_name_in_db' => $targetCircle->name ?? 'غير موجود'
+                    ]);
+
+                    if ($targetCircle) {
+                        $nextAvailableSchedule = $this->findAvailableSchedule($targetCircle->id, $extractedData['time_indicator']);
+
+                        if ($nextAvailableSchedule) {
+                            $result = $nextAvailableSchedule->update([
+                                'teacher_id' => $user->id,
+                                'is_available' => false
+                            ]);
+
+                            if ($result) {
+                                $nextAvailableSchedule->refresh();
+                                $circleAssigned = true;
+                                $scheduleInfo = [
+                                    'id' => $nextAvailableSchedule->id,
+                                    'circle_id' => $targetCircle->id,
+                                    'circle_name' => $targetCircle->name,
+                                    'date' => $nextAvailableSchedule->schedule_date,
+                                    'start_time' => $nextAvailableSchedule->start_time,
+                                    'end_time' => $nextAvailableSchedule->end_time,
+                                ];
+                                Log::info("✅ تم تعيين المعلم للموعد", $scheduleInfo);
+                            }
+                        } else {
+                            Log::warning("⚠️ لا توجد مواعيد متاحة", [
+                                'circle_id' => $targetCircle->id,
+                                'time_indicator' => $extractedData['time_indicator']
+                            ]);
+                        }
+                    }
                 }
-            } else {
-                Log::warning("⚠️ لم يتم العثور على الحلقة", [
-                    'search_term' => $targetCircleTitle
-                ]);
             }
 
             DB::commit();
@@ -220,20 +234,89 @@ class TeacherController extends Controller
                 'schedule_info' => $scheduleInfo,
                 'circle_found' => $targetCircle ? true : false,
                 'circle_name' => $targetCircle->name ?? 'غير محدد',
-                'teacher_id' => $user->id
+                'teacher_id' => $user->id,
+                'notes_parsed' => !empty($extractedData),
+                'extracted_data' => $extractedData,
+                'debug' => [
+                    'notes_raw' => $user->teacher->notes,
+                    'circle_exists_in_db' => $extractedData ? Circle::where('id', $extractedData['circle_id'])->exists() : false,
+                    'schedules_available' => $extractedData ? PlanCircleSchedule::where('circle_id', $extractedData['circle_id'])->where('is_available', true)->count() : 0
+                ]
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Accept Teacher Error: ' . $e->getMessage(), [
-                'user_id' => $id,
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء قبول المعلم: ' . $e->getMessage()
-            ], 500);
+            Log::error('Accept Teacher Error', ['user_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * ✅ البحث عن أي موعد متاح في الحلقة (بدون قيود تاريخ)
+     */
+    private function findAvailableSchedule($circleId, $timeIndicator = null)
+    {
+        Log::info("🔍 البحث عن مواعيد متاحة", [
+            'circle_id' => $circleId,
+            'time_indicator' => $timeIndicator
+        ]);
+
+        // 1️⃣ جلب كل المواعيد المتاحة في الحلقة (بدون قيود تاريخ)
+        $availableSchedules = PlanCircleSchedule::where('circle_id', $circleId)
+            ->whereNull('teacher_id')
+            ->where('is_available', true)
+            ->orderBy('schedule_date', 'asc')
+            ->orderBy('start_time', 'asc')
+            ->get();
+
+        Log::info("📊 المواعيد المتاحة الكلية", [
+            'total_available' => $availableSchedules->count(),
+            'schedules_count' => $availableSchedules->count()
+        ]);
+
+        if ($availableSchedules->isEmpty()) {
+            Log::warning("⚠️ لا توجد مواعيد متاحة خالص");
+            return null;
+        }
+
+        // 2️⃣ فلترة حسب الوقت (صباحا/مساءا)
+        $filteredSchedules = $availableSchedules;
+
+        if ($timeIndicator === 'صباحا') {
+            $filteredSchedules = $availableSchedules->filter(function ($schedule) {
+                return strtotime($schedule->start_time) <= strtotime('12:00:00');
+            });
+        } elseif ($timeIndicator === 'مساءا') {
+            $filteredSchedules = $availableSchedules->filter(function ($schedule) {
+                return strtotime($schedule->start_time) >= strtotime('12:00:00');
+            });
+        }
+
+        Log::info("⏰ بعد فلترة الوقت", [
+            'time_indicator' => $timeIndicator,
+            'filtered_count' => $filteredSchedules->count()
+        ]);
+
+        // 3️⃣ أول موعد متاح
+        if ($filteredSchedules->isNotEmpty()) {
+            $schedule = $filteredSchedules->first();
+            Log::info("✅ وجد موعد مناسب", [
+                'schedule_id' => $schedule->id,
+                'date' => $schedule->schedule_date,
+                'start_time' => $schedule->start_time
+            ]);
+            return $schedule;
+        }
+
+        // 4️⃣ Fallback: أول موعد متاح خالص
+        $schedule = $availableSchedules->first();
+        Log::info("🏁 Fallback - أول موعد متاح", [
+            'schedule_id' => $schedule->id,
+            'date' => $schedule->schedule_date,
+            'start_time' => $schedule->start_time
+        ]);
+
+        return $schedule;
     }
 
     /**
@@ -245,7 +328,6 @@ class TeacherController extends Controller
         try {
             $user = User::findOrFail($id);
 
-            // ✅ إزالة المعلم من أي جدولة قبل الحذف
             PlanCircleSchedule::where('teacher_id', $id)->update([
                 'teacher_id' => null,
                 'is_available' => true

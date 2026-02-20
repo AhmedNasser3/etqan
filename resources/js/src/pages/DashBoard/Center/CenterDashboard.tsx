@@ -20,24 +20,6 @@ const CenterDashboard: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    const payrollData = [
-        { month: "يناير", amount: 42000 },
-        { month: "فبراير", amount: 43500 },
-        { month: "مارس", amount: 45000 },
-        { month: "أبريل", amount: 46500 },
-        { month: "مايو", amount: 47800 },
-        { month: "يونيو", amount: 48500 },
-    ];
-
-    const successData = [
-        { month: "يناير", rate: 87 },
-        { month: "فبراير", rate: 89 },
-        { month: "مارس", rate: 92 },
-        { month: "أبريل", rate: 94 },
-        { month: "مايو", rate: 96 },
-        { month: "يونيو", rate: 95 },
-    ];
-
     const studentsData = [
         { month: "يناير", count: 220 },
         { month: "فبراير", count: 228 },
@@ -47,14 +29,15 @@ const CenterDashboard: React.FC = () => {
         { month: "يونيو", count: 252 },
     ];
 
-    const attendanceData = [
-        { month: "يناير", rate: 88 },
-        { month: "فبراير", rate: 90 },
-        { month: "مارس", rate: 92 },
-        { month: "أبريل", rate: 93 },
-        { month: "مايو", rate: 95 },
-        { month: "يونيو", rate: 94 },
-    ];
+    const plansDataArray = studentsData.map((item, index) => ({
+        month: item.month,
+        count: [15, 18, 22, 25, 28, 32][index],
+    }));
+
+    const employeesDataArray = studentsData.map((item, index) => ({
+        month: item.month,
+        count: [8, 9, 10, 11, 12, 12][index],
+    }));
 
     useEffect(() => {
         setIsVisible(true);
@@ -86,93 +69,6 @@ const CenterDashboard: React.FC = () => {
             });
         };
 
-        const canvas = canvasRef.current;
-        const ctx = canvas?.getContext("2d");
-        if (ctx && canvas) {
-            canvas.width = canvas.offsetWidth * 2;
-            canvas.height = canvas.offsetHeight * 2;
-            ctx.scale(2, 2);
-
-            const data = [120, 180, 220, 190, 280, 320, 290, 380, 420, 450];
-            const maxData = Math.max(...data);
-
-            let progress = 0;
-            const animateChart = () => {
-                ctx.clearRect(0, 0, canvas.width / 2, canvas.height / 2);
-
-                const bgGradient = ctx.createLinearGradient(
-                    0,
-                    0,
-                    0,
-                    canvas.height / 2,
-                );
-                bgGradient.addColorStop(0, "rgba(255, 255, 255, 0.4)");
-                bgGradient.addColorStop(1, "rgba(255, 255, 255, 0.1)");
-                ctx.fillStyle = bgGradient;
-                ctx.fillRect(0, 0, canvas.width / 2, canvas.height / 2);
-
-                ctx.strokeStyle = "rgba(0,0,0,0.08)";
-                ctx.lineWidth = 0.5;
-                for (let i = 0; i <= 5; i++) {
-                    const y = ((canvas.height / 2) * i) / 5;
-                    ctx.beginPath();
-                    ctx.moveTo(50, y);
-                    ctx.lineTo(canvas.width / 2 - 30, y);
-                    ctx.stroke();
-                }
-
-                ctx.lineWidth = 2;
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
-                ctx.strokeStyle = "#3B82F6";
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = "rgba(59, 130, 246, 0.5)";
-
-                ctx.beginPath();
-                const steps = Math.min(
-                    data.length,
-                    Math.floor(data.length * progress),
-                );
-                for (let i = 0; i < steps; i++) {
-                    const x =
-                        50 + ((canvas.width / 2 - 80) * i) / (data.length - 1);
-                    const y =
-                        canvas.height / 2 -
-                        (data[i] / maxData) * ((canvas.height / 2) * 0.7);
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-
-                    const dotGradient = ctx.createRadialGradient(
-                        x,
-                        y,
-                        0,
-                        x,
-                        y,
-                        4,
-                    );
-                    dotGradient.addColorStop(0, "#3B82F6");
-                    dotGradient.addColorStop(1, "rgba(59, 130, 246, 0.3)");
-                    ctx.fillStyle = dotGradient;
-                    ctx.beginPath();
-                    ctx.arc(x, y, 4, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.stroke();
-
-                ctx.lineTo(canvas.width / 2 - 30, canvas.height / 2);
-                ctx.lineTo(50, canvas.height / 2);
-                ctx.fillStyle = "rgba(59, 130, 246, 0.15)";
-                ctx.fill();
-
-                progress += 0.06;
-                if (progress < 1.3) {
-                    requestAnimationFrame(animateChart);
-                }
-            };
-
-            animateChart();
-        }
-
         animateNumbers();
     }, []);
 
@@ -182,6 +78,7 @@ const CenterDashboard: React.FC = () => {
                 <div
                     className={`CenterDashboard__cards ${isVisible ? "visible" : ""}`}
                 >
+                    {/* إجمالي الرواتب */}
                     <div className="stat-card">
                         <div className="stat-number" data-target="125,000">
                             0
@@ -190,6 +87,7 @@ const CenterDashboard: React.FC = () => {
                         <span className="currency">ر.س</span>
                     </div>
 
+                    {/* الربح الصافي */}
                     <div className="stat-card">
                         <div className="stat-number" data-target="78,500">
                             0
@@ -198,22 +96,31 @@ const CenterDashboard: React.FC = () => {
                         <span className="currency">ر.س</span>
                     </div>
 
+                    {/* عدد الطلاب */}
                     <div className="stat-card">
                         <div className="stat-number" data-target="245">
                             0
                         </div>
                         <div className="stat-label">عدد الطلاب</div>
-                        <span className="currency">ر.س</span>
                     </div>
 
+                    {/* عدد الخطط */}
+                    <div className="stat-card">
+                        <div className="stat-number" data-target="32">
+                            0
+                        </div>
+                        <div className="stat-label">عدد الخطط</div>
+                    </div>
+
+                    {/* عدد الموظفين */}
                     <div className="stat-card">
                         <div className="stat-number" data-target="12">
                             0
                         </div>
                         <div className="stat-label">عدد الموظفين</div>
-                        <span className="currency">ر.س</span>
                     </div>
 
+                    {/* مستوى تقدم المجمع % */}
                     <div className="stat-card">
                         <div className="stat-number" data-target="89.5">
                             0
@@ -221,22 +128,23 @@ const CenterDashboard: React.FC = () => {
                         <div className="stat-label">مستوى تقدم المجمع %</div>
                     </div>
 
+                    {/* إجمالي الزوار */}
                     <div className="stat-card">
                         <div className="stat-number" data-target="156,234">
                             0
                         </div>
                         <div className="stat-label">إجمالي الزوار</div>
-                        <span className="currency">ر.س</span>
                     </div>
 
+                    {/* الزوار اليوم */}
                     <div className="stat-card">
                         <div className="stat-number" data-target="24,567">
                             0
                         </div>
                         <div className="stat-label">الزوار اليوم</div>
-                        <span className="currency">ر.س</span>
                     </div>
 
+                    {/* معدل الحضور % */}
                     <div className="stat-card">
                         <div className="stat-number" data-target="95">
                             0
@@ -245,25 +153,16 @@ const CenterDashboard: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="CenterDashboard__link">
-                    <div className="CenterDashboard__LinkText">
-                        <div className="userProfile__meetBtnUrl">
-                            <i>
-                                <IoCopy />
-                            </i>
-                            <h1>http://127.0.0.1:8000/user-dashboard</h1>
-                        </div>{" "}
-                    </div>
-                </div>
-
+                {/* الرسوم البيانية الثلاثة فقط */}
                 <div className="CenterCharts">
                     <div className="CenterCharts__container">
+                        {/* رسم بياني عدد الطلاب */}
                         <div className="CenterCharts__chartCard">
                             <h4 className="CenterCharts__chartTitle">
-                                تطور الرواتب
+                                تطور عدد الطلاب
                             </h4>
                             <ResponsiveContainer width="100%" height={200}>
-                                <LineChart data={payrollData}>
+                                <LineChart data={studentsData}>
                                     <CartesianGrid
                                         strokeDasharray="3 3"
                                         vertical={false}
@@ -277,7 +176,7 @@ const CenterDashboard: React.FC = () => {
                                     <Tooltip />
                                     <Line
                                         type="monotone"
-                                        dataKey="amount"
+                                        dataKey="count"
                                         stroke="#30802fad"
                                         strokeWidth={3}
                                         dot={{
@@ -290,15 +189,16 @@ const CenterDashboard: React.FC = () => {
                             </ResponsiveContainer>
                         </div>
 
+                        {/* رسم بياني عدد الخطط */}
                         <div className="CenterCharts__chartCard">
                             <h4 className="CenterCharts__chartTitle">
-                                معدل النجاح
+                                تطور عدد الخطط
                             </h4>
                             <ResponsiveContainer width="100%" height={200}>
-                                <AreaChart data={successData}>
+                                <AreaChart data={plansDataArray}>
                                     <defs>
                                         <linearGradient
-                                            id="successGradient"
+                                            id="plansGradient"
                                             x1="0"
                                             y1="0"
                                             x2="0"
@@ -306,12 +206,12 @@ const CenterDashboard: React.FC = () => {
                                         >
                                             <stop
                                                 offset="0%"
-                                                stopColor="#ff73005d"
+                                                stopColor="#10b98159"
                                                 stopOpacity={0.8}
                                             />
                                             <stop
                                                 offset="100%"
-                                                stopColor="#ff73005d"
+                                                stopColor="#10b98159"
                                                 stopOpacity={0}
                                             />
                                         </linearGradient>
@@ -325,26 +225,23 @@ const CenterDashboard: React.FC = () => {
                                     <Tooltip />
                                     <Area
                                         type="monotone"
-                                        dataKey="rate"
-                                        stroke="#ff73005d"
+                                        dataKey="count"
+                                        stroke="#10b98159"
                                         strokeWidth={3}
                                         fillOpacity={1}
-                                        fill="url(#successGradient)"
+                                        fill="url(#plansGradient)"
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>
 
+                        {/* رسم بياني عدد الموظفين */}
                         <div className="CenterCharts__chartCard">
                             <h4 className="CenterCharts__chartTitle">
-                                معدل الحضور
+                                تطور عدد الموظفين
                             </h4>
                             <ResponsiveContainer width="100%" height={200}>
-                                <LineChart data={attendanceData}>
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        vertical={false}
-                                    />
+                                <BarChart data={employeesDataArray}>
                                     <XAxis
                                         dataKey="month"
                                         axisLine={false}
@@ -352,17 +249,12 @@ const CenterDashboard: React.FC = () => {
                                     />
                                     <YAxis tickLine={false} axisLine={false} />
                                     <Tooltip />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="rate"
-                                        stroke="#972a2a"
-                                        strokeWidth={3}
-                                        dot={{
-                                            fill: "#972a2a",
-                                            strokeWidth: 2,
-                                        }}
+                                    <Bar
+                                        dataKey="count"
+                                        fill="#972a2a"
+                                        radius={[4, 4, 0, 0]}
                                     />
-                                </LineChart>
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>

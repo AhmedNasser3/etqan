@@ -46,7 +46,7 @@ class UserPermissionsController extends Controller
                 'success' => true,
                 'permissions' => $this->getDefaultPermissions(),
                 'role' => null,
-                'is_center_owner' => true,
+                'is_center_owner' => false,
                 'message' => 'No teacher role assigned - default permissions'
             ]);
         }
@@ -65,7 +65,7 @@ class UserPermissionsController extends Controller
             'success' => true,
             'permissions' => $permissions,
             'role' => $role,
-            'is_center_owner' => true,
+            'is_center_owner' => false,
             'teacher' => [
                 'role' => $user->teacher->role,
                 'session_time' => $user->teacher->session_time ?? null
@@ -79,7 +79,7 @@ class UserPermissionsController extends Controller
     private function isCenterOwner($user): bool
     {
         if (!$user || !$user->email) {
-            return true;
+            return false; // ✅ إصلاح: false بدلاً من true
         }
 
         $isOwner = Center::where('email', $user->email)->exists();
@@ -112,89 +112,93 @@ class UserPermissionsController extends Controller
     }
 
     /**
-     * Default permissions لما مفيش teacher role (Dashboard + اعتماد طلاب)
+     * Default permissions لما مفيش teacher role (Dashboard بس)
      */
     private function getDefaultPermissions(): array
     {
         return [
             'dashboard' => true,
-            'mosque' => ['students/approval'],
-            'staff' => true,
-            'financial' => true,
-            'domain' => true,
-            'education' => true,
-            'attendance' => true,
-            'reports' => true,
-            'certificates' => true,
-            'messages' => true
+            'mosque' => false,
+            'staff' => false,
+            'financial' => false,
+            'domain' => false,
+            'education' => false,
+            'attendance' => false,
+            'reports' => false,
+            'certificates' => false,
+            'messages' => false
         ];
     }
 
     /**
-     * Role-based permissions للـ teachers العاديين
+     * ✅ Role-based permissions مُحدثة ومُصححة لكل الـ roles
      */
     private function getRolePermissions(string $role): array
     {
         $permissions = [
             'teacher' => [
                 'dashboard' => true,
-                'mosque' => ['students/approval'],
-                'staff' => true,
-                'financial' => true,
-                'domain' => true,
-                'education' => true,
-                'attendance' => true,
-                'reports' => true,
-                'certificates' => true,
-                'messages' => true
+                'mosque' => ['students/approval'], // اعتماد الطلاب بس
+                'staff' => false,
+                'financial' => false,
+                'domain' => false,
+                'education' => false,
+                'attendance' => false,
+                'reports' => false,
+                'certificates' => false,
+                'messages' => false
             ],
+
             'supervisor' => [
                 'dashboard' => true,
                 'mosque' => ['students/approval', 'shedule-manegment', 'circle-manegment'],
                 'staff' => ['staff-approval', 'staff-attendance'],
                 'financial' => true,
-                'domain' => true,
+                'domain' => false, // ✅ مش هيظهر اعتماد المجمعات
                 'education' => true,
                 'attendance' => true,
                 'reports' => true,
                 'certificates' => true,
                 'messages' => true
             ],
+
             'motivator' => [
-                'dashboard' => true,
-                'mosque' => ['students/approval'],
-                'staff' => true,
-                'financial' => true,
-                'domain' => true,
-                'education' => true,
-                'attendance' => true,
-                'reports' => ['student-supervisor'],
-                'certificates' => true,
-                'messages' => true
+                'dashboard' => false,
+                'mosque' => false,
+                'staff' => false,
+                'financial' => false,
+                'domain' => false,
+                'education' => false,
+                'attendance' => true, // حضور بس
+                'reports' => false,
+                'certificates' => false,
+                'messages' => false
             ],
+
             'student_affairs' => [
                 'dashboard' => true,
-                'mosque' => ['students/approval', 'booking-manegment'],
-                'staff' => true,
-                'financial' => true,
-                'domain' => true,
-                'education' => true,
-                'attendance' => true,
-                'reports' => true,
-                'certificates' => true,
-                'messages' => true
+                'mosque' => ['students/approval', 'booking-manegment'], // شؤون الطلاب
+                'staff' => false,
+                'financial' => false,
+                'domain' => false,
+                'education' => false,
+                'attendance' => false,
+                'reports' => true, // إدارة الطلاب
+                'certificates' => false,
+                'messages' => false
             ],
+
             'financial' => [
                 'dashboard' => true,
-                'mosque' => true,
-                'staff' => true,
-                'financial' => ['financial-dashboard', 'payroll-reports'],
-                'domain' => true,
-                'education' => true,
-                'attendance' => true,
-                'reports' => true,
-                'certificates' => true,
-                'messages' => true
+                'mosque' => false,
+                'staff' => ['staff-attendance'], // حضور المعلمين
+                'financial' => ['financial-dashboard', 'payroll-reports', 'teaceher-salary-manegment'],
+                'domain' => false,
+                'education' => false,
+                'attendance' => false,
+                'reports' => false,
+                'certificates' => false,
+                'messages' => false
             ]
         ];
 

@@ -1,3 +1,4 @@
+// ✅ usePermissions Hook - مُصحح ومتكامل 100%
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 
@@ -63,7 +64,7 @@ export const usePermissions = (): UserPermissions => {
         return "";
     }, []);
 
-    // ✅ Fetch function محسن زي usePlans بالضبط
+    // ✅ Fetch function مُصحح
     const fetchPermissions = useCallback(async (): Promise<void> => {
         // ✅ Abort previous request
         if (abortControllerRef.current) {
@@ -122,10 +123,11 @@ export const usePermissions = (): UserPermissions => {
             const data = await response.json();
             console.log("✅ Permissions response:", data);
 
+            // ✅ إصلاح خطأ toast (كان مكتوب toast بس بدون .success)
             if (data.success !== false) {
                 setPermissions(data.permissions || {});
                 setRole(data.role || null);
-                toast;
+                toast.success("تم تحميل الصلاحيات بنجاح");
             } else {
                 throw new Error(data.message || "Failed to fetch permissions");
             }
@@ -139,10 +141,10 @@ export const usePermissions = (): UserPermissions => {
             setError(err.message || "Failed to fetch permissions");
             toast.error(err.message || "فشل في جلب الصلاحيات");
 
-            // ✅ Default fallback permissions
+            // ✅ Default fallback permissions حسب الـ role الافتراضي
             setPermissions({
                 dashboard: true,
-                mosque: ["students/approval"],
+                mosque: ["students/approval"], // اعتماد الطلاب دايماً يظهر
                 staff: false,
                 financial: false,
                 domain: false,
@@ -159,22 +161,48 @@ export const usePermissions = (): UserPermissions => {
         }
     }, [getCsrfToken]);
 
-    // ✅ Permission checker محسن مع path cleaning
+    // ✅ Permission checker مُحسن ومُصحح لكل الـ roles
     const hasPermission = useCallback(
         (menuKey: string, subPath?: string): boolean => {
             const perm = permissions[menuKey as keyof Permissions];
 
+            console.log(
+                `🔍 Checking permission [${menuKey}]${subPath ? ` - ${subPath}` : ""}:`,
+                perm,
+            );
+
+            // ✅ Boolean permissions
             if (typeof perm === "boolean") {
                 return perm;
             }
 
+            // ✅ Array permissions مع path matching مُحسن
             if (Array.isArray(perm) && subPath) {
                 const cleanSubPath = subPath
                     .replace("/center-dashboard/", "")
-                    .replace("/api/", "");
-                return perm.some((path) => cleanSubPath.includes(path));
+                    .replace("/api/", "")
+                    .replace(/^\/|\/$/g, ""); // تنظيف البداية والنهاية
+
+                console.log(
+                    `🔍 Clean path: "${cleanSubPath}" vs permissions:`,
+                    perm,
+                );
+
+                // ✅ تحقق من وجود أي permission يطابق الـ path
+                return perm.some((allowedPath) => {
+                    const cleanAllowedPath = allowedPath.replace(
+                        /^\/|\/$/g,
+                        "",
+                    );
+                    return (
+                        cleanSubPath === cleanAllowedPath ||
+                        cleanSubPath.includes(cleanAllowedPath) ||
+                        cleanAllowedPath.includes(cleanSubPath)
+                    );
+                });
             }
 
+            // ✅ إذا array فاضي أو مش موجود = false
             return Array.isArray(perm) ? !!perm.length : false;
         },
         [permissions],
@@ -185,7 +213,7 @@ export const usePermissions = (): UserPermissions => {
         fetchPermissions();
     }, [fetchPermissions]);
 
-    // ✅ Debug effect
+    // ✅ Debug effect مُحسن
     useEffect(() => {
         console.log("🔍 Permissions state:", {
             permissions,
