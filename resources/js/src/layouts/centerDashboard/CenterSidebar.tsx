@@ -10,7 +10,6 @@ import { FaFileAlt } from "react-icons/fa";
 import { FaHistory } from "react-icons/fa";
 import { FaMosque } from "react-icons/fa";
 
-// ✅ Types للـ menu items
 interface SubMenuItem {
     href: string;
     title: string;
@@ -31,7 +30,6 @@ const CenterSidebar: React.FC = () => {
     const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
     const [activeSubPage, setActiveSubPage] = useState("");
 
-    // ✅ Permissions
     const { loading, hasPermission } = usePermissions();
 
     // ✅ Active page logic مع permissions
@@ -113,8 +111,9 @@ const CenterSidebar: React.FC = () => {
             setActivePage("dashboard");
             setActiveSubPage("");
         }
-    }, [loading]);
+    }, [loading, hasPermission]);
 
+    // ✅ Toggle submenu فقط
     const toggleMenu = (menuKey: string, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -124,35 +123,14 @@ const CenterSidebar: React.FC = () => {
         }));
     };
 
-    const handleMainLinkClick = (
-        href: string,
-        activePageKey: string,
-        e: React.MouseEvent,
-    ) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (href === "#") {
-            toggleMenu(activePageKey, e);
-        } else {
-            setActivePage(activePageKey);
-            setActiveSubPage("");
-            // إغلاق كل الـ menus عدا الـ active
-            Object.keys(openMenus).forEach((key) => {
-                if (key !== activePageKey) {
-                    setOpenMenus((prev) => ({ ...prev, [key]: false }));
-                }
-            });
-        }
-    };
-
+    // ✅ Submenu link click
     const handleSubLinkClick = (href: string, parentKey: string) => {
         setActiveSubPage(href);
         setActivePage(parentKey);
         setOpenMenus((prev) => ({ ...prev, [parentKey]: true }));
     };
 
-    // ✅ Menu items مع permissions
+    // ✅ Menu items
     const baseMenuItems: MenuItem[] = [
         {
             key: "dashboard",
@@ -166,7 +144,7 @@ const CenterSidebar: React.FC = () => {
             key: "mosque",
             href: "#",
             icon: (
-                <IoIosArrowDown
+                <FaMosque
                     className={`arrow-icon ${openMenus.mosque ? "rotated" : ""}`}
                 />
             ),
@@ -207,7 +185,7 @@ const CenterSidebar: React.FC = () => {
             key: "staff",
             href: "#",
             icon: (
-                <IoIosArrowDown
+                <FaChalkboardTeacher
                     className={`arrow-icon ${openMenus.staff ? "rotated" : ""}`}
                 />
             ),
@@ -232,7 +210,7 @@ const CenterSidebar: React.FC = () => {
             key: "financial",
             href: "#",
             icon: (
-                <IoIosArrowDown
+                <FaFileAlt
                     className={`arrow-icon ${openMenus.financial ? "rotated" : ""}`}
                 />
             ),
@@ -243,14 +221,6 @@ const CenterSidebar: React.FC = () => {
                     href: "/center-dashboard/financial-dashboard",
                     title: "اللوحة المالية",
                 },
-                // {
-                //     href: "/center-dashboard/payroll-exports",
-                //     title: "مسيرات الرواتب",
-                // },
-                // {
-                //     href: "/center-dashboard/payroll-reports",
-                //     title: "تقارير الدوام",
-                // },
                 {
                     href: "/center-dashboard/teaceher-salary-manegment",
                     title: "قواعد الراتب",
@@ -301,7 +271,6 @@ const CenterSidebar: React.FC = () => {
         },
     ];
 
-    // ✅ Filter حسب الصلاحيات
     const menuItems: MenuItem[] = baseMenuItems.filter(
         (item) => item.alwaysShow || hasPermission(item.key),
     );
@@ -334,26 +303,29 @@ const CenterSidebar: React.FC = () => {
                                 key={item.key}
                                 className={`sidebar__data ${activePage === item.activePage ? "active" : ""}`}
                             >
-                                <div
-                                    className="sidebar__title"
-                                    onClick={(e) =>
-                                        handleMainLinkClick(
-                                            item.href,
-                                            item.key,
-                                            e,
-                                        )
-                                    }
-                                >
-                                    <a
-                                        href={item.href}
-                                        className={
-                                            item.href === "#" ? "no-link" : ""
-                                        }
-                                    >
-                                        <i>{item.icon}</i>
-                                        <h2>{item.title}</h2>
-                                    </a>
+                                <div className="sidebar__title">
+                                    {item.href === "#" ? (
+                                        // ✅ Submenu toggle - نفس الهيكل القديم
+                                        <a
+                                            href="#"
+                                            className="no-link"
+                                            onClick={(e) =>
+                                                toggleMenu(item.key, e)
+                                            }
+                                        >
+                                            <i>{item.icon}</i>
+                                            <h2>{item.title}</h2>
+                                        </a>
+                                    ) : (
+                                        // ✅ Main navigation - نفس الهيكل القديم ✅ شغال 100%
+                                        <a href={item.href}>
+                                            <i>{item.icon}</i>
+                                            <h2>{item.title}</h2>
+                                        </a>
+                                    )}
                                 </div>
+
+                                {/* Submenu - نفس الهيكل القديم */}
                                 {item.submenu && hasPermission(item.key) && (
                                     <ul
                                         className={`sub-menu ${openMenus[item.key as string] ? "open" : ""}`}

@@ -69,6 +69,7 @@ import CentersPage from "./src/pages/DashBoard/Center/pages/CentersPage";
 import EditAccountPage from "./src/pages/DashBoard/AccountEdit/EditAccountPage";
 import MeetingsManagement from "./src/pages/DashBoard/Meeting/MeetingsManagement";
 import TeacherAchievementList from "./src/pages/DashBoard/teacherDashboard/widgets/TeacherMotivate/TeacherAchievementList";
+import SpecialRequestFormPage from "./src/pages/DashBoard/UserDashboard/SpecialRequest/SpecialRequestFormPage";
 
 function UserLayout() {
     return (
@@ -306,6 +307,10 @@ function App() {
                         <Route
                             path="user-setting"
                             element={<EditAccountPage />}
+                        />
+                        <Route
+                            path="user-special"
+                            element={<SpecialRequestFormPage />}
                         />
                         <Route
                             path="user-complexes"

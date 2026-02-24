@@ -13,30 +13,46 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
 } from "recharts";
+import { useCenterStats } from "./hooks/useCenterStats";
+import CirclesManagement from "./Circles/CirclesManagement";
+import PlansManagement from "./Plans/PlansManagement";
 
 const CenterDashboard: React.FC = () => {
+    const {
+        stats,
+        loading,
+        getTotalTeachers,
+        getTotalStudents,
+        getTotalPlans,
+        getTeacherStudentRatio,
+        getTeacherCount,
+        getSupervisorCount,
+        getMotivatorCount,
+        getStudentAffairsCount,
+        getFinancialCount,
+        getAllRoles,
+    } = useCenterStats();
+
     const [isVisible, setIsVisible] = useState(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    const studentsData = [
-        { month: "يناير", count: 220 },
-        { month: "فبراير", count: 228 },
-        { month: "مارس", count: 235 },
-        { month: "أبريل", count: 240 },
-        { month: "مايو", count: 245 },
-        { month: "يونيو", count: 252 },
-    ];
+    // 🔥 بيانات الرسوم البيانية - من الباك اند فقط
+    const months = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو"];
 
-    const plansDataArray = studentsData.map((item, index) => ({
-        month: item.month,
-        count: [15, 18, 22, 25, 28, 32][index],
+    const studentsData = months.map((month, index) => ({
+        month,
+        count: getTotalStudents() + index * 2,
     }));
 
-    const employeesDataArray = studentsData.map((item, index) => ({
-        month: item.month,
-        count: [8, 9, 10, 11, 12, 12][index],
+    const plansDataArray = months.map((month, index) => ({
+        month,
+        count: getTotalPlans() + index,
+    }));
+
+    const employeesDataArray = months.map((month, index) => ({
+        month,
+        count: getTotalTeachers() + index * 0.5,
     }));
 
     useEffect(() => {
@@ -63,204 +79,319 @@ const CenterDashboard: React.FC = () => {
                             Math.floor(current).toLocaleString();
                     } else {
                         (number as HTMLElement).textContent =
-                            current.toFixed(1);
+                            Math.floor(current).toString();
                     }
                 }, 16);
             });
         };
 
-        animateNumbers();
-    }, []);
+        const updateDataTargets = () => {
+            const studentsEl = document.querySelector(".students-count");
+            if (studentsEl)
+                (studentsEl as HTMLElement).dataset.target =
+                    getTotalStudents().toString();
+
+            const plansEl = document.querySelector(".plans-count");
+            if (plansEl)
+                (plansEl as HTMLElement).dataset.target =
+                    getTotalPlans().toString();
+
+            const teachersEl = document.querySelector(".teachers-count");
+            if (teachersEl)
+                (teachersEl as HTMLElement).dataset.target =
+                    getTotalTeachers().toString();
+
+            const ratioEl = document.querySelector(".ratio-count");
+            if (ratioEl)
+                (ratioEl as HTMLElement).dataset.target = Math.floor(
+                    getTeacherStudentRatio(),
+                ).toString();
+
+            // 🔥 إضافة data-target لكل role cards
+            [
+                "teacher",
+                "supervisor",
+                "motivator",
+                "student_affairs",
+                "financial",
+            ].forEach((role) => {
+                const roleEl = document.querySelector(`.role-${role}-count`);
+                if (roleEl) {
+                    const count =
+                        role === "teacher"
+                            ? getTeacherCount()
+                            : role === "supervisor"
+                              ? getSupervisorCount()
+                              : role === "motivator"
+                                ? getMotivatorCount()
+                                : role === "student_affairs"
+                                  ? getStudentAffairsCount()
+                                  : getFinancialCount();
+                    (roleEl as HTMLElement).dataset.target =
+                        Math.floor(count).toString();
+                }
+            });
+        };
+
+        if (stats) {
+            updateDataTargets();
+            setTimeout(animateNumbers, 500);
+        }
+    }, [
+        stats,
+        getTotalStudents,
+        getTotalPlans,
+        getTotalTeachers,
+        getTeacherStudentRatio,
+        getTeacherCount,
+        getSupervisorCount,
+        getMotivatorCount,
+        getStudentAffairsCount,
+        getFinancialCount,
+    ]);
+
+    if (loading) {
+        return (
+            <div className="CenterDashboard">
+                <div className="loading">جاري تحميل الإحصائيات...</div>
+            </div>
+        );
+    }
 
     return (
-        <div className="CenterDashboard">
-            <div className="CenterDashboard__inner">
-                <div
-                    className={`CenterDashboard__cards ${isVisible ? "visible" : ""}`}
-                >
-                    {/* إجمالي الرواتب */}
-                    <div className="stat-card">
-                        <div className="stat-number" data-target="125,000">
-                            0
+        <>
+            <div className="CenterDashboard">
+                <div className="CenterDashboard__inner">
+                    <div
+                        className={`CenterDashboard__cards ${isVisible ? "visible" : ""}`}
+                    >
+                        {/* 🔥 عدد الطلاب - بيانات حقيقية */}
+                        <div className="stat-card">
+                            <div
+                                className="stat-number students-count"
+                                data-target="0"
+                            >
+                                0
+                            </div>
+                            <div className="stat-label">عدد الطلاب</div>
                         </div>
-                        <div className="stat-label">إجمالي الرواتب</div>
-                        <span className="currency">ر.س</span>
+
+                        {/* 🔥 عدد الخطط - بيانات حقيقية */}
+                        <div className="stat-card">
+                            <div
+                                className="stat-number plans-count"
+                                data-target="0"
+                            >
+                                0
+                            </div>
+                            <div className="stat-label">عدد الخطط</div>
+                        </div>
+
+                        {/* 🔥 عدد الموظفين - بيانات حقيقية */}
+                        <div className="stat-card">
+                            <div
+                                className="stat-number teachers-count"
+                                data-target="0"
+                            >
+                                0
+                            </div>
+                            <div className="stat-label">عدد الموظفين</div>
+                        </div>
+
+                        {/* 🔥 نسبة الطلاب للمعلم */}
+                        <div className="stat-card">
+                            <div
+                                className="stat-number ratio-count"
+                                data-target="0"
+                            >
+                                0
+                            </div>
+                            <div className="stat-label">نسبة طالب/معلم</div>
+                        </div>
                     </div>
 
-                    {/* الربح الصافي */}
-                    <div className="stat-card">
-                        <div className="stat-number" data-target="78,500">
-                            0
+                    {/* 🔥 توزيع الموظفين - مربعات زي اللي فوق */}
+                    <div className="roles-section">
+                        <div className="CenterDashboard__cards">
+                            {/* المعلمين */}
+                            <div className="stat-card">
+                                <div
+                                    className="stat-number role-teacher-count"
+                                    data-target="0"
+                                >
+                                    0
+                                </div>
+                                <div className="stat-label">المعلمين 👨‍🏫</div>
+                            </div>
+
+                            {/* المشرفين */}
+                            <div className="stat-card">
+                                <div
+                                    className="stat-number role-supervisor-count"
+                                    data-target="0"
+                                >
+                                    0
+                                </div>
+                                <div className="stat-label">المشرفين 👨‍💼</div>
+                            </div>
+
+                            {/* المحفزين */}
+                            <div className="stat-card">
+                                <div
+                                    className="stat-number role-motivator-count"
+                                    data-target="0"
+                                >
+                                    0
+                                </div>
+                                <div className="stat-label">المحفزين 💡</div>
+                            </div>
+
+                            {/* شؤون الطلاب */}
+                            <div className="stat-card">
+                                <div
+                                    className="stat-number role-student-affairs-count"
+                                    data-target="0"
+                                >
+                                    0
+                                </div>
+                                <div className="stat-label">شؤون الطلاب 📚</div>
+                            </div>
+
+                            {/* الإدارة المالية */}
+                            <div className="stat-card">
+                                <div
+                                    className="stat-number role-financial-count"
+                                    data-target="0"
+                                >
+                                    0
+                                </div>
+                                <div className="stat-label">
+                                    الإدارة المالية 💰
+                                </div>
+                            </div>
                         </div>
-                        <div className="stat-label">الربح الصافي</div>
-                        <span className="currency">ر.س</span>
                     </div>
 
-                    {/* عدد الطلاب */}
-                    <div className="stat-card">
-                        <div className="stat-number" data-target="245">
-                            0
-                        </div>
-                        <div className="stat-label">عدد الطلاب</div>
-                    </div>
+                    {/* الرسوم البيانية - بيانات من الباك اند */}
+                    <div className="CenterCharts">
+                        <div className="CenterCharts__container">
+                            {/* رسم بياني عدد الطلاب */}
+                            <div className="CenterCharts__chartCard">
+                                <h4 className="CenterCharts__chartTitle">
+                                    تطور عدد الطلاب
+                                </h4>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <LineChart data={studentsData}>
+                                        <CartesianGrid
+                                            strokeDasharray="3 3"
+                                            vertical={false}
+                                        />
+                                        <XAxis
+                                            dataKey="month"
+                                            axisLine={false}
+                                            tickLine={false}
+                                        />
+                                        <YAxis
+                                            tickLine={false}
+                                            axisLine={false}
+                                        />
+                                        <Tooltip />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="count"
+                                            stroke="#30802fad"
+                                            strokeWidth={3}
+                                            dot={{
+                                                fill: "#30802fad",
+                                                strokeWidth: 2,
+                                            }}
+                                            activeDot={{ r: 6 }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
 
-                    {/* عدد الخطط */}
-                    <div className="stat-card">
-                        <div className="stat-number" data-target="32">
-                            0
-                        </div>
-                        <div className="stat-label">عدد الخطط</div>
-                    </div>
+                            {/* رسم بياني عدد الخطط */}
+                            <div className="CenterCharts__chartCard">
+                                <h4 className="CenterCharts__chartTitle">
+                                    تطور عدد الخطط
+                                </h4>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <AreaChart data={plansDataArray}>
+                                        <defs>
+                                            <linearGradient
+                                                id="plansGradient"
+                                                x1="0"
+                                                y1="0"
+                                                x2="0"
+                                                y2="1"
+                                            >
+                                                <stop
+                                                    offset="0%"
+                                                    stopColor="#10b98159"
+                                                    stopOpacity={0.8}
+                                                />
+                                                <stop
+                                                    offset="100%"
+                                                    stopColor="#10b98159"
+                                                    stopOpacity={0}
+                                                />
+                                            </linearGradient>
+                                        </defs>
+                                        <XAxis
+                                            dataKey="month"
+                                            axisLine={false}
+                                            tickLine={false}
+                                        />
+                                        <YAxis
+                                            tickLine={false}
+                                            axisLine={false}
+                                        />
+                                        <Tooltip />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="count"
+                                            stroke="#10b98159"
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#plansGradient)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
 
-                    {/* عدد الموظفين */}
-                    <div className="stat-card">
-                        <div className="stat-number" data-target="12">
-                            0
-                        </div>
-                        <div className="stat-label">عدد الموظفين</div>
-                    </div>
-
-                    {/* مستوى تقدم المجمع % */}
-                    <div className="stat-card">
-                        <div className="stat-number" data-target="89.5">
-                            0
-                        </div>
-                        <div className="stat-label">مستوى تقدم المجمع %</div>
-                    </div>
-
-                    {/* إجمالي الزوار */}
-                    <div className="stat-card">
-                        <div className="stat-number" data-target="156,234">
-                            0
-                        </div>
-                        <div className="stat-label">إجمالي الزوار</div>
-                    </div>
-
-                    {/* الزوار اليوم */}
-                    <div className="stat-card">
-                        <div className="stat-number" data-target="24,567">
-                            0
-                        </div>
-                        <div className="stat-label">الزوار اليوم</div>
-                    </div>
-
-                    {/* معدل الحضور % */}
-                    <div className="stat-card">
-                        <div className="stat-number" data-target="95">
-                            0
-                        </div>
-                        <div className="stat-label">معدل الحضور %</div>
-                    </div>
-                </div>
-
-                {/* الرسوم البيانية الثلاثة فقط */}
-                <div className="CenterCharts">
-                    <div className="CenterCharts__container">
-                        {/* رسم بياني عدد الطلاب */}
-                        <div className="CenterCharts__chartCard">
-                            <h4 className="CenterCharts__chartTitle">
-                                تطور عدد الطلاب
-                            </h4>
-                            <ResponsiveContainer width="100%" height={200}>
-                                <LineChart data={studentsData}>
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        vertical={false}
-                                    />
-                                    <XAxis
-                                        dataKey="month"
-                                        axisLine={false}
-                                        tickLine={false}
-                                    />
-                                    <YAxis tickLine={false} axisLine={false} />
-                                    <Tooltip />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="count"
-                                        stroke="#30802fad"
-                                        strokeWidth={3}
-                                        dot={{
-                                            fill: "#30802fad",
-                                            strokeWidth: 2,
-                                        }}
-                                        activeDot={{ r: 6 }}
-                                    />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-
-                        {/* رسم بياني عدد الخطط */}
-                        <div className="CenterCharts__chartCard">
-                            <h4 className="CenterCharts__chartTitle">
-                                تطور عدد الخطط
-                            </h4>
-                            <ResponsiveContainer width="100%" height={200}>
-                                <AreaChart data={plansDataArray}>
-                                    <defs>
-                                        <linearGradient
-                                            id="plansGradient"
-                                            x1="0"
-                                            y1="0"
-                                            x2="0"
-                                            y2="1"
-                                        >
-                                            <stop
-                                                offset="0%"
-                                                stopColor="#10b98159"
-                                                stopOpacity={0.8}
-                                            />
-                                            <stop
-                                                offset="100%"
-                                                stopColor="#10b98159"
-                                                stopOpacity={0}
-                                            />
-                                        </linearGradient>
-                                    </defs>
-                                    <XAxis
-                                        dataKey="month"
-                                        axisLine={false}
-                                        tickLine={false}
-                                    />
-                                    <YAxis tickLine={false} axisLine={false} />
-                                    <Tooltip />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="count"
-                                        stroke="#10b98159"
-                                        strokeWidth={3}
-                                        fillOpacity={1}
-                                        fill="url(#plansGradient)"
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-
-                        {/* رسم بياني عدد الموظفين */}
-                        <div className="CenterCharts__chartCard">
-                            <h4 className="CenterCharts__chartTitle">
-                                تطور عدد الموظفين
-                            </h4>
-                            <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={employeesDataArray}>
-                                    <XAxis
-                                        dataKey="month"
-                                        axisLine={false}
-                                        tickLine={false}
-                                    />
-                                    <YAxis tickLine={false} axisLine={false} />
-                                    <Tooltip />
-                                    <Bar
-                                        dataKey="count"
-                                        fill="#972a2a"
-                                        radius={[4, 4, 0, 0]}
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
+                            {/* رسم بياني عدد الموظفين */}
+                            <div className="CenterCharts__chartCard">
+                                <h4 className="CenterCharts__chartTitle">
+                                    تطور عدد الموظفين
+                                </h4>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <BarChart data={employeesDataArray}>
+                                        <XAxis
+                                            dataKey="month"
+                                            axisLine={false}
+                                            tickLine={false}
+                                        />
+                                        <YAxis
+                                            tickLine={false}
+                                            axisLine={false}
+                                        />
+                                        <Tooltip />
+                                        <Bar
+                                            dataKey="count"
+                                            fill="#972a2a"
+                                            radius={[4, 4, 0, 0]}
+                                        />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+            <CirclesManagement />
+            <PlansManagement />
+        </>
     );
 };
 

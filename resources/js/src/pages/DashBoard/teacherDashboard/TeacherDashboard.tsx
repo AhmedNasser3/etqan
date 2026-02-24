@@ -6,6 +6,7 @@ import TeacherTodayCircle from "./widgets/TeacherTodayCircle/TeacherTodayCircle"
 import { useTeacherTodayMeet } from "./widgets/TeahcerRoom/hooks/useTeacherTodayMeet"; // ✅ المسار الصحيح
 import { useNavigate } from "react-router-dom";
 import TeacherSessionsTable from "./widgets/TeahcerRoom/models/TeacherSessionsTable";
+import QuickCheckinPage from "./widgets/QuickCheckin/QuickCheckinPage";
 
 const TeacherDashboard: React.FC = () => {
     const { meetData, loading, error } = useTeacherTodayMeet();
@@ -68,6 +69,7 @@ const TeacherDashboard: React.FC = () => {
             <div className="teacherDashboard__inner">
                 <Profile />
                 <div className="userProfile__plan">
+                    <QuickCheckinPage />
                     <div
                         className="testimonials__mainTitle"
                         style={{ marginBottom: "0" }}
@@ -182,9 +184,6 @@ const TeacherDashboard: React.FC = () => {
                         </div>
                     )}
                 </div>
-                <TeacherSessionsTable />
-
-                <TeacherTodayCircle />
             </div>
         </div>
     );

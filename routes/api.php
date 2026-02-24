@@ -15,6 +15,7 @@ use App\Http\Controllers\Plans\PlanController;
 use App\Http\Controllers\Plans\PlanDetailController;
 use App\Http\Controllers\Plans\StudentPlanController;
 use App\Http\Controllers\Reports\ReportsController;
+use App\Http\Controllers\Reports\StatsController;
 use App\Http\Controllers\Routes\RouteCustomizationController;
 use App\Http\Controllers\Student\SpecialRequestController;
 use App\Http\Controllers\Student\StudentAchievementController;
@@ -97,7 +98,8 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/{attendanceDay}', [AttendanceController::class, 'show']);
         Route::put('/{attendanceDay}', [AttendanceController::class, 'update']);
         Route::delete('/{attendanceDay}', [AttendanceController::class, 'destroy']);
-
+        // 🆕 QUICK CHECK-IN - **زر الحضور السريع** 🔥
+        Route::post('/quick-checkin', [AttendanceController::class, 'quickCheckin'])->name('quick.checkin');
         // ✅ إحصائيات وحالة اليوم
         Route::get('/stats', [AttendanceController::class, 'stats']);
         Route::get('/today', [AttendanceController::class, 'today']);
@@ -471,26 +473,45 @@ Route::middleware('web')->group(function () {
     // حساب النقاط الصافية للطالب
     Route::get('/v1/teacher/students/{studentId}/points', [TeacherStudentsController::class, 'studentTotalPoints']);
 });
-// routes/web.php
+
+// في routes/web.php أو routes/api.php
 Route::middleware('web')->prefix('v1/reports')->name('reports.')->group(function () {
     // ✅ جلب كل التقارير
     Route::get('/', [ReportsController::class, 'index'])->name('index');
 
     // ✅ تقارير الحضور
     Route::get('/attendance/{period}', [ReportsController::class, 'attendance'])->name('attendance');
-    Route::get('/attendance', [ReportsController::class, 'attendanceList'])->name('attendance.list');
+    Route::get('/attendance', [ReportsController::class, 'attendance'])->name('attendance.list');
 
     // ✅ تقارير الرواتب
     Route::get('/payroll/{period}', [ReportsController::class, 'payroll'])->name('payroll');
-    Route::get('/payroll', [ReportsController::class, 'payrollList'])->name('payroll.list');
+    Route::get('/payroll', [ReportsController::class, 'payroll'])->name('payroll.list');
 
     // ✅ تقارير الإنجازات
     Route::get('/achievements/{period}', [ReportsController::class, 'achievements'])->name('achievements');
-    Route::get('/achievements', [ReportsController::class, 'achievementsList'])->name('achievements.list');
+    Route::get('/achievements', [ReportsController::class, 'achievements'])->name('achievements.list');
+
+    // 🔥 ✅ تقارير السجلات الإدارية - **المحدثة**
+    Route::get('/audit-logs/{period?}', [ReportsController::class, 'auditLogReport'])->name('audit-logs');
+    Route::get('/audit-logs', [ReportsController::class, 'auditLogReport'])->name('audit-logs.list');
+
+    // 🔥 ✅ **الجديد** - كل السجلات بدون فلترة
+    Route::get('/audit-logs/all', [ReportsController::class, 'allAuditLogs'])->name('audit-logs.all');
+
+    // 🔥 ✅ **الجديد** - مسح السجلات
+    Route::delete('/audit-logs/clear', [ReportsController::class, 'clearAuditLogs'])->name('audit-logs.clear');
+
+    // 🔥 ✅ **الجديد** - تصدير السجلات
+    Route::get('/audit-logs/export/{period?}', [ReportsController::class, 'exportAuditLogs'])->name('audit-logs.export');
 
     // ✅ تقرير شامل (كل حاجة)
     Route::get('/dashboard', [ReportsController::class, 'dashboard'])->name('dashboard');
 
-    // ✅ تصدير PDF/Excel
+    // ✅ تصدير PDF/Excel للتقارير العامة
     Route::get('/export/{type}/{period}', [ReportsController::class, 'export'])->name('export');
+});
+// في نفس ملف الـ routes السابق (web.php)
+Route::middleware('web')->prefix('v1/reports')->name('reports.')->group(function () {
+    Route::get('/stats', [StatsController::class, 'index'])->name('stats');
+
 });

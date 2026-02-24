@@ -1,123 +1,40 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import toast from "react-hot-toast";
-import {
-    RiRobot2Fill,
-    RiTimeLine,
-    RiUserLine,
-    RiLockFill,
-} from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical, GrDocumentText } from "react-icons/gr";
-import { PiStudent, PiEye, PiDownload } from "react-icons/pi";
-import { FiFilter, FiSearch, FiCopy, FiTrash2 } from "react-icons/fi";
-import { IoCheckmarkCircleOutline } from "react-icons/io5";
-
-interface AuditLog {
-    id: number;
-    timestamp: string;
-    userName: string;
-    userRole: string;
-    action: string;
-    resource: string;
-    details: string;
-    ipAddress: string;
-    status: "نجح" | "فشل" | "تحذير";
-    userImg: string;
-}
+import { RiRobot2Fill, RiTimeLine, RiLockFill } from "react-icons/ri";
+import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
+import { PiDownload } from "react-icons/pi";
+import { FiCopy, FiTrash2, FiRefreshCw } from "react-icons/fi";
+import { useAuditLogs, AuditLogDisplay } from "./hooks/useAuditLogs";
 
 const AuditLogPage: React.FC = () => {
-    const [logs, setLogs] = useState<AuditLog[]>([
-        {
-            id: 1,
-            timestamp: "2026-01-23 21:05:12",
-            userName: "أحمد محمد العتيبي",
-            userRole: "مشرف تعليمي",
-            action: "تعديل بيانات طالب",
-            resource: "محمد أحمد (ID: 123)",
-            details: "تغيير الحلقة من الجزء 30 إلى الجزء 15",
-            ipAddress: "197.45.23.89",
-            status: "نجح",
-            userImg:
-                "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png",
-        },
-        {
-            id: 2,
-            timestamp: "2026-01-23 21:03:45",
-            userName: "فاطمة الزهراني",
-            userRole: "مشرفة تحفيز",
-            action: "إضافة نقاط تحفيز",
-            resource: "فاطمة السيد (ID: 456)",
-            details: "+50 نقطة للحفظ المتميز",
-            ipAddress: "41.32.67.123",
-            status: "نجح",
-            userImg:
-                "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-        },
-        {
-            id: 3,
-            timestamp: "2026-01-23 20:58:22",
-            userName: "عبدالرحمن القحطاني",
-            userRole: "مشرف مالي",
-            action: "محاولة تسجيل دخول",
-            resource: "لوحة التحكم",
-            details: "فشل في كلمة المرور (3 محاولات)",
-            ipAddress: "105.78.34.56",
-            status: "فشل",
-            userImg:
-                "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png",
-        },
-        {
-            id: 4,
-            timestamp: "2026-01-23 20:55:10",
-            userName: "نورة أحمد",
-            userRole: "مدير النظام",
-            action: "تصدير تقرير",
-            resource: "تقرير الحضور الشهري",
-            details: "تصدير PDF (2.4 MB)",
-            ipAddress: "192.168.1.105",
-            status: "نجح",
-            userImg:
-                "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-        },
-    ]);
-
     const [search, setSearch] = useState("");
-    const [filterStatus, setFilterStatus] = useState("الكل");
-    const [filterUser, setFilterUser] = useState("الكل");
-    const [dateRange, setDateRange] = useState("اليوم");
+    const [filterStatus, setFilterStatus] = useState<
+        "الكل" | "نجح" | "فشل" | "تحذير"
+    >("الكل");
+    const [dateRange, setDateRange] = useState("الشهر");
 
-    const filteredLogs = logs.filter(
+    const {
+        logs,
+        loading,
+        stats,
+        period,
+        searchTerm,
+        setFilterStatus: setHookFilterStatus,
+        changePeriod,
+        clearLogs,
+        exportLogs,
+        filteredLogs,
+        refetch,
+    } = useAuditLogs();
+
+    // استخدام filteredLogs من الـ hook مباشرة مع البحث المحلي
+    const displayedLogs = filteredLogs.filter(
         (log) =>
-            (log.userName.includes(search) ||
-                log.action.includes(search) ||
-                log.resource.includes(search)) &&
-            (filterStatus === "الكل" || log.status === filterStatus) &&
-            (filterUser === "الكل" ||
-                log.userName === filterUser ||
-                log.userRole === filterUser),
+            log.userName.includes(search) ||
+            log.action.includes(search) ||
+            log.resource.includes(search) ||
+            log.details.includes(search),
     );
-
-    const stats = {
-        total: logs.length,
-        success: logs.filter((l) => l.status === "نجح").length,
-        failed: logs.filter((l) => l.status === "فشل").length,
-        warnings: logs.filter((l) => l.status === "تحذير").length,
-    };
-
-    const clearLogs = () => {
-        if (window.confirm("هل أنت متأكد من مسح جميع السجلات؟")) {
-            setLogs([]);
-            toast.success("تم مسح جميع سجلات التدقيق!");
-        }
-    };
-
-    const exportLogs = () => {
-        toast.success("تم تصدير السجلات إلى Excel!");
-    };
-
-    const copyLog = (log: AuditLog) => {
-        navigator.clipboard.writeText(JSON.stringify(log, null, 2));
-        toast.success("تم نسخ السجل!");
-    };
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -132,6 +49,52 @@ const AuditLogPage: React.FC = () => {
         }
     };
 
+    const copyLog = useCallback((log: AuditLogDisplay) => {
+        navigator.clipboard.writeText(JSON.stringify(log, null, 2));
+        toast.success("تم نسخ السجل!");
+    }, []);
+
+    const handleDateRangeChange = useCallback(
+        (range: string) => {
+            setDateRange(range);
+            // يمكنك هنا تحويل dateRange لـ period format
+            const now = new Date();
+            let newPeriod = "";
+
+            switch (range) {
+                case "اليوم":
+                    newPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+                    break;
+                case "الأسبوع":
+                    newPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+                    break;
+                case "الشهر":
+                    newPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+                    break;
+                case "السنة":
+                    newPeriod = `${now.getFullYear()}-01`;
+                    break;
+                default:
+                    newPeriod = period;
+            }
+            changePeriod(newPeriod);
+        },
+        [changePeriod, period],
+    );
+
+    if (loading && displayedLogs.length === 0) {
+        return (
+            <div className="teacherMotivate" style={{ padding: "0 15%" }}>
+                <div className="teacherMotivate__inner">
+                    <div style={{ padding: "50px", textAlign: "center" }}>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p>جاري تحميل سجلات التدقيق...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="teacherMotivate" style={{ padding: "0 15%" }}>
             <div className="teacherMotivate__inner">
@@ -141,8 +104,10 @@ const AuditLogPage: React.FC = () => {
                 >
                     <div className="userProfile__planTitle">
                         <h1>
-                            سجل التدقيق (Audit Log){" "}
-                            <span>{filteredLogs.length} حدث</span>
+                            سجل التدقيق (Audit Log)
+                            <span>
+                                {displayedLogs.length} حدث من {stats.total}
+                            </span>
                         </h1>
                     </div>
 
@@ -151,11 +116,11 @@ const AuditLogPage: React.FC = () => {
                             <i>
                                 <RiRobot2Fill />
                             </i>
-                            تتبع كامل لجميع العمليات مع IP + تفاصيل + تصدير
-                            Excel
+                            تتبع كامل لجميع العمليات مع IP + تفاصيل التغييرات +
+                            تصدير Excel
                         </div>
                         <div className="plan__current">
-                            <h2>سجل الأنشطة والعمليات</h2>
+                            <h2>سجل الأنشطة والعمليات - {period}</h2>
                             <div
                                 className="plan__date-range"
                                 style={{
@@ -168,55 +133,77 @@ const AuditLogPage: React.FC = () => {
                                 <select
                                     value={dateRange}
                                     onChange={(e) =>
-                                        setDateRange(e.target.value)
+                                        handleDateRangeChange(e.target.value)
                                     }
                                     className="p-2 border rounded"
+                                    disabled={loading}
                                 >
                                     <option>اليوم</option>
                                     <option>الأسبوع</option>
                                     <option>الشهر</option>
                                     <option>السنة</option>
                                 </select>
+
+                                <input
+                                    type="month"
+                                    value={period}
+                                    onChange={(e) =>
+                                        changePeriod(e.target.value)
+                                    }
+                                    className="p-2 border rounded"
+                                    disabled={loading}
+                                />
+
                                 <select
                                     value={filterStatus}
                                     onChange={(e) =>
-                                        setFilterStatus(e.target.value)
+                                        setFilterStatus(e.target.value as any)
                                     }
                                     className="p-2 border rounded"
+                                    disabled={loading}
                                 >
                                     <option>الكل</option>
                                     <option>نجح</option>
                                     <option>فشل</option>
                                     <option>تحذير</option>
                                 </select>
-                                <select
-                                    value={filterUser}
-                                    onChange={(e) =>
-                                        setFilterUser(e.target.value)
-                                    }
-                                    className="p-2 border rounded"
-                                >
-                                    <option>الكل</option>
-                                    <option>أحمد محمد العتيبي</option>
-                                    <option>فاطمة الزهراني</option>
-                                    <option>عبدالرحمن القحطاني</option>
-                                </select>
+
                                 <input
                                     type="search"
                                     placeholder="البحث بالمستخدم أو العملية أو المورد..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="p-2 border rounded flex-1 min-w-[250px]"
+                                    disabled={loading}
                                 />
+
                                 <button
                                     onClick={exportLogs}
-                                    className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                                    className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={
+                                        loading || displayedLogs.length === 0
+                                    }
                                 >
                                     <PiDownload /> تصدير
                                 </button>
+
+                                <button
+                                    onClick={refetch}
+                                    className="p-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={loading}
+                                >
+                                    <FiRefreshCw
+                                        className={
+                                            loading ? "animate-spin" : ""
+                                        }
+                                    />{" "}
+                                    تحديث
+                                </button>
+
                                 <button
                                     onClick={clearLogs}
-                                    className="p-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2"
+                                    className="p-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={loading || logs.length === 0}
                                 >
                                     <FiTrash2 /> مسح الكل
                                 </button>
@@ -244,10 +231,10 @@ const AuditLogPage: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredLogs.map((log) => (
+                                {displayedLogs.map((log) => (
                                     <tr
                                         key={log.id}
-                                        className="hover:bg-gray-50"
+                                        className="hover:bg-gray-50 border-b"
                                     >
                                         <td className="teacherStudent__img">
                                             <div className="w-10 h-10 rounded-full overflow-hidden">
@@ -255,10 +242,14 @@ const AuditLogPage: React.FC = () => {
                                                     src={log.userImg}
                                                     alt={log.userName}
                                                     className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src =
+                                                            "https://ui-avatars.com/api/?name=User&size=40&background=ddd&color=666";
+                                                    }}
                                                 />
                                             </div>
                                         </td>
-                                        <td className="font-mono text-sm">
+                                        <td className="font-mono text-sm text-gray-700">
                                             {log.timestamp}
                                         </td>
                                         <td className="font-medium">
@@ -272,11 +263,11 @@ const AuditLogPage: React.FC = () => {
                                         <td className="font-semibold text-blue-600">
                                             {log.action}
                                         </td>
-                                        <td className="font-medium">
+                                        <td className="font-medium text-gray-800">
                                             {log.resource}
                                         </td>
                                         <td
-                                            className="text-sm max-w-md truncate"
+                                            className="text-sm max-w-md truncate cursor-help"
                                             title={log.details}
                                         >
                                             {log.details}
@@ -292,11 +283,12 @@ const AuditLogPage: React.FC = () => {
                                             </span>
                                         </td>
                                         <td>
-                                            <div className="teacherStudent__btns">
+                                            <div className="teacherStudent__btns flex gap-1">
                                                 <button
-                                                    className="p-1 text-xs border rounded-full hover:bg-gray-100"
+                                                    className="p-1 text-xs border rounded-full hover:bg-gray-100 transition-colors"
                                                     onClick={() => copyLog(log)}
                                                     title="نسخ السجل"
+                                                    disabled={loading}
                                                 >
                                                     <FiCopy />
                                                 </button>
@@ -304,7 +296,7 @@ const AuditLogPage: React.FC = () => {
                                         </td>
                                     </tr>
                                 ))}
-                                {filteredLogs.length === 0 && (
+                                {displayedLogs.length === 0 && !loading && (
                                     <tr>
                                         <td
                                             colSpan={10}
@@ -314,12 +306,32 @@ const AuditLogPage: React.FC = () => {
                                         </td>
                                     </tr>
                                 )}
+                                {loading && displayedLogs.length > 0 && (
+                                    <tr>
+                                        <td
+                                            colSpan={10}
+                                            className="text-center py-4"
+                                        >
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 inline-block"></div>
+                                            جاري التحديث...
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
 
                     {/* Stats Cards */}
-                    <div className="plan__stats" style={{ marginTop: "30px" }}>
+                    <div
+                        className="plan__stats"
+                        style={{
+                            marginTop: "30px",
+                            display: "grid",
+                            gridTemplateColumns:
+                                "repeat(auto-fit, minmax(200px, 1fr)",
+                            gap: "20px",
+                        }}
+                    >
                         <div className="stat-card">
                             <div className="stat-icon greenColor">
                                 <i>
@@ -390,34 +402,19 @@ const AuditLogPage: React.FC = () => {
                                 <h1>نسبة النجاح</h1>
                             </div>
                             <p>
-                                {Math.round(
-                                    (stats.success / stats.total) * 100,
-                                ) || 0}
+                                {stats.total > 0
+                                    ? Math.round(
+                                          (stats.success / stats.total) * 100,
+                                      )
+                                    : 0}
                                 %
                             </p>
                             <div className="userProfile__progressBar">
                                 <span
                                     style={{
-                                        width: `${Math.round((stats.success / stats.total) * 100) || 0}%`,
+                                        width: `${stats.total > 0 ? Math.round((stats.success / stats.total) * 100) : 0}%`,
                                     }}
                                 ></span>
-                            </div>
-                        </div>
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h1>الأحداث في الساعة</h1>
-                            </div>
-                            <p>
-                                {
-                                    logs.filter(
-                                        (l) =>
-                                            new Date(l.timestamp).getHours() ===
-                                            21,
-                                    ).length
-                                }
-                            </p>
-                            <div className="userProfile__progressBar">
-                                <span style={{ width: "78%" }}></span>
                             </div>
                         </div>
                     </div>

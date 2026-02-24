@@ -56,30 +56,28 @@ const Navbar: React.FC = () => {
         }
     };
 
-    // 🔥 الدالة الجديدة لتحديد dashboard path حسب الـ role
+    // 🔥 دالة تحديد dashboard path حسب الـ role
     const getDashboardPath = () => {
         if (!user) return "/user-dashboard";
-
-        // Center Owner/Admin (role_id = 1 أو center_owner)
+        if (user.role_id == null) {
+            return "/teacher-dashboard";
+        }
+        // Center Owner (role_id = 1 أو center_owner)
         if (
             user.role_id === 1 ||
-            user.role === "admin" ||
-            user.role === "center_owner"
+            user.role === "center_owner" ||
+            user.role === "admin"
         ) {
             return "/center-dashboard";
         }
 
-        // Teacher (role_id = 2 أو teacher)
-        if (user.role_id === 2 || user.role === "teacher") {
-            return "/teacher-dashboard";
-        }
-
-        // Student أو أي role تاني
+        // Student/Guardian أو أي role تاني (Teacher = null)
         return "/user-dashboard";
     };
 
     const dashboardPath = getDashboardPath();
     const isCenterOwner = dashboardPath === "/center-dashboard";
+    const isStudentOrOther = dashboardPath === "/user-dashboard"; // Teacher + Student + Guardian
 
     if (loading) {
         return (
@@ -168,13 +166,18 @@ const Navbar: React.FC = () => {
                                         </>
                                     )}
 
-                                    {/* 🔥 Plans للكل */}
-                                    <a href="/user-dashboard/plans">
-                                        <li>
-                                            <BsTable />
-                                            جدول
-                                        </li>
-                                    </a>
+                                    {/* 🔥 الجدول للطالب بس (Student) */}
+                                    {isStudentOrOther &&
+                                        user.role === "student" && (
+                                            <a href="/user-dashboard/plans">
+                                                <li>
+                                                    <BsTable />
+                                                    جدول
+                                                </li>
+                                            </a>
+                                        )}
+
+                                    {/* 🔥 تسجيل خروج ثابت للكل */}
                                     <button onClick={handleLogout}>
                                         <li>تسجيل الخروج</li>
                                     </button>

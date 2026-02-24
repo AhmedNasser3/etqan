@@ -59,7 +59,7 @@ class AttendanceController extends Controller
                     break;
                 case 'month':
                     $query->whereMonth('date', $nowDate->month)
-                          ->whereYear('date', $nowDate->year);
+                        ->whereYear('date', $nowDate->year);
                     break;
                 default:
                     $query->whereDate('date', $nowDate->today());
@@ -194,6 +194,164 @@ class AttendanceController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * 🆕 QUICK CHECK-IN: تسجيل حضور سريع بزر واحد للمعلم
+     * استخدمها في frontend: POST /api/teacher/attendance/quick-checkin
+     */
+   /**
+ * 🆕 QUICK CHECK-IN: تسجيل حضور سريع بزر واحد للمعلم
+ * Route: POST /api/v1/attendance/quick-checkin ✅
+ *//**
+ * 🆕 QUICK CHECK-IN: تسجيل حضور سريع بدون تأخير
+ * بسجّل الوقت الحالي status = present دايماً
+ */
+public function quickCheckin(Request $request)
+{
+    Log::info('🔥 quickCheckin called - معلم ضغط زر الحضور السريع', [
+        'user_id' => Auth::id(),
+        'ip' => $request->ip(),
+        'request_data' => $request->all(),
+    ]);
+
+    // ✅ تحقق من الصلاحيات أولاً
+    if (!Auth::check()) {
+        Log::warning('❌ No auth user in quickCheckin');
+        return response()->json([
+            'success' => false,
+            'message' => 'غير مصرح للمستخدم'
+        ], 401);
+    }
+
+    $user = Auth::user();
+    Log::info('👤 User found', ['user_id' => $user->id, 'name' => $user->name]);
+
+    // ✅ 1. جيب الـ Teacher record
+    $teacher = Teacher::where('user_id', $user->id)->first();
+
+    if (!$teacher) {
+        Log::warning('❌ Teacher not found', ['user_id' => $user->id]);
+        return response()->json([
+            'success' => false,
+            'message' => 'لم يتم العثور على بيانات المعلم - تواصل مع الإدارة',
+            'debug' => config('app.debug') ? ['user_id' => $user->id] : []
+        ], 404);
+    }
+
+    Log::info('✅ Teacher found', [
+        'teacher_id' => $teacher->id,
+        'teacher_name' => $teacher->name
+    ]);
+
+    // ✅ 2. تحقق من الـ Center
+    $centerId = $user->center_id;
+
+    if (!$centerId || $centerId == 0) {
+        Log::warning('❌ No center_id', [
+            'user_id' => $user->id,
+            'center_id' => $centerId
+        ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'لم يتم تعيين مركز لك - تواصل مع الإدارة',
+            'debug' => config('app.debug') ? ['center_id' => $centerId] : []
+        ], 400);
+    }
+
+    Log::info('✅ Center found', ['center_id' => $centerId]);
+
+    $todayDate = Carbon::today()->format('Y-m-d');
+    $currentTime = Carbon::now();
+    $checkinTime = $currentTime->format('H:i:s');
+
+    try {
+        // ✅ 3. تحقق من وجود حضور اليوم
+        $existingAttendance = AttendanceDay::where('teacher_id', $teacher->id)
+            ->where('center_id', $centerId)
+            ->whereDate('date', $todayDate)
+            ->first();
+
+        if ($existingAttendance) {
+            Log::info('⚠️ Attendance already exists today', [
+                'attendance_id' => $existingAttendance->id,
+                'status' => $existingAttendance->status,
+                'time' => $existingAttendance->created_at
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => '✅ تم تسجيل الحضور اليوم الساعة ' . $existingAttendance->created_at->format('H:i'),
+                'data' => [
+                    'status' => $existingAttendance->status,
+                    'time' => $existingAttendance->created_at->format('H:i'),
+                    'notes' => $existingAttendance->notes,
+                    'date' => $existingAttendance->date->format('Y-m-d')
+                ],
+                'already_checked_in' => true
+            ], 200);
+        }
+
+        // ✅ 4. إنشاء سجل حضور جديد - بدون تأخير خالص!
+        $attendance = AttendanceDay::create([
+            'teacher_id' => $teacher->id,
+            'center_id' => $centerId,
+            'date' => $todayDate,
+            'status' => 'present',                    // ✅ دايماً present
+            'delay_minutes' => 0,                     // ✅ صفر دايماً
+            'notes' => "حضور سريع - {$checkinTime}",  // ✅ وقت الحضور بس
+            'created_at' => $currentTime,
+            'updated_at' => $currentTime
+        ]);
+
+        Log::info('✅ Quick checkin CREATED successfully', [
+            'attendance_id' => $attendance->id,
+            'teacher_id' => $teacher->id,
+            'center_id' => $centerId,
+            'status' => 'present',
+            'checkin_time' => $checkinTime,
+            'delay_minutes' => 0
+        ]);
+
+        // ✅ 5. إرجاع الاستجابة الناجحة
+        return response()->json([
+            'success' => true,
+            'message' => "✅ تم تسجيل الحضور بنجاح الساعة {$checkinTime}",
+            'data' => [
+                'id' => $attendance->id,
+                'status' => 'present',
+                'checkin_time' => $checkinTime,
+                'delay_minutes' => 0,
+                'date' => $todayDate,
+                'notes' => $attendance->notes
+            ],
+            'teacher' => [
+                'id' => $teacher->id,
+                'name' => $teacher->name
+            ],
+            'center_id' => $centerId
+        ], 201, [], JSON_UNESCAPED_UNICODE);
+
+    } catch (\Exception $e) {
+        Log::error('❌ Quick checkin EXCEPTION', [
+            'user_id' => $user->id,
+            'teacher_id' => $teacher->id ?? 'null',
+            'center_id' => $centerId ?? 'null',
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'فشل في تسجيل الحضور - جرب مرة أخرى',
+            'debug' => config('app.debug') ? [
+                'teacher_id' => $teacher->id ?? null,
+                'center_id' => $centerId ?? null
+            ] : []
+        ], 500);
+    }
+}
+
 
     /**
      * ✅ عرض سجلات الحضور الخاصة بالمعلم المسجل (محدث لـ center_id)
@@ -416,28 +574,99 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function today()
-    {
-        $user = Auth::user();
-        $teacher = Teacher::where('user_id', $user->id)->first();
-        $todayDate = Carbon::today();
+/**
+ * ✅ GET /api/v1/attendance/today - تحقق من حضور اليوم
+ * Frontend يستخدمه لمعرفة لو الزر مفتوح ولا لأ
+ */
+public function today()
+{
+    Log::info('🔍 today() called - Check today attendance', [
+        'user_id' => Auth::id()
+    ]);
 
-        if (!$teacher) {
-            return response()->json([
-                'success' => false,
-                'message' => 'لم يتم العثور على المعلم'
-            ], 404);
-        }
+    // ✅ تحقق من تسجيل الدخول
+    if (!Auth::check()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'غير مصرح',
+            'data' => []
+        ], 401);
+    }
 
-        $todayAttendance = AttendanceDay::where('teacher_id', $teacher->id)
-            ->where('center_id', $user->center_id) // ✅ center_id filter
-            ->whereDate('date', $todayDate)
-            ->with('center') // ✅ circle → center
-            ->get();
+    $user = Auth::user();
 
+    // ✅ 1. جيب الـ Teacher record (مش firstOrFail!)
+    $teacher = Teacher::where('user_id', $user->id)->first();
+
+    if (!$teacher) {
+        Log::info('ℹ️ No teacher record found', ['user_id' => $user->id]);
+        return response()->json([
+            'success' => true,  // ✅ success = true عشان الـ Frontend يفتح الزر
+            'message' => 'لا يوجد بيانات معلم',
+            'data' => [],       // ✅ array فارغ = مفيش حضور = الزر مفتوح
+            'has_attendance' => false
+        ], 200); // ✅ 200 مش 404
+    }
+
+    Log::info('✅ Teacher found', [
+        'teacher_id' => $teacher->id,
+        'user_id' => $user->id
+    ]);
+
+    // ✅ 2. تحقق من الـ center_id
+    $centerId = $user->center_id;
+
+    if (!$centerId || $centerId == 0) {
+        Log::warning('⚠️ No center_id', ['user_id' => $user->id]);
         return response()->json([
             'success' => true,
-            'data' => $todayAttendance
-        ]);
+            'message' => 'لم يتم تعيين مركز',
+            'data' => [],
+            'has_attendance' => false
+        ], 200);
     }
+
+    // ✅ 3. جيب حضور اليوم (get() مش firstOrFail!)
+    $todayDate = Carbon::today();
+    $todayAttendance = AttendanceDay::where('teacher_id', $teacher->id)
+        ->where('center_id', $centerId)
+        ->whereDate('date', $todayDate)
+        ->with(['teacher.user', 'center'])
+        ->orderBy('created_at', 'desc')
+        ->get(); // ✅ get() = array فارغ لو مفيش results
+
+    $hasAttendanceToday = $todayAttendance->isNotEmpty();
+
+    Log::info('📊 Today attendance check', [
+        'teacher_id' => $teacher->id,
+        'center_id' => $centerId,
+        'today_date' => $todayDate->format('Y-m-d'),
+        'attendance_count' => $todayAttendance->count(),
+        'has_attendance' => $hasAttendanceToday
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => $hasAttendanceToday
+            ? 'تم العثور على سجلات حضور اليوم'
+            : 'لا يوجد حضور اليوم',
+        'data' => $todayAttendance->map(function ($attendance) {
+            return [
+                'id' => (int) $attendance->id,
+                'teacher_id' => (int) $attendance->teacher_id,
+                'teacher_name' => $attendance->teacher?->name ?? 'غير معروف',
+                'center_name' => $attendance->center?->name ?? '-',
+                'status' => $attendance->status ?? 'absent',
+                'date' => $attendance->date?->format('Y-m-d'),
+                'checkin_time' => $attendance->created_at?->format('H:i'),
+                'delay_minutes' => (int) ($attendance->delay_minutes ?? 0),
+                'notes' => $attendance->notes ?? ''
+            ];
+        }),
+        'has_attendance' => $hasAttendanceToday,
+        'today_date' => $todayDate->format('Y-m-d'),
+        'count' => $todayAttendance->count()
+    ], 200, [], JSON_UNESCAPED_UNICODE);
+}
+
 }
