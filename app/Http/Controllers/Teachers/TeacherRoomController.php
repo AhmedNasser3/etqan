@@ -13,7 +13,7 @@ use Carbon\Carbon;
 class TeacherRoomController extends Controller
 {
     /**
-     * ✅ غرفة Jitsi للمعلم المسجل
+     *  غرفة Jitsi للمعلم المسجل
      */
     public function getTeacherRoom(Request $request)
     {
@@ -48,7 +48,7 @@ class TeacherRoomController extends Controller
     }
 
     /**
-     * ✅ حصة اليوم للمعلم في Dashboard
+     *  حصة اليوم للمعلم في Dashboard
      */
     public function getTodayMeet()
     {
@@ -106,7 +106,7 @@ class TeacherRoomController extends Controller
     }
 
     /**
-     * ✅ جلسات المعلم مع أسماء الطلاب (مع Diagnostics كامل)
+     *  جلسات المعلم مع أسماء الطلاب (مع Diagnostics كامل)
      */
     public function getTeacherSessions()
     {
@@ -114,7 +114,7 @@ class TeacherRoomController extends Controller
         Log::info('🔍 [TEACHER SESSIONS] Debug start', ['teacher_id' => $teacherId]);
 
         try {
-            // ✅ 1. جيب الـ sessions الأساسية
+            //  1. جيب الـ sessions الأساسية
             $sessionsData = DB::table('student_plan_details')
                 ->where('teacher_id', $teacherId)
                 ->orderBy('day_number')
@@ -134,7 +134,7 @@ class TeacherRoomController extends Controller
                 ], 404);
             }
 
-            // ✅ 2. جيب الـ booking IDs الفريدة
+            //  2. جيب الـ booking IDs الفريدة
             $bookingIds = $sessionsData->pluck('circle_student_booking_id')->unique()->filter();
             $diagnostics['unique_booking_ids'] = $bookingIds->values()->toArray();
 
@@ -146,7 +146,7 @@ class TeacherRoomController extends Controller
                 ], 404);
             }
 
-            // ✅ 3. تحقق من وجود الـ bookings في circle_student_bookings
+            //  3. تحقق من وجود الـ bookings في circle_student_bookings
             $existingBookings = DB::table('circle_student_bookings')
                 ->whereIn('id', $bookingIds)
                 ->pluck('id')
@@ -164,7 +164,7 @@ class TeacherRoomController extends Controller
                 ], 404);
             }
 
-            // ✅ 4. جيب أسماء الطلاب
+            //  4. جيب أسماء الطلاب
             $students = DB::table('circle_student_bookings as b')
                 ->join('users', 'b.user_id', '=', 'users.id')
                 ->whereIn('b.id', $existingBookings)
@@ -175,7 +175,7 @@ class TeacherRoomController extends Controller
             $diagnostics['students_found'] = $students->count();
             $diagnostics['sample_student'] = $students->first()?->student_name ?? 'مفيش طلاب';
 
-            // ✅ 5. بناء النتيجة النهائية
+            //  5. بناء النتيجة النهائية
             $finalSessions = $sessionsData->map(function ($session) use ($students) {
                 $student = $students->get($session->circle_student_booking_id);
 
@@ -217,7 +217,7 @@ class TeacherRoomController extends Controller
     }
 
     /**
-     * ✅ تنسيق الوقت
+     *  تنسيق الوقت
      */
     private function formatTime($time): string
     {

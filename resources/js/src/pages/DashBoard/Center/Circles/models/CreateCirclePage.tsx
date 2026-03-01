@@ -27,7 +27,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
 
     const handleSubmit = async (formDataSubmit: FormData) => {
         try {
-            // ✅ نفس CSRF logic من usePermissions
+            //  نفس CSRF logic من usePermissions
             const csrfToken =
                 document
                     .querySelector('meta[name="csrf-token"]')
@@ -60,7 +60,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
             }
 
             const result = await response.json();
-            console.log("✅ Create response:", result);
+            console.log(" Create response:", result);
             toast.success("تم إضافة الحلقة بنجاح!");
             onSuccess();
         } catch (error: any) {
@@ -170,7 +170,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* المسجد - ✅ مساجد المجمع بس */}
+                            {/* المسجد -  مساجد المجمع بس */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>المسجد (اختياري)</label>
@@ -213,7 +213,7 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* المعلم - ✅ معلمين المجمع بس */}
+                            {/* المعلم -  معلمين المجمع بس */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>المعلم (اختياري)</label>

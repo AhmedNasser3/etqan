@@ -9,8 +9,8 @@ export interface PlanDetailType {
     status: "pending" | "current" | "completed";
     created_at: string;
     updated_at: string;
-    plan_id?: number; // ✅ إضافة plan_id
-    plan?: { id: number; plan_name: string }; // ✅ للـ allMyCenterPlansDetails
+    plan_id?: number;
+    plan: { id: number; plan_name: string }; // 👈 جعله مطلوب
 }
 
 interface Pagination {

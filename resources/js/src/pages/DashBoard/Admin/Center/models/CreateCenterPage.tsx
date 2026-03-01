@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { FiX } from "react-icons/fi";
 import { useCenterFormCreate } from "../hooks/useCenterFormCreate";
 
-// ✅ CSRF Token Helper
+//  CSRF Token Helper
 const getCsrfToken = (): string => {
     const cookies = document.cookie.split(";");
     const csrfCookie = cookies.find((cookie) =>
@@ -32,10 +32,10 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
         resetForm,
     } = useCenterFormCreate();
 
-    // ✅ الـ Route الصحيح من ملف routes/api.php بتاعك
+    //  الـ Route الصحيح من ملف routes/api.php بتاعك
     const handleSubmit = async (formDataSubmit: FormData) => {
         try {
-            // ✅ CSRF Token أولاً
+            //  CSRF Token أولاً
             if (!document.cookie.includes("XSRF-TOKEN=")) {
                 await fetch("/sanctum/csrf-cookie", {
                     credentials: "include",
@@ -76,7 +76,7 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
             }
 
             const result = await response.json();
-            console.log("✅ Create response:", result);
+            console.log(" Create response:", result);
 
             if (result.success) {
                 toast.success("تم إضافة المجمع بنجاح!");

@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 
-// ✅ CSRF Token Helper
+//  CSRF Token Helper
 const getCsrfToken = (): string => {
     const cookies = document.cookie.split(";");
     const csrfCookie = cookies.find((cookie) =>
@@ -117,7 +117,7 @@ export const useCenterFormCreate = () => {
             setIsSubmitting(true);
             const formDataToSubmit = new FormData();
 
-            // ✅ بناء FormData بشكل صحيح
+            //  بناء FormData بشكل صحيح
             Object.entries(formData).forEach(([key, value]) => {
                 if (value !== null && value !== undefined && value !== "") {
                     if (value instanceof File) {
@@ -128,7 +128,7 @@ export const useCenterFormCreate = () => {
                 }
             });
 
-            // ✅ is_active = 1 افتراضياً للإنشاء الجديد
+            //  is_active = 1 افتراضياً للإنشاء الجديد
             formDataToSubmit.append("is_active", "1");
 
             console.log(

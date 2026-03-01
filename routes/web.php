@@ -16,7 +16,7 @@ Route::middleware('web')->group(function () {
     Route::post('/email/verify-otp', [EmailLoginController::class, 'verifyOtp']);
     Route::post('/teacher/register', [TeacherRegisterController::class, 'register']);
 
-    // 🔥 الـ API endpoint المحسن للـ React hook
+    // 🔥 الـ API endpoint المحسن ✅ مع جدول المعلمين + السناتر + الرولز كامل
     Route::get('/api/user', function (Request $request) {
         if (Auth::check()) {
             $user = Auth::user();
@@ -28,12 +28,27 @@ Route::middleware('web')->group(function () {
                     'name' => $user->name,
                     'email' => $user->email,
                     'center_id' => $user->center_id,
+
+                    // ✅ جدول المعلمين - teacher status
+                    'teacher' => $user->teacher ?? false,
+
+                    // ✅ صاحب السنتر - center_owner status
+                    'center_owner' => $user->center_owner ?? false,
+
+                    // ✅ الرول الكامل مع الاسم
+                    'role_id' => $user->role_id,
+                    'role' => $user->role ? [
+                        'id' => $user->role->id,
+                        'name' => $user->role->name // student, center_owner, admin, user
+                    ] : null,
+
+                    // ✅ بيانات السنتر كاملة
                     'center' => $user->center ? [
                         'id' => $user->center->id,
+                        'name' => $user->center->name,
                         'subdomain' => $user->center->subdomain,
-                        'slug' => $user->center->subdomain ?? Str::slug($user->center->subdomain),  // ← Str::slug
+                        'slug' => $user->center->subdomain ? Str::slug($user->center->subdomain) : null,
                     ] : null,
-                    'role' => $user->role ?? 'user',
                 ]
             ]);
         }
@@ -59,7 +74,7 @@ Route::get('/{path?}', function (Request $request) {
     if ($request->path() === '/' && Auth::check()) {
         $user = Auth::user();
         if ($user->center) {
-            $centerSlug = $user->center->subdomain ?? Str::slug($user->center->subdomain);  // ← Str::slug بدل str_slug
+            $centerSlug = $user->center->subdomain ?? Str::slug($user->center->subdomain);
             return redirect("/{$centerSlug}", 302);
         }
     }
@@ -75,7 +90,10 @@ Route::middleware('web')->prefix('v1')->group(function () {
         $user = auth()->user();
         return response()->json([
             'user' => $user,
+            'teacher_status' => $user?->teacher,
+            'center_owner_status' => $user?->center_owner,
             'center_id' => $user?->center_id,
+            'role' => $user?->role,
             'raw_user' => $user?->toArray(),
             'current_path' => request()->path()
         ]);

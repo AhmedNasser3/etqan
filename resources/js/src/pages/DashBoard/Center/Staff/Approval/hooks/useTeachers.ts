@@ -148,7 +148,7 @@ export const useTeachers = (initialFilters: UseTeachersProps = {}) => {
                     "/api/v1/teachers/pending",
                     { params: { page } },
                 );
-                addDebugLog("✅ تم جلب المعلقين", {
+                addDebugLog(" تم جلب المعلقين", {
                     count: response.data.data.length,
                 });
                 setTeachers(response.data.data);

@@ -38,7 +38,7 @@ const EditAccountPage: React.FC<EditAccountPageProps> = ({
 
     const [showPasswordFields, setShowPasswordFields] = useState(false);
 
-    // ✅ Loading state
+    //  Loading state
     if (loadingUser) {
         return (
             <div className="ParentModel">
@@ -371,8 +371,9 @@ const EditAccountPage: React.FC<EditAccountPageProps> = ({
                             >
                                 <div className="flex gap-3">
                                     <button
+                                        style={{ margin: "24px 0" }}
                                         type="button"
-                                        onClick={submitForm} // ✅ مباشرة بدون handleSubmit
+                                        onClick={submitForm} //  مباشرة بدون handleSubmit
                                         disabled={isSubmitting}
                                         className="flex-1 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl transition-all font-medium flex items-center justify-center disabled:opacity-50 shadow-lg"
                                     >

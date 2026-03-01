@@ -83,16 +83,16 @@ class StudentBookingsController extends Controller
 
         try {
             DB::transaction(function () use ($booking, $schedule) {
-                // ✅ 1. تحديث حالة الحجز
+                //  1. تحديث حالة الحجز
                 $booking->update([
                     'status' => 'confirmed',
                     'started_at' => now(),
                 ]);
 
-                // ✅ 2. زيادة عدد الطلاب
+                //  2. زيادة عدد الطلاب
                 $schedule->increment('booked_students');
 
-                // ✅ 3. إنشاء student_plan_details مع الـ teacher_id الصحيح
+                //  3. إنشاء student_plan_details مع الـ teacher_id الصحيح
                 $this->createStudentPlanDetails($booking, $schedule);
             });
 
@@ -114,11 +114,11 @@ class StudentBookingsController extends Controller
     }
 
     /**
-     * ✅ إنشاء سجلات student_plan_details مع الـ teacher_id الحقيقي من جدول teachers
+     *  إنشاء سجلات student_plan_details مع الـ teacher_id الحقيقي من جدول teachers
      */
     private function createStudentPlanDetails(CircleStudentBooking $booking, PlanCircleSchedule $schedule)
     {
-        // ✅ جلب plan_details للخطة
+        //  جلب plan_details للخطة
         $planDetails = PlanDetail::where('plan_id', $booking->plan_id)
             ->orderBy('day_number')
             ->get();
@@ -143,25 +143,25 @@ class StudentBookingsController extends Controller
             'total_days' => $planDetails->count()
         ]);
 
-        // ✅ إنشاء سجل لكل يوم مع الـ teacher_id الصحيح
+        //  إنشاء سجل لكل يوم مع الـ teacher_id الصحيح
         foreach ($planDetails as $detail) {
             StudentPlanDetail::create([
-                // ✅ الـ 5 حقول أساسية
+                //  الـ 5 حقول أساسية
                 'circle_student_booking_id' => $booking->id,
                 'plan_id' => $booking->plan_id,
                 'teacher_id' => $realTeacher->id,        // 🔥 الـ ID الحقيقي من جدول teachers
                 'circle_id' => $schedule->circle_id,
                 'plan_circle_schedule_id' => $schedule->id,
 
-                // ✅ من plan_details
+                //  من plan_details
                 'day_number' => $detail->day_number,
                 'new_memorization' => $detail->new_memorization,
                 'review_memorization' => $detail->review_memorization,
 
-                // ✅ الوقت من الحلقة
+                //  الوقت من الحلقة
                 'session_time' => $schedule->start_time,
 
-                // ✅ الحالة الافتراضية
+                //  الحالة الافتراضية
                 'status' => 'قيد الانتظار',
             ]);
         }

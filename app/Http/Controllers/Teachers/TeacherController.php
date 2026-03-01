@@ -102,7 +102,7 @@ class TeacherController extends Controller
     }
 
     /**
-     * ✅ قبول معلم + توزيع تلقائي على الحلقة من teacher.notes
+     *  قبول معلم + توزيع تلقائي على الحلقة من teacher.notes
      */
     public function accept(string $id)
     {
@@ -118,7 +118,7 @@ class TeacherController extends Controller
                 return response()->json(['success' => false, 'message' => 'المعلم مفعل بالفعل'], 400);
             }
 
-            // ✅ 1. تفعيل المعلم
+            //  1. تفعيل المعلم
             $user->update(['status' => 'active', 'email_verified_at' => now()]);
 
             $circleAssigned = false;
@@ -160,7 +160,7 @@ class TeacherController extends Controller
                             'pattern_used' => $i + 1
                         ];
 
-                        Log::info("✅ تم استخراج البيانات", array_merge($extractedData, [
+                        Log::info(" تم استخراج البيانات", array_merge($extractedData, [
                             'teacher_id' => $user->id,
                             'raw_notes' => $user->teacher->notes
                         ]));
@@ -213,7 +213,7 @@ class TeacherController extends Controller
                                     'start_time' => $nextAvailableSchedule->start_time,
                                     'end_time' => $nextAvailableSchedule->end_time,
                                 ];
-                                Log::info("✅ تم تعيين المعلم للموعد", $scheduleInfo);
+                                Log::info(" تم تعيين المعلم للموعد", $scheduleInfo);
                             }
                         } else {
                             Log::warning("⚠️ لا توجد مواعيد متاحة", [
@@ -252,7 +252,7 @@ class TeacherController extends Controller
     }
 
     /**
-     * ✅ البحث عن أي موعد متاح في الحلقة (بدون قيود تاريخ)
+     *  البحث عن أي موعد متاح في الحلقة (بدون قيود تاريخ)
      */
     private function findAvailableSchedule($circleId, $timeIndicator = null)
     {
@@ -300,7 +300,7 @@ class TeacherController extends Controller
         // 3️⃣ أول موعد متاح
         if ($filteredSchedules->isNotEmpty()) {
             $schedule = $filteredSchedules->first();
-            Log::info("✅ وجد موعد مناسب", [
+            Log::info(" وجد موعد مناسب", [
                 'schedule_id' => $schedule->id,
                 'date' => $schedule->schedule_date,
                 'start_time' => $schedule->start_time

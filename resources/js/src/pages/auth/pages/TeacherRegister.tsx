@@ -1,4 +1,4 @@
-// TeacherRegister.tsx - ✅ الحلقات مع المواعيد فقط (بدون تاريخ)
+// TeacherRegister.tsx -  الحلقات مع المواعيد فقط (بدون تاريخ)
 import React, { useState } from "react";
 import { useTeacherRegister } from "../hooks/useTeacherRegister";
 import Men from "../../../assets/images/facelessAvatar.png";
@@ -129,7 +129,7 @@ const TeacherRegister: React.FC = () => {
                                                         </div>
                                                     </div>
 
-                                                    {/* ✅ الحلقات مع المواعيد فقط (بدون تاريخ) */}
+                                                    {/*  الحلقات مع المواعيد فقط (بدون تاريخ) */}
                                                     {data.role ===
                                                         "teacher" && (
                                                         <div className="inputs__verifyOTPBirth">
@@ -415,9 +415,9 @@ const TeacherRegister: React.FC = () => {
                                                                     "14px",
                                                             }}
                                                         >
-                                                            ✅ تم إرسال طلب
-                                                            التسجيل بنجاح! سيتم
-                                                            مراجعته قريباً
+                                                            تم إرسال طلب التسجيل
+                                                            بنجاح! سيتم مراجعته
+                                                            قريباً
                                                         </div>
                                                     )}
 

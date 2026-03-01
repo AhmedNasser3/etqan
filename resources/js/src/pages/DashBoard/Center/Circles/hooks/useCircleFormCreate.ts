@@ -13,7 +13,7 @@ interface MosqueType {
     center_id: number;
 }
 
-// ✅ Teacher من جدول users مع teacher.user_id
+//  Teacher من جدول users مع teacher.user_id
 interface TeacherType {
     id: number; // teacher.id
     user_id: number; // teacher.user_id
@@ -51,7 +51,7 @@ export const useCircleFormCreate = () => {
     const [user, setUser] = useState<any>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // ✅ CSRF Token helper
+    //  CSRF Token helper
     const getCsrfToken = useCallback((): string => {
         const metaToken = document
             .querySelector('meta[name="csrf-token"]')
@@ -70,7 +70,7 @@ export const useCircleFormCreate = () => {
         return csrfCookie ? decodeURIComponent(csrfCookie) : "";
     }, []);
 
-    // ✅ Fetch User
+    //  Fetch User
     const fetchUser = useCallback(async () => {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -92,7 +92,7 @@ export const useCircleFormCreate = () => {
             if (response.ok) {
                 const responseData = await response.json();
                 const actualUser = responseData.user || responseData;
-                console.log("✅ User loaded:", actualUser);
+                console.log(" User loaded:", actualUser);
                 setUser(actualUser);
             }
         } catch (error: any) {
@@ -102,12 +102,12 @@ export const useCircleFormCreate = () => {
         }
     }, [getCsrfToken]);
 
-    // ✅ Initial user fetch
+    //  Initial user fetch
     useEffect(() => {
         fetchUser();
     }, [fetchUser]);
 
-    // ✅ Auto-set center_id
+    //  Auto-set center_id
     useEffect(() => {
         if (user?.center_id && !formData.center_id) {
             console.log("🏢 Auto-setting center_id:", user.center_id);
@@ -118,7 +118,7 @@ export const useCircleFormCreate = () => {
         }
     }, [user?.center_id]);
 
-    // ✅ Fetch all data when user loads
+    //  Fetch all data when user loads
     useEffect(() => {
         if (user?.center_id) {
             console.log("🚀 User center loaded, fetching data...");
@@ -126,15 +126,15 @@ export const useCircleFormCreate = () => {
         }
     }, [user?.center_id]);
 
-    // ✅ Fetch all center data مرة واحدة
+    //  Fetch all center data مرة واحدة
     const fetchAllCenterData = useCallback(
         async (centerId: number) => {
             setLoadingData(true);
 
-            // Parallel fetches ✅
+            // Parallel fetches
             const [mosquesPromise, teachersPromise] = await Promise.allSettled([
                 fetchCenterMosques(centerId),
-                fetchCenterTeachers(centerId), // ✅ معلمين من users مع teacher.user_id
+                fetchCenterTeachers(centerId), //  معلمين من users مع teacher.user_id
             ]);
 
             // Centers
@@ -164,7 +164,7 @@ export const useCircleFormCreate = () => {
                 let centers: CenterType[] = [];
                 const actualUser = user;
 
-                // ✅ Center Owner → مركزه بس
+                //  Center Owner → مركزه بس
                 if (actualUser?.role?.id === 1 && actualUser.center_id) {
                     const userCenter = data.data?.find(
                         (c: any) => c.id === actualUser.center_id,
@@ -185,7 +185,7 @@ export const useCircleFormCreate = () => {
         }
     }, [user, getCsrfToken]);
 
-    // ✅ مساجد مجمع اليوزر
+    //  مساجد مجمع اليوزر
     const fetchCenterMosques = useCallback(
         async (centerId: number) => {
             try {
@@ -204,7 +204,7 @@ export const useCircleFormCreate = () => {
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log("✅ Mosques loaded:", data.data?.length || 0);
+                    console.log(" Mosques loaded:", data.data?.length || 0);
                     setMosquesData(Array.isArray(data.data) ? data.data : []);
                 } else {
                     console.log("❌ No mosques for center:", centerId);
@@ -218,12 +218,12 @@ export const useCircleFormCreate = () => {
         [getCsrfToken],
     );
 
-    // ✅ معلمين مجمع اليوزر من users مع teacher.user_id ✅
+    //  معلمين مجمع اليوزر من users مع teacher.user_id
     const fetchCenterTeachers = useCallback(
         async (centerId: number) => {
             try {
                 console.log("👨‍🏫 Fetching teachers for center:", centerId);
-                // ✅ endpoint جديد للمعلمين من users مع teacher.user_id
+                //  endpoint جديد للمعلمين من users مع teacher.user_id
                 const response = await fetch(
                     `/api/v1/centers/${centerId}/teachers`,
                     {
@@ -238,9 +238,9 @@ export const useCircleFormCreate = () => {
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log("✅ Teachers loaded:", data.data?.length || 0);
+                    console.log(" Teachers loaded:", data.data?.length || 0);
 
-                    // ✅ فلترة المعلمين اللي ليهم teacher.user_id
+                    //  فلترة المعلمين اللي ليهم teacher.user_id
                     const teachers = (
                         Array.isArray(data.data) ? data.data : []
                     ).filter(
@@ -324,8 +324,8 @@ export const useCircleFormCreate = () => {
         handleInputChange,
         submitForm,
         centersData,
-        mosquesData, // ✅ مساجد المجمع بس
-        teachersData, // ✅ معلمين المجمع بس مع teacher.user_id
+        mosquesData, //  مساجد المجمع بس
+        teachersData, //  معلمين المجمع بس مع teacher.user_id
         loadingData,
         user,
     };

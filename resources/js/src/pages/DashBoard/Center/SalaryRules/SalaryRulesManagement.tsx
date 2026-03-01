@@ -26,7 +26,7 @@ const SalaryRulesManagement: React.FC = () => {
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat("ar-EG", {
             style: "currency",
-            currency: "EGP",
+            currency: "SAR",
             minimumFractionDigits: 0,
         }).format(amount);
     };
@@ -91,7 +91,15 @@ const SalaryRulesManagement: React.FC = () => {
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
                     <p className="text-gray-600">
-                        جاري تحميل قوانين الرواتب...
+                        <div className="navbar">
+                            <div className="navbar__inner">
+                                <div className="navbar__loading">
+                                    <div className="loading-spinner">
+                                        <div className="spinner-circle"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>{" "}
                     </p>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 // pages/Center.tsx
 import { useFeaturedCenter } from "./hooks/useFeaturedCenter";
-import { useAuthUser } from "../../../../layouts/hooks/useAuthUser"; // ✅ Hook جديد
+import { useAuthUser } from "../../../../layouts/hooks/useAuthUser"; //  Hook جديد
 import QURANN from "../../../../assets/images/qurann.png";
 import Features from "../../home/Features";
 import CenterStats from "./components/CenterStats";
@@ -11,13 +11,21 @@ import FeaturedPlansCards from "./components/FeaturedPlansCards";
 
 const CenterPage: React.FC = () => {
     const { name, loading: centerLoading, error } = useFeaturedCenter();
-    const { user, loading: authLoading } = useAuthUser(); // ✅ استدعاء Auth Hook
+    const { user, loading: authLoading } = useAuthUser(); //  استدعاء Auth Hook
 
-    // ✅ Loading للـ center أو auth
+    //  Loading للـ center أو auth
     if (centerLoading || authLoading) {
         return (
             <div className="center-loading">
-                <div>جاري تحميل المجمع...</div>
+                <div className="navbar">
+                    <div className="navbar__inner">
+                        <div className="navbar__loading">
+                            <div className="loading-spinner">
+                                <div className="spinner-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>{" "}
             </div>
         );
     }
@@ -83,7 +91,7 @@ const CenterPage: React.FC = () => {
             <CenterStudentTestimonials />
             <CenterTeacherTestimonials />
 
-            {/* ✅ الشرط: مسجل دخول = PlanCards | غير مسجل = FeaturedPlansCards */}
+            {/*  الشرط: مسجل دخول = PlanCards | غير مسجل = FeaturedPlansCards */}
             {user ? <PlanCards type="available" /> : <FeaturedPlansCards />}
         </>
     );

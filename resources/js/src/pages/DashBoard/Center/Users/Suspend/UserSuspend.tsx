@@ -116,9 +116,15 @@ const UserSuspend: React.FC = () => {
             <div className="teacherMotivate" style={{ padding: "0 15%" }}>
                 <div className="flex items-center justify-center py-20">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mr-3"></div>
-                    <span className="text-lg text-gray-700">
-                        جاري تحميل الموظفين...
-                    </span>
+                    <div className="navbar">
+                        <div className="navbar__inner">
+                            <div className="navbar__loading">
+                                <div className="loading-spinner">
+                                    <div className="spinner-circle"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );

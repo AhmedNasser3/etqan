@@ -127,7 +127,7 @@ const UpdateSalaryRuleModal: React.FC<UpdateSalaryRuleModalProps> = ({
                             {/* الراتب الأساسي */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
-                                    <label>الراتب الأساسي (ج.م) *</label>
+                                    <label>الراتب الأساسي (ر.س) *</label>
                                     <input
                                         required
                                         type="number"

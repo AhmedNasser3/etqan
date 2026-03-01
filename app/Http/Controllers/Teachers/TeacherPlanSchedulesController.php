@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 class TeacherPlanSchedulesController extends Controller
 {
     /**
-     * ✅ INDEX - جدول الخطط الخاص بالمعلم (teacher_id = auth()->id)
+     *  INDEX - جدول الخطط الخاص بالمعلم (teacher_id = auth()->id)
      */
     public function index(Request $request)
     {
@@ -23,13 +23,13 @@ class TeacherPlanSchedulesController extends Controller
             return response()->json(['message' => 'غير مسجل الدخول'], 401);
         }
 
-        // ✅ التحقق أن اليوزر معلم
+        //  التحقق أن اليوزر معلم
         $teacher = Teacher::where('user_id', $currentUser->id)->first();
         if (!$teacher) {
             return response()->json(['message' => 'لست معلم مسجل'], 404);
         }
 
-        // ✅ جلب الخطط الخاصة بالمعلم فقط (teacher_id === auth user id)
+        //  جلب الخطط الخاصة بالمعلم فقط (teacher_id === auth user id)
         $schedules = PlanCircleSchedule::where('teacher_id', $currentUser->id)
             ->with(['plan:id,name', 'circle:id,name'])
             ->orderBy('schedule_date', 'desc')
@@ -66,7 +66,7 @@ class TeacherPlanSchedulesController extends Controller
     }
 
     /**
-     * ✅ SHOW - عرض جدول واحد
+     *  SHOW - عرض جدول واحد
      */
     public function show($id)
     {
@@ -102,7 +102,7 @@ class TeacherPlanSchedulesController extends Controller
     }
 
     /**
-     * ✅ جلب الخطط المتاحة للمعلم
+     *  جلب الخطط المتاحة للمعلم
      */
     public function availableSchedules(Request $request)
     {
@@ -143,7 +143,7 @@ class TeacherPlanSchedulesController extends Controller
     }
 
     /**
-     * ✅ إحصائيات الخطط
+     *  إحصائيات الخطط
      */
     public function stats(Request $request)
     {
@@ -188,8 +188,8 @@ public function getTeacherPlanSchedules(Request $request)
     $schedules = DB::table('plan_circle_schedules as pcs')
         ->leftJoin('circle_student_bookings as csb', 'pcs.id', '=', 'csb.plan_circle_schedule_id')
         ->where('pcs.teacher_id', $teacherId)                    // شرط 1️⃣: حلقات المعلم
-        ->where('pcs.is_available', true)                        // شرط 2️⃣: متاحة للحجز ✅
-        // ✅ شيلنا: ->where('pcs.schedule_date', '>=', now()->format('Y-m-d'))
+        ->where('pcs.is_available', true)                        // شرط 2️⃣: متاحة للحجز
+        //  شيلنا: ->where('pcs.schedule_date', '>=', now()->format('Y-m-d'))
         ->select(
             'pcs.id',
             'pcs.schedule_date',

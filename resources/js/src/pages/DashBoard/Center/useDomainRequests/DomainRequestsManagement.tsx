@@ -102,7 +102,15 @@ const DomainRequestsManagement: React.FC = () => {
             <div className="flex items-center justify-center min-h-[400px] p-8">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                    <p className="text-gray-600">جاري تحميل طلبات الدومين...</p>
+                    <div className="navbar">
+                        <div className="navbar__inner">
+                            <div className="navbar__loading">
+                                <div className="loading-spinner">
+                                    <div className="spinner-circle"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>{" "}
                 </div>
             </div>
         );

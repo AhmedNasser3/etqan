@@ -12,7 +12,7 @@ interface Testimonial {
 
 const CenterStudentTestimonials: React.FC = () => {
     const {
-        teachers: testimonials, // ✅ تصحيح: teachers بدلاً من studentTestimonials
+        teachers: testimonials, // تصحيح: teachers بدلاً من studentTestimonials
         loading,
         error,
     } = useCenterTeachers();
@@ -26,7 +26,7 @@ const CenterStudentTestimonials: React.FC = () => {
             <div className="testimonials">
                 <div className="testimonials__mainTitle">
                     <h1 style={{ color: "red" }}>
-                        خطأ في تحميل الطلاب: {error}
+                        خطأ في تحميل المعلمين: {error}
                     </h1>
                 </div>
             </div>
@@ -84,11 +84,12 @@ const CenterStudentTestimonials: React.FC = () => {
         return currentIndex;
     }, [currentIndex]);
 
+    // إذا كان في loading أو مفيش معلمين خالص
     if (loading || testimonials.length === 0) {
         return (
             <div className="testimonials">
                 <div className="testimonials__mainTitle">
-                    <h1>جاري تحميل الطلاب المتفوقين...</h1>
+                    <h1>لا يوجد معلمين لهذا المجمع</h1>
                 </div>
             </div>
         );
@@ -97,7 +98,7 @@ const CenterStudentTestimonials: React.FC = () => {
     return (
         <div className="testimonials">
             <div className="testimonials__mainTitle">
-                <button>جميع الطلاب</button>
+                <button>جميع المعلمين</button>
                 <h1>المعلمين الخاصين بنا</h1>
             </div>
             <div className="testimonials__slider-container">

@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // ✅ إلغاء CSRF للـ Auth routes فقط
+        // إلغاء CSRF للـ Auth routes فقط
         $middleware->validateCsrfTokens(except: [
             'email/send-otp',
             'email/verify-otp',

@@ -13,7 +13,7 @@ use App\Models\Plans\CircleStudentBooking;
 
 class CircleStudentBookingController extends Controller
 {
-    // ✅ 1️⃣ حجوزات الطالب الخاصة بي
+    //  1️⃣ حجوزات الطالب الخاصة بي
     public function myBookings(Request $request)
     {
         Log::info('📋 [MY BOOKINGS] User: ' . Auth::id());
@@ -34,11 +34,11 @@ class CircleStudentBookingController extends Controller
             ->orderBy('booked_at', 'desc')
             ->paginate(15);
 
-        Log::info('✅ [MY BOOKINGS] Found: ' . $bookings->total());
+        Log::info(' [MY BOOKINGS] Found: ' . $bookings->total());
         return response()->json($bookings);
     }
 
-    // ✅ 2️⃣ حجوزات الحلقة (للأدمن)
+    //  2️⃣ حجوزات الحلقة (للأدمن)
     public function scheduleBookings($scheduleId)
     {
         Log::info('📅 [SCHEDULE BOOKINGS] Schedule: ' . $scheduleId);
@@ -59,11 +59,11 @@ class CircleStudentBookingController extends Controller
             ->orderBy('booked_at')
             ->get();
 
-        Log::info('✅ [SCHEDULE BOOKINGS] Found: ' . $bookings->count());
+        Log::info(' [SCHEDULE BOOKINGS] Found: ' . $bookings->count());
         return response()->json($bookings);
     }
 
-    // ✅ 3️⃣ حجز جديد
+    //  3️⃣ حجز جديد
     public function store(Request $request)
     {
         Log::info('➕ [NEW BOOKING] Data: ', $request->all());
@@ -77,13 +77,13 @@ class CircleStudentBookingController extends Controller
 
         $user = Auth::user();
 
-        // ✅ تحقق الخطة للمركز
+        //  تحقق الخطة للمركز
         $plan = DB::table('plans')->find($validated['plan_id']);
         if ($plan->center_id !== $user->center_id) {
             return response()->json(['error' => 'الخطة غير مملوكة لمركزك'], 403);
         }
 
-        // ✅ تحقق الحجز مش موجود
+        //  تحقق الحجز مش موجود
         $exists = CircleStudentBooking::where([
             'plan_id' => $validated['plan_id'],
             'plan_details_id' => $validated['plan_details_id'],
@@ -105,13 +105,13 @@ class CircleStudentBookingController extends Controller
                 'total_days' => PlanDetail::where('plan_id', $validated['plan_id'])->count(),
             ]);
 
-            // ✅ زيادة عدد الحجوزات في الـ schedule
+            //  زيادة عدد الحجوزات في الـ schedule
             $booking->schedule->increment('booked_students');
 
             $booking->load(['plan', 'planDetail', 'schedule', 'student']);
 
             DB::commit();
-            Log::info('✅ [NEW BOOKING] Created: ' . $booking->id);
+            Log::info(' [NEW BOOKING] Created: ' . $booking->id);
 
             return response()->json($booking, 201);
         } catch (\Exception $e) {
@@ -121,14 +121,14 @@ class CircleStudentBookingController extends Controller
         }
     }
 
-    // ✅ 4️⃣ إلغاء حجز
+    //  4️⃣ إلغاء حجز
     public function cancel($bookingId)
     {
         Log::info('❌ [CANCEL BOOKING] ID: ' . $bookingId);
 
         $booking = CircleStudentBooking::findOrFail($bookingId);
 
-        // ✅ تحقق إنه طالب أو أدمن المركز
+        //  تحقق إنه طالب أو أدمن المركز
         if ($booking->user_id !== Auth::id() &&
             $booking->schedule->plan->center_id !== Auth::user()->center_id) {
             return response()->json(['error' => 'غير مصرح'], 403);
@@ -139,11 +139,11 @@ class CircleStudentBookingController extends Controller
             $booking->schedule->decrement('booked_students');
         });
 
-        Log::info('✅ [CANCEL BOOKING] Success: ' . $bookingId);
+        Log::info(' [CANCEL BOOKING] Success: ' . $bookingId);
         return response()->json(['message' => 'تم إلغاء الحجز بنجاح']);
     }
 
-    // ✅ 5️⃣ تحديث تقدم الطالب
+    //  5️⃣ تحديث تقدم الطالب
     public function updateProgress(Request $request, $bookingId)
     {
         $booking = CircleStudentBooking::findOrFail($bookingId);
@@ -168,11 +168,11 @@ class CircleStudentBookingController extends Controller
             ]);
         }
 
-        Log::info('✅ [PROGRESS UPDATE] Booking: ' . $bookingId);
+        Log::info(' [PROGRESS UPDATE] Booking: ' . $bookingId);
         return response()->json($booking->fresh());
     }
 
-    // ✅ 6️⃣ إحصائيات الحجوزات للمركز
+    //  6️⃣ إحصائيات الحجوزات للمركز
     public function centerStats()
     {
         $centerId = Auth::user()->center_id;

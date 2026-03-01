@@ -7,68 +7,35 @@ import { FiEdit3, FiTrash2 } from "react-icons/fi";
 import { IoMdAdd } from "react-icons/io";
 import UpdateCenterPage from "./models/UpdateCenterPage";
 import CreateCenterPage from "./models/CreateCenterPage";
-import { Center } from "./models/types";
+import { useCenters } from "./hooks/useCenters"; //  الـ Hook الجديد
 
+//  Interface جديد - مجمعات مباشرة (مش nested)
 interface Center {
     id: number;
-    circleName: string;
-    managerName: string;
-    managerEmail: string;
-    managerPhone: string;
-    circleLink: string;
+    name: string;
+    subdomain: string;
     domain: string;
-    logo: string;
-    countryCode: string;
+    center_url: string;
+    email: string;
+    phone: string;
+    logo: string | null;
     is_active: boolean;
+    address: string;
+    created_at: string;
     students_count: number;
-    address?: string;
-    created_at?: string;
-    hosting_provider?: string;
 }
 
-// ✅ CSRF Token Helper
-const getCsrfToken = (): string => {
-    const cookies = document.cookie.split(";");
-    const csrfCookie = cookies.find((cookie) =>
-        cookie.trim().startsWith("XSRF-TOKEN="),
-    );
-    return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
-};
-
-// ✅ API Fetch Helper
-const apiFetch = async (url: string, options: RequestInit = {}) => {
-    // CSRF Token أولاً
-    if (!document.cookie.includes("XSRF-TOKEN=")) {
-        await fetch("/sanctum/csrf-cookie", {
-            credentials: "include",
-            headers: { Accept: "application/json" },
-        });
-    }
-
-    const response = await fetch(url, {
-        ...options,
-        credentials: "include",
-        headers: {
-            Accept: "application/json",
-            "X-Requested-With": "XMLHttpRequest",
-            "X-XSRF-TOKEN": getCsrfToken(),
-            ...(options.headers as any),
-        },
-    });
-
-    console.log(`🌐 ${url} → Status: ${response.status}`);
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ ${response.status}:`, errorText.substring(0, 200));
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    return await response.json();
-};
-
 const CentersManagement: React.FC = () => {
-    const [centers, setCenters] = useState<Center[]>([]);
+    const {
+        centers, //  من الـ Hook الجديد
+        loading, //  من الـ Hook
+        error, //  من الـ Hook
+        confirmCenter,
+        rejectCenter,
+        deleteCenter,
+        refetch,
+    } = useCenters();
+
     const [search, setSearch] = useState("");
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -76,70 +43,51 @@ const CentersManagement: React.FC = () => {
     const [selectedCenterId, setSelectedCenterId] = useState<number | null>(
         null,
     );
-    const [loading, setLoading] = useState(false);
 
-    // ✅ fetchCenters محدث مع Auth
-    const fetchCenters = useCallback(async () => {
-        try {
-            setLoading(true);
-            console.log("📥 Fetching centers...");
+    //  البحث المحسن - مجمعات مباشرة
+    const filteredCenters = centers.filter(
+        (center) =>
+            center.name.toLowerCase().includes(search.toLowerCase()) ||
+            center.email.toLowerCase().includes(search.toLowerCase()) ||
+            center.subdomain.toLowerCase().includes(search.toLowerCase()) ||
+            center.phone.toLowerCase().includes(search.toLowerCase()),
+    );
 
-            const result = await apiFetch("/api/v1/super/centers");
-
-            if (result.success) {
-                setCenters(result.data || []);
-                console.log("✅ Centers loaded:", result.data?.length);
-            } else {
-                toast.error(result.message || "فشل في جلب المجمعات");
-            }
-        } catch (error: any) {
-            console.error("فشل في جلب المجمعات:", error);
-            toast.error("فشل في جلب المجمعات");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchCenters();
-    }, [fetchCenters]);
-
-    // ✅ handleDelete محدث مع Auth
-    const handleDelete = async (center: Center) => {
-        if (!confirm(`هل أنت متأكد من حذف المجمع "${center.circleName}"؟`)) {
+    //  Delete مع الـ Hook الجديد
+    const handleDelete = async (centerId: number) => {
+        if (!confirm("هل أنت متأكد من حذف هذا المجمع؟")) {
             return;
         }
 
-        try {
-            console.log("🗑️ Deleting center:", center.id);
-
-            const result = await apiFetch(
-                `/api/v1/super/centers/${center.id}`,
-                {
-                    method: "DELETE",
-                },
-            );
-
-            if (result.success) {
-                toast.success("تم حذف المجمع بنجاح");
-                fetchCenters();
-            } else {
-                toast.error(result.message || "فشل في الحذف");
-            }
-        } catch (error: any) {
-            console.error("Delete error:", error);
-            toast.error("حدث خطأ في الحذف");
+        const result = await deleteCenter(centerId);
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.message);
         }
     };
 
-    const filteredCenters = centers.filter(
-        (center) =>
-            center.circleName.toLowerCase().includes(search.toLowerCase()) ||
-            center.managerName.toLowerCase().includes(search.toLowerCase()) ||
-            center.managerEmail.toLowerCase().includes(search.toLowerCase()) ||
-            center.domain.toLowerCase().includes(search.toLowerCase()),
-    );
+    //  تفعيل مجمع
+    const handleActivate = async (centerId: number) => {
+        const result = await confirmCenter(centerId);
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.message);
+        }
+    };
 
+    //  تعطيل مجمع
+    const handleDeactivate = async (centerId: number) => {
+        const result = await rejectCenter(centerId);
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.message);
+        }
+    };
+
+    //  Edit handler
     const handleEdit = (center: Center) => {
         setSelectedCenter(center);
         setSelectedCenterId(center.id);
@@ -154,7 +102,7 @@ const CentersManagement: React.FC = () => {
 
     const handleUpdateSuccess = () => {
         toast.success("تم تحديث بيانات المجمع بنجاح!");
-        fetchCenters();
+        refetch();
         handleCloseUpdateModal();
     };
 
@@ -164,18 +112,27 @@ const CentersManagement: React.FC = () => {
 
     const handleCreateSuccess = () => {
         toast.success("تم إضافة المجمع بنجاح!");
-        fetchCenters();
+        refetch();
         handleCloseCreateModal();
     };
 
+    //  Stats محسن - مجمعات مباشرة
     const stats = {
         total: centers.length,
         active: centers.filter((c) => c.is_active).length,
-        students: centers.reduce((sum, c) => sum + c.students_count, 0),
+        inactive: centers.filter((c) => !c.is_active).length,
     };
+
+    //  Error handling
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+        }
+    }, [error]);
 
     return (
         <>
+            {/* Update Modal */}
             {showUpdateModal && selectedCenter && (
                 <UpdateCenterPage
                     initialCenter={selectedCenter}
@@ -185,6 +142,7 @@ const CentersManagement: React.FC = () => {
                 />
             )}
 
+            {/* Create Modal */}
             {showCreateModal && (
                 <CreateCenterPage
                     onClose={handleCloseCreateModal}
@@ -193,6 +151,7 @@ const CentersManagement: React.FC = () => {
             )}
 
             <div className="userProfile__plan" style={{ padding: "0 15%" }}>
+                {/* Stats Cards */}
                 <div className="plan__stats">
                     <div className="stat-card">
                         <div className="stat-icon redColor">
@@ -208,33 +167,34 @@ const CentersManagement: React.FC = () => {
                         </div>
                     </div>
                     <div className="stat-card">
+                        <div className="stat-icon greenColor">
+                            <i>
+                                <GrStatusGood />
+                            </i>
+                        </div>
+                        <div>
+                            <h3>نشطة</h3>
+                            <p className="text-2xl font-bold text-green-600">
+                                {stats.active}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="stat-card">
                         <div className="stat-icon yellowColor">
                             <i>
                                 <GrStatusCritical />
                             </i>
                         </div>
                         <div>
-                            <h3>نشطة</h3>
+                            <h3>غير نشطة</h3>
                             <p className="text-2xl font-bold text-yellow-600">
-                                {stats.active}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <PiWhatsappLogoDuotone />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>عدد الطلاب</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {stats.students}
+                                {stats.inactive}
                             </p>
                         </div>
                     </div>
                 </div>
 
+                {/* Header & Search */}
                 <div
                     className="userProfile__plan"
                     style={{ paddingBottom: "24px", padding: "0" }}
@@ -252,7 +212,7 @@ const CentersManagement: React.FC = () => {
                                 <div className="date-picker to">
                                     <input
                                         type="search"
-                                        placeholder="البحث بالمجمع أو المدير أو الإيميل أو الدومين..."
+                                        placeholder="البحث بالمجمع أو الإيميل أو الدومين أو التليفون..."
                                         value={search}
                                         onChange={(e) =>
                                             setSearch(e.target.value)
@@ -274,163 +234,226 @@ const CentersManagement: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div className="plan__daily-table">
-                        <table>
-                            <thead>
+                {/* Table */}
+                <div className="plan__daily-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>شعار</th>
+                                <th>اسم المجمع</th>
+                                <th>الإيميل</th>
+                                <th>رقم الجوال</th>
+                                <th>العنوان</th>
+                                <th>رابط المجمع</th>
+                                <th>الدومين</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
                                 <tr>
-                                    <th>شعار</th>
-                                    <th>اسم المجمع</th>
-                                    <th>اسم المدير</th>
-                                    <th>بريد المدير</th>
-                                    <th>رقم الجوال</th>
-                                    <th>رابط المجمع</th>
-                                    <th>الدومين</th>
-                                    <th>الحالة</th>
-                                    <th>الإجراءات</th>
+                                    <td
+                                        colSpan={9}
+                                        className="text-center py-8"
+                                    >
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                        <div className="navbar">
+                                            <div className="navbar__inner">
+                                                <div className="navbar__loading">
+                                                    <div className="loading-spinner">
+                                                        <div className="spinner-circle"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>{" "}
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td
-                                            colSpan={9}
-                                            className="text-center py-8"
-                                        >
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                            جاري تحميل المجمعات...
-                                        </td>
-                                    </tr>
-                                ) : filteredCenters.length === 0 ? (
-                                    <tr>
-                                        <td
-                                            colSpan={9}
-                                            className="text-center py-8 text-gray-500"
-                                        >
-                                            لا توجد مجمعات مطابقة للبحث
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredCenters.map((item) => (
-                                        <tr
-                                            key={item.id}
-                                            className="plan__row active"
-                                        >
-                                            <td className="teacherStudent__img">
-                                                <div className="w-12 h-12 rounded-lg overflow-hidden">
-                                                    <img
-                                                        src={
-                                                            item.logo?.startsWith(
-                                                                "http",
-                                                            )
+                            ) : filteredCenters.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={9}
+                                        className="text-center py-8 text-gray-500"
+                                    >
+                                        {error
+                                            ? "حدث خطأ في تحميل المجمعات"
+                                            : "لا توجد مجمعات"}
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredCenters.map((item) => (
+                                    <tr
+                                        key={item.id}
+                                        className="plan__row active"
+                                    >
+                                        {/* Logo */}
+                                        <td className="teacherStudent__img">
+                                            <div className="w-12 h-12 rounded-lg overflow-hidden">
+                                                <img
+                                                    src={
+                                                        item.logo
+                                                            ? item.logo.startsWith(
+                                                                  "http",
+                                                              )
                                                                 ? item.logo
-                                                                : item.logo?.startsWith(
-                                                                        "centers/",
-                                                                    )
-                                                                  ? `/storage/${item.logo}`
-                                                                  : `/storage/centers/${item.logo}`
-                                                        }
-                                                        alt={item.circleName}
-                                                        className="w-full h-12 object-cover"
-                                                        onError={(e) => {
-                                                            e.currentTarget.src =
-                                                                "/images/default-logo.png";
-                                                        }}
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td>{item.circleName}</td>
-                                            <td>{item.managerName}</td>
-                                            <td>{item.managerEmail}</td>
-                                            <td>
-                                                <span className="font-mono text-sm">
-                                                    {item.countryCode}{" "}
-                                                    {item.managerPhone}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <a
-                                                    href={item.circleLink}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-600 hover:underline"
-                                                >
-                                                    🔗 رابط
-                                                </a>
-                                            </td>
-                                            <td>
-                                                <span className="font-mono text-sm">
-                                                    {item.domain}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span
-                                                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                        item.is_active
-                                                            ? "bg-green-100 text-green-800"
-                                                            : "bg-red-100 text-red-800"
-                                                    }`}
-                                                >
-                                                    {item.is_active
-                                                        ? "نشط"
-                                                        : "غير نشط"}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div className="teacherStudent__btns">
-                                                    <button
-                                                        className="teacherStudent__status-btn edit-btn p-2"
-                                                        onClick={() =>
-                                                            handleEdit(item)
-                                                        }
-                                                        title="تعديل بيانات المجمع"
-                                                    >
-                                                        <FiEdit3 />
-                                                    </button>
-                                                    <button
-                                                        className="teacherStudent__status-btn delete-btn p-2"
-                                                        onClick={() =>
-                                                            handleDelete(item)
-                                                        }
-                                                        title="حذف المجمع"
-                                                    >
-                                                        <FiTrash2 />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                                                : `/storage/${item.logo}`
+                                                            : "/images/default-logo.png"
+                                                    }
+                                                    alt={item.name}
+                                                    className="w-full h-12 object-cover"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src =
+                                                            "/images/default-logo.png";
+                                                    }}
+                                                />
+                                            </div>
+                                        </td>
 
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        id="userProfile__verifyOTPBirth"
-                        style={{ width: "100%" }}
-                    >
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h1>معدل النشاط</h1>
-                            </div>
-                            <p>95%</p>
-                            <div className="userProfile__progressBar">
-                                <span style={{ width: "95%" }}></span>
-                            </div>
+                                        {/* Center Name */}
+                                        <td>{item.name}</td>
+
+                                        {/* Email */}
+                                        <td>{item.email}</td>
+
+                                        {/* Phone */}
+                                        <td>
+                                            <span className="font-mono text-sm">
+                                                {item.phone}
+                                            </span>
+                                        </td>
+
+                                        {/* Address */}
+                                        <td>{item.address}</td>
+
+                                        {/* Center Link */}
+                                        <td>
+                                            <a
+                                                href={item.center_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:underline"
+                                            >
+                                                🔗 رابط
+                                            </a>
+                                        </td>
+
+                                        {/* Domain */}
+                                        <td>
+                                            <span className="font-mono text-sm">
+                                                {item.subdomain}
+                                            </span>
+                                        </td>
+
+                                        {/* Status */}
+                                        <td>
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    item.is_active
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-red-100 text-red-800"
+                                                }`}
+                                            >
+                                                {item.is_active
+                                                    ? "نشط"
+                                                    : "غير نشط"}
+                                            </span>
+                                        </td>
+
+                                        {/* Actions */}
+                                        <td>
+                                            <div className="teacherStudent__btns">
+                                                {/* Edit */}
+                                                <button
+                                                    className="teacherStudent__status-btn edit-btn p-2"
+                                                    onClick={() =>
+                                                        handleEdit(item)
+                                                    }
+                                                    title="تعديل بيانات المجمع"
+                                                >
+                                                    <FiEdit3 />
+                                                </button>
+
+                                                {/* Activate/Deactivate */}
+                                                <button
+                                                    className={`p-2 rounded ${
+                                                        item.is_active
+                                                            ? "bg-red-100 hover:bg-red-200 text-red-600"
+                                                            : "bg-green-100 hover:bg-green-200 text-green-600"
+                                                    }`}
+                                                    onClick={() =>
+                                                        item.is_active
+                                                            ? handleDeactivate(
+                                                                  item.id,
+                                                              )
+                                                            : handleActivate(
+                                                                  item.id,
+                                                              )
+                                                    }
+                                                    title={
+                                                        item.is_active
+                                                            ? "تعطيل"
+                                                            : "تفعيل"
+                                                    }
+                                                >
+                                                    {item.is_active ? "⛔" : ""}
+                                                </button>
+
+                                                {/* Delete */}
+                                                <button
+                                                    className="teacherStudent__status-btn delete-btn p-2 ml-1"
+                                                    onClick={() =>
+                                                        handleDelete(item.id)
+                                                    }
+                                                    title="حذف المجمع"
+                                                >
+                                                    <FiTrash2 />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Progress Bars */}
+                <div
+                    className="inputs__verifyOTPBirth"
+                    id="userProfile__verifyOTPBirth"
+                    style={{ width: "100%" }}
+                >
+                    <div className="userProfile__progressContent">
+                        <div className="userProfile__progressTitle">
+                            <h1>معدل النشاط</h1>
                         </div>
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h1>عدد المجمعات</h1>
-                            </div>
-                            <p>{centers.length}</p>
-                            <div className="userProfile__progressBar">
-                                <span
-                                    style={{
-                                        width: `${Math.min((centers.length / 50) * 100, 100)}%`,
-                                    }}
-                                ></span>
-                            </div>
+                        <p>
+                            {Math.round(
+                                (stats.active / Math.max(stats.total, 1)) * 100,
+                            )}
+                            %
+                        </p>
+                        <div className="userProfile__progressBar">
+                            <span
+                                style={{
+                                    width: `${Math.min((stats.active / Math.max(stats.total, 1)) * 100, 100)}%`,
+                                }}
+                            ></span>
+                        </div>
+                    </div>
+                    <div className="userProfile__progressContent">
+                        <div className="userProfile__progressTitle">
+                            <h1>عدد المجمعات</h1>
+                        </div>
+                        <p>{stats.total}</p>
+                        <div className="userProfile__progressBar">
+                            <span
+                                style={{
+                                    width: `${Math.min((stats.total / 50) * 100, 100)}%`,
+                                }}
+                            ></span>
                         </div>
                     </div>
                 </div>

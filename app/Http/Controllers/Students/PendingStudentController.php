@@ -8,12 +8,30 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class PendingStudentController extends Controller
 {
     public function index(Request $request)
     {
+        // ✅ التحقق من وجود المستخدم و center_id قبل أي شيء
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مسجل دخول'
+            ], 401);
+        }
+
+        if (!$user->center_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لا يوجد مجمع مرتبط بحسابك'
+            ], 403);
+        }
+
         $query = Student::with([
                 'user:id,name,email,phone,avatar,birth_date,center_id,status',
                 'guardian:id,name,email,phone',
@@ -21,65 +39,70 @@ class PendingStudentController extends Controller
             ])
             ->whereHas('user', function($q) {
                 $q->where('status', 'pending');
-            });
-
-        if ($request->filled('center_slug')) {
-            $center = \App\Models\Tenant\Center::where('subdomain', $request->center_slug)->first();
-
-            if ($center) {
-                $query->where('center_id', $center->id);
-            } else {
-                return response()->json([
-                    'success' => true,
-                    'data' => [],
-                    'message' => 'Center not found'
-                ]);
-            }
-        }
+            })
+            ->where('center_id', $user->center_id); // ✅ مجمع المستخدم الحالي
 
         $students = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'success' => true,
-            'data' => $students
-        ]);
-    }public function confirm($id)
-{
-    $student = Student::with(['user', 'guardian'])->findOrFail($id);
-
-    // ✅ 1. تحديث User status بس (مش Student)
-    if ($student->user) {
-        $student->user->update([
-            'status' => 'active'  // ✅ status في جدول users
+            'data' => $students,
+            'center_id' => $user->center_id,
+            'center_name' => optional($user->center)->name ?? 'غير محدد',
+            'total_pending' => $students->count()
         ]);
     }
 
-    // ✅ 2. تحديث Guardian status
-    if ($student->guardian) {
-        $student->guardian->update([
-            'status' => 'active'  // ✅ status في جدول users
+    public function confirm($id)
+    {
+        $user = Auth::user();
+
+        if (!$user || !$user->center_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مسجل دخول أو لا يوجد مجمع'
+            ], 403);
+        }
+
+        $student = Student::with(['user', 'guardian'])
+                         ->where('center_id', $user->center_id)
+                         ->findOrFail($id);
+
+        if ($student->user) {
+            $student->user->update(['status' => 'active']);
+        }
+
+        if ($student->guardian) {
+            $student->guardian->update(['status' => 'active']);
+        }
+
+        $student->load([
+            'user:id,name,email,phone,avatar,birth_date,status',
+            'guardian:id,name,email,phone,avatar,status',
+            'center:id,name,subdomain'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تأكيد الطالب وولي الأمر بنجاح',
+            'data' => $student
         ]);
     }
-
-    // ✅ 3. مافيش status في students - خلاص تمام!
-
-    // Reload مع البيانات الكاملة
-    $student->load([
-        'user:id,name,email,phone,avatar,birth_date,status',
-        'guardian:id,name,email,phone,avatar,status',
-        'center:id,name,subdomain'
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'تم تأكيد الطالب وولي الأمر بنجاح',
-        'data' => $student
-    ]);
-}
 
     public function reject($id)
     {
-        $student = Student::findOrFail($id);
+        $user = Auth::user();
+
+        if (!$user || !$user->center_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مسجل دخول أو لا يوجد مجمع'
+            ], 403);
+        }
+
+        $student = Student::where('center_id', $user->center_id)
+                         ->findOrFail($id);
+
         $student->delete();
 
         return response()->json([
@@ -90,11 +113,21 @@ class PendingStudentController extends Controller
 
     public function show($id)
     {
+        $user = Auth::user();
+
+        if (!$user || !$user->center_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مسجل دخول أو لا يوجد مجمع'
+            ], 403);
+        }
+
         $student = Student::with([
                 'user:id,name,email,phone,avatar,birth_date,center_id,status',
                 'guardian:id,name,email,phone',
                 'center:id,name,subdomain'
             ])
+            ->where('center_id', $user->center_id)
             ->findOrFail($id);
 
         return response()->json([
@@ -105,6 +138,15 @@ class PendingStudentController extends Controller
 
     public function linkGuardian($id, Request $request)
     {
+        $user = Auth::user();
+
+        if (!$user || !$user->center_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مسجل دخول أو لا يوجد مجمع'
+            ], 403);
+        }
+
         $guardianEmail = $request->input('guardian_email');
 
         if (!$guardianEmail || !filter_var($guardianEmail, FILTER_VALIDATE_EMAIL)) {
@@ -113,27 +155,22 @@ class PendingStudentController extends Controller
             ]);
         }
 
-        $student = Student::with('user')->findOrFail($id);
+        $student = Student::with('user')
+                         ->where('center_id', $user->center_id)
+                         ->findOrFail($id);
 
-        if ($request->filled('center_slug')) {
-            $center = \App\Models\Tenant\Center::where('subdomain', $request->center_slug)->first();
-            if (!$center || $student->center_id !== $center->id) {
-                return response()->json(['message' => 'Student not in this center'], 403);
-            }
-        }
-
-        $guardian = User::where('email', $guardianEmail)->first();
+        $guardian = User::where('email', $guardianEmail)
+                       ->where('center_id', $user->center_id)
+                       ->first();
 
         if (!$guardian) {
             return response()->json([
                 'success' => false,
-                'message' => 'ولي الأمر غير مسجل في النظام'
+                'message' => 'ولي الأمر غير مسجل في مجمعك'
             ], 404);
         }
 
-        $student->update([
-            'guardian_id' => $guardian->id
-        ]);
+        $student->update(['guardian_id' => $guardian->id]);
 
         $student->load([
             'user:id,name,email,phone,avatar,birth_date,status',
@@ -154,6 +191,15 @@ class PendingStudentController extends Controller
 
     public function createGuardian($id, Request $request)
     {
+        $user = Auth::user();
+
+        if (!$user || !$user->center_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مسجل دخول أو لا يوجد مجمع'
+            ], 403);
+        }
+
         $guardianEmail = $request->input('guardian_email');
 
         if (!$guardianEmail || !filter_var($guardianEmail, FILTER_VALIDATE_EMAIL)) {
@@ -162,21 +208,18 @@ class PendingStudentController extends Controller
             ]);
         }
 
-        if (User::where('email', $guardianEmail)->exists()) {
+        if (User::where('email', $guardianEmail)
+                ->where('center_id', $user->center_id)
+                ->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'البريد الإلكتروني مسجل مسبقاً'
+                'message' => 'البريد الإلكتروني مسجل مسبقاً في مجمعك'
             ], 422);
         }
 
-        $student = Student::with('user')->findOrFail($id);
-
-        if ($request->filled('center_slug')) {
-            $center = \App\Models\Tenant\Center::where('subdomain', $request->center_slug)->first();
-            if (!$center || $student->center_id !== $center->id) {
-                return response()->json(['message' => 'Student not in this center'], 403);
-            }
-        }
+        $student = Student::with('user')
+                         ->where('center_id', $user->center_id)
+                         ->findOrFail($id);
 
         $guardian = User::create([
             'name' => 'ولي أمر ' . ($student->user->name ?? 'الطالب'),
@@ -184,12 +227,10 @@ class PendingStudentController extends Controller
             'password' => Hash::make('12345678'),
             'status' => 'active',
             'phone' => null,
-            'center_id' => $student->user->center_id ?? null,
+            'center_id' => $user->center_id,
         ]);
 
-        $student->update([
-            'guardian_id' => $guardian->id
-        ]);
+        $student->update(['guardian_id' => $guardian->id]);
 
         $student->load([
             'user:id,name,email,phone,avatar,birth_date,status',
@@ -217,29 +258,56 @@ class PendingStudentController extends Controller
 
     public function debug()
     {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مسجل دخول'
+            ], 401);
+        }
+
         return response()->json([
             'success' => true,
             'debug' => [
+                'auth_user' => $user,
+                'user_center_id' => $user->center_id,
+                'has_center' => !empty($user->center_id),
                 'students_table_columns' => Schema::getColumnListing('students'),
                 'users_table_columns' => Schema::getColumnListing('users'),
-                'total_students' => Student::count(),
-                'total_users' => User::count(),
-                'users_emails_sample' => User::pluck('email')->take(5)->toArray(),
-                'pending_students_count' => Student::whereHas('user', fn($q) => $q->where('status', 'pending'))->count(),
+                'total_students_in_center' => $user->center_id ? Student::where('center_id', $user->center_id)->count() : 0,
+                'pending_students_count' => $user->center_id ? Student::where('center_id', $user->center_id)
+                                                            ->whereHas('user', fn($q) => $q->where('status', 'pending'))
+                                                            ->count() : 0,
             ]
         ]);
     }
 
     public function stats()
     {
+        $user = Auth::user();
+
+        if (!$user || !$user->center_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مسجل دخول أو لا يوجد مجمع'
+            ], 403);
+        }
+
         return response()->json([
             'success' => true,
             'stats' => [
-                'total_students' => Student::count(),
-                'pending_students' => Student::whereHas('user', fn($q) => $q->where('status', 'pending'))->count(),
-                'approved_students' => Student::whereHas('user', fn($q) => $q->where('status', 'active'))->count(),
-                'pending_users' => User::where('status', 'pending')->count(),
-                'active_users' => User::where('status', 'active')->count()
+                'center_id' => $user->center_id,
+                'center_name' => optional($user->center)->name ?? 'غير محدد',
+                'total_students' => Student::where('center_id', $user->center_id)->count(),
+                'pending_students' => Student::where('center_id', $user->center_id)
+                                            ->whereHas('user', fn($q) => $q->where('status', 'pending'))
+                                            ->count(),
+                'approved_students' => Student::where('center_id', $user->center_id)
+                                             ->whereHas('user', fn($q) => $q->where('status', 'active'))
+                                             ->count(),
+                'pending_users' => User::where('center_id', $user->center_id)->where('status', 'pending')->count(),
+                'active_users' => User::where('center_id', $user->center_id)->where('status', 'active')->count()
             ]
         ]);
     }

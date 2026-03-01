@@ -20,7 +20,7 @@ class TeacherSalaryController extends Controller
         }
 
         $salaries = TeacherSalary::query()
-            ->where('center_id', $user->center_id)  // ✅ مركز اليوزر إجباري
+            ->where('center_id', $user->center_id)  //  مركز اليوزر إجباري
             ->when($user->mosque_id, fn($q) => $q->where('mosque_id', $user->mosque_id))  // مسجد اختياري
             ->orderBy('role')
             ->get()
@@ -60,7 +60,7 @@ class TeacherSalaryController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // ✅ التأكد من عدم وجود قاعدة مسبقة لنفس الدور في نفس المركز (مسجد اختياري)
+        //  التأكد من عدم وجود قاعدة مسبقة لنفس الدور في نفس المركز (مسجد اختياري)
         $exists = TeacherSalary::where('role', $request->role)
             ->where('center_id', $user->center_id)
             ->when($user->mosque_id, fn($q) => $q->where('mosque_id', $user->mosque_id))
@@ -72,8 +72,8 @@ class TeacherSalaryController extends Controller
 
         $salary = TeacherSalary::create([
             'role' => $request->role,
-            'center_id' => $user->center_id,                    // ✅ إجباري
-            'mosque_id' => $user->mosque_id ?? null,            // ✅ اختياري
+            'center_id' => $user->center_id,                    //  إجباري
+            'mosque_id' => $user->mosque_id ?? null,            //  اختياري
             'base_salary' => $request->base_salary,
             'working_days' => $request->working_days,
             'daily_rate' => $request->daily_rate ?? ($request->base_salary / $request->working_days),
@@ -93,7 +93,7 @@ class TeacherSalaryController extends Controller
             return response()->json(['message' => 'غير مسجل الدخول'], 401);
         }
 
-        // ✅ center_id إجباري يساوي center_id اليوزر
+        //  center_id إجباري يساوي center_id اليوزر
         if ($teacherSalary->center_id !== $user->center_id) {
             return response()->json(['message' => 'غير مصرح لرؤية هذا الراتب'], 403);
         }
@@ -123,7 +123,7 @@ class TeacherSalaryController extends Controller
             return response()->json(['message' => 'غير مسجل الدخول'], 401);
         }
 
-        // ✅ center_id إجباري يساوي center_id اليوزر
+        //  center_id إجباري يساوي center_id اليوزر
         if ($teacherSalary->center_id !== $user->center_id) {
             return response()->json(['message' => 'غير مصرح لك'], 403);
         }
@@ -161,7 +161,7 @@ class TeacherSalaryController extends Controller
             return response()->json(['message' => 'غير مسجل الدخول'], 401);
         }
 
-        // ✅ center_id إجباري يساوي center_id اليوزر
+        //  center_id إجباري يساوي center_id اليوزر
         if ($teacherSalary->center_id !== $user->center_id) {
             return response()->json(['message' => 'غير مصرح لك'], 403);
         }

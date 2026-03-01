@@ -5,6 +5,7 @@ namespace App\Models\Tenant;
 use App\Models\Auth\User;
 use App\Models\Plans\Plan;
 use App\Models\Audit\AuditLog;
+use App\Models\Tenants\Tenant;  // إضافة import لـ Tenant
 use Illuminate\Database\Eloquent\Model;
 
 class Center extends Model
@@ -19,13 +20,22 @@ class Center extends Model
         'address',
         'logo',
         'is_active',
-        'settings'
+        'settings',
+        'tenant_id'  // إضافة tenant_id للـ fillable
     ];
 
     protected $casts = [
         'settings' => 'array',
         'is_active' => 'boolean'
     ];
+
+    /**
+     * علاقة مع Tenant
+     */
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
     /**
      * علاقات المستخدمين
@@ -52,7 +62,7 @@ class Center extends Model
     }
 
     /**
-     * خطط الحفظ الخاصة بالمجمع ← الإضافة الجديدة
+     * خطط الحفظ الخاصة بالمجمع
      */
     public function plans()
     {

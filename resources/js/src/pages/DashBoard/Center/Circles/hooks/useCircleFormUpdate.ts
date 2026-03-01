@@ -1,4 +1,4 @@
-// src/hooks/useCircleFormUpdate.ts - ✅ محدث نهائياً
+// src/hooks/useCircleFormUpdate.ts -  محدث نهائياً
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -86,7 +86,7 @@ export const useCircleFormUpdate = (circleId: number) => {
             }
 
             const circle = await response.json();
-            console.log("✅ Circle loaded:", circle);
+            console.log(" Circle loaded:", circle);
             setCircleData(circle);
 
             setFormData({

@@ -47,7 +47,15 @@ const StudentAffairsUpdate: React.FC<StudentAffairsUpdateProps> = ({
                     <div className="ParentModel__content">
                         <div className="ParentModel__inner">
                             <div className="flex justify-center items-center h-64">
-                                جاري تحميل بيانات الطالب...
+                                <div className="navbar">
+                                    <div className="navbar__inner">
+                                        <div className="navbar__loading">
+                                            <div className="loading-spinner">
+                                                <div className="spinner-circle"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>{" "}
                             </div>
                         </div>
                     </div>

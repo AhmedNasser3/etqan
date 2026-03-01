@@ -1,4 +1,4 @@
-// hooks/useStaffAttendance.ts - نهائي ✅ CSRF Token مُصحح
+// hooks/useStaffAttendance.ts - نهائي  CSRF Token مُصحح
 import { useState, useEffect, useCallback, useMemo } from "react";
 import toast from "react-hot-toast";
 
@@ -40,7 +40,7 @@ interface UseStaffAttendanceReturn {
     ) => Promise<boolean>;
 }
 
-// ✅ CSRF Token Helper
+//  CSRF Token Helper
 const getCsrfToken = (): string => {
     if (typeof document === "undefined") return "";
 
@@ -62,7 +62,7 @@ const initializeCsrf = async (): Promise<void> => {
                 "X-Requested-With": "XMLHttpRequest",
             },
         });
-        console.log("✅ CSRF Status:", response.status);
+        console.log(" CSRF Status:", response.status);
     } catch (error) {
         console.error("❌ CSRF Error:", error);
     }
@@ -91,7 +91,7 @@ export const useStaffAttendance = (): UseStaffAttendanceReturn => {
         if (!isInitialized) {
             await initializeCsrf();
             setIsInitialized(true);
-            console.log("✅ Auth initialized");
+            console.log(" Auth initialized");
         }
     }, [isInitialized]);
 
@@ -131,7 +131,7 @@ export const useStaffAttendance = (): UseStaffAttendanceReturn => {
             }
 
             const data = await response.json();
-            console.log("✅ Data:", data);
+            console.log(" Data:", data);
 
             const attendanceData: StaffAttendance[] = Array.isArray(data)
                 ? data
@@ -163,7 +163,7 @@ export const useStaffAttendance = (): UseStaffAttendanceReturn => {
                 avgDelay: data.stats?.avg_delay ?? data.stats?.avgDelay ?? 0,
             });
 
-            console.log("✅ Loaded:", safeStaff.length, "records");
+            console.log(" Loaded:", safeStaff.length, "records");
         } catch (err: any) {
             console.error("❌ Error:", err);
             const msg = err.message || "فشل في تحميل الحضور";
@@ -193,10 +193,10 @@ export const useStaffAttendance = (): UseStaffAttendanceReturn => {
             try {
                 console.log("✏️ Marking:", attendanceId, status);
 
-                // ✅ 1. Refresh CSRF token قبل PUT
+                //  1. Refresh CSRF token قبل PUT
                 await initializeCsrf();
 
-                // ✅ 2. خد XSRF-TOKEN من cookies و decode
+                //  2. خد XSRF-TOKEN من cookies و decode
                 const xsrfToken = getCsrfToken();
                 console.log("🔑 CSRF Token:", xsrfToken ? "Found" : "Missing");
 
@@ -252,7 +252,7 @@ export const useStaffAttendance = (): UseStaffAttendanceReturn => {
                     ),
                 );
 
-                toast.success("تم تحديث الحضور بنجاح ✅");
+                toast.success("تم تحديث الحضور بنجاح ");
                 return true;
             } catch (err: any) {
                 console.error("❌ Mark Error:", err);

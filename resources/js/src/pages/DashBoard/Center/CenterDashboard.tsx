@@ -153,7 +153,15 @@ const CenterDashboard: React.FC = () => {
     if (loading) {
         return (
             <div className="CenterDashboard">
-                <div className="loading">جاري تحميل الإحصائيات...</div>
+                <div className="navbar">
+                    <div className="navbar__inner">
+                        <div className="navbar__loading">
+                            <div className="loading-spinner">
+                                <div className="spinner-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>{" "}
             </div>
         );
     }

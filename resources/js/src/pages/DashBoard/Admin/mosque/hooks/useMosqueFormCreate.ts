@@ -56,7 +56,7 @@ export const useMosqueFormCreate = () => {
             if (response.ok) {
                 const responseData = await response.json();
                 const actualUser = responseData.user || responseData;
-                console.log("✅ ACTUAL USER:", actualUser);
+                console.log(" ACTUAL USER:", actualUser);
                 setUser(actualUser);
             }
         } catch (error) {
@@ -137,7 +137,7 @@ export const useMosqueFormCreate = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("✅ Teachers loaded:", data.data?.length);
+                console.log(" Teachers loaded:", data.data?.length);
                 setUsersData(data.data || []);
             }
         } catch (error) {

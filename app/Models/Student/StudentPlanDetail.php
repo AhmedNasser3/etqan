@@ -9,7 +9,7 @@ use App\Models\Tenant\Circle;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Plans\PlanCircleSchedule;
 use App\Models\Plans\CircleStudentBooking;
-use App\Models\Plans\PlanDetail; // ✅ إضافة PlanDetail
+use App\Models\Plans\PlanDetail; //  إضافة PlanDetail
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -37,7 +37,7 @@ class StudentPlanDetail extends Model
         'day_number' => 'integer',
     ];
 
-    // ✅ العلاقات الأساسية
+    //  العلاقات الأساسية
     public function circleStudentBooking(): BelongsTo
     {
         return $this->belongsTo(CircleStudentBooking::class);
@@ -68,14 +68,14 @@ class StudentPlanDetail extends Model
         return $this->belongsTo(PlanCircleSchedule::class, 'plan_circle_schedule_id');
     }
 
-    // ✅ علاقة مع PlanDetail الأصلي (للمقارنة)
+    //  علاقة مع PlanDetail الأصلي (للمقارنة)
     public function originalPlanDetail(): BelongsTo
     {
         return $this->belongsTo(PlanDetail::class, 'plan_id', 'plan_id')
             ->where('day_number', $this->day_number);
     }
 
-    // ✅ Scopes محسنة
+    //  Scopes محسنة
     public function scopeCompleted($query)
     {
         return $query->where('status', 'مكتمل');
@@ -106,7 +106,7 @@ class StudentPlanDetail extends Model
         return $query->where('plan_id', $planId);
     }
 
-    // ✅ Accessors للألوان والحالة
+    //  Accessors للألوان والحالة
     public function getStatusColorAttribute(): string
     {
         return match($this->status) {
@@ -134,14 +134,14 @@ class StudentPlanDetail extends Model
         return $totalDays > 0 ? round(($completedDays / $totalDays) * 100) : 0;
     }
 
-    // ✅ Mutator لضمان صحة الحالة
+    //  Mutator لضمان صحة الحالة
     public function setStatusAttribute($value)
     {
         $validStatuses = ['مكتمل', 'قيد الانتظار', 'إعادة'];
         $this->attributes['status'] = in_array($value, $validStatuses) ? $value : 'قيد الانتظار';
     }
 
-    // ✅ Helper methods للـ Frontend
+    //  Helper methods للـ Frontend
     public function getFormattedSessionTimeAttribute(): string
     {
         return $this->session_time?->format('h:i A') ?? 'غير محدد';
@@ -156,19 +156,19 @@ class StudentPlanDetail extends Model
         return $days[$this->day_number % 7 + 1] ?? 'غير محدد';
     }
 
-    // ✅ Check إذا كان اليوم مكتمل
+    //  Check إذا كان اليوم مكتمل
     public function isCompleted(): bool
     {
         return $this->status === 'مكتمل';
     }
 
-    // ✅ Check إذا كان اليوم قيد الانتظار
+    //  Check إذا كان اليوم قيد الانتظار
     public function isPending(): bool
     {
         return $this->status === 'قيد الانتظار';
     }
 
-    // ✅ Check إذا كان اليوم يحتاج إعادة
+    //  Check إذا كان اليوم يحتاج إعادة
     public function needsRetry(): bool
     {
         return $this->status === 'إعادة';

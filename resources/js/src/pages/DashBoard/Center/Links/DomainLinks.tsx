@@ -232,8 +232,8 @@ const DomainLinks: React.FC = () => {
                                                 className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}
                                             >
                                                 {item.status === "active"
-                                                    ? "✅ نشط"
-                                                    : "⭕ غير نشط"}
+                                                    ? " نشط"
+                                                    : " غير نشط"}
                                             </span>
                                         </td>
                                         <td className="font-medium">

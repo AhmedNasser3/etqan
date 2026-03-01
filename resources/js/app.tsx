@@ -70,6 +70,10 @@ import EditAccountPage from "./src/pages/DashBoard/AccountEdit/EditAccountPage";
 import MeetingsManagement from "./src/pages/DashBoard/Meeting/MeetingsManagement";
 import TeacherAchievementList from "./src/pages/DashBoard/teacherDashboard/widgets/TeacherMotivate/TeacherAchievementList";
 import SpecialRequestFormPage from "./src/pages/DashBoard/UserDashboard/SpecialRequest/SpecialRequestFormPage";
+import CenterNavbar from "./src/layouts/centerDashboard/CenterNavbar";
+import AdminDashboard from "./src/pages/DashBoard/Admin/AdminDashboard";
+import MyTeachersManagement from "./src/pages/DashBoard/Center/MyTeachers/MyTeachersManagement";
+import CustomSalariesManagement from "./src/pages/DashBoard/Center/TeacherCustomSalaries/CustomSalariesManagement";
 
 function UserLayout() {
     return (
@@ -102,7 +106,7 @@ function TeacherLayout() {
 function CenterLayout() {
     return (
         <>
-            <TeacherNavbar />
+            <CenterNavbar />
             <CenterSidebar />
             <main className="page">
                 <div className="page__container">
@@ -126,6 +130,19 @@ function PublicLayout() {
     );
 }
 function DashLayout() {
+    return (
+        <>
+            <Navbar />
+            <Sidebar />
+            <main className="page">
+                <div className="page__container">
+                    <Outlet />
+                </div>
+            </main>
+        </>
+    );
+}
+function AdminDashLayout() {
     return (
         <>
             <Navbar />
@@ -162,12 +179,7 @@ function App() {
                         element={<TeacherRegister />}
                     />
                     {/* ضعه في الأول عشان priority عالي */}
-                    <Route index element={<CentersPage />} />
-                    <Route path=":centerSlug" element={<CenterPage />} />
-                </Route>
-
-                {/* خارج DashLayout - للصفحات العامة */}
-                <Route path="/public/*" element={<PublicLayout />}>
+                    <Route index element={<PublicLayout />} />
                     <Route path=":centerSlug" element={<CenterPage />} />
                 </Route>
 
@@ -259,6 +271,10 @@ function App() {
                             element={<DomainRequestsManagement />}
                         />
                         <Route
+                            path="custom-salary-manegment"
+                            element={<CustomSalariesManagement />}
+                        />
+                        <Route
                             path="teaceher-salary-manegment"
                             element={<SalaryRulesManagement />}
                         />
@@ -273,6 +289,10 @@ function App() {
                         <Route
                             path="meeting-management"
                             element={<MeetingsManagement />}
+                        />
+                        <Route
+                            path="teachers-management"
+                            element={<MyTeachersManagement />}
                         />
                         <Route path="audit-log" element={<AuditLogPage />} />
                     </Route>
@@ -295,6 +315,21 @@ function App() {
                         <Route path="room" element={<TeacherRoom />} />
                         <Route path="reports" element={<TeacherReports />} />
                         <Route path="certificates" element={<Certificate />} />
+                    </Route>
+
+                    <Route
+                        path="admin-dashboard*"
+                        element={<AdminDashLayout />}
+                    >
+                        <Route index element={<AdminDashboard />} />
+                        <Route
+                            path="admin-centers"
+                            element={<CentersMangement />}
+                        />
+                        <Route
+                            path="admin-approval"
+                            element={<PendingCentersApproval />}
+                        />
                     </Route>
 
                     <Route path="user-dashboard/*" element={<UserLayout />}>

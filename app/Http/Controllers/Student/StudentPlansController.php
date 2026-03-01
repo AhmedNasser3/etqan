@@ -307,17 +307,17 @@ public function bookSchedule(Request $request, $scheduleId)
     DB::beginTransaction();
 
     try {
-        // ✅ Increment booked_students ✅ (ده اشتغل)
+        //  Increment booked_students  (ده اشتغل)
         $schedule->increment('booked_students');
 
-        // ✅ استخدم أرقام بدل strings للـ status
+        //  استخدم أرقام بدل strings للـ status
         $booking = CircleStudentBooking::create([
             'plan_id' => $request->plan_id,
             'plan_details_id' => $request->plan_details_id,
             'plan_circle_schedule_id' => $scheduleId,
             'user_id' => $user->id,
-            'status' => 1, // ✅ 1 بدل 'pending'
-            'progress_status' => 1, // ✅ 1 بدل 'not_started'
+            'status' => 1, //  1 بدل 'pending'
+            'progress_status' => 1, //  1 بدل 'not_started'
             'current_day' => 0,
             'completed_days' => 0,
             'total_days' => 1,
@@ -326,7 +326,7 @@ public function bookSchedule(Request $request, $scheduleId)
 
         DB::commit();
 
-        \Log::info('✅ BOOKING SUCCESS 100%', ['booking_id' => $booking->id]);
+        \Log::info(' BOOKING SUCCESS 100%', ['booking_id' => $booking->id]);
 
         return response()->json([
             'success' => true,

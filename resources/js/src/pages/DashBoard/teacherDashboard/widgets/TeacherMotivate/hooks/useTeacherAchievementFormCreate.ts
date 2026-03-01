@@ -1,4 +1,4 @@
-// hooks/useTeacherAchievementFormCreate.ts - ✅ مُصحح للمعلم مع Debug كامل
+// hooks/useTeacherAchievementFormCreate.ts -  مُصحح للمعلم مع Debug كامل
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -50,7 +50,7 @@ export const useTeacherAchievementFormCreate = () => {
         user?.id,
     );
 
-    // ✅ 1️⃣ Fetch User info أولاً
+    //  1️⃣ Fetch User info أولاً
     useEffect(() => {
         console.log("🚀 [STEP 1] Mounting - fetchUser()");
         fetchUser();
@@ -68,7 +68,7 @@ export const useTeacherAchievementFormCreate = () => {
                 const responseData = await response.json();
                 console.log("📦 [fetchUser] Raw:", responseData);
 
-                // ✅ إصلاح: User nested في success.user
+                //  إصلاح: User nested في success.user
                 const actualUser = responseData.user || responseData;
                 console.log("👤 [fetchUser] Set user:", actualUser.id);
                 setUser(actualUser);
@@ -78,7 +78,7 @@ export const useTeacherAchievementFormCreate = () => {
         }
     }, []);
 
-    // ✅ 2️⃣ Fetch Teacher Students - endpoint جديد ✅ التغيير الأساسي
+    //  2️⃣ Fetch Teacher Students - endpoint جديد  التغيير الأساسي
     const fetchTeacherStudents = useCallback(async () => {
         console.log("🔄 [fetchTeacherStudents] user.id:", user?.id);
 
@@ -108,7 +108,7 @@ export const useTeacherAchievementFormCreate = () => {
 
             const data = await response.json();
             console.log(
-                "✅ [fetchTeacherStudents] Students:",
+                " [fetchTeacherStudents] Students:",
                 data.data?.length || 0,
             );
 
@@ -123,16 +123,16 @@ export const useTeacherAchievementFormCreate = () => {
         }
     }, [user]);
 
-    // ✅ 3️⃣ تشغيل fetchTeacherStudents لما user يتغير
+    //  3️⃣ تشغيل fetchTeacherStudents لما user يتغير
     useEffect(() => {
         console.log("🔗 [useEffect] user.id:", user?.id, "has user:", !!user);
         if (user) {
             console.log("▶️ Triggering fetchTeacherStudents");
             fetchTeacherStudents();
         }
-    }, [user, fetchTeacherStudents]); // ✅ dependency صحيح
+    }, [user, fetchTeacherStudents]); //  dependency صحيح
 
-    // ✅ باقي الـ functions زي ما هي
+    //  باقي الـ functions زي ما هي
     const handleInputChange = useCallback(
         (
             e: React.ChangeEvent<
@@ -219,7 +219,7 @@ export const useTeacherAchievementFormCreate = () => {
         errors,
         isSubmitting,
         loadingData,
-        studentsData, // ✅ طلاب المعلم بس
+        studentsData, //  طلاب المعلم بس
         user,
         achievementKey,
         achievementValue,

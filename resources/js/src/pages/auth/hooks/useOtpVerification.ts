@@ -45,7 +45,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
         [], // تنگدیني عن Dependcy
     );
 
-    // ✅ إرسال OTP مباشرة
+    //  إرسال OTP مباشرة
     const sendOtp = useCallback(
         async (email: string) => {
             setLoading(true);
@@ -66,7 +66,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                 const data = await response.json();
 
                 if (response.ok && data.success === true) {
-                    // ✅ إذا كان الـ OTP ظاهر في الـ Response (dev/testing)
+                    //  إذا كان الـ OTP ظاهر في الـ Response (dev/testing)
                     if (data.otp != null) {
                         showAlert(
                             `رمز التحقق المؤقت: ${data.otp} - ادخله في الحقول أدناه`,
@@ -75,7 +75,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                         showAlert("تم إرسال رمز التحقق للبريد الإلكتروني.");
                     }
                 } else {
-                    // ✅ handle all fail cases
+                    //  handle all fail cases
                     let msg = Array.isArray(data.message)
                         ? String(
                               Object.values(data.message)[0] ??
@@ -83,7 +83,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                           )
                         : String(data.message ?? "فشل في إرسال OTP");
 
-                    // ✅ خاص بالرسالة "الحساب لم يتم قبوله بعد"
+                    //  خاص بالرسالة "الحساب لم يتم قبوله بعد"
                     if (data.reason === "pending") {
                         setModal({
                             show: true,
@@ -109,7 +109,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
         [showAlert],
     );
 
-    // ✅ التحقق من OTP
+    //  التحقق من OTP
     const verifyOtp = useCallback(
         async (otp: string, onSuccess?: () => void) => {
             setLoading(true);
@@ -131,7 +131,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
 
                 if (response.ok && data.success) {
                     setVerified(true);
-                    showAlert("✅ تم تسجيل الدخول بنجاح!");
+                    showAlert(" تم تسجيل الدخول بنجاح!");
 
                     if (shieldRef.current) {
                         shieldRef.current.classList.add("verified-animation");
@@ -151,7 +151,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                           )
                         : String(data.message ?? "رمز التحقق غير صحيح");
 
-                    // ✅ مثال خاص برسالة معلّقة
+                    //  مثال خاص برسالة معلّقة
                     if (data.reason === "pending") {
                         setModal({
                             show: true,

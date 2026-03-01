@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('teacher_salaries', function (Blueprint $table) {
             $table->id();
-            $table->enum('role', ['teacher', 'supervisor', 'motivator', 'student_affairs', 'financial']);  // ✅ الخمس أدوار
+            $table->enum('role', ['teacher', 'supervisor', 'motivator', 'student_affairs', 'financial']);  //  الخمس أدوار
             $table->foreignId('center_id')->nullable()->constrained('centers')->onDelete('set null');
             $table->string('mosque_id')->nullable();
             $table->decimal('base_salary', 10, 2)->default(0);

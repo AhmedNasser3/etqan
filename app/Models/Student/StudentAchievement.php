@@ -16,7 +16,7 @@ class StudentAchievement extends Model
 
     protected $fillable = [
         'user_id',
-        'center_id', // ✅ مضاف للتوافق مع Reports
+        'center_id', //  مضاف للتوافق مع Reports
         'points',
         'points_action',
         'achievements',
@@ -33,7 +33,7 @@ class StudentAchievement extends Model
     ];
 
     /**
-     * ✅ Relationship مع الطالب
+     *  Relationship مع الطالب
      */
     public function user(): BelongsTo
     {
@@ -41,21 +41,21 @@ class StudentAchievement extends Model
     }
 
     /**
-     * ✅ Scope للـ ReportsController - مصحح ومحسن للأداء
+     *  Scope للـ ReportsController - مصحح ومحسن للأداء
      */
     public function scopeForCenter(Builder $query, $centerId): Builder
     {
-        // ✅ الأولوية: center_id مباشرة (أسرع)
+        //  الأولوية: center_id مباشرة (أسرع)
         $query->where('center_id', $centerId);
 
-        // ✅ fallback: عبر user.center_id
+        //  fallback: عبر user.center_id
         return $query->orWhereHas('user', function($q) use ($centerId) {
             $q->where('center_id', $centerId);
         });
     }
 
     /**
-     * ✅ Scope مباشر للأداء العالي
+     *  Scope مباشر للأداء العالي
      */
     public function scopeByCenterId(Builder $query, $centerId): Builder
     {
@@ -63,7 +63,7 @@ class StudentAchievement extends Model
     }
 
     /**
-     * ✅ Scopes محسنة
+     *  Scopes محسنة
      */
     public function scopeForStudent(Builder $query, $studentId): Builder
     {
@@ -91,7 +91,7 @@ class StudentAchievement extends Model
     }
 
     /**
-     * ✅ Accessors محسنة
+     *  Accessors محسنة
      */
     public function getTotalPointsAttribute(): int
     {
@@ -115,7 +115,7 @@ class StudentAchievement extends Model
     }
 
     /**
-     * ✅ Preview للـ Reports Dashboard
+     *  Preview للـ Reports Dashboard
      */
     public function getReportPreviewAttribute(): string
     {
@@ -124,7 +124,7 @@ class StudentAchievement extends Model
     }
 
     /**
-     * ✅ Helper Methods
+     *  Helper Methods
      */
     public function isPositive(): bool
     {
@@ -137,7 +137,7 @@ class StudentAchievement extends Model
     }
 
     /**
-     * ✅ Static total points للطالب
+     *  Static total points للطالب
      */
     public static function getStudentTotalPoints($userId): int
     {
@@ -145,7 +145,7 @@ class StudentAchievement extends Model
     }
 
     /**
-     * ✅ API Resource transformation (محسن للـ Reports)
+     *  API Resource transformation (محسن للـ Reports)
      */
     public function toApiArray(): array
     {

@@ -53,7 +53,7 @@ export const useCenterStats = () => {
         setLoading(true);
         setError(null);
         try {
-            // ✅ الرابط الصحيح حسب الـ routes بتاعتك
+            //  الرابط الصحيح حسب الـ routes بتاعتك
             const response = await fetch("/api/v1/reports/stats", {
                 credentials: "include",
                 headers: {
@@ -71,7 +71,7 @@ export const useCenterStats = () => {
 
             if (result.success && result.data) {
                 setStats(result.data);
-                toast.success("✅ تم تحميل الإحصائيات بنجاح");
+                toast.success(" تم تحميل الإحصائيات بنجاح");
             } else {
                 throw new Error(
                     result.data?.message || "خطأ في استجابة الخادم",

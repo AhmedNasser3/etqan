@@ -19,7 +19,7 @@ export const useMosques = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // ✅ CSRF Token Helper
+    //  CSRF Token Helper
     const getCsrfToken = (): string => {
         const cookies = document.cookie.split(";");
         const csrfCookie = cookies.find((cookie) =>
@@ -35,7 +35,7 @@ export const useMosques = () => {
         try {
             console.log("🌐 Fetching mosques...");
 
-            // ✅ 1. CSRF Token أولاً
+            //  1. CSRF Token أولاً
             if (!document.cookie.includes("XSRF-TOKEN=")) {
                 console.log("🔑 Getting CSRF token...");
                 const csrfResponse = await fetch("/sanctum/csrf-cookie", {
@@ -44,17 +44,17 @@ export const useMosques = () => {
                         Accept: "application/json",
                     },
                 });
-                console.log("✅ CSRF Status:", csrfResponse.status);
+                console.log(" CSRF Status:", csrfResponse.status);
             }
 
-            // ✅ 2. API Request مع Headers كاملة
+            //  2. API Request مع Headers كاملة
             const response = await fetch("/api/v1/super/mosques", {
-                credentials: "include", // ✅ Cookies/Session
+                credentials: "include", //  Cookies/Session
                 headers: {
                     Accept: "application/json",
                     "Content-Type": "application/json",
                     "X-Requested-With": "XMLHttpRequest",
-                    "X-XSRF-TOKEN": getCsrfToken(), // ✅ CSRF Token
+                    "X-XSRF-TOKEN": getCsrfToken(), //  CSRF Token
                 },
             });
 
@@ -73,7 +73,7 @@ export const useMosques = () => {
                 );
             }
 
-            // ✅ تأكد إنه JSON مش HTML
+            //  تأكد إنه JSON مش HTML
             if (
                 responseText.trim().startsWith("<!DOCTYPE") ||
                 responseText.trim().startsWith("<html")
@@ -85,7 +85,7 @@ export const useMosques = () => {
 
             if (result.success) {
                 setMosques(result.data || []);
-                console.log("✅ Mosques loaded:", result.data?.length || 0);
+                console.log(" Mosques loaded:", result.data?.length || 0);
             } else {
                 setError(result.message || "فشل في جلب المساجد");
                 toast.error(result.message || "فشل في جلب المساجد");

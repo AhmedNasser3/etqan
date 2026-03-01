@@ -8,20 +8,23 @@ use App\Models\Auth\User;
 use App\Models\Student\StudentAchievement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class StudentAchievementController extends Controller
 {
     /**
-     * ✅ جلب طلاب المركز الحالي فقط
+     * جلب طلاب المركز الحالي فقط (الطلاب المسجلين في جدول students)
      */
     public function getCenterStudents(Request $request)
     {
         try {
             $user = Auth::user();
 
-            $students = User::where('center_id', $user->center_id)
-                ->select('id', 'name', 'email', 'phone', 'center_id')
-                ->orderBy('name', 'asc')
+            $students = User::select('users.id', 'users.name', 'users.email', 'users.phone', 'users.center_id')
+                ->join('students', 'users.id', '=', 'students.user_id') // ✅ JOIN مع جدول students
+                ->where('users.center_id', $user->center_id)
+                ->where('users.role_id', 3) // ✅ افتراض role_id = 3 للطلاب
+                ->orderBy('users.name', 'asc')
                 ->get();
 
             return response()->json([
@@ -39,14 +42,19 @@ class StudentAchievementController extends Controller
     }
 
     /**
-     * ✅ INDEX - حساب النقاط الصافية (إضافة - خصم)
+     * INDEX - حساب النقاط الصافية (إضافة - خصم)
      */
     public function index(Request $request)
     {
         $myCenterId = Auth::user()->center_id;
 
         $achievements = StudentAchievement::whereHas('user', function($q) use ($myCenterId) {
-                $q->where('center_id', $myCenterId);
+                $q->where('center_id', $myCenterId)
+                  ->whereExists(function($subQuery) {
+                      $subQuery->select(DB::raw(1))
+                               ->from('students')
+                               ->whereColumn('students.user_id', 'users.id');
+                  }); // ✅ الطلاب فقط
             })
             ->with('user:id,name,email,center_id,phone')
             ->orderBy('created_at', 'desc')
@@ -56,18 +64,28 @@ class StudentAchievementController extends Controller
             'data' => $achievements->getCollection()->map(function($achievement) use ($myCenterId) {
                 $userId = $achievement->user_id;
 
-                // ✅ حساب النقاط الصافية: الإضافات - الخصومات
-                $addedPoints = StudentAchievement::whereHas('user', function($q) use ($myCenterId) {
-                        $q->where('center_id', $myCenterId);
+                // حساب النقاط الصافية: الإضافات - الخصومات (للطلاب فقط)
+                $addedPoints = StudentAchievement::whereHas('user', function($q) use ($myCenterId, $userId) {
+                        $q->where('center_id', $myCenterId)
+                          ->where('id', $userId)
+                          ->whereExists(function($subQuery) use ($userId) {
+                              $subQuery->select(DB::raw(1))
+                                       ->from('students')
+                                       ->whereColumn('students.user_id', 'users.id');
+                          });
                     })
-                    ->where('user_id', $userId)
                     ->where('points_action', 'added')
                     ->sum('points');
 
-                $deductedPoints = StudentAchievement::whereHas('user', function($q) use ($myCenterId) {
-                        $q->where('center_id', $myCenterId);
+                $deductedPoints = StudentAchievement::whereHas('user', function($q) use ($myCenterId, $userId) {
+                        $q->where('center_id', $myCenterId)
+                          ->where('id', $userId)
+                          ->whereExists(function($subQuery) use ($userId) {
+                              $subQuery->select(DB::raw(1))
+                                       ->from('students')
+                                       ->whereColumn('students.user_id', 'users.id');
+                          });
                     })
-                    ->where('user_id', $userId)
                     ->where('points_action', 'deducted')
                     ->sum('points');
 
@@ -99,7 +117,7 @@ class StudentAchievementController extends Controller
     }
 
     /**
-     * ✅ STORE - يحفظ points_action صحيح
+     * STORE - يحفظ points_action صحيح (طلاب فقط)
      */
     public function store(Request $request)
     {
@@ -108,9 +126,15 @@ class StudentAchievementController extends Controller
                 'required',
                 'exists:users,id',
                 function ($attribute, $value, $fail) {
-                    $targetUser = User::select('center_id')->find($value);
-                    if (!$targetUser || $targetUser->center_id !== Auth::user()->center_id) {
-                        $fail('لا يمكن إضافة إنجاز لطالب خارج مجمعك');
+                    // ✅ التحقق من أن الـ user طالب فعلي
+                    $targetUser = User::select('center_id')
+                        ->join('students', 'users.id', '=', 'students.user_id')
+                        ->where('users.id', $value)
+                        ->where('users.center_id', Auth::user()->center_id)
+                        ->first();
+
+                    if (!$targetUser) {
+                        $fail('الطالب غير موجود في مجمعك أو غير مسجل كطالب');
                     }
                 },
             ],
@@ -140,7 +164,12 @@ class StudentAchievementController extends Controller
     public function show($id)
     {
         $achievement = StudentAchievement::whereHas('user', function($q) {
-                $q->where('center_id', Auth::user()->center_id);
+                $q->where('center_id', Auth::user()->center_id)
+                  ->whereExists(function($subQuery) {
+                      $subQuery->select(DB::raw(1))
+                               ->from('students')
+                               ->whereColumn('students.user_id', 'users.id');
+                  });
             })
             ->with('user:id,name,email,phone')
             ->findOrFail($id);
@@ -151,8 +180,14 @@ class StudentAchievementController extends Controller
     public function update(Request $request, $id)
     {
         $achievement = StudentAchievement::whereHas('user', function($q) {
-                $q->where('center_id', Auth::user()->center_id);
-            })->findOrFail($id);
+                $q->where('center_id', Auth::user()->center_id)
+                  ->whereExists(function($subQuery) {
+                      $subQuery->select(DB::raw(1))
+                               ->from('students')
+                               ->whereColumn('students.user_id', 'users.id');
+                  });
+            })
+            ->findOrFail($id);
 
         $request->validate([
             'points' => 'sometimes|integer|min:-1000|max:1000',
@@ -177,8 +212,14 @@ class StudentAchievementController extends Controller
     public function destroy($id)
     {
         $achievement = StudentAchievement::whereHas('user', function($q) {
-                $q->where('center_id', Auth::user()->center_id);
-            })->findOrFail($id);
+                $q->where('center_id', Auth::user()->center_id)
+                  ->whereExists(function($subQuery) {
+                      $subQuery->select(DB::raw(1))
+                               ->from('students')
+                               ->whereColumn('students.user_id', 'users.id');
+                  });
+            })
+            ->findOrFail($id);
 
         $achievement->delete();
 
@@ -189,20 +230,42 @@ class StudentAchievementController extends Controller
     }
 
     /**
-     * ✅ حساب النقاط الصافية للطالب
+     * حساب النقاط الصافية للطالب (طلاب فقط)
      */
     public function studentTotalPoints($studentId)
     {
         $myCenterId = Auth::user()->center_id;
 
+        // ✅ التحقق من أن الطالب مسجل في جدول students
+        $isValidStudent = User::join('students', 'users.id', '=', 'students.user_id')
+            ->where('users.id', $studentId)
+            ->where('users.center_id', $myCenterId)
+            ->exists();
+
+        if (!$isValidStudent) {
+            return response()->json(['message' => 'الطالب غير موجود أو غير مصرح'], 403);
+        }
+
         $added = StudentAchievement::whereHas('user', function($q) use ($myCenterId, $studentId) {
-                $q->where('center_id', $myCenterId)->where('id', $studentId);
+                $q->where('center_id', $myCenterId)
+                  ->where('id', $studentId)
+                  ->whereExists(function($subQuery) use ($studentId) {
+                      $subQuery->select(DB::raw(1))
+                               ->from('students')
+                               ->whereColumn('students.user_id', 'users.id');
+                  });
             })
             ->where('points_action', 'added')
             ->sum('points');
 
         $deducted = StudentAchievement::whereHas('user', function($q) use ($myCenterId, $studentId) {
-                $q->where('center_id', $myCenterId)->where('id', $studentId);
+                $q->where('center_id', $myCenterId)
+                  ->where('id', $studentId)
+                  ->whereExists(function($subQuery) use ($studentId) {
+                      $subQuery->select(DB::raw(1))
+                               ->from('students')
+                               ->whereColumn('students.user_id', 'users.id');
+                  });
             })
             ->where('points_action', 'deducted')
             ->sum('points');
@@ -212,7 +275,7 @@ class StudentAchievementController extends Controller
         $status = match(true) {
             $total >= 100 => 'ممتاز ⭐',
             $total >= 50 => 'جيد 👍',
-            $total >= 0 => 'متوسط ✅',
+            $total >= 0 => 'متوسط ',
             default => 'يحتاج تحسين ⚠️'
         };
 

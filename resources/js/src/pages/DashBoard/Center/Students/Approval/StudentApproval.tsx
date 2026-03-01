@@ -114,9 +114,15 @@ const StudentApproval: React.FC = () => {
             <div className="userProfile__plan" style={{ padding: "0 15%" }}>
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-lg text-gray-600">
-                        جاري تحميل الطلاب المعلقين...
-                    </p>
+                    <div className="navbar">
+                        <div className="navbar__inner">
+                            <div className="navbar__loading">
+                                <div className="loading-spinner">
+                                    <div className="spinner-circle"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );

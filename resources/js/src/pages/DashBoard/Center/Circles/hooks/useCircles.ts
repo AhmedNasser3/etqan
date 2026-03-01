@@ -59,7 +59,7 @@ export const useCircles = () => {
                 }
 
                 const data = await response.json();
-                console.log("✅ Circles loaded:", data);
+                console.log(" Circles loaded:", data);
 
                 setCircles(data.data || []);
                 setPagination({

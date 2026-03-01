@@ -12,11 +12,75 @@
     opacity: 0;
     visibility: hidden;
     transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    overflow: hidden; //  هنا الحل - مش overflow-y: auto
+    max-height: 100vh; //  مهم جداً
 
     &.active {
         left: 0;
         opacity: 1;
         visibility: visible;
+    }
+
+    &__container {
+        max-height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+
+        // 🔥 حل الـ Scrollbar لكل المتصفحات
+        scrollbar-width: thin; // Firefox
+        scrollbar-color: rgba($dark-green, 0.1) transparent;
+
+        // Webkit Browsers (Chrome, Safari, Edge)
+        &::-webkit-scrollbar {
+            width: 2px;
+
+            &-thumb {
+                background: rgba($dark-green, 0.01);
+                border-radius: 4px;
+                border: 1px solid transparent;
+                background-clip: content-box;
+
+                &:hover {
+                    background: rgba($dark-green, 0.01);
+                }
+
+                &:active {
+                    background: rgba($dark-green, 0.01);
+                }
+            }
+
+            &-track {
+                background: rgba($dark-green, 0.01);
+                border-radius: 4px;
+            }
+        }
+
+        //  تأكد من padding للـ content
+    }
+
+    //  Scroll داخل container منفصل
+    &__scroll-container {
+        height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 8px; // للـ scrollbar gap
+        scrollbar-width: thin; // Firefox
+        scrollbar-color: rgba($dark-green, 0.3) transparent;
+
+        &::-webkit-scrollbar {
+            width: 6px;
+
+            &-thumb {
+                background: rgba($dark-green, 0.3);
+                border-radius: 3px;
+                &:hover {
+                    background: rgba($dark-green, 0.5);
+                }
+            }
+            &-track {
+                background: transparent;
+            }
+        }
     }
 
     &__data {
@@ -59,32 +123,30 @@
         transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
         &.open {
-            max-height: 100%;
+            max-height: 500px; //  قيمة محددة مش 100%
         }
 
         li {
-            padding: 2px 12px;
+            padding: 5px 15px;
             background-color: rgba($dark-green, 0.5);
-            display: block;
-            color: inherit;
+            color: $light;
             text-decoration: none;
             font-size: 0.9em;
-            padding: 5px 15px;
             border-radius: 6px;
-            color: $light;
             margin: 6px 0;
             text-align: end;
+            transition: all 0.2s ease;
+
             &:hover {
                 background-color: rgba($dark-green, 0.6);
             }
 
             &.active {
-                background-color: rgba($dark-green, 0.08) !important;
-                color: $dark-green !important;
+                background-color: rgba($dark-green, 0.8) !important;
+                color: $light !important;
                 font-weight: 600 !important;
-                border-left: 4px solid rgba($dark-green, 0.7) !important;
+                border-left: 4px solid rgba($dark-green, 0.9) !important;
                 padding-right: 20px !important;
-                text-align: end;
             }
         }
     }
@@ -93,7 +155,7 @@
         ul.sub-menu {
             li {
                 &:hover {
-                    background: rgba($dark-green, 0.3);
+                    background: rgba($dark-green, 0.7);
                 }
             }
         }

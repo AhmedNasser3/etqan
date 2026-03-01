@@ -19,7 +19,7 @@ class IdeaDomainRequest extends Model
         'requested_domain',
         'dns1',
         'dns2',
-        'notes',  // ✅ أضف notes
+        'notes',  //  أضف notes
     ];
 
     protected $casts = [

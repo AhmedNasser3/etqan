@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
     FiX,
     FiCheckCircle,
@@ -6,7 +6,6 @@ import {
     FiAlertTriangle,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
-import { useLinkGuardian } from "../hooks/usePendingStudents";
 
 interface ParentModelProps {
     isOpen: boolean;
@@ -22,7 +21,53 @@ const ParentModel: React.FC<ParentModelProps> = ({
     const [guardianEmail, setGuardianEmail] = useState("");
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { linkGuardian } = useLinkGuardian(student?.id);
+
+    // ✅ CSRF Helper function
+    const getCsrfToken = (): string | null => {
+        return (
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content") ||
+            document.cookie
+                .split("; ")
+                .find((row) => row.startsWith("XSRF-TOKEN="))
+                ?.split("=")[1] ||
+            null
+        );
+    };
+
+    // ✅ API call مع CSRF كامل
+    const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+        const csrfToken = getCsrfToken();
+
+        const config: RequestInit = {
+            method: options.method || "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                ...(csrfToken && { "X-CSRF-TOKEN": csrfToken }),
+                ...options.headers,
+            },
+            credentials: "include", // ✅ Session cookies
+            body: options.body,
+            ...options,
+        };
+
+        const response = await fetch(`${endpoint}`, config);
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const error = new Error(
+                errorData.message || `HTTP ${response.status}`,
+            );
+            (error as any).status = response.status;
+            (error as any).response = errorData;
+            throw error;
+        }
+
+        return await response.json();
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,7 +78,15 @@ const ParentModel: React.FC<ParentModelProps> = ({
 
         setLoading(true);
         try {
-            await linkGuardian(guardianEmail);
+            // ✅ Link existing guardian مع CSRF
+            const response = await apiCall(
+                `/api/v1/centers/students/${student?.id}/link-guardian`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({ guardian_email: guardianEmail }),
+                },
+            );
+
             toast.success("✅ تم ربط حساب ولي الأمر بنجاح!");
             setTimeout(onClose, 1500);
         } catch (error: any) {
@@ -43,14 +96,12 @@ const ParentModel: React.FC<ParentModelProps> = ({
             console.log("Error status:", error.status);
             console.log("==================");
 
+            // ✅ إذا الـ guardian مش موجود → عرض خيار الإنشاء
             if (
                 error.message?.includes("ولي الأمر") ||
                 error.message?.includes("غير مسجل") ||
-                error.message?.includes("invalid") ||
                 error.status === 404 ||
-                error.status === 422 ||
-                error.response?.status === 404 ||
-                error.response?.status === 422
+                error.status === 422
             ) {
                 setShowConfirmDialog(true);
                 toast.dismiss();
@@ -65,30 +116,34 @@ const ParentModel: React.FC<ParentModelProps> = ({
     const handleCreateGuardian = async () => {
         setLoading(true);
         try {
-            const response = await fetch(
+            // ✅ CSRF cookie أولاً
+            await fetch("/sanctum/csrf-cookie", {
+                credentials: "include",
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+
+            // ✅ Create new guardian مع CSRF كامل
+            const response = await apiCall(
                 `/api/v1/centers/students/${student?.id}/create-guardian`,
                 {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
                     body: JSON.stringify({ guardian_email: guardianEmail }),
                 },
             );
 
-            const result = await response.json();
-
-            if (result.success) {
+            if (response.success) {
                 toast.success(
                     "✅ تم إنشاء حساب ولي الأمر وربطه بالطالب بنجاح!",
                 );
-                toast.success(`البريد: ${guardianEmail}\nكلمة السر: 12345678`);
+                toast.success(`البريد: ${guardianEmail}\nكلمة السر: 12345678`, {
+                    duration: 5000,
+                });
                 setTimeout(onClose, 2000);
             } else {
-                toast.error(result.message || "فشل في إنشاء الحساب");
+                toast.error(response.message || "فشل في إنشاء الحساب");
             }
         } catch (error: any) {
+            console.error("Create Guardian Error:", error);
             toast.error(error.message || "خطأ في إنشاء الحساب");
         } finally {
             setLoading(false);

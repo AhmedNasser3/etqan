@@ -29,7 +29,7 @@ interface FormErrors {
 }
 
 export const useAccountEdit = () => {
-    // ✅ States
+    //  States
     const [formData, setFormData] = useState<FormDataType>({
         name: "",
         email: "",
@@ -48,7 +48,7 @@ export const useAccountEdit = () => {
     const [removingAvatar, setRemovingAvatar] = useState(false);
     const avatarFileRef = useRef<File | null>(null);
 
-    // ✅ CSRF Token (محسن)
+    //  CSRF Token (محسن)
     const getCsrfToken = useCallback((): string => {
         return (
             document
@@ -57,7 +57,7 @@ export const useAccountEdit = () => {
         );
     }, []);
 
-    // ✅ جلب بيانات المستخدم
+    //  جلب بيانات المستخدم
     const fetchUserData = useCallback(async () => {
         try {
             setLoadingUser(true);
@@ -69,7 +69,7 @@ export const useAccountEdit = () => {
                 headers: {
                     Accept: "application/json",
                     "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRF-TOKEN": getCsrfToken(), // ✅ CSRF للـ GET كمان
+                    "X-CSRF-TOKEN": getCsrfToken(), //  CSRF للـ GET كمان
                 },
             });
 
@@ -90,13 +90,13 @@ export const useAccountEdit = () => {
             }
 
             const data = await response.json();
-            console.log("✅ بيانات المستخدم:", data);
+            console.log(" بيانات المستخدم:", data);
 
             if (data.success && data.data) {
                 const user = data.data;
                 setUserData(user);
 
-                // ✅ تعيين البيانات في الـ form فوراً
+                //  تعيين البيانات في الـ form فوراً
                 setFormData({
                     name: user.name || "",
                     email: user.email || "",
@@ -109,7 +109,7 @@ export const useAccountEdit = () => {
                 });
 
                 setAvatarPreview(user.avatar || null);
-                console.log("✅ تم تعيين البيانات:", {
+                console.log(" تم تعيين البيانات:", {
                     name: user.name,
                     email: user.email,
                 });
@@ -122,12 +122,12 @@ export const useAccountEdit = () => {
         }
     }, [getCsrfToken]);
 
-    // ✅ تحميل البيانات عند تحميل المكون
+    //  تحميل البيانات عند تحميل المكون
     useEffect(() => {
         fetchUserData();
     }, [fetchUserData]);
 
-    // ✅ تغيير inputs
+    //  تغيير inputs
     const handleInputChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
             const { name, value } = e.target;
@@ -143,7 +143,7 @@ export const useAccountEdit = () => {
         [],
     );
 
-    // ✅ صورة
+    //  صورة
     const handleAvatarChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const file = e.target.files?.[0];
@@ -166,7 +166,7 @@ export const useAccountEdit = () => {
         }
     }, []);
 
-    // ✅ Validation محلي
+    //  Validation محلي
     const validateForm = useCallback(
         (currentFormData: FormDataType): FormErrors => {
             const newErrors: FormErrors = {};
@@ -196,11 +196,11 @@ export const useAccountEdit = () => {
         [],
     );
 
-    // ✅ Submit الرئيسي (محدث لـ web middleware)
+    //  Submit الرئيسي (محدث لـ web middleware)
     const submitForm = useCallback(async () => {
         console.log("🚀 بدء الإرسال...", formData);
 
-        // ✅ Validation محلي
+        //  Validation محلي
         const validationErrors = validateForm(formData);
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
@@ -211,18 +211,18 @@ export const useAccountEdit = () => {
         setIsSubmitting(true);
         try {
             const csrfToken = getCsrfToken();
-            console.log("🔐 CSRF Token:", csrfToken ? "موجود ✅" : "مفقود ❌");
+            console.log("🔐 CSRF Token:", csrfToken ? "موجود " : "مفقود ❌");
 
             const formDataSubmit = new FormData();
 
-            // ✅ البيانات الأساسية (مع trim)
+            //  البيانات الأساسية (مع trim)
             formDataSubmit.append("name", formData.name.trim());
             formDataSubmit.append("email", formData.email.trim());
             formDataSubmit.append("phone", formData.phone);
             formDataSubmit.append("birth_date", formData.birth_date || "");
             formDataSubmit.append("gender", formData.gender);
 
-            // ✅ كلمة المرور
+            //  كلمة المرور
             if (formData.current_password.trim()) {
                 formDataSubmit.append(
                     "current_password",
@@ -237,7 +237,7 @@ export const useAccountEdit = () => {
                 );
             }
 
-            // ✅ الصورة
+            //  الصورة
             if (avatarFileRef.current) {
                 formDataSubmit.append("avatar", avatarFileRef.current);
             }
@@ -255,13 +255,13 @@ export const useAccountEdit = () => {
 
             const response = await fetch(`/api/v1/account/update`, {
                 method: "POST",
-                credentials: "include", // ✅ Session cookies + CSRF
+                credentials: "include", //  Session cookies + CSRF
                 headers: {
                     Accept: "application/json",
                     "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRF-TOKEN": csrfToken, // ✅ CSRF للـ web middleware
+                    "X-CSRF-TOKEN": csrfToken, //  CSRF للـ web middleware
                 },
-                body: formDataSubmit, // ✅ FormData بدون Content-Type header
+                body: formDataSubmit, //  FormData بدون Content-Type header
             });
 
             console.log("📡 Response status:", response.status);
@@ -281,7 +281,7 @@ export const useAccountEdit = () => {
 
                 console.error("❌ Server Error:", errorData);
 
-                // ✅ Laravel 422 validation errors
+                //  Laravel 422 validation errors
                 if (response.status === 422 && errorData.errors) {
                     const fieldErrors: FormErrors = {};
                     Object.entries(errorData.errors).forEach(
@@ -301,10 +301,10 @@ export const useAccountEdit = () => {
             }
 
             const result = await response.json();
-            console.log("✅ نجح:", result);
+            console.log(" نجح:", result);
             toast.success("تم تحديث الحساب بنجاح! 🎉");
 
-            // ✅ إعادة تحميل البيانات
+            //  إعادة تحميل البيانات
             await fetchUserData();
         } catch (error) {
             console.error("❌ Network Error:", error);
@@ -314,7 +314,7 @@ export const useAccountEdit = () => {
         }
     }, [formData, getCsrfToken, fetchUserData, validateForm]);
 
-    // ✅ حذف الحساب (محسن)
+    //  حذف الحساب (محسن)
     const deleteAccount = useCallback(async () => {
         if (
             !window.confirm(

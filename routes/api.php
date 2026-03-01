@@ -7,6 +7,7 @@ use App\Http\Controllers\Centers\CenterController;
 use App\Http\Controllers\Centers\MosqueController;
 use App\Http\Controllers\Centers\PendingCentersController;
 use App\Http\Controllers\Circles\CirclesController;
+use App\Http\Controllers\Guardian\GuardianChildrenController;
 use App\Http\Controllers\Meetings\TeacherStudentMeetingController;
 use App\Http\Controllers\Permissions\UserPermissionsController;
 use App\Http\Controllers\Plans\CircleStudentBookingController;
@@ -26,7 +27,9 @@ use App\Http\Controllers\Students\PendingStudentController;
 use App\Http\Controllers\Students\StudentUserController;
 use App\Http\Controllers\Students\TeacherStudentSessionsController;
 use App\Http\Controllers\Teachers\AttendanceController;
+use App\Http\Controllers\Teachers\MyTeachersController;
 use App\Http\Controllers\Teachers\TeacherController;
+use App\Http\Controllers\Teachers\TeacherCustomSalaryController;
 use App\Http\Controllers\Teachers\TeacherPayrollController;
 use App\Http\Controllers\Teachers\TeacherPlanSchedulesController;
 use App\Http\Controllers\Teachers\TeacherRoomController;
@@ -37,31 +40,50 @@ use App\Http\Controllers\Users\UserSuspendController;
 use App\Models\Auth\User;
 use Illuminate\Support\Facades\Route;
 // routes/api.php
+Route::middleware(['web'])->prefix('v1/teachers')->group(function () {
+    Route::get('my-teachers', [MyTeachersController::class, 'index']);
+    Route::get('my-teachers/pending', [MyTeachersController::class, 'pending']);
+    Route::put('my-teachers/{id}', [MyTeachersController::class, 'update']);
+    Route::delete('my-teachers/{id}', [MyTeachersController::class, 'destroy']);
+
+    // 🔁 Toggle: تفعيل/تعطيل معلم (Active ↔ Suspended)
+    Route::post('my-teachers/{id}/toggle-status', [MyTeachersController::class, 'toggleStatus']);
+});
+
+Route::middleware(['web'])->prefix('v1/teacher')->name('teacher.')->group(function () {
+    Route::apiResource('custom-salaries', TeacherCustomSalaryController::class);
+    Route::patch('custom-salaries/{id}/toggle', [TeacherCustomSalaryController::class, 'toggleActive']);
+    Route::get('custom-salaries/teacher/{teacherId}', [TeacherCustomSalaryController::class, 'getActiveForTeacher']);
+});
+
 // routes/api.php - الكامل مع كل الـ routes
 Route::middleware(['web'])->prefix('v1/teachers')->group(function () {
     Route::get('room', [TeacherRoomController::class, 'getTeacherRoom']);
     Route::get('today-meet', [TeacherRoomController::class, 'getTodayMeet']);
     Route::get('sessions', [TeacherRoomController::class, 'getTeacherSessions']);
 
-    // ✅ الجديد - جلسات الطلاب
+    //  الجديد - جلسات الطلاب
     Route::get('student-sessions', [TeacherStudentSessionsController::class, 'getTeacherStudentSessions']);
     Route::post('student-sessions/update', [TeacherStudentSessionsController::class, 'updateSessionStatus']);
     Route::get('student-sessions/attendance', [TeacherStudentSessionsController::class, 'getSessionAttendance']);
-});
+    });
 
-Route::middleware('web')->get('/v1/teacher-sessions', [TeacherStudentSessionsController::class, 'getTeacherStudentSessions'])
-    ->name('teacher.student.sessions'); // ✅ الخاص القديم محتفظ بيه
+    Route::middleware('web')->get('/v1/teacher-sessions', [TeacherStudentSessionsController::class, 'getTeacherStudentSessions'])
+    ->name('teacher.student.sessions');
 
-Route::prefix('super/centers')->group(function () {
+    Route::middleware(['web'])->prefix('v1/super')->group(function () {
+    Route::prefix('centers')->group(function () {
     Route::get('/pending', [PendingCentersController::class, 'index']);
     Route::get('/pending/{id}', [PendingCentersController::class, 'show']);
     Route::post('/pending/{id}/confirm', [PendingCentersController::class, 'confirm']);
     Route::post('/pending/{id}/reject', [PendingCentersController::class, 'reject']);
     Route::delete('/pending/{id}', [PendingCentersController::class, 'destroy']);
-});
+    });
+    });
+
 // routes/api.php
 
-// ✅ 1. Debug Routes (في الأول)
+//  1. Debug Routes (في الأول)
 Route::get('/debug-students', function() {
     $user = auth()->user();
     $centerId = $user ? $user->center_id : 5;
@@ -76,23 +98,23 @@ Route::get('/debug-students', function() {
     ]);
 });
 
-// ✅ 2. PUBLIC API Routes (بدون web middleware)
+//  2. PUBLIC API Routes (بدون web middleware)
 Route::prefix('v1')->name('api.v1.')->group(function () {
     // Teacher Registration (Public)
     Route::post('centers/{center}/teacher/register', [TeacherRegisterController::class, 'register']);
 });
 
-// ✅ Special Requests Routes - داخل web middleware
+//  Special Requests Routes - داخل web middleware
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
-    // ✅ سجلات الحضور والغياب
+    //  سجلات الحضور والغياب
     Route::prefix('attendance')->name('attendance.')->group(function () {
         // 🔥 Staff Admin Routes - **أول حاجة تماماً** (قبل أي Model Binding)
         Route::get('/staff-list', [AttendanceController::class, 'staffAttendance'])->name('staff.list');
         Route::put('/staff/{attendanceId}/mark', [AttendanceController::class, 'markStaffAttendance'])
-             ->where('attendanceId', '[0-9]+')  // ✅ أرقام بس
+             ->where('attendanceId', '[0-9]+')  //  أرقام بس
              ->name('staff.mark');
 
-        // ✅ الـ Routes القديمة للـ Teacher (Model Binding)
+        //  الـ Routes القديمة للـ Teacher (Model Binding)
         Route::get('/', [AttendanceController::class, 'index']);
         Route::post('/', [AttendanceController::class, 'store']);
         Route::get('/{attendanceDay}', [AttendanceController::class, 'show']);
@@ -100,13 +122,13 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
         Route::delete('/{attendanceDay}', [AttendanceController::class, 'destroy']);
         // 🆕 QUICK CHECK-IN - **زر الحضور السريع** 🔥
         Route::post('/quick-checkin', [AttendanceController::class, 'quickCheckin'])->name('quick.checkin');
-        // ✅ إحصائيات وحالة اليوم
+        //  إحصائيات وحالة اليوم
         Route::get('/stats', [AttendanceController::class, 'stats']);
         Route::get('/today', [AttendanceController::class, 'today']);
         Route::get('/circles', [AttendanceController::class, 'availableCircles']);
     });
 
-    // ✅ رواتب المعلمين - زي ما هي
+    //  رواتب المعلمين - زي ما هي
     Route::prefix('teacher-salaries')->name('teacher-salaries.')->group(function () {
         Route::get('/', [TeacherSalaryController::class, 'index']);
         Route::post('/', [TeacherSalaryController::class, 'store']);
@@ -115,25 +137,25 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
         Route::delete('/{teacherSalary}', [TeacherSalaryController::class, 'destroy']);
     });
 
-    // 🔥 🔥 🔥 Special Requests Routes ✅ ✅ ✅
+    // 🔥 🔥 🔥 Special Requests Routes
     Route::prefix('special-requests')->name('special-requests.')->group(function () {
-        // ✅ القائمة والإحصائيات (أولاً)
+        //  القائمة والإحصائيات (أولاً)
         Route::get('/', [SpecialRequestController::class, 'index'])->name('index');
         Route::get('/search', [SpecialRequestController::class, 'search'])->name('search');
 
-        // ✅ العمليات على عنصر واحد (Model Binding)
+        //  العمليات على عنصر واحد (Model Binding)
         Route::get('/{specialRequest}', [SpecialRequestController::class, 'show'])->name('show');
         Route::put('/{specialRequest}', [SpecialRequestController::class, 'update'])->name('update');
         Route::delete('/{specialRequest}', [SpecialRequestController::class, 'destroy'])->name('destroy');
 
-        // ✅ إضافة جديد (POST آخر حاجة)
+        //  إضافة جديد (POST آخر حاجة)
         Route::post('/', [SpecialRequestController::class, 'store'])->name('store');
     });
 });
 
 
 
-// ✅ 3. TEACHER REGISTER Routes (مع web middleware)
+//  3. TEACHER REGISTER Routes (مع web middleware)
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
     // Teacher Registration Forms
     Route::post('/teacher/register', [TeacherRegisterController::class, 'register'])->name('teacher.register');
@@ -142,7 +164,7 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/teacher/register/circles', [TeacherRegisterController::class, 'getCirclesByCenter'])->name('teacher.circles');
 });
 
-// ✅ 4. STUDENT AFFAIRS Routes
+//  4. STUDENT AFFAIRS Routes
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
     Route::prefix('student-affairs')->name('student-affairs.')->group(function () {
         Route::get('/', [StudentAffairsController::class, 'index'])->name('index');
@@ -155,7 +177,7 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
     });
 });
 
-// ✅ 5. STUDENT ACHIEVEMENTS Routes
+//  5. STUDENT ACHIEVEMENTS Routes
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
     // Achievements
     Route::prefix('achievements')->name('achievements.')->group(function () {
@@ -172,13 +194,13 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
         return response()->json(['message' => 'Achievements API شغالة!']);
     });
 });
-// ✅ في routes/api.php - أضف مع student-bookings
+//  في routes/api.php - أضف مع student-bookings
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
-    // 🔥 🔥 PAYROLL ROUTES ✅ ✅
+    // 🔥 🔥 PAYROLL ROUTES
     Route::get('teacher/payrolls', [TeacherPayrollController::class, 'index'])
         ->name('teacher.payrolls.index');
 
-    // ✅ أضف POST للإنشاء ← هنا المشكلة!
+    //  أضف POST للإنشاء ← هنا المشكلة!
     Route::post('teacher/payrolls', [TeacherPayrollController::class, 'store'])
         ->name('teacher.payrolls.store');
 
@@ -187,21 +209,21 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
 });
 
 
-// ✅ 6. STUDENT BOOKINGS Routes
+//  6. STUDENT BOOKINGS Routes
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
-    // ✅ Student Bookings Routes (الحالية)
+    //  Student Bookings Routes (الحالية)
     Route::get('plans/student-bookings', [StudentBookingsController::class, 'index'])
         ->name('plans.student-bookings.index');
 
     Route::post('plans/student-bookings/{booking}/confirm', [StudentBookingsController::class, 'confirm'])
         ->name('plans.student-bookings.confirm');
 
-    // ✅ Student Plans Routes (الجديدة)
+    //  Student Plans Routes (الجديدة)
     Route::middleware('web')->get('student/plans', [StudentPlanController::class, 'getUserPlans'])
         ->name('student.plans.index');
 });
 
-// ✅ 7. MAIN WEB ROUTES (الأساسية مع web middleware) - جميع الـ routes الرئيسية
+//  7. MAIN WEB ROUTES (الأساسية مع web middleware) - جميع الـ routes الرئيسية
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
     Route::prefix('idea-domain-requests')->name('idea-domain-requests.')->group(function () {
         Route::get('/', [IdeaDomainRequestController::class, 'index']);
@@ -211,8 +233,35 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
         Route::delete('/{ideaDomainRequest}', [IdeaDomainRequestController::class, 'destroy']);
     });
 });
+// in api routes
+// في web.php - استبدل الـ routes القديمة بهذه:
+Route::middleware(['web'])->prefix('v1')->name('api.v1.')->group(function () {
+    Route::prefix('centers')->name('centers.')->group(function () {
+        Route::prefix('pending-students')->name('pending-students.')->group(function () {
+            // ✅ GET routes
+            Route::get('/', [PendingStudentController::class, 'index']);
+            Route::get('/{student}', [PendingStudentController::class, 'show']);
+
+            // ✅ POST confirm ✅
+            Route::post('/{student}/confirm', [PendingStudentController::class, 'confirm']);
+
+            // ✅ DELETE reject ✅
+            Route::delete('/{student}', [PendingStudentController::class, 'reject']);
+
+            // ✅ Debug
+            Route::get('/debug', [PendingStudentController::class, 'debug']);
+        });
+
+        // ✅ Guardian routes
+        Route::prefix('students')->name('students.')->group(function () {
+            Route::post('/{student}/link-guardian', [PendingStudentController::class, 'linkGuardian']);
+            Route::post('/{student}/create-guardian', [PendingStudentController::class, 'createGuardian']);
+        });
+    });
+});
+
 Route::middleware('web')->prefix('v1')->group(function () {
-    // ✅ Idea Domain Requests (في البداية كما طلبت)
+    //  Idea Domain Requests (في البداية كما طلبت)
 
     // Schedule Create (أولوية عالية)
     Route::prefix('schedule-create')->name('schedule-create.')->group(function () {
@@ -221,35 +270,35 @@ Route::middleware('web')->prefix('v1')->group(function () {
         Route::get('/teachers', [PlanCircleScheduleController::class, 'getTeachersForCreate']);
     });
 
-  // ✅ Centers & Circles - الكاملة
+  //  Centers & Circles - الكاملة
     Route::get('/centers', [CirclesController::class, 'getCenters'])->name('centers.index');
 
-    // ✅ Circles CRUD - الكامل ✅
+    //  Circles CRUD - الكامل
     Route::prefix('centers')->group(function () {
         // قائمة الحلقات
         Route::get('circles', [CirclesController::class, 'index'])->name('circles.index');
 
-        // حلقة واحدة ✅ (ده اللي كان مش شغال)
+        // حلقة واحدة  (ده اللي كان مش شغال)
         Route::get('circles/{circle}', [CirclesController::class, 'show'])->name('circles.show');
 
-        // إنشاء حلقة جديدة ✅ (كان ناقص)
+        // إنشاء حلقة جديدة  (كان ناقص)
         Route::post('circles', [CirclesController::class, 'store'])->name('circles.store');
 
-        // تعديل حلقة ✅
+        // تعديل حلقة
         Route::put('circles/{circle}', [CirclesController::class, 'update'])->name('circles.update');
         Route::patch('circles/{circle}', [CirclesController::class, 'update'])->name('circles.update'); // fallback
 
-        // حذف حلقة ✅
+        // حذف حلقة
         Route::delete('circles/{circle}', [CirclesController::class, 'destroy'])->name('circles.destroy');
 
-        // ✅ مساجد المجمع (جديد ومطلوب)
+        //  مساجد المجمع (جديد ومطلوب)
         Route::get('{center}/mosques', [CirclesController::class, 'getCenterMosques'])->name('centers.mosques');
 
-        // ✅ معلمي المجمع (جديد ومطلوب)
+        //  معلمي المجمع (جديد ومطلوب)
         Route::get('{center}/teachers', [CirclesController::class, 'getCenterTeachers'])->name('centers.teachers');
     });
 
-    // ✅ Global lists (للـ dropdowns)
+    //  Global lists (للـ dropdowns)
     Route::get('/mosques', [CirclesController::class, 'getMosques'])->name('mosques.index');
     Route::get('/teachers', [CirclesController::class, 'getTeachers'])->name('teachers.index');
     // Plans (الكاملة مع Schedules)
@@ -272,7 +321,9 @@ Route::middleware('web')->prefix('v1')->group(function () {
         // Plan Details Create
         Route::post('/details', [PlanDetailController::class, 'store']);
 
-    // ✅ BULK IMPORT - الجديد للـ Excel
+    //  BULK IMPORT - الجديد للـ Excel
+        Route::delete('/plan-details/bulk-delete', [PlanDetailController::class, 'bulkDelete'])
+        ->name('plans.plan-details.bulk-delete');
     Route::post('{plan}/bulk-import', [PlanDetailController::class, 'bulkImport']);
         // Plan Details CRUD
         Route::prefix('plan-details')->name('plan-details.')->group(function () {
@@ -341,15 +392,16 @@ Route::middleware('web')->prefix('v1')->group(function () {
             Route::delete('/{center}', [CenterController::class, 'destroy']);
             Route::patch('/{center}/activate', [CenterController::class, 'activate']);
             Route::patch('/{center}/deactivate', [CenterController::class, 'deactivate']);
-        });
-
 
         });
 
-// ✅ مجموعة routes للمجمعات المعلقة
+
+        });
+
+//  مجموعة routes للمجمعات المعلقة
 
 
-// ✅ 8. SUPER ADMIN & OTHER API Routes (بدون web middleware - بدون تكرار)
+//  8. SUPER ADMIN & OTHER API Routes (بدون web middleware - بدون تكرار)
 Route::prefix('v1')->name('api.v1.')->group(function () {
     // Super Admin Routes
     Route::prefix('super')->name('super.')->group(function () {
@@ -375,21 +427,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::delete('/{teacher}', [TeacherController::class, 'destroy']);
     });
 
-    // Centers & Pending Students
-    Route::prefix('centers')->name('centers.')->group(function () {
-        Route::prefix('pending-students')->name('pending-students.')->group(function () {
-            Route::get('/', [PendingStudentController::class, 'index']);
-            Route::get('/{student}', [PendingStudentController::class, 'show']);
-            Route::post('/{student}/confirm', [PendingStudentController::class, 'confirm']);
-            Route::delete('/{student}', [PendingStudentController::class, 'reject']);
-            Route::get('/debug', [PendingStudentController::class, 'debug']);
-        });
 
-        Route::prefix('students')->name('students.')->group(function () {
-            Route::post('/{student}/link-guardian', [PendingStudentController::class, 'linkGuardian']);
-            Route::post('/{student}/create-guardian', [PendingStudentController::class, 'createGuardian']);
-        });
-    });
 
     // User Suspensions
     Route::prefix('users')->name('users.')->group(function () {
@@ -431,7 +469,7 @@ Route::prefix('v1')->name('api.v1.')->middleware('web')->group(function () {
         Route::delete('/delete', [AccountController::class, 'destroy']);
     });
 
-    // ✅ Teacher-Student Meetings Routes
+    //  Teacher-Student Meetings Routes
     Route::prefix('meetings')->name('meetings.')->group(function () {
         Route::get('/', [TeacherStudentMeetingController::class, 'index']);
         Route::post('/', [TeacherStudentMeetingController::class, 'store']);
@@ -445,7 +483,7 @@ Route::prefix('v1')->name('api.v1.')->middleware('web')->group(function () {
 });
 // routes/api.php
 Route::middleware('web')->group(function () {
-    Route::get('/v1/teacher-plan-schedules', [TeacherPlanSchedulesController::class, 'getTeacherPlanSchedules']); // ✅ الجديد
+    Route::get('/v1/teacher-plan-schedules', [TeacherPlanSchedulesController::class, 'getTeacherPlanSchedules']); //  الجديد
     });
 Route::middleware('web')->group(function () {
     Route::get('/v1/user/next-meet', [StudentUserController::class, 'getNextMeet']);
@@ -453,13 +491,13 @@ Route::middleware('web')->group(function () {
     Route::get('/v1/user/presence', [StudentUserController::class, 'getStudentPresence']);
     Route::get('/v1/user/complex', [StudentUserController::class, 'getUserComplex']);
 
-    // ✅ روت الطلاب الفريدين للمعلم
+    //  روت الطلاب الفريدين للمعلم
     Route::get('/v1/teacher/unique-students', [TeacherStudentsController::class, 'getUniqueStudents']);
 
-    // ✅ روت تغيير حالة الطالب
+    //  روت تغيير حالة الطالب
     Route::post('/v1/teacher/students/{studentId}/toggle-status', [TeacherStudentsController::class, 'toggleStudentStatus']);
 
-    // ✅ ============ إنجازات طلاب المعلم ============
+    //  ============ إنجازات طلاب المعلم ============
 
     // جلب طلاب المعلم للإنجازات
     Route::get('/v1/teacher/students', [TeacherStudentsController::class, 'getTeacherStudents']);
@@ -476,38 +514,38 @@ Route::middleware('web')->group(function () {
 
 // في routes/web.php أو routes/api.php
 Route::middleware('web')->prefix('v1/reports')->name('reports.')->group(function () {
-    // ✅ جلب كل التقارير
+    //  جلب كل التقارير
     Route::get('/', [ReportsController::class, 'index'])->name('index');
 
-    // ✅ تقارير الحضور
+    //  تقارير الحضور
     Route::get('/attendance/{period}', [ReportsController::class, 'attendance'])->name('attendance');
     Route::get('/attendance', [ReportsController::class, 'attendance'])->name('attendance.list');
 
-    // ✅ تقارير الرواتب
+    //  تقارير الرواتب
     Route::get('/payroll/{period}', [ReportsController::class, 'payroll'])->name('payroll');
     Route::get('/payroll', [ReportsController::class, 'payroll'])->name('payroll.list');
 
-    // ✅ تقارير الإنجازات
+    //  تقارير الإنجازات
     Route::get('/achievements/{period}', [ReportsController::class, 'achievements'])->name('achievements');
     Route::get('/achievements', [ReportsController::class, 'achievements'])->name('achievements.list');
 
-    // 🔥 ✅ تقارير السجلات الإدارية - **المحدثة**
+    // 🔥  تقارير السجلات الإدارية - **المحدثة**
     Route::get('/audit-logs/{period?}', [ReportsController::class, 'auditLogReport'])->name('audit-logs');
     Route::get('/audit-logs', [ReportsController::class, 'auditLogReport'])->name('audit-logs.list');
 
-    // 🔥 ✅ **الجديد** - كل السجلات بدون فلترة
+    // 🔥  **الجديد** - كل السجلات بدون فلترة
     Route::get('/audit-logs/all', [ReportsController::class, 'allAuditLogs'])->name('audit-logs.all');
 
-    // 🔥 ✅ **الجديد** - مسح السجلات
+    // 🔥  **الجديد** - مسح السجلات
     Route::delete('/audit-logs/clear', [ReportsController::class, 'clearAuditLogs'])->name('audit-logs.clear');
 
-    // 🔥 ✅ **الجديد** - تصدير السجلات
+    // 🔥  **الجديد** - تصدير السجلات
     Route::get('/audit-logs/export/{period?}', [ReportsController::class, 'exportAuditLogs'])->name('audit-logs.export');
 
-    // ✅ تقرير شامل (كل حاجة)
+    //  تقرير شامل (كل حاجة)
     Route::get('/dashboard', [ReportsController::class, 'dashboard'])->name('dashboard');
 
-    // ✅ تصدير PDF/Excel للتقارير العامة
+    //  تصدير PDF/Excel للتقارير العامة
     Route::get('/export/{type}/{period}', [ReportsController::class, 'export'])->name('export');
 });
 // في نفس ملف الـ routes السابق (web.php)
@@ -515,3 +553,8 @@ Route::middleware('web')->prefix('v1/reports')->name('reports.')->group(function
     Route::get('/stats', [StatsController::class, 'index'])->name('stats');
 
 });
+
+Route::middleware('web')->prefix('v1/guardian')->name('guardian.')->group(function () {
+    Route::get('/children', [GuardianChildrenController::class, 'index'])->name('children');
+});
+                Route::get('/v1/super/all-centers', [CenterController::class, 'allCenters']);

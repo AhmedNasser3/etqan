@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class UserSuspendController extends Controller
 {
     /**
-     * ✅ الموظفين المعلقين فقط (من جدول teachers حسب role)
+     *  الموظفين المعلقين فقط (من جدول teachers حسب role)
      */
     public function suspendedTeachers()
     {
@@ -39,7 +39,7 @@ class UserSuspendController extends Controller
     }
 
     /**
-     * ✅ الطلاب المعلقين فقط
+     *  الطلاب المعلقين فقط
      */
     public function suspendedStudents()
     {
@@ -65,7 +65,7 @@ class UserSuspendController extends Controller
     }
 
     /**
-     * ✅ Toggle suspend للموظفين
+     *  Toggle suspend للموظفين
      */
     public function toggleTeacherSuspend($teacherId)
     {
@@ -77,7 +77,7 @@ class UserSuspendController extends Controller
         $newStatus = $user->status === 'active' ? 'inactive' : 'active';
         $user->update(['status' => $newStatus]);
 
-        // ✅ تحديث معلومات الدور العربي من teacher role
+        //  تحديث معلومات الدور العربي من teacher role
         $teacherRole = $user->teacher->role;
         $roleTitle = $this->getTeacherRoleTitle($teacherRole);
 
@@ -90,7 +90,7 @@ class UserSuspendController extends Controller
     }
 
     /**
-     * ✅ Delete موظف
+     *  Delete موظف
      */
     public function deleteTeacher($teacherId)
     {
@@ -108,7 +108,7 @@ class UserSuspendController extends Controller
     }
 
     /**
-     * ✅ تحويل role إلى عنوان عربي
+     *  تحويل role إلى عنوان عربي
      */
     private function getTeacherRoleTitle($role): string
     {

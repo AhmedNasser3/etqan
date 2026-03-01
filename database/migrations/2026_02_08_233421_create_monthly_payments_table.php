@@ -24,7 +24,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            // ✅ unique لكل معلم/شهر/سنة
+            //  unique لكل معلم/شهر/سنة
             $table->unique(['teacher_id', 'payment_year', 'payment_month']);
             $table->index(['teacher_id', 'status']);
             $table->index(['payment_year', 'payment_month']);

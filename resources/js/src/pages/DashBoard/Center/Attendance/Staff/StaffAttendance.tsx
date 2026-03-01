@@ -1,4 +1,4 @@
-// StaffAttendance.tsx - النسخة النهائية ✅ متوافق مع Hook الجديد
+// StaffAttendance.tsx - النسخة النهائية  متوافق مع Hook الجديد
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { FiFileText } from "react-icons/fi";
@@ -63,10 +63,10 @@ const StaffAttendance: React.FC = () => {
         if (success) {
             toast.success(
                 status === "present"
-                    ? "تم تسجيل الحضور بنجاح ✅"
+                    ? "تم تسجيل الحضور بنجاح "
                     : status === "late"
-                      ? "تم تسجيل التأخير بنجاح ⚠️"
-                      : "تم تسجيل الغياب بنجاح ❌",
+                      ? "تم تسجيل التأخير بنجاح "
+                      : "تم تسجيل الغياب بنجاح ",
                 {
                     duration: 4000,
                     position: "top-right",
@@ -85,7 +85,7 @@ const StaffAttendance: React.FC = () => {
 
     const handleExportPDF = () => {
         toast.loading("جاري إعداد ملف PDF...", { id: "export-pdf" });
-        // ✅ URL صحيح للـ export (هتحتاج Backend endpoint)
+        //  URL صحيح للـ export (هتحتاج Backend endpoint)
         window.open(
             `/api/v1/attendance/export-pdf?date_filter=${dateFilter}`,
             "_blank",
@@ -135,7 +135,15 @@ const StaffAttendance: React.FC = () => {
                 <div className="flex items-center justify-center py-20">
                     <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mr-4" />
                     <span className="text-lg text-gray-600 font-medium">
-                        جاري تحميل سجلات الحضور...
+                        <div className="navbar">
+                            <div className="navbar__inner">
+                                <div className="navbar__loading">
+                                    <div className="loading-spinner">
+                                        <div className="spinner-circle"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>{" "}
                     </span>
                 </div>
             </div>

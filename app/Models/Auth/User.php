@@ -2,18 +2,18 @@
 
 namespace App\Models\Auth;
 
+use App\Models\Audit\AuditLog;
 use App\Models\Auth\Role;
 use App\Models\Auth\Teacher;
 use App\Models\Tenant\Center;
-use App\Models\Audit\AuditLog;
 use App\Models\Tenant\Student;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Tenants\Tenant;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
     protected $fillable = [
-        'name', 'email', 'password', 'center_id', 'role_id', 'student_id',
+        'name', 'email', 'password', 'center_id', 'tenant_id', 'role_id', 'student_id',
         'status', 'phone', 'avatar', 'birth_date', 'gender'
     ];
 
@@ -26,7 +26,15 @@ class User extends Authenticatable
         'birth_date' => 'date'
     ];
 
-    // ✅ باقي العلاقات
+    /**
+     * علاقة مع Tenant
+     */
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
+    // باقي العلاقات
     public function center()
     {
         return $this->belongsTo(Center::class);
@@ -37,7 +45,7 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
-    // ✅ علاقة جديدة مع Teacher (One-to-One)
+    // علاقة جديدة مع Teacher (One-to-One)
     public function teacher()
     {
         return $this->hasOne(Teacher::class);

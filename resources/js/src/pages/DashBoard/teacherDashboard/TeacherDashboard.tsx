@@ -53,7 +53,15 @@ const TeacherDashboard: React.FC = () => {
                                         color: "#666",
                                     }}
                                 >
-                                    ⏳ جاري تحميل حصة اليوم...
+                                    <div className="navbar">
+                                        <div className="navbar__inner">
+                                            <div className="navbar__loading">
+                                                <div className="loading-spinner">
+                                                    <div className="spinner-circle"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>{" "}
                                 </div>
                             </div>
                         </div>
@@ -69,7 +77,6 @@ const TeacherDashboard: React.FC = () => {
             <div className="teacherDashboard__inner">
                 <Profile />
                 <div className="userProfile__plan">
-                    <QuickCheckinPage />
                     <div
                         className="testimonials__mainTitle"
                         style={{ marginBottom: "0" }}
@@ -184,6 +191,7 @@ const TeacherDashboard: React.FC = () => {
                         </div>
                     )}
                 </div>
+                <QuickCheckinPage />
             </div>
         </div>
     );

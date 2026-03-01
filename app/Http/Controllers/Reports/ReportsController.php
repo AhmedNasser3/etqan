@@ -151,7 +151,7 @@ class ReportsController extends Controller
     }
 
     /**
-     * تقارير السجلات الإدارية
+     * تقارير السجلات الإدارية ✅ محدث مع أسماء المستخدمين
      */
     private function getAuditLogReports($centerId): Collection
     {
@@ -164,9 +164,11 @@ class ReportsController extends Controller
                     COUNT(*) as total_logs,
                     al.action,
                     al.model_type,
+                    COALESCE(u.name, "غير معروف") as user_name,
+                    COALESCE(u.email, "غير معروف") as user_email,
                     COUNT(DISTINCT al.user_id) as unique_users
                 ')
-                ->groupByRaw('DATE_FORMAT(al.created_at, "%Y-%m"), al.action, al.model_type')
+                ->groupByRaw('DATE_FORMAT(al.created_at, "%Y-%m"), al.action, al.model_type, u.name, u.email')
                 ->havingRaw('total_logs > 0')
                 ->orderBy('period', 'desc')
                 ->orderBy('total_logs', 'desc')
@@ -175,17 +177,19 @@ class ReportsController extends Controller
 
             return $logs->map(function($log) use ($centerId) {
                 return [
-                    'title' => 'سجل ' . $log->action . ' - ' . $log->period,
+                    'title' => 'سجل ' . $log->action . ' - ' . $log->period . ' (' . $log->user_name . ')',
                     'type' => 'سجلات_إدارية',
                     'period' => $log->period,
                     'issue_date' => Carbon::parse($log->period . '-01')->format('Y-m-d'),
                     'status' => $logs->count() > 0 ? 'جاهز' : 'لا توجد بيانات',
                     'size' => number_format($log->total_logs * 15) . ' KB',
-                    'preview' => $log->total_logs . ' عملية على ' . $log->model_type,
+                    'preview' => $log->total_logs . ' عملية من ' . $log->user_name . ' على ' . $log->model_type,
                     'center_id' => $centerId,
                     'action' => $log->action,
                     'model_type' => $log->model_type,
                     'unique_users' => $log->unique_users,
+                    'user_name' => $log->user_name,
+                    'user_email' => $log->user_email,
                 ];
             });
         } catch (\Exception $e) {
@@ -194,24 +198,21 @@ class ReportsController extends Controller
     }
 
     /**
-     * 🔥 جلب **كل** سجلات التدقيق - **بدون أي شروط center_id**
+     * جلب سجلات التدقيق ✅ محدث مع أسماء المستخدمين
      */
     public function auditLogReport(Request $request, $period = null)
     {
         try {
-            // ✅ شيلنا كل شروط center_id تماماً
-
             $period = $period ?? now()->format('Y-m');
 
             $logs = DB::table('audit_logs as al')
                 ->leftJoin('users as u', 'al.user_id', '=', 'u.id')
-                // ✅ بدون where('u.center_id', $centerId) - كل السجلات!
-                ->whereRaw('DATE_FORMAT(al.created_at, "%Y-%m") = ?', [$period])
                 ->selectRaw('
                     al.*,
                     COALESCE(u.name, "غير معروف") as user_name,
                     COALESCE(u.email, "غير معروف") as user_email
                 ')
+                ->whereRaw('DATE_FORMAT(al.created_at, "%Y-%m") = ?', [$period])
                 ->orderBy('al.created_at', 'desc')
                 ->limit(1000)
                 ->get();
@@ -249,14 +250,13 @@ class ReportsController extends Controller
     }
 
     /**
-     * 🔥 جلب **كل** السجلات بدون فلترة الشهر
+     * جلب كل السجلات ✅ محدث مع أسماء المستخدمين
      */
     public function allAuditLogs(Request $request)
     {
         try {
             $logs = DB::table('audit_logs as al')
                 ->leftJoin('users as u', 'al.user_id', '=', 'u.id')
-                // ✅ بدون أي شروط - كل حاجة!
                 ->selectRaw('
                     al.*,
                     COALESCE(u.name, "غير معروف") as user_name,
@@ -342,7 +342,6 @@ class ReportsController extends Controller
                 ->orderBy('al.created_at', 'desc')
                 ->get();
 
-            // هنا تقدر تضيف Excel export بـ Maatwebsite\Excel
             return response()->json([
                 'success' => true,
                 'total_exported' => $logs->count(),
@@ -356,7 +355,6 @@ class ReportsController extends Controller
         }
     }
 
-    // باقي الـ methods زي ما هي...
     public function attendance(Request $request, $period)
     {
         try {

@@ -25,7 +25,7 @@ class UserPermissionsController extends Controller
             'email' => $user?->email ?? 'no email'
         ]);
 
-        // ✅ 1. تحقق صاحب المجمع (Center Owner) - الأولوية الأولى
+        //  1. تحقق صاحب المجمع (Center Owner) - الأولوية الأولى
         if ($user && $this->isCenterOwner($user)) {
             Log::info('👑 CENTER OWNER detected', ['user_id' => $user->id, 'email' => $user->email]);
 
@@ -38,7 +38,7 @@ class UserPermissionsController extends Controller
             ]);
         }
 
-        // ✅ 2. تحقق teacher role العادي ✅ إصلاح الترتيب المنطقي
+        //  2. تحقق teacher role العادي  إصلاح الترتيب المنطقي
         if (!$user || !$user->teacher) {
             Log::warning('⚠️ No teacher role found', ['user_id' => $user?->id]);
 
@@ -51,11 +51,11 @@ class UserPermissionsController extends Controller
             ]);
         }
 
-        // ✅ 3. Teacher permissions حسب الـ role
+        //  3. Teacher permissions حسب الـ role
         $role = $user->teacher->role;
         $permissions = $this->getRolePermissions($role);
 
-        Log::info('✅ Teacher permissions loaded', [
+        Log::info(' Teacher permissions loaded', [
             'user_id' => $user->id,
             'role' => $role,
             'permissions_count' => count($permissions)
@@ -74,12 +74,12 @@ class UserPermissionsController extends Controller
     }
 
     /**
-     * ✅ تحقق إذا كان الـ user صاحب مجمع (email موجود في centers table)
+     *  تحقق إذا كان الـ user صاحب مجمع (email موجود في centers table)
      */
     private function isCenterOwner($user): bool
     {
         if (!$user || !$user->email) {
-            return false; // ✅ إصلاح: false بدلاً من true
+            return false; //  إصلاح: false بدلاً من true
         }
 
         $isOwner = Center::where('email', $user->email)->exists();
@@ -93,7 +93,7 @@ class UserPermissionsController extends Controller
     }
 
     /**
-     * ✅ صلاحيات كاملة لصاحب المجمع (كل القوائم تظهر)
+     *  صلاحيات كاملة لصاحب المجمع (كل القوائم تظهر)
      */
     private function getFullAdminPermissions(): array
     {
@@ -131,7 +131,7 @@ class UserPermissionsController extends Controller
     }
 
     /**
-     * ✅ Role-based permissions مُحدثة ومُصححة لكل الـ roles
+     *  Role-based permissions مُحدثة ومُصححة لكل الـ roles
      */
     private function getRolePermissions(string $role): array
     {
@@ -154,7 +154,7 @@ class UserPermissionsController extends Controller
                 'mosque' => ['students/approval', 'shedule-manegment', 'circle-manegment'],
                 'staff' => ['staff-approval', 'staff-attendance'],
                 'financial' => true,
-                'domain' => false, // ✅ مش هيظهر اعتماد المجمعات
+                'domain' => false, //  مش هيظهر اعتماد المجمعات
                 'education' => true,
                 'attendance' => true,
                 'reports' => true,

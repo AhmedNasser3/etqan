@@ -1,4 +1,4 @@
-// hooks/useTeacherAchievementForm.ts - ✅ مُصحح للمعلم مع Debug
+// hooks/useTeacherAchievementForm.ts -  مُصحح للمعلم مع Debug
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -60,7 +60,7 @@ export const useTeacherAchievementForm = (achievementId?: number | null) => {
         achievementId,
     );
 
-    // ✅ 1️⃣ Fetch User أولاً
+    //  1️⃣ Fetch User أولاً
     useEffect(() => {
         console.log("🚀 [STEP 1] Fetching user...");
         fetchUser();
@@ -88,7 +88,7 @@ export const useTeacherAchievementForm = (achievementId?: number | null) => {
         }
     }, []);
 
-    // ✅ 2️⃣ Fetch Achievement data
+    //  2️⃣ Fetch Achievement data
     useEffect(() => {
         console.log("🔗 [useEffect] achievementId changed:", achievementId);
         if (achievementId && achievementId > 0) {
@@ -105,7 +105,7 @@ export const useTeacherAchievementForm = (achievementId?: number | null) => {
         try {
             setAchievementLoading(true);
             const response = await fetch(
-                `/api/v1/teacher/achievements/${achievementId}`, // ✅ تغيير الـ endpoint
+                `/api/v1/teacher/achievements/${achievementId}`, //  تغيير الـ endpoint
                 {
                     credentials: "include",
                     headers: { Accept: "application/json" },
@@ -114,7 +114,7 @@ export const useTeacherAchievementForm = (achievementId?: number | null) => {
 
             if (response.ok) {
                 const achievement: AchievementType = await response.json();
-                console.log("✅ [fetchAchievement] Data:", achievement);
+                console.log(" [fetchAchievement] Data:", achievement);
 
                 setFormData({
                     id: achievement.id,
@@ -141,7 +141,7 @@ export const useTeacherAchievementForm = (achievementId?: number | null) => {
         }
     }, [achievementId]);
 
-    // ✅ 3️⃣ Fetch Teacher Students ✅ التغيير الأساسي
+    //  3️⃣ Fetch Teacher Students  التغيير الأساسي
     useEffect(() => {
         if (user) {
             console.log("▶️ [useEffect] Fetching teacher students...");
@@ -158,7 +158,7 @@ export const useTeacherAchievementForm = (achievementId?: number | null) => {
 
         try {
             const response = await fetch("/api/v1/teacher/students", {
-                // ✅ endpoint جديد للمعلم
+                //  endpoint جديد للمعلم
                 credentials: "include",
                 headers: {
                     Accept: "application/json",
@@ -169,7 +169,7 @@ export const useTeacherAchievementForm = (achievementId?: number | null) => {
             if (response.ok) {
                 const data = await response.json();
                 console.log(
-                    "✅ [fetchTeacherStudents] Raw data:",
+                    " [fetchTeacherStudents] Raw data:",
                     data.data?.length,
                 );
                 setStudentsData(data.data || []);
@@ -182,7 +182,7 @@ export const useTeacherAchievementForm = (achievementId?: number | null) => {
         }
     }, [user]);
 
-    // ✅ باقي الـ functions زي ما هي
+    //  باقي الـ functions زي ما هي
     const handleInputChange = useCallback(
         (
             e: React.ChangeEvent<
@@ -262,7 +262,7 @@ export const useTeacherAchievementForm = (achievementId?: number | null) => {
         errors,
         isSubmitting,
         loadingData: loadingData || achievementLoading,
-        studentsData, // ✅ طلاب المعلم
+        studentsData, //  طلاب المعلم
         user,
         achievementKey,
         achievementValue,

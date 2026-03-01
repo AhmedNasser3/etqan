@@ -1,4 +1,4 @@
-// hooks/usePendingStudents.ts - محدث مع دعم كامل للـ path-based routing
+// hooks/usePendingStudents.ts - ✅ مع CSRF كامل للـ routes الموجودة
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation } from "react-router-dom";
 
@@ -35,15 +35,26 @@ interface ApiResponse<T> {
     message?: string;
 }
 
+// ✅ apiCall مع CSRF للـ web middleware routes
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+    // ✅ CSRF Token من meta tag أو cookie (للـ web middleware)
+    const csrfToken =
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content") ||
+        document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1];
+
     const token = localStorage.getItem("token");
     const config: RequestInit = {
         headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
+            "X-Requested-With": "XMLHttpRequest", // ✅ مطلوب للـ web session
+            ...(csrfToken && { "X-CSRF-TOKEN": csrfToken }), // ✅ CSRF Token
+            ...(token && { Authorization: `Bearer ${token}` }), // ✅ Token احتياطي
             ...options.headers,
         },
+        credentials: "include", // ✅ Session cookies للـ web auth
         ...options,
     };
 
@@ -58,26 +69,25 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 
         const error = new Error(errorMessage);
         (error as any).status = response.status;
-        (error as any).response = await response.json().catch(() => ({}));
         throw error;
     }
 
     return response.json() as Promise<ApiResponse<any>>;
 };
 
-const getCenterSlugFromPath = (): string | null => {
-    const path = window.location.pathname;
-    const segments = path.split("/").filter(Boolean);
-
-    // ✅ http://127.0.0.1:8000/gomaa/center-dashboard/students/approval
-    // ✅ segments[0] = "gomaa"
-    if (segments.length > 0 && segments[0] !== "center-dashboard") {
-        return segments[0];
+// ✅ تهيئة الـ Session للـ web routes
+const initializeWebSession = async () => {
+    try {
+        // 1. جلب CSRF Cookie (لازم للـ web middleware)
+        await fetch("/sanctum/csrf-cookie", {
+            credentials: "include",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+            },
+        });
+    } catch (error) {
+        console.warn("CSRF init failed:", error);
     }
-
-    // ✅ http://127.0.0.1:8000/center-dashboard/students/approval
-    // ✅ مفيش center slug، رجع كل الطلاب
-    return null;
 };
 
 export function usePendingStudents() {
@@ -85,19 +95,23 @@ export function usePendingStudents() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const centerSlug = getCenterSlugFromPath();
-
     const fetchStudents = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const endpoint = centerSlug
-                ? `/pending-students?center_slug=${centerSlug}`
-                : "/pending-students";
+            // ✅ تهيئة الـ session مرة واحدة
+            await initializeWebSession();
 
-            const response = await apiCall(endpoint);
-            setStudents(response.data || []);
+            // ✅ الـ endpoint بالظبط زي الـ routes: /api/v1/centers/pending-students
+            // ✅ API_BASE = "/api/v1/centers" + endpoint = "/pending-students"
+            const response = await apiCall("/pending-students");
+
+            if (response.success) {
+                setStudents(response.data || []);
+            } else {
+                throw new Error(response.message || "خطأ في الاستجابة");
+            }
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "خطأ في جلب البيانات",
@@ -105,7 +119,7 @@ export function usePendingStudents() {
         } finally {
             setLoading(false);
         }
-    }, [centerSlug]);
+    }, []);
 
     useEffect(() => {
         fetchStudents();
@@ -119,7 +133,6 @@ export function usePendingStudents() {
         error,
         refetch,
         isSuccess: students.length >= 0,
-        centerSlug: centerSlug || null,
     };
 }
 
@@ -127,8 +140,6 @@ export function usePendingStudent(id: number) {
     const [student, setStudent] = useState<Student | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    const centerSlug = getCenterSlugFromPath();
 
     const fetchStudent = useCallback(async () => {
         if (!id) {
@@ -141,11 +152,8 @@ export function usePendingStudent(id: number) {
             setLoading(true);
             setError(null);
 
-            const endpoint = centerSlug
-                ? `/pending-students/${id}?center_slug=${centerSlug}`
-                : `/pending-students/${id}`;
-
-            const response = await apiCall(endpoint);
+            // ✅ /api/v1/centers/pending-students/{id}
+            const response = await apiCall(`/pending-students/${id}`);
             setStudent(response.data || null);
         } catch (err) {
             setError(
@@ -155,7 +163,7 @@ export function usePendingStudent(id: number) {
         } finally {
             setLoading(false);
         }
-    }, [id, centerSlug]);
+    }, [id]);
 
     useEffect(() => {
         fetchStudent();
@@ -170,6 +178,7 @@ export function useConfirmStudent() {
     const confirmStudent = useCallback(async (id: number) => {
         setLoading(true);
         try {
+            // ✅ /api/v1/centers/pending-students/{id}/confirm
             const response = await apiCall(`/pending-students/${id}/confirm`, {
                 method: "POST",
             });
@@ -191,6 +200,7 @@ export function useRejectStudent() {
     const rejectStudent = useCallback(async (id: number) => {
         setLoading(true);
         try {
+            // ✅ /api/v1/centers/pending-students/{id}
             const response = await apiCall(`/pending-students/${id}`, {
                 method: "DELETE",
             });
@@ -208,44 +218,31 @@ export function useRejectStudent() {
 
 export function useLinkGuardian(studentId?: number) {
     const [loading, setLoading] = useState(false);
-    const centerSlug = getCenterSlugFromPath();
 
     const linkGuardian = useCallback(
-        async (guardianEmail: string): Promise<any> => {
+        async (guardianEmail: string) => {
             if (!studentId) {
-                const error = new Error("معرف الطالب مطلوب");
-                (error as any).status = 400;
-                throw error;
+                throw new Error("معرف الطالب مطلوب");
             }
 
             setLoading(true);
             try {
-                const endpoint = centerSlug
-                    ? `/students/${studentId}/link-guardian?center_slug=${centerSlug}`
-                    : `/students/${studentId}/link-guardian`;
-
-                const response = await apiCall(endpoint, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        guardian_email: guardianEmail,
-                    }),
-                });
+                // ✅ /api/v1/centers/students/{id}/link-guardian
+                const response = await apiCall(
+                    `/students/${studentId}/link-guardian`,
+                    {
+                        method: "POST",
+                        body: JSON.stringify({
+                            guardian_email: guardianEmail,
+                        }),
+                    },
+                );
                 return response;
-            } catch (error) {
-                if (error instanceof Error) {
-                    console.log("🔍 LinkGuardian Error Details:", {
-                        message: error.message,
-                        status: (error as any).status,
-                        studentId,
-                        guardianEmail,
-                    });
-                }
-                throw error;
             } finally {
                 setLoading(false);
             }
         },
-        [studentId, centerSlug],
+        [studentId],
     );
 
     return {

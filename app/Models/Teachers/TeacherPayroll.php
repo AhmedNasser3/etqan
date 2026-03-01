@@ -30,7 +30,7 @@ class TeacherPayroll extends Model
         'period_end',
         'paid_at',
         'notes',
-        'center_id' // ✅ مضاف للتوافق مع Reports
+        'center_id' //  مضاف للتوافق مع Reports
     ];
 
     protected $casts = [
@@ -44,7 +44,7 @@ class TeacherPayroll extends Model
     ];
 
     /**
-     * ✅ العلاقات مع Type Hinting
+     *  العلاقات مع Type Hinting
      */
     public function teacher(): BelongsTo
     {
@@ -62,21 +62,21 @@ class TeacherPayroll extends Model
     }
 
     /**
-     * ✅ Scope للـ ReportsController - مصحح ومحسن للأداء
+     *  Scope للـ ReportsController - مصحح ومحسن للأداء
      */
     public function scopeForCenter(Builder $query, $centerId): Builder
     {
-        // ✅ الأولوية: center_id مباشرة (لو موجود)
+        //  الأولوية: center_id مباشرة (لو موجود)
         $query->where('center_id', $centerId);
 
-        // ✅ fallback: عبر teacher.user.center_id
+        //  fallback: عبر teacher.user.center_id
         return $query->orWhereHas('teacher.user', function($q) use ($centerId) {
             $q->where('center_id', $centerId);
         });
     }
 
     /**
-     * ✅ Scope مباشر للأداء العالي (للـ Reports)
+     *  Scope مباشر للأداء العالي (للـ Reports)
      */
     public function scopeByCenterId(Builder $query, $centerId): Builder
     {
@@ -84,7 +84,7 @@ class TeacherPayroll extends Model
     }
 
     /**
-     * ✅ Scopes للحالة
+     *  Scopes للحالة
      */
     public function scopePending(Builder $query): Builder
     {
@@ -102,7 +102,7 @@ class TeacherPayroll extends Model
     }
 
     /**
-     * ✅ Accessors مفيدة
+     *  Accessors مفيدة
      */
     public function getStatusLabelAttribute(): string
     {
@@ -128,7 +128,7 @@ class TeacherPayroll extends Model
     }
 
     /**
-     * ✅ Preview للـ Reports Dashboard
+     *  Preview للـ Reports Dashboard
      */
     public function getReportPreviewAttribute(): string
     {
@@ -137,7 +137,7 @@ class TeacherPayroll extends Model
     }
 
     /**
-     * ✅ Helper Methods
+     *  Helper Methods
      */
     public function isPaid(): bool
     {
@@ -150,7 +150,7 @@ class TeacherPayroll extends Model
     }
 
     /**
-     * ✅ API Resource transformation (محسن للـ Reports)
+     *  API Resource transformation (محسن للـ Reports)
      */
     public function toApiArray(): array
     {

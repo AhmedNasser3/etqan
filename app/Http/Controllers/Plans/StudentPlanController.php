@@ -20,7 +20,7 @@ class StudentPlanController extends Controller
 
         Log::info('🔍 StudentPlanController - User Check', [
             'user_id' => $userId,
-            'user_authenticated' => $user ? '✅' : '❌',
+            'user_authenticated' => $user ? '' : '❌',
             'user_email' => $user ? ($user->email ?? 'غير موجود') : 'غير مسجل'
         ]);
 
@@ -63,7 +63,7 @@ class StudentPlanController extends Controller
         $planData = [];
 
         foreach ($bookings as $booking) {
-            // ✅ استخدم created_at لو started_at مش موجود
+            //  استخدم created_at لو started_at مش موجود
             $startDate = Carbon::parse(
                 $booking->started_at ?? $booking->created_at ?? now()->subDays(7)
             )->startOfDay();
@@ -75,7 +75,7 @@ class StudentPlanController extends Controller
                 'calculated_start' => $startDate->format('Y-m-d')
             ]);
 
-            // ✅ جلب الـ plan details بطريقة آمنة
+            //  جلب الـ plan details بطريقة آمنة
             $planDetails = $booking->studentPlanDetails ?? collect([]);
 
             Log::debug('📚 Plan Details', [
@@ -100,10 +100,10 @@ class StudentPlanController extends Controller
             }
         }
 
-        // ✅ ترتيب حسب التاريخ
+        //  ترتيب حسب التاريخ
         $planData = collect($planData)->sortBy('date')->values()->all();
 
-        Log::info('✅ Final Data Ready', [
+        Log::info(' Final Data Ready', [
             'total_items' => count($planData),
             'date_range' => [
                 'first_date' => $planData ? $planData[0]['date'] : null,

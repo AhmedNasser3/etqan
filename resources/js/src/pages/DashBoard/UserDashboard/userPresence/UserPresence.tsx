@@ -1,4 +1,4 @@
-// ✅ الكود الكامل مع الإحصائيات المطلوبة بكلاسس مميزة
+//  الكود الكامل مع الإحصائيات المطلوبة بكلاسس مميزة
 import { RiRobot2Fill } from "react-icons/ri";
 import { useState, useEffect } from "react";
 import { useStudentPresence } from "./hooks/useStudentPresence";
@@ -37,7 +37,15 @@ const UserPresence: React.FC = () => {
     if (loading) {
         return (
             <div className="text-center py-8 text-gray-500">
-                جاري تحميل بيانات الحضور...
+                <div className="navbar">
+                    <div className="navbar__inner">
+                        <div className="navbar__loading">
+                            <div className="loading-spinner">
+                                <div className="spinner-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>{" "}
             </div>
         );
     }
@@ -64,12 +72,12 @@ const UserPresence: React.FC = () => {
     return (
         <div className="userProfile__plan" style={{ marginBottom: "24px" }}>
             <div className="userPresence__features">
-                {/* ✅ العنوان */}
+                {/*  العنوان */}
                 <div className="testimonials__mainTitle">
                     <h1>حضور وغياب الطالب</h1>
                 </div>
 
-                {/* ✅ فلتر التواريخ + AI Suggestion */}
+                {/*  فلتر التواريخ + AI Suggestion */}
                 <div className="userProfile__plan" id="userProfile__plan">
                     <div className="plan__header">
                         <div className="plan__ai-suggestion">
@@ -105,7 +113,7 @@ const UserPresence: React.FC = () => {
                     </div>
                 </div>
 
-                {/* ✅ إحصائيات الحضور - التصميم الجديد مع كلاسس مميزة */}
+                {/*  إحصائيات الحضور - التصميم الجديد مع كلاسس مميزة */}
                 <div className="presence-stats-container">
                     <div className="stats-grid">
                         {/* 1. إجمالي الحصص */}
@@ -136,7 +144,7 @@ const UserPresence: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* ✅ سجلات مُعروضة: 2 */}
+                    {/*  سجلات مُعروضة: 2 */}
                     <div className="records-display">
                         <span className="records-badge">سجلات مُعروضة:</span>
                         <span className="records-count">
@@ -145,7 +153,7 @@ const UserPresence: React.FC = () => {
                     </div>
                 </div>
 
-                {/* ✅ سجل الحضور */}
+                {/*  سجل الحضور */}
                 <div className="userProgress__content">
                     {presenceRecords.map((record: any) => (
                         <div key={record.id} className="userProgress__comments">

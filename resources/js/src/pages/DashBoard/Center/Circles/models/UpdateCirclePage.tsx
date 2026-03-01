@@ -65,7 +65,7 @@ const UpdateCirclePage: React.FC<UpdateCirclePageProps> = ({
             }
 
             const result = await response.json();
-            toast.success("تم تعديل الحلقة بنجاح! ✅");
+            toast.success("تم تعديل الحلقة بنجاح! ");
             onSuccess();
         } catch (error: any) {
             console.error("Update error:", error);

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 class PlanController extends Controller
 {
     /**
-     * عرض خطط المجمعات ✅ محدث بنفس شروط Circles
+     * عرض خطط المجمعات  محدث بنفس شروط Circles
      */
     public function index(Request $request): JsonResponse
     {
@@ -33,20 +33,26 @@ class PlanController extends Controller
 
         Log::info('👤 User ID: ' . $user->id . ' - Center ID: ' . $user->center_id);
 
-        $query = Plan::with(['center:id,name', 'details' => function($q) {
-            $q->select('id', 'plan_id', 'day_number', 'status')
-              ->latest('day_number');
-        }])->withCount('details')
-            ->where('center_id', $user->center_id); // ✅ شرط center_id زي Circles
+        // ✅ الحل النهائي - select صريح + withCount بس
+        $plans = Plan::select([
+                'id',
+                'plan_name',
+                'center_id',
+                'total_months',    // 🔥 ده اللي كان ناقص!
+                'created_at'
+            ])
+            ->withCount('details as details_count')
+            ->with('center:id,name')
+            ->where('center_id', $user->center_id)
+            ->paginate(15);
 
-        $plans = $query->paginate(15);
-        Log::info('📊 Total plans for center ' . $user->center_id . ': ' . $plans->total());
+        Log::info('📊 Plans FULL data: ', $plans->items());
 
         return response()->json($plans);
     }
 
     /**
-     * جلب مجمعات المستخدم ✅ نفس طريقة Circles تماماً
+     * جلب مجمعات المستخدم  نفس طريقة Circles تماماً
      */
     public function getCenters(Request $request): JsonResponse
     {
@@ -66,7 +72,7 @@ class PlanController extends Controller
     }
 
     /**
-     * عرض خطط مجمع معيّن ✅ محدث
+     * عرض خطط مجمع معيّن  محدث
      */
     public function indexByCenter($centerId, Request $request): JsonResponse
     {
@@ -76,20 +82,25 @@ class PlanController extends Controller
             return response()->json(['message' => 'غير مصرح'], 403);
         }
 
-        $query = Plan::with(['center:id,name', 'details' => function($q) {
-            $q->select('id', 'plan_id', 'day_number', 'status')
-              ->latest('day_number');
-        }])->withCount('details')
-            ->where('center_id', $centerId);
-
-        $plans = $query->paginate(15);
+        // ✅ نفس التعديل هنا
+        $plans = Plan::select([
+                'id',
+                'plan_name',
+                'center_id',
+                'total_months',
+                'created_at'
+            ])
+            ->withCount('details as details_count')
+            ->with('center:id,name')
+            ->where('center_id', $centerId)
+            ->paginate(15);
 
         Log::info('📊 Center ' . $centerId . ' plans: ' . $plans->total());
         return response()->json($plans);
     }
 
     /**
-     * إنشاء خطة جديدة ✅ محدث
+     * إنشاء خطة جديدة  محدث
      */
     public function store(Request $request): JsonResponse
     {
@@ -118,12 +129,12 @@ class PlanController extends Controller
 
         return response()->json([
             'message' => 'تم إنشاء الخطة بنجاح',
-            'data' => $plan->load(['center', 'details'])
+            'data' => $plan->load(['center:id,name'])
         ], 201);
     }
 
     /**
-     * عرض خطة واحدة ✅ محدث
+     * عرض خطة واحدة  محدث
      */
     public function show(Plan $plan): JsonResponse
     {
@@ -152,7 +163,7 @@ class PlanController extends Controller
     }
 
     /**
-     * تحديث خطة ✅ محدث
+     * تحديث خطة  محدث
      */
     public function update(Request $request, Plan $plan): JsonResponse
     {
@@ -189,12 +200,12 @@ class PlanController extends Controller
 
         return response()->json([
             'message' => 'تم تعديل الخطة بنجاح',
-            'data' => $plan->fresh()->load(['center', 'details'])
+            'data' => $plan->fresh()->load(['center:id,name'])
         ]);
     }
 
     /**
-     * حذف خطة ✅ محدث
+     * حذف خطة  محدث
      */
     public function destroy(Plan $plan): JsonResponse
     {
@@ -216,7 +227,7 @@ class PlanController extends Controller
     }
 
     /**
-     * الانتقال لليوم التالي ✅ محدث
+     * الانتقال لليوم التالي  محدث
      */
     public function nextDay(Plan $plan): JsonResponse
     {

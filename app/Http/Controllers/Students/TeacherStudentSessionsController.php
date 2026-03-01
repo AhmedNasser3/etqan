@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
 class TeacherStudentSessionsController extends Controller
 {
     /**
-     * ✅ جلب الجلسة الحالية للمعلم
+     *  جلب الجلسة الحالية للمعلم
      */
     public function getTeacherStudentSessions(Request $request)
     {
@@ -106,7 +106,7 @@ class TeacherStudentSessionsController extends Controller
     }
 
     /**
-     * ✅ تعديل حالة الجلسة + الحضور والغياب
+     *  تعديل حالة الجلسة + الحضور والغياب
      */
     public function updateSessionStatus(Request $request)
     {
@@ -155,12 +155,12 @@ class TeacherStudentSessionsController extends Controller
         DB::beginTransaction();
 
         try {
-            // ✅ 1. تحديث حالة الجلسة
+            //  1. تحديث حالة الجلسة
             $session->update([
                 'status' => $sessionStatus
             ]);
 
-            // ✅ 2. جيب بيانات الطالب
+            //  2. جيب بيانات الطالب
             $studentBooking = DB::table('circle_student_bookings')
                 ->where('id', $session->circle_student_booking_id)
                 ->first();
@@ -169,13 +169,13 @@ class TeacherStudentSessionsController extends Controller
                 throw new \Exception('حجز الطالب غير موجود');
             }
 
-            // ✅ 3. تحقق لو الطالب + student_plan_detail_id موجودين قبل كده
+            //  3. تحقق لو الطالب + student_plan_detail_id موجودين قبل كده
             $existingAttendance = StudentAttendance::where('user_id', $studentBooking->user_id)
                 ->where('student_plan_detail_id', $session->id)
                 ->first();
 
             if ($existingAttendance) {
-                // ✅ موجود = UPDATE
+                //  موجود = UPDATE
                 $existingAttendance->update([
                     'status' => $attendanceStatus,
                     'note' => $note,
@@ -184,7 +184,7 @@ class TeacherStudentSessionsController extends Controller
                 $attendanceMessage = 'تم تعديل سجل الحضور';
                 $attendanceAction = 'updated';
             } else {
-                // ✅ مش موجود = CREATE جديد
+                //  مش موجود = CREATE جديد
                 StudentAttendance::create([
                     'user_id' => $studentBooking->user_id,
                     'plan_circle_schedule_id' => $session->plan_circle_schedule_id,
@@ -218,7 +218,7 @@ class TeacherStudentSessionsController extends Controller
     }
 
     /**
-     * ✅ جلب سجل الحضور للجلسة الحالية
+     *  جلب سجل الحضور للجلسة الحالية
      */
     public function getSessionAttendance(Request $request)
     {

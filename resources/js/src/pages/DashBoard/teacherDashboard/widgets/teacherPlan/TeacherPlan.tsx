@@ -1,4 +1,4 @@
-// TeacherPlan.tsx - الكامل مع التاريخ واليوم الحالي من React ✅
+// TeacherPlan.tsx - الكامل مع التاريخ واليوم الحالي من React
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
 import { PiTimerDuotone } from "react-icons/pi";
@@ -15,7 +15,7 @@ const TeacherPlan: React.FC = () => {
 
     const { upcomingSessions, loading, error, refetch } = useTeacherPlan();
 
-    // ✅ التاريخ واليوم الحالي من React (ديناميكي)
+    //  التاريخ واليوم الحالي من React (ديناميكي)
     const todayInfo = useMemo(() => {
         const today = new Date();
         const egyptTime = new Date(today.getTime() + 2 * 60 * 60 * 1000); // EET +2
@@ -56,7 +56,7 @@ const TeacherPlan: React.FC = () => {
         };
     }, []);
 
-    // ✅ تنسيق الوقت 10:15:00 → 10:15 ص
+    //  تنسيق الوقت 10:15:00 → 10:15 ص
     const formatTime = (timeString: string): string => {
         try {
             const [hourStr, minuteStr] = timeString.split(":");
@@ -83,7 +83,15 @@ const TeacherPlan: React.FC = () => {
                     minHeight: "400px",
                 }}
             >
-                ⏳ جاري تحميل خطتك اليومية...
+                <div className="navbar">
+                    <div className="navbar__inner">
+                        <div className="navbar__loading">
+                            <div className="loading-spinner">
+                                <div className="spinner-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>{" "}
             </div>
         );
     }
@@ -216,7 +224,7 @@ const TeacherPlan: React.FC = () => {
                         </button>
                     </div>
                 ) : (
-                    /* ✅ جدول مُحدث - التاريخ واليوم الحالي فقط */
+                    /*  جدول مُحدث - التاريخ واليوم الحالي فقط */
                     <div className="plan__daily-table">
                         <table>
                             <thead>
@@ -256,14 +264,14 @@ const TeacherPlan: React.FC = () => {
                                                     padding: "12px 0",
                                                 }}
                                             >
-                                                {/* ✅ البيانات من Backend بس الوقت */}
+                                                {/*  البيانات من Backend بس الوقت */}
                                                 <div
                                                     colSpan={2}
                                                     style={{
                                                         textAlign: "center",
                                                     }}
                                                 >
-                                                    {/* ✅ التاريخ واليوم الحالي ديناميكي */}
+                                                    {/*  التاريخ واليوم الحالي ديناميكي */}
                                                     <div
                                                         style={{
                                                             fontWeight: "600",

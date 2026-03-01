@@ -16,7 +16,7 @@ class TeacherSalary extends Model
     protected $table = 'teacher_salaries';
 
     protected $fillable = [
-        'role',                     // ✅ enum جديد
+        'role',                     //  enum جديد
         'center_id',
         'mosque_id',
         'base_salary',

@@ -23,6 +23,7 @@ export interface PayrollItem {
     month_year: string;
     created_at?: string;
     period_start?: string;
+    salary_source?: "custom" | "default"; // 🔥 جديد: مصدر الراتب
 }
 
 export interface PayrollStats {

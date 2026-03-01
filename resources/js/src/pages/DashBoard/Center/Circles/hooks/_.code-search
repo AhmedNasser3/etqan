@@ -1,0 +1,1778 @@
+# Query: ✅
+# Flags: RegExp
+# ContextLines: 1
+
+437 results - 93 files
+
+resources\js\src\pages\DashBoard\Center\Circles\hooks\useCircleFormUpdate.ts:
+   1: // src/hooks/useCircleFormUpdate.ts -  محدث نهائياً
+   2  import { useState, useEffect, useCallback } from "react";
+
+  88              const circle = await response.json();
+  89:             console.log(" Circle loaded:", circle);
+  90              setCircleData(circle);
+
+resources\js\src\pages\DashBoard\Center\Circles\hooks\useCircles.ts:
+  61                  const data = await response.json();
+  62:                 console.log(" Circles loaded:", data);
+  63  
+
+resources\js\src\pages\DashBoard\Center\Circles\models\CreateCirclePage.tsx:
+   29          try {
+   30:             //  نفس CSRF logic من usePermissions
+   31              const csrfToken =
+
+   62              const result = await response.json();
+   63:             console.log(" Create response:", result);
+   64              toast.success("تم إضافة الحلقة بنجاح!");
+
+  172  
+  173:                             {/* المسجد -  مساجد المجمع بس */}
+  174                              <div className="inputs__verifyOTPBirth">
+
+  215  
+  216:                             {/* المعلم -  معلمين المجمع بس */}
+  217                              <div className="inputs__verifyOTPBirth">
+
+resources\js\src\pages\DashBoard\Center\hooks\useCenterStats.ts:
+  55          try {
+  56:             //  الرابط الصحيح حسب الـ routes بتاعتك
+  57              const response = await fetch("/api/v1/reports/stats", {
+
+resources\js\src\pages\DashBoard\Center\Links\DomainLinks.tsx:
+  234                                                  {item.status === "active"
+  235:                                                     ? " نشط"
+  236                                                      : "⭕ غير نشط"}
+
+resources\js\src\pages\DashBoard\Center\pages\Center.tsx:
+   2  import { useFeaturedCenter } from "./hooks/useFeaturedCenter";
+   3: import { useAuthUser } from "../../../../layouts/hooks/useAuthUser"; //  Hook جديد
+   4  import QURANN from "../../../../assets/images/qurann.png";
+
+  13      const { name, loading: centerLoading, error } = useFeaturedCenter();
+  14:     const { user, loading: authLoading } = useAuthUser(); //  استدعاء Auth Hook
+  15  
+  16:     //  Loading للـ center أو auth
+  17      if (centerLoading || authLoading) {
+
+  85  
+  86:             {/*  الشرط: مسجل دخول = PlanCards | غير مسجل = FeaturedPlansCards */}
+  87              {user ? <PlanCards type="available" /> : <FeaturedPlansCards />}
+
+resources\js\src\pages\DashBoard\Center\pages\components\CenterTeacherTestimonials.tsx:
+  14      const {
+  15:         teachers: testimonials, //  تصحيح: teachers بدلاً من studentTestimonials
+  16          loading,
+
+resources\js\src\pages\DashBoard\Center\pages\components\FeaturedPlansCards.tsx:
+   11  
+   12: //  Props بسيطة - مش معقدة
+   13  interface SimplePlanCardProps {
+
+  139  
+  140:     //  خطط بسيطة - بدون complex interfaces
+  141      const dummyPlans = [
+
+resources\js\src\pages\DashBoard\Center\PendingCenters\PendingCentersApproval.tsx:
+  23  
+  24:     //  Filtering
+  25      const filteredCenters = centers.filter(
+
+  43              if (response.success) {
+  44:                 toast.success(response.message || " تم اعتماد المجمع بنجاح!");
+  45                  refetch();
+
+  59              if (response.success) {
+  60:                 toast.success(response.message || " تم رفض طلب المجمع بنجاح");
+  61                  refetch();
+
+  80              if (response.success) {
+  81:                 toast.success(response.message || " تم حذف المجمع نهائياً");
+  82                  refetch();
+
+resources\js\src\pages\DashBoard\Center\PendingCenters\hooks\usePendingCenters.ts:
+   74  /**
+   75:  *  Hook لجلب جميع المجمعات المعلقة
+   76   */
+
+  113  /**
+  114:  *  Hook لجلب مجمع معين
+  115   */
+
+  151  /**
+  152:  *  Hook لقبول المجمع (تفعيل)
+  153   */
+
+  175  /**
+  176:  *  Hook لرفض المجمع (تعطيل)
+  177   */
+
+  199  /**
+  200:  *  Hook لحذف المجمع نهائياً
+  201   */
+
+resources\js\src\pages\DashBoard\Center\PlanCircleSchedule\SchedulesManagement.tsx:
+  277                                  <th>الحالة</th>
+  278:                                 <th>رابط الغرفة</th> {/*  عمود جديد */}
+  279                                  <th>الإجراءات</th>
+
+  326                                          <td>
+  327:                                             {/*  عمود رابط Jitsi الجديد */}
+  328                                              <div className="flex items-center gap-1">
+
+resources\js\src\pages\DashBoard\Center\PlanCircleSchedule\hooks\usePlanSchedules.ts:
+  21      notes?: string;
+  22:     jitsi_room_name?: string; //  جديد - اسم الغرفة
+  23:     jitsi_url: string; //  جديد - الرابط الكامل
+  24      created_at: string;
+
+  77                  const data = await response.json();
+  78:                 console.log(" Schedules loaded مع Jitsi:", data);
+  79  
+  80:                 //  تحويل data للـ ScheduleType مع Jitsi fields
+  81                  const scheduleData = Array.isArray(data.data) ? data.data : [];
+
+resources\js\src\pages\DashBoard\Center\PlanCircleSchedule\hooks\useScheduleFormCreate.ts:
+   69                      const userData = await response.json();
+   70:                     console.log("🔍 [STEP 1 RAW] FULL userData:", userData); //  كامل
+   71  
+   72:                     //  جرب كل الاحتمالات للـ center_id
+   73                      let centerId = null;
+
+   87                          center_id: centerId,
+   88:                         raw_data: userData, //  احتفظ بالأصلي
+   89                      };
+
+   92                      console.log(
+   93:                         " [STEP 1 SUCCESS] User set with center_id:",
+   94                          centerId,
+
+  127  
+  128:                 //  Parse كل الاحتمالات
+  129                  let plans: PlanType[] = [];
+
+  133  
+  134:                 //  Fix field names
+  135                  plans = plans.map((plan) => ({
+
+  143                  console.log(
+  144:                     " [STEP 2 SUCCESS] Plans loaded:",
+  145                      plans.length,
+
+  165  
+  166:     //  Trigger plans بعد user
+  167      useEffect(() => {
+
+  174              );
+  175:             fetchPlans(); //  جرب حتى لو مفيش center_id
+  176          }
+
+  195                      : data.data || [];
+  196:                 console.log(" [STEP 3 SUCCESS] Circles:", circles.length);
+  197                  setCirclesData(circles);
+
+  220                      : data.data || [];
+  221:                 console.log(" [STEP 4 SUCCESS] Teachers:", teachers.length);
+  222                  setTeachersData(teachers);
+
+  228  
+  229:     //  Fetch circles & teachers after ANY data loads
+  230      useEffect(() => {
+
+  321  
+  322:     //  Debug كل render
+  323      console.log("📊 FINAL STATE:", {
+
+resources\js\src\pages\DashBoard\Center\PlanCircleSchedule\hooks\useScheduleFormUpdate.ts:
+   89  
+   90:     // 🔍 STEP 1: Fetch User 
+   91      useEffect(() => {
+
+  121                      console.log(
+  122:                         " [STEP 1 SUCCESS] User set with center_id:",
+  123                          centerId,
+
+  132  
+  133:     // 🔍 STEP 2: Fetch Current Schedule -  الإصلاح الكامل
+  134      const fetchCurrentSchedule = useCallback(async () => {
+
+  155  
+  156:                 //  1️⃣ Single object مباشرة (الأساسي)
+  157                  if (responseData.id) {
+
+  159                      console.log(
+  160:                         " [STEP 2] Single schedule object:",
+  161                          schedule,
+
+  163                  }
+  164:                 //  2️⃣ Pagination مع data[0] و id موجود
+  165                  else if (
+
+  171                      console.log(
+  172:                         " [STEP 2] Schedule from pagination data[0]:",
+  173                          schedule,
+
+  175                  }
+  176:                 //  3️⃣ Pagination مع data غير فارغ
+  177                  else if (
+
+  183                      console.log(
+  184:                         " [STEP 2] Schedule from pagination (first item):",
+  185                          schedule,
+
+  200                  console.log(
+  201:                     " [STEP 2 SUCCESS] Schedule loaded:",
+  202                      schedule.id,
+
+  227  
+  228:     // 🔍 STEP 3: Fetch Plans 
+  229      const fetchPlans = useCallback(async () => {
+
+  254  
+  255:                 console.log(" [STEP 3 SUCCESS] Plans loaded:", plans.length);
+  256                  setPlansData(plans);
+
+  267  
+  268:     // 🔍 STEP 4: Fetch Circles 
+  269      const fetchCircles = useCallback(async () => {
+
+  280                      : data.data || [];
+  281:                 console.log(" [STEP 4 SUCCESS] Circles:", circles.length);
+  282                  setCirclesData(circles);
+
+  288  
+  289:     // 🔍 STEP 5: Fetch Teachers 
+  290      const fetchTeachers = useCallback(async () => {
+
+  305                      : data.data || [];
+  306:                 console.log(" [STEP 5 SUCCESS] Teachers:", teachers.length);
+  307                  setTeachersData(teachers);
+
+  315  
+  316:     //  Load sequence 
+  317      useEffect(() => {
+
+  340  
+  341:     //  Fill form with current schedule data مع Jitsi 
+  342      useEffect(() => {
+
+  365              console.log(
+  366:                 " [FILL FORM] Safe data مع Jitsi applied:",
+  367                  safeScheduleData,
+
+  435  
+  436:                 //  إرسال Jitsi room name لو اتغير
+  437                  if (formData.jitsi_room_name) {
+
+  465  
+  466:     //  وظيفة إعادة توليد Jitsi room جديد
+  467      const regenerateJitsiRoom = useCallback(async () => {
+
+  482                  const data = await response.json();
+  483:                 console.log(" Jitsi room regenerated:", data);
+  484                  toast.success("تم إنشاء رابط Jitsi جديد بنجاح! 🎉");
+
+resources\js\src\pages\DashBoard\Center\PlanCircleSchedule\models\CreateSchedulePage.tsx:
+   95              const result = await response.json();
+   96:             console.log(" [SUBMIT SUCCESS] Response:", result);
+   97:             toast.success(" تم إضافة الموعد بنجاح!");
+   98              onSuccess();
+
+  148                                          <span className="block text-sm text-green-600 mt-1">
+  149:                                              خطتك:{" "}
+  150                                              {plansData[0]?.plan_name ||
+
+resources\js\src\pages\DashBoard\Center\PlanCircleSchedule\models\UpdateSchedulePage.tsx:
+   30          currentSchedule,
+   31:         regenerateJitsiRoom, //  جديد
+   32:         jitsiRoomName, //  جديد
+   33      } = useScheduleFormUpdate({ scheduleId });
+
+  114              const result = await response.json();
+  115:             console.log(" [UPDATE SUCCESS] Response مع Jitsi:", result);
+  116:             toast.success(" تم تحديث الموعد بنجاح!");
+  117              onSuccess();
+
+  187                          <div className="ParentModel__container">
+  188:                             {/*  1. الخطة */}
+  189                              <div className="inputs__verifyOTPBirth">
+
+  236  
+  237:                             {/*  2. الحلقة */}
+  238                              <div className="inputs__verifyOTPBirth">
+
+  282  
+  283:                             {/*  3. المدرس (اختياري) */}
+  284                              <div className="inputs__verifyOTPBirth">
+
+  310  
+  311:                             {/*  4. تاريخ الموعد */}
+  312                              <div className="inputs__verifyOTPBirth">
+
+  344  
+  345:                             {/*  5. وقت البداية والنهاية */}
+  346                              <div
+
+  405  
+  406:                             {/*  6. العدد الأقصى للطلاب */}
+  407                              <div className="inputs__verifyOTPBirth">
+
+  427  
+  428:                             {/*  7. الملاحظات */}
+  429                              <div className="inputs__verifyOTPBirth">
+
+  447  
+  448:                             {/* 🔥 8. خانة Jitsi Room - الجديدة  */}
+  449                              <div className="inputs__verifyOTPBirth">
+
+  502  
+  503:                             {/*  9. زر الإرسال */}
+  504                              <div
+
+resources\js\src\pages\DashBoard\Center\Plans\PlansManagement.tsx:
+    9  import UpdatePlanPage from "./models/UpdatePlanPage";
+   10: import DeleteModal from "../PlansDetails/components/DeleteModal"; //  Import DeleteModal
+   11  import { usePlans } from "./hooks/usePlans";
+
+   39  
+   40:     //  Modal Delete State
+   41      const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+   52  
+   53:     //  handleDeleteConfirm - مع Modal
+   54      const handleDeleteConfirm = async () => {
+
+   75              if (response.ok) {
+   76:                 toast.success("تم حذف الخطة بنجاح ");
+   77                  refetch();
+
+  168          <>
+  169:             {/*  DeleteModal Component */}
+  170              <DeleteModal
+
+resources\js\src\pages\DashBoard\Center\Plans\hooks\usePlanFormCreate.ts:
+   47                  const actualUser = responseData.user || responseData;
+   48:                 console.log(" ACTUAL USER:", actualUser);
+   49                  setUser(actualUser);
+
+  112          } finally {
+  113:             console.log(" Centers loading finished");
+  114              setLoadingData(false);
+
+resources\js\src\pages\DashBoard\Center\Plans\hooks\usePlanFormUpdate.ts:
+   71              const plan = await response.json();
+   72:             console.log(" Plan loaded:", plan);
+   73              setPlanData(plan);
+
+  102                  const actualUser = responseData.user || responseData;
+  103:                 console.log(" ACTUAL USER:", actualUser);
+  104                  setUser(actualUser);
+
+resources\js\src\pages\DashBoard\Center\Plans\hooks\usePlans.ts:
+   63                  const data = await response.json();
+   64:                 console.log(" Plans loaded:", data);
+   65  
+
+  116  
+  117:     //  Initial load - بس مرة واحدة
+  118      useEffect(() => {
+
+  121  
+  122:     //  Cleanup timeout
+  123      useEffect(() => {
+
+resources\js\src\pages\DashBoard\Center\PlansDetails\PlanDetailsManagement.tsx:
+   93              XLSX.writeFile(wb, cleanFileName, { bookType: "xlsx" });
+   94:             toast.success(" تم التصدير بسرعة فائقة!");
+   95          } catch {
+
+  170                              statusText.includes("مكتمل") ||
+  171:                             statusText.includes("")
+  172                          )
+
+  220                      toast.success(
+  221:                         ` تم استيراد ${result.imported || importData.length} يوم بنجاح!`,
+  222                      );
+
+resources\js\src\pages\DashBoard\Center\PlansDetails\hooks\usePlanDetailFormCreate.ts:
+   45  
+   46:     //  1- جلب خطط المجمع الخاص بي - إصلاح 404
+   47      useEffect(() => {
+
+   55  
+   56:             //  إصلاح 404 - استخدم الـ endpoint الصحيح
+   57              const response = await fetch(`/api/v1/plans/my-center`, {
+
+   62                      "X-Requested-With": "XMLHttpRequest",
+   63:                     //  إزالة Content-Type للـ GET requests
+   64                  },
+
+   89                  const data = await response.json();
+   90:                 console.log(" خطط المجمع:", data);
+   91                  setAvailablePlans(data.data || data || []);
+
+  110  
+  111:     //  2- جلب أيام الخطة المختارة
+  112      useEffect(() => {
+
+  135                  const data = await response.json();
+  136:                 console.log(" أيام الخطة:", data);
+  137                  setExistingDays(data.data || data || []);
+
+  149  
+  150:     //  3- تغيير الـ inputs
+  151      const handleInputChange = useCallback(
+
+  161  
+  162:     //  4- التحقق من صحة النموذج
+  163      const validateForm = useCallback((): boolean => {
+
+  183  
+  184:     //  5- إرسال النموذج
+  185      const submitForm = useCallback(
+
+resources\js\src\pages\DashBoard\Center\PlansDetails\hooks\usePlanDetails.ts:
+   11      updated_at: string;
+   12:     plan_id?: number; //  إضافة plan_id
+   13:     plan?: { id: number; plan_name: string }; //  للـ allMyCenterPlansDetails
+   14  }
+
+   22  
+   23: //  Hook يدعم الـ 2 حالات
+   24  export const usePlanDetails = (planId?: number) => {
+
+   43              try {
+   44:                 //  دعم الـ 2 URLs
+   45                  const url = planId
+
+   87  
+   88:                 console.log(" [fetchDetails] Parsing JSON...");
+   89                  const data = await response.json();
+
+  109                  setCurrentPage(safePagination.current_page || 1);
+  110:                 console.log(" [fetchDetails] State updated!");
+  111              } catch (error: any) {
+
+resources\js\src\pages\DashBoard\Center\PlansDetails\models\CreatePlanDetailPage.tsx:
+   68              const result = await response.json();
+   69:             console.log(" Create plan detail success:", result);
+   70  
+
+  114                          <div className="ParentModel__container">
+  115:                             {/*  اختيار الخطة */}
+  116                              <div className="inputs__verifyOTPBirth">
+
+  135                                              <option
+  136:                                                 key={`plan-${plan.id}-${index}`} //  key فريد 100%
+  137                                                  value={plan.id}
+
+  162  
+  163:                             {/*  الأيام الموجودة */}
+  164                              {formData.plan_id > 0 &&
+
+resources\js\src\pages\DashBoard\Center\SalaryRules\SalaryRulesManagement.tsx:
+  58              if (response.ok) {
+  59:                 toast.success("تم حذف قاعدة الراتب بنجاح ");
+  60                  refetch();
+
+resources\js\src\pages\DashBoard\Center\SalaryRules\hooks\useSalaryRuleFormCreate.ts:
+  148  
+  149:     //  إرسال JSON object مباشرة
+  150      const submitForm = useCallback(async () => {
+
+  176  
+  177:             //  تحويل لـ JSON object نظيف
+  178              const submitData = {
+
+  198                  },
+  199:                 body: JSON.stringify(submitData), //  JSON مباشرة بدون FormData
+  200              });
+
+  228              const result = await response.json();
+  229:             console.log(" إضافة قاعدة الراتب نجحت:", result);
+  230              toast.success("تم إضافة قاعدة الراتب بنجاح!");
+
+  247          handleInputChange,
+  248:         submitForm, //  بيرجع Promise<boolean>
+  249      };
+
+resources\js\src\pages\DashBoard\Center\SalaryRules\hooks\useSalaryRuleFormUpdate.ts:
+  233              const result = await response.json();
+  234:             console.log(" Update salary rule success:", result);
+  235              toast.success("تم تحديث قاعدة الراتب بنجاح!");
+
+resources\js\src\pages\DashBoard\Center\SalaryRules\models\CreateSalaryRuleModal.tsx:
+  217                                      type="button"
+  218:                                     onClick={handleSubmitForm} //  بدون FormData parameter
+  219                                      disabled={
+
+resources\js\src\pages\DashBoard\Center\SpecialRequests\SpecialRequestsManagement.tsx:
+  57              if (response.ok) {
+  58:                 toast.success("تم حذف الطلب بنجاح ");
+  59                  refetch();
+
+resources\js\src\pages\DashBoard\Center\SpecialRequests\hooks\useSpecialRequests.ts:
+    9      age?: number | null;
+   10:     available_schedule?: Record<string, any> | string | null; //  مرن أكتر
+   11      memorized_parts?: (string | null)[] | string | null;
+
+   46  
+   47:                 //  إصلاح البحث - مش JSON.parse
+   48                  Object.entries(searchParams).forEach(([key, value]) => {
+
+   73  
+   74:                 //  معالجة البيانات بأمان
+   75                  if (Array.isArray(data)) {
+
+   82  
+   83:                 //  فلترة آمنة
+   84                  const safeRequests = requestData
+
+   93                          ...request,
+   94:                         //  تحويل JSON strings لـ arrays لو كانت strings
+   95                          memorized_parts:
+
+  108  
+  109:                 //  استخراج Pagination بأمان
+  110                  const safePagination: Pagination = {
+
+resources\js\src\pages\DashBoard\Center\Staff\Approval\StaffApproval.tsx:
+   26  
+   27:     //  Per-staff loading بدون global loading
+   28      const [approvingIds, setApprovingIds] = useState<Set<number>>(new Set());
+
+   30  
+   31:     //  فلترة فورية بدون تأخير
+   32      const filteredStaffs = staffs.filter(
+
+   53  
+   54:     //  Approve - نظيف وبسيط
+   55      const handleApprove = async (id: number) => {
+
+   58              await approveTeacher(id);
+   59:             toast.success(" تم تفعيل المعلم بنجاح!");
+   60          } catch (err: any) {
+
+   72  
+   73:     //  Reject - نظيف وبسيط
+   74      const handleReject = async (id: number) => {
+
+   77              await rejectTeacher(id);
+   78:             toast.success(" تم رفض طلب المعلم بنجاح!");
+   79          } catch (err: any) {
+
+   98  
+   99:     //  البحث فوري بدون debounce
+  100      const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  235                                                  {item.status === "active"
+  236:                                                     ? " معتمد"
+  237                                                      : "⏳ معلق"}
+
+  241                                              <div className="teacherStudent__btns">
+  242:                                                 {/*  Approve Button */}
+  243                                                  <button
+
+  261  
+  262:                                                 {/*  Reject Button */}
+  263                                                  <button
+
+  281  
+  282:                                                 {/*  OTP Button */}
+  283                                                  <button
+
+  295  
+  296:                                                 {/*  Payroll Link Button */}
+  297                                                  <button
+
+  323  
+  324:                     {/*  Stats Cards */}
+  325                      <div className="plan__stats">
+
+  366  
+  367:                     {/*  Progress Bars */}
+  368                      <div
+
+resources\js\src\pages\DashBoard\Center\Staff\Approval\hooks\useTeachers.ts:
+  117  
+  118:                 addDebugLog(" تم جلب المعلمين بنجاح", {
+  119                      count: response.data.data.length,
+
+  183  
+  184:             addDebugLog(" استجابة قبول المعلم", {
+  185                  success: response.data.success,
+
+  217              await axios.post(`/api/v1/teachers/${id}/reject`);
+  218:             addDebugLog(` تم رفض المعلم ${id}`);
+  219              await fetchTeachers(filters);
+
+resources\js\src\pages\DashBoard\Center\StudentAchievements\hooks\useAchievementFormCreate.ts:
+    1: // hooks/useAchievementFormCreate.ts -  إصلاح نهائي
+    2  import { useState, useEffect, useCallback } from "react";
+
+   52  
+   53:     //  1️⃣ Fetch User info أولاً
+   54      useEffect(() => {
+
+   70  
+   71:                 //  إصلاح: User nested في success.user
+   72                  const actualUser = responseData.user || responseData;
+
+   80  
+   81:     //  2️⃣ Fetch Students - dependency محسن
+   82      const fetchCenterStudents = useCallback(async () => {
+
+  109              const data = await response.json();
+  110:             console.log(" Students:", data.data?.length || 0);
+  111  
+
+  119          }
+  120:     }, [user?.center_id]); //  Dependency صحيح
+  121  
+  122:     //  3️⃣ تشغيل fetchCenterStudents لما user يتغير
+  123      useEffect(() => {
+
+  133          }
+  134:     }, [user]); //  user كامل مش user?.center_id
+  135  
+
+resources\js\src\pages\DashBoard\Center\StudentAchievements\hooks\useAchievementFormUpdate.ts:
+    1: // hooks/useAchievementFormUpdate.ts -  مُصحح مع Debug
+    2  import { useState, useEffect, useCallback } from "react";
+
+   59  
+   60:     //  1️⃣ Fetch User أولاً
+   61      useEffect(() => {
+
+   87  
+   88:     //  2️⃣ Fetch Achievement data
+   89      useEffect(() => {
+
+  113                  const achievement: AchievementType = await response.json();
+  114:                 console.log(" [fetchAchievement] Data:", achievement);
+  115  
+
+  140  
+  141:     //  3️⃣ Fetch Students بعد user
+  142      useEffect(() => {
+
+  169                  const data = await response.json();
+  170:                 console.log(" [fetchStudents] Raw data:", data.data?.length);
+  171                  setUsersData(data.data || []);
+
+  180  
+  181:     //  باقي الـ functions
+  182      const handleInputChange = useCallback(
+
+  235  
+  236:         setErrors(newErrors); //  إصلاح: newErrors مش newError
+  237          return Object.keys(newErrors).length === 0;
+
+resources\js\src\pages\DashBoard\Center\StudentAchievements\hooks\useStudentAchievements.ts:
+   68                  const data = await response.json();
+   69:                 console.log(" Achievements loaded:", data);
+   70  
+
+  137                  if (response.ok) {
+  138:                     toast.success("تم حذف الإنجاز بنجاح ");
+  139                      refetch();
+
+resources\js\src\pages\DashBoard\Center\StudentAchievements\models\UpdateAchievementModal.tsx:
+    1: // modals/UpdateAchievementModal.tsx -  كامل مع الطالب محدد
+    2  import React from "react";
+
+  128                                          <span className="block text-sm text-green-600 mt-1">
+  129:                                              الطالب محدد: {formData.user_id}
+  130                                          </span>
+
+  141                          <div className="ParentModel__container">
+  142:                             {/*  الطالب - محدد تلقائياً */}
+  143                              <div className="inputs__verifyOTPBirth">
+
+resources\js\src\pages\DashBoard\Center\Students\Approval\hooks\usePendingStudents.ts:
+  71  
+  72:     //  http://127.0.0.1:8000/gomaa/center-dashboard/students/approval
+  73:     //  segments[0] = "gomaa"
+  74      if (segments.length > 0 && segments[0] !== "center-dashboard") {
+
+  77  
+  78:     //  http://127.0.0.1:8000/center-dashboard/students/approval
+  79:     //  مفيش center slug، رجع كل الطلاب
+  80      return null;
+
+resources\js\src\pages\DashBoard\Center\Students\Approval\modals\ParentModel.tsx:
+  36              await linkGuardian(guardianEmail);
+  37:             toast.success(" تم ربط حساب ولي الأمر بنجاح!");
+  38              setTimeout(onClose, 1500);
+
+  83                  toast.success(
+  84:                     " تم إنشاء حساب ولي الأمر وربطه بالطالب بنجاح!",
+  85                  );
+
+resources\js\src\pages\DashBoard\Center\useDomainRequests\DomainRequestsManagement.tsx:
+   18  
+   19:     //  Auto refetch عند تحميل الصفحة
+   20      useEffect(() => {
+
+   35                  await deleteRequest(request.id);
+   36:                 toast.success("تم إلغاء الطلب بنجاح ");
+   37                  await refetch();
+
+   70  
+   71:     //  Search محسن مع debounce effect
+   72      const filteredRequests = useMemo(
+
+   87  
+   88:     //  Stats محسنة
+   89      const stats = useMemo(
+
+   98  
+   99:     //  Loading state محسن
+  100      if (loading) {
+
+  110  
+  111:     //  Error state محسن
+  112      if (error) {
+
+resources\js\src\pages\DashBoard\Center\useDomainRequests\hooks\useDomainRequestFormCreate.ts:
+   59  
+   60:         console.log(" Validation Debug:", {
+   61              errors: newErrors,
+
+   88  
+   89:             //  Validation
+   90              const validationErrors = validateForm(formData);
+
+   97  
+   98:             console.log(" VALIDATION PASSED - FormData:", formData);
+   99  
+
+  102  
+  103:             //  Build FormData
+  104              Object.entries(formData).forEach(([key, value]) => {
+
+  117  
+  118:             //  CSRF Debug قبل الإرسال
+  119              const csrfToken = getCsrfToken();
+
+  126                  await submitHandler(formDataToSubmit);
+  127:                 console.log(" SUBMIT HANDLER SUCCESS!");
+  128                  toast.success("تم إرسال طلب الدومين بنجاح!");
+
+  139  
+  140:                 //  Debug الـ response text
+  141                  if (error.responseText) {
+
+resources\js\src\pages\DashBoard\Center\useDomainRequests\hooks\useDomainRequests.ts:
+   25          try {
+   26:             console.log("🌐 Fetching from: /api/v1/idea-domain-requests"); //  /api/
+   27  
+   28              const response = await fetch("/api/v1/idea-domain-requests", {
+   29:                 //  /api/
+   30                  headers: {
+
+   39  
+   40:             //  Check Content-Type قبل JSON.parse
+   41              const contentType = response.headers.get("content-type");
+
+   58              const result = await response.json();
+   59:             console.log(" JSON Data:", result);
+   60  
+
+   77  
+   78:             //  CSRF Token للـ DELETE requests
+   79              const csrfToken =
+
+   91                  {
+   92:                     //  /api/
+   93                      method: "DELETE",
+
+   98                          "X-Requested-With": "XMLHttpRequest",
+   99:                         "X-CSRF-TOKEN": csrfToken, //  CSRF Token
+  100                      },
+
+  103  
+  104:             //  Content-Type Check للـ DELETE
+  105              const contentType = response.headers.get("content-type");
+
+  112              const result = await response.json();
+  113:             console.log(" Delete Success:", result);
+  114              return { success: true, data: result };
+
+resources\js\src\pages\DashBoard\Center\useDomainRequests\models\CreateDomainRequestModal.tsx:
+   36          try {
+   37:             //  CSRF Cookie أولاً دايماً
+   38              console.log("🍪 Getting CSRF Cookie...");
+
+   45                  "🔐 CSRF Token:",
+   46:                 csrfToken ? " موجود" : "❌ مش موجود",
+   47              );
+   48  
+   49:             //  URL صحيح مع /api/
+   50              console.log(
+
+  102              const result = await response.json();
+  103:             console.log(" Create response:", result);
+  104  
+
+resources\js\src\pages\DashBoard\Center\useDomainRequests\models\UpdateDomainRequestModal.tsx:
+   53          try {
+   54:             //  CSRF Cookie أولاً دايماً
+   55              console.log("🍪 Getting CSRF Cookie...");
+
+   62                  "🔐 CSRF Token:",
+   63:                 csrfToken ? " موجود" : "❌ مش موجود",
+   64              );
+   65  
+   66:             //  POST + _method=PUT بدل PUT مباشرة (FormData مش بيشتغل مع PUT)
+   67              console.log(
+
+   75                  {
+   76:                     method: "POST", //  التعديل الوحيد هنا!
+   77                      credentials: "include",
+
+   82                      },
+   83:                     body: formDataSubmit, //  FormData فيه _method=PUT من الـ Hook
+   84                  },
+
+  124              const result = await response.json();
+  125:             console.log(" Update response:", result);
+  126  
+
+  129              onSuccess();
+  130:             onClose(); //  إضافة إغلاق الـ Modal
+  131          } catch (error: any) {
+
+resources\js\src\pages\DashBoard\Center\Users\Suspend\UserSuspend.tsx:
+   14  const UserSuspend: React.FC = () => {
+   15:     //  Hook كامل مع actionLoading
+   16      const {
+
+   28  
+   29:     //  فلترة محلية + server search
+   30      const filteredUsers = users.filter(
+
+   37  
+   38:     //  Error handling
+   39      useEffect(() => {
+
+   65  
+   66:     //  تحويل teacher role إلى عربي
+   67      const getTeacherRoleTitle = (role: string): string => {
+
+   83  
+   84:     //  لون الدور
+   85      const getRoleColor = (role: string) => {
+
+  101  
+  102:     //  معلومات الحلقة
+  103      const getCircleInfo = (user: any) => {
+
+  112  
+  113:     //  Loading screen
+  114      if (isLoading) {
+
+  259                                              <div className="teacherStudent__btns">
+  260:                                                 {/*  Toggle Suspend مع actionLoading */}
+  261                                                  <button
+
+  318  
+  319:                                                 {/*  Delete مع actionLoading */}
+  320                                                  <button
+
+  355  
+  356:                     {/*  Stats */}
+  357                      <div className="plan__stats">
+
+  406  
+  407:                     {/*  Progress Bars */}
+  408                      <div
+
+resources\js\src\pages\DashBoard\Center\Users\Suspend\hooks\useSuspendedTeachers.ts:
+  135  
+  136:     //  تحميل البيانات عند الـ mount
+  137      useEffect(() => {
+
+  140  
+  141:     //  إعادة تحميل عند تغيير search
+  142      useEffect(() => {
+
+  148          loading,
+  149:         actionLoading, //  Loading لكل action منفصل
+  150          error,
+
+resources\js\src\pages\DashBoard\Center\useStudentBookings\StudentBookingsManagement.tsx:
+   23  
+   24:     //  البحث
+   25      const handleSearch = useCallback(
+
+   33  
+   34:     //  قبول الطالب
+   35      const handleConfirm = async (booking: StudentBookingType) => {
+
+   64  
+   65:     //  الإحصائيات
+   66      const stats = useMemo(
+
+   78  
+   79:     //  شعار الطالب من الحروف الأولى
+   80      const renderStudentLogo = useCallback((name: string) => {
+
+   94  
+   95:     //  حالة السعة
+   96      const getCapacityStatus = useCallback((booking: StudentBookingType) => {
+
+  116              <div className="userProfile__plan" style={{ padding: "0 15%" }}>
+  117:                 {/*  الإحصائيات */}
+  118                  <div className="plan__stats mb-8">
+
+  144  
+  145:                 {/*  الهيدر */}
+  146                  <div
+
+  175  
+  176:                 {/*  الجدول */}
+  177                  <div className="plan__daily-table">
+
+  221                                      >
+  222:                                         {/*  شعار الطالب */}
+  223                                          <td className="teacherStudent__img">
+
+  230  
+  231:                                         {/*  بيانات الطالب */}
+  232                                          <td className="font-medium">
+
+  238  
+  239:                                         {/*  الخطة */}
+  240                                          <td>
+
+  250  
+  251:                                         {/*  الحلقة والمدرس */}
+  252                                          <td className="font-medium">
+
+  258  
+  259:                                         {/*  التاريخ والوقت */}
+  260                                          <td className="text-sm">
+
+  268  
+  269:                                         {/*  حالة السعة */}
+  270                                          <td>
+
+  281  
+  282:                                         {/*  تاريخ الطلب */}
+  283                                          <td className="text-sm text-gray-500">
+
+  288  
+  289:                                         {/*  زر القبول */}
+  290                                          <td>
+
+  321  
+  322:                 {/*  Pagination */}
+  323                  {pagination && pagination.last_page > 1 && (
+
+  357  
+  358:                 {/*  Progress Bars */}
+  359                  {bookings.length > 0 && (
+
+resources\js\src\pages\DashBoard\Center\useStudentBookings\hooks\useStudentBookings.ts:
+   71  
+   72:                 //  الـ URL الجديد مع v1/plans
+   73                  const response = await fetch(
+
+   76                          method: "GET",
+   77:                         credentials: "include", //  مهم للـ session cookies مع web middleware
+   78                          headers: getCSRFHeaders(),
+
+   90  
+   91:                 //  Type assertion للتأكد من البيانات
+   92                  const typedBookings: StudentBookingType[] = data.data || [];
+
+  133              try {
+  134:                 //  الـ URL الجديد مع v1/plans
+  135                  const response = await fetch(
+
+  162  
+  163:     //  تحميل البيانات عند بداية الـ component
+  164      useEffect(() => {
+
+resources\js\src\pages\DashBoard\Financial\Dashboard\FinancialDashboard.tsx:
+    9  
+   10: //  Modal داخلي آمن 100%
+   11  const FinancialModel = ({
+
+  113  const FinancialDashboard: React.FC = () => {
+  114:     //  Safe destructuring مع fallback
+  115      let hookData;
+
+  147  
+  148:     //  Safe calculations
+  149      const totalPayroll = useMemo(() => {
+
+  169  
+  170:     //  Safe handlers
+  171      const handleOpenFinancialModel = useCallback(
+
+  184      const handleUpdatePayroll = useCallback(async () => {
+  185:         toast.success(" تم حفظ التعديلات بنجاح");
+  186          handleCloseFinancialModel();
+
+  200                  if (success) {
+  201:                     toast.success(" تم تحديث الحالة");
+  202                  } else {
+
+  230  
+  231:     //  Loading state
+  232      if (loading) {
+
+  409                                                      {item?.status === "paid"
+  410:                                                         ? " مدفوع"
+  411                                                          : " معلق"}
+
+resources\js\src\pages\DashBoard\Financial\Dashboard\hooks\useTeacherPayrolls.ts:
+  128              console.log(
+  129:                 `👤 user_id: ${userId}  |  teacher_id: ${correctTeacherId}`,
+  130              );
+
+  191                          console.log(
+  192:                             `   🎉 ${teacher.name}:  جدول جديد لـ ${currentMonth}`,
+  193                          );
+
+  244                          console.log(
+  245:                             `   🎉 ${teacher.name}:  جدول جديد لـ ${nextMonthStr}`,
+  246                          );
+
+  254                      console.log(
+  255:                         `    ${teacher.name}: مش محتاج (${daysFromPeriod} < 30 يوم)`,
+  256                      );
+
+  264          console.log(
+  265:             `📊 تم فحص: ${totalChecked} |  تم إنشاء: ${totalCreated}`,
+  266          );
+
+  341              const createdCount = await smartPayrollRotation();
+  342:             console.log(` تم إنشاء ${createdCount} جدول تلقائياً`);
+  343              setTimeout(() => fetchPayrolls(search, filterStatus), 2000);
+
+resources\js\src\pages\DashBoard\Financial\Dashboard\models\FinancialModel.tsx:
+  139                              <option value="pending"> معلق</option>
+  140:                             <option value="paid"> مدفوع</option>
+  141                          </select>
+
+resources\js\src\pages\DashBoard\Financial\Export\PayrollExport.tsx:
+  302                                                      {item.status === "ready"
+  303:                                                         ? " جاهز"
+  304                                                          : item.status ===
+
+resources\js\src\pages\DashBoard\Financial\Reports\PayrollReports.tsx:
+  240                                                  {item.status === "calculated"
+  241:                                                     ? " محسوب"
+  242                                                      : " معلق"}
+
+resources\js\src\pages\DashBoard\Financial\Reports\models\CreatePayrollModel.tsx:
+  92                                              <option> معلق</option>
+  93:                                             <option> مدفوع</option>
+  94                                          </select>
+
+resources\js\src\pages\DashBoard\Financial\Reports\models\EditPayrollModel.tsx:
+  103                                          <select defaultValue="مدفوع">
+  104:                                             <option> مدفوع</option>
+  105                                              <option> معلق</option>
+
+resources\js\src\pages\DashBoard\home\Complexes.tsx:
+   20  
+   21:     //  دالة الـ icons زي القديم
+   22      const getIconForStat = useCallback((label: string): React.ReactNode => {
+
+   39  
+   40:     //  Centers مع الـ icons
+   41      const centersWithIcons = useMemo(() => {
+
+   50  
+   51:     //  Loading
+   52      if (loading) {
+
+   66          <div className="complexes">
+   67:             {/*  نفس Header القديم */}
+   68              <div className="testimonials__mainTitle">
+
+   79  
+   80:             {/*  نفس الـ Layout القديم */}
+   81              <div className="complexes__inner">
+
+  103  
+  104:                         {/*  نفس الـ Footer القديم */}
+  105                          <div className="complexes__footer">
+
+  128  
+  129:                                 {/*  نفس الأزرار القديمة + الـ functionality الجديد */}
+  130                                  <div className="complexes__footerBtContainer">
+
+resources\js\src\pages\DashBoard\home\hooks\useCenters.ts:
+   43  
+   44:     //  Demo Data جاهز
+   45      const demoCenters: CenterComplex[] = [
+
+   91  
+   92:     //  جلب من API الجديد /api/v1/super/all-centers
+   93      const fetchFromApi = useCallback(async () => {
+
+  132                  if (isInitialLoad.current && !hasShownApiToast.current) {
+  133:                     toast.success(` ${transformedCenters.length} مجمع`);
+  134                      hasShownApiToast.current = true;
+
+  146  
+  147:     //  جلب البيانات الرئيسي
+  148      const fetchCenters = useCallback(async () => {
+
+  151              if (isInitialLoad.current && !hasShownDemoToast.current) {
+  152:                 toast.success(" بيانات تجريبية");
+  153                  hasShownDemoToast.current = true;
+
+  161          } catch {
+  162:             //  Fallback لـ Demo تلقائي
+  163              setCenters(demoCenters);
+
+  165              if (isInitialLoad.current && !hasShownDemoToast.current) {
+  166:                 toast.success(" بيانات تجريبية (API غير متاح)");
+  167                  hasShownDemoToast.current = true;
+
+  172  
+  173:     //  useEffect مرة واحدة فقط
+  174      useEffect(() => {
+
+  184          window.open(centerUrl, "_blank", "noopener,noreferrer");
+  185:         toast.success(" تم فتح المجمع");
+  186      }, []);
+
+  193          });
+  194:         //  Refetch بعد التبديل
+  195          setTimeout(() => fetchCenters(), 100);
+
+resources\js\src\pages\DashBoard\hooks\useAuditLogs.ts:
+   67          try {
+   68:             //  الـ endpoint الصحيح للـ web routes
+   69              const url = `/api/v1/reports/audit-logs/${periodParam || ""}`;
+
+   88              const result: ApiResponse = await response.json();
+   89:             console.log(" Audit logs loaded:", result);
+   90  
+
+  194          try {
+  195:             //  استخدم الـ web route الصحيح
+  196              const url = `/api/v1/reports/audit-logs/export/${period || ""}`;
+
+resources\js\src\pages\DashBoard\Meeting\MeetingsManagement.tsx:
+   32  
+   33:     //  Delete Modal State مع loading
+   34      const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+   46  
+   47:     //  handleDeleteConfirm محدث للـ DeleteModal الجديد
+   48      const handleDeleteConfirm = async () => {
+
+  167          <>
+  168:             {/*  DeleteModal الجديد */}
+  169              <DeleteModal
+
+resources\js\src\pages\DashBoard\Meeting\components\DeleteModal.tsx:
+   8      onClose: () => void;
+   9:     onConfirm: () => void; //  مطلوب للحذف
+  10      confirmText?: string;
+
+  28          <>
+  29:             {/*  Backdrop */}
+  30              <div
+
+  34  
+  35:             {/*  Modal Content */}
+  36              <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+
+resources\js\src\pages\DashBoard\Meeting\hooks\useMeetings.ts:
+   36  
+   37:     //  الحل النهائي - TypeScript 100% صحيح
+   38      const searchTimeoutRef = useRef<number | null>(null);
+   39  
+   40:     //  Helper to get CSRF token
+   41      const getCsrfToken = useCallback((): string => {
+
+   88                  const data = await response.json();
+   89:                 console.log(" Meetings loaded:", data);
+   90  
+
+  130                  if (response.ok) {
+  131:                     toast.success("تم إنشاء الميتينج بنجاح! ");
+  132                      return result;
+
+  196                  if (response.ok) {
+  197:                     toast.success("تم حذف الميتينج بنجاح! ");
+  198                      return true;
+
+  224          (term: string) => {
+  225:             //  Clear previous timeout
+  226              if (searchTimeoutRef.current !== null) {
+
+  229  
+  230:             //  Set new timeout - number type
+  231              searchTimeoutRef.current = window.setTimeout(() => {
+
+  251  
+  252:     //  Initial load - بس مرة واحدة
+  253      useEffect(() => {
+
+  256  
+  257:     //  Cleanup timeout
+  258      useEffect(() => {
+
+resources\js\src\pages\DashBoard\Supervisors\Students\StudentsAffairs.tsx:
+   26  
+   27:     //  States للـ Modal
+   28      const [showUpdateModal, setShowUpdateModal] = useState(false);
+
+   45  
+   46:     //  فتح Modal التعديل
+   47      const handleEdit = useCallback((studentId: number) => {
+
+   51  
+   52:     //  إغلاق Modal
+   53      const handleCloseUpdateModal = useCallback(() => {
+
+   57  
+   58:     //  نجاح التعديل - بدون refetch
+   59      const handleUpdateSuccess = useCallback(() => {
+
+   61          handleCloseUpdateModal();
+   62:         //  لو عايز تحديث البيانات، ضيف window.location.reload() أو اعمل refetch في الـ hook
+   63      }, [handleCloseUpdateModal]);
+
+   94          <>
+   95:             {/*  Modal التعديل */}
+   96              {showUpdateModal && selectedStudentId && (
+
+  255                                                      </button>
+  256:                                                     {/*  زر التعديل الجديد */}
+  257                                                      <button
+
+resources\js\src\pages\DashBoard\Supervisors\Students\hooks\useStudentAffairs.ts:
+   47  
+   48:     //  خطوة 1: جلب البيانات مع Debug
+   49      const fetchStudents = useCallback(
+
+   60  
+   61:                 //  خطوة 2: بناء URL مع الفلاتر
+   62                  const params = new URLSearchParams({
+
+   71  
+   72:                 //  خطوة 3: إرسال الطلب
+   73                  const response = await fetch(apiUrl, {
+
+   86                  if (response.ok) {
+   87:                     //  خطوة 4: معالجة البيانات
+   88                      const result: ApiResponse = await response.json();
+   89:                     console.log(" [Frontend] تم جلب البيانات:", {
+   90                          total: result.total,
+
+   94  
+   95:                     //  خطوة 5: تحديث الحالة
+   96                      setStudents(result.data || []);
+
+  108                  } else {
+  109:                     //  خطوة 6: معالجة الأخطاء
+  110                      const errorText = await response.text();
+
+  123              } finally {
+  124:                 //  خطوة 7: إنهاء التحميل
+  125                  setLoading(false);
+
+  131  
+  132:     //  خطوة 8: تحميل البيانات عند بدء المكون
+  133      useEffect(() => {
+
+  137  
+  138:     //  خطوة 9: واتساب تذكير
+  139      const sendWhatsappReminder = async (id: number, phone: string) => {
+
+  165                  console.log(
+  166:                     " [Frontend] رابط واتساب جاهز:",
+  167                      data.whatsapp_url,
+
+  182  
+  183:     //  خطوة 10: طباعة بطاقة
+  184      const printCard = (id: number) => {
+
+  189  
+  190:     //  خطوة 11: إعادة التحميل
+  191      const refetch = () => {
+
+  195  
+  196:     //  العودة النهائية
+  197      console.log("📋 [Frontend] حالة نهائية:", {
+
+resources\js\src\pages\DashBoard\Supervisors\Students\hooks\useStudentAffairsUpdate.ts:
+    1: // hooks/useStudentAffairsUpdate.ts -  مُصحح كامل
+    2  import { useState, useEffect, useCallback } from "react";
+
+   84  
+   85:     //  تحميل بيانات الطالب - مُصحح للـ Backend الجديد
+   86      const loadStudentData = useCallback(async () => {
+
+  104                  const data = await response.json();
+  105:                 console.log(" بيانات الطالب:", data);
+  106  
+  107:                 //  مطابقة مع استجابة Backend الجديد
+  108                  if (data.success && data.data) {
+
+  192  
+  193:     //  إرسال النموذج - مُصحح للـ Backend
+  194      const submitForm = useCallback(async () => {
+
+resources\js\src\pages\DashBoard\Supervisors\Students\models\StudentAffairsUpdate.tsx:
+    1: // pages/student-affairs-update.tsx -  مُصحح كامل
+    2  import { useEffect } from "react";
+
+   25          handleInputChange,
+   26:         submitForm, //  استخدم submitForm من الـ hook
+   27          loadStudentData,
+
+   29  
+   30:     //  تحميل البيانات تلقائياً (مش محتاج useEffect)
+   31      useEffect(() => {
+
+   34  
+   35:     //  استخدم submitForm من الـ hook مباشرة
+   36      const handleSave = async () => {
+
+   38          if (success) {
+   39:             onSuccess(); //  إغلاق الـ Modal بعد النجاح
+   40          }
+
+  300  
+  301:                             {/* زر الإرسال -  مُصحح */}
+  302                              <div
+
+  307                                      type="button"
+  308:                                     onClick={handleSave} //  استخدم handleSave الجديد
+  309                                      disabled={isSubmitting || loadingData}
+
+resources\js\src\pages\DashBoard\teacherDashboard\TeacherDashboard.tsx:
+    5  import TeacherTodayCircle from "./widgets/TeacherTodayCircle/TeacherTodayCircle";
+    6: import { useTeacherTodayMeet } from "./widgets/TeahcerRoom/hooks/useTeacherTodayMeet"; //  المسار الصحيح
+    7  import { useNavigate } from "react-router-dom";
+
+   20  
+   21:     //  زر دخول الحصة يفتح TeacherRoom مع schedule_id
+   22      const joinMeeting = () => {
+
+  159                                          </div>
+  160:                                         {/*  زر دخول الحصة يفتح TeacherRoom */}
+  161                                          <button
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\dashboard\Profile.tsx:
+  39  
+  40:                                 {/*  صورة اليوزر */}
+  41                                  <img
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\dashboard\hooks\useAuthUser.ts:
+  19                      "X-Requested-With": "XMLHttpRequest",
+  20:                     //  Content-Type مش محتاج هنا لـ GET request
+  21                  },
+
+  43  
+  44:     //  Refresh function للـ manual refresh
+  45      const refetch = useCallback(() => {
+
+  48  
+  49:     //  Logout function
+  50      const logout = useCallback(async () => {
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\QuickCheckin\QuickCheckinPage.tsx:
+  50                                  <>
+  51:                                      تم الحضور اليوم
+  52                                      {checkinTime && (
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\QuickCheckin\hooks\useQuickCheckin.ts:
+   37                  console.log(
+   38:                     " [DEBUG 1] CSRF Response:",
+   39                      csrfResponse.status,
+
+   94                          console.log(
+   95:                             " [DEBUG 2.6] Attendance found! Status:",
+   96                              attendance.status,
+
+  106                              checkinTime: timeString,
+  107:                             message: " تم الحضور اليوم",
+  108                              error: "",
+
+  192                      checkinTime: response.data.checkin_time || "",
+  193:                     message: response.data.message || " تم الحضور",
+  194                      error: "",
+
+  221              if (axiosError.response?.status === 409) {
+  222:                 console.log(" [DEBUG 3.10] Already checked today");
+  223                  setStatus((prev) => ({
+
+  227                      isDisabled: true,
+  228:                     message: " تم تسجيل الحضور اليوم",
+  229                      error: "",
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\TeacherMotivate\TeacherAchievementList.tsx:
+  1: // TeacherAchievementsManagement.tsx -  نسخة كاملة للمعلم
+  2  import { useState, useCallback, useMemo } from "react";
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\TeacherMotivate\hooks\useTeacherAchievements.ts:
+   68                  const data = await response.json();
+   69:                 console.log(" Teacher Achievements loaded:", data);
+   70  
+
+  146                      const result = await response.json();
+  147:                     toast.success("تم إضافة الإنجاز بنجاح ");
+  148                      refetch();
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\TeacherMotivate\models\TeacherCreateAchievementModal.tsx:
+  40              const response = await fetch("/api/v1/teacher/achievements", {
+  41:                 //  endpoint للمعلم
+  42                  method: "POST",
+
+  77              const result = await response.json();
+  78:             console.log(" Teacher Create response:", result);
+  79              toast.success("تم إضافة الإنجاز بنجاح!");
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\TeacherMotivate\models\TeacherUpdateAchievementModal.tsx:
+    1: // modals/TeacherUpdateAchievementModal.tsx -  كامل للمعلم
+    2  import React from "react";
+
+   42              const response = await fetch(
+   43:                 `/api/v1/teacher/achievements/${formDataSubmit.id}`, //  endpoint المعلم
+   44                  {
+
+   80              const result = await response.json();
+   81:             console.log(" Teacher Update response:", result);
+   82              toast.success("تم تحديث الإنجاز بنجاح!");
+
+  137                          <div className="ParentModel__container">
+  138:                             {/*  الطالب - من طلاب المعلم بس */}
+  139                              <div className="inputs__verifyOTPBirth">
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\teacherPlan\hooks\useTeacherPlan.ts:
+   1: // hooks/useTeacherPlan.ts - النسخة المُصححة النهائية 
+   2  import { useState, useEffect, useCallback } from "react";
+
+  43  
+  44:             //  مباشرة جلب المواعيد - Backend بيستخدم auth()->user() تلقائياً
+  45              log("📅 طلب مواعيد الحلقات");
+
+  68              const schedules = await schedulesResponse.json();
+  69:             log(" تم استلام المواعيد:", schedules);
+  70  
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\teacherStudents\TeacherStudents.tsx:
+   24  
+   25:     //  استخدام الـ Hook الجديد
+   26      const { students, totalCount, loading, error, toggleStudentStatus } =
+
+   87                          <div className="plan__filters">
+   88:                             {/*  فلتر البحث */}
+   89                              <div className="date-picker search-input">
+
+  167  
+  168:                 {/*  الإحصائيات */}
+  169                  <div className="plan__stats">
+
+  222  
+  223:                 {/*  الـ Progress Bars */}
+  224                  <div
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\TeacherTodayCircle\TeacherTodayCircle.tsx:
+   13  
+   14: //  Mock Students data لحفظ الوظائف الموجودة
+   15  interface Student {
+
+   56  
+   57:     //  جلب بيانات الخطط الحقيقية
+   58      const { schedules, stats, loading } = useTeacherSchedules();
+
+  120          try {
+  121:             //  حفظ النقاط في API
+  122              await axios.post("/api/v1/teacher/achievements", {
+
+  150  
+  151:         const report = ` جميع حصص اليوم مكتملة بنجاح (${presentCount}/${students.length} حضور).
+  152      إجمالي النقاط: ${totalPoints}.
+
+  157  
+  158:     //  تحديث التقرير عند تحميل الإحصائيات
+  159      useEffect(() => {
+
+  212                      </i>
+  213:                      جميع حصص الأمس مكتملة بنجاح
+  214                  </div>
+
+  217  
+  218:             {/*  جدول الطلاب (يبقى زي ما هو) */}
+  219              <div className="plan__daily-table">
+
+  294  
+  295:             {/*  إحصائيات حقيقية من API */}
+  296              <div className="plan__stats">
+
+  347  
+  348:             {/*  جدول الحلقات القادمة من API */}
+  349              <div className="testimonials__mainTitle">
+
+  412  
+  413:             {/*  نفس Modal الخاص بالتسميع */}
+  414              {quickRecitationModal && selectedStudent && (
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\TeahcerRoom\TeahcerRoom.tsx:
+  119                                      console.log(
+  120:                                         " Jitsi iframe loaded:",
+  121                                          roomUrl,
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\TeahcerRoom\hooks\useTeacherRoom.ts:
+  43  
+  44:                 console.log(" [TEACHER ROOM] Room URL ready:", fullUrl);
+  45                  setRoomUrl(fullUrl);
+
+resources\js\src\pages\DashBoard\teacherDashboard\widgets\TeahcerRoom\models\TeacherSessionsTable.tsx:
+   34  
+   35:     //  الـ editing states
+   36      const [editing, setEditing] = useState(false);
+
+   78  
+   79:     //  جلب CSRF Token
+   80      const fetchCsrfToken = useCallback(async () => {
+
+  111  
+  112:     //  تحديث الجلسة مع CSRF Token
+  113      const updateSessionStatus = async () => {
+
+  126                          "X-Requested-With": "XMLHttpRequest",
+  127:                         "X-CSRF-TOKEN": csrfToken, //  CSRF Token
+  128                      },
+
+resources\js\src\pages\DashBoard\UserDashboard\GuardianChildren\GuardianChildrenPage.tsx:
+    1: // components/GuardianChildrenPage.tsx -  مُصحح نهائي 100% مع مسافات ونسب صحيحة
+    2  
+
+   40  
+   41:     //  دالة نهائية مُصححة 100% - النسب دايماً = 100%
+   42      const getAttendanceStatus = (child: ChildData) => {
+
+   60  
+   61:         //  تصحيح التقريب العشري - ضمان المجموع = 100%
+   62          const currentSum = presentRate + absentRate + pendingRate;
+
+   77  
+   78:     //  دالة تنسيق الأرقام بمسافات
+   79      const formatNumber = (num: number) => {
+
+  432  
+  433:                                                         {/*  جدول الحضور المُصحح مع مسافات */}
+  434                                                          <div className="attendance-table">
+
+  450                                                                  <span>
+  451:                                                                      حاضر
+  452                                                                  </span>
+
+resources\js\src\pages\DashBoard\UserDashboard\plans\models\Sheduls.tsx:
+    3  
+    4: //  Props interface
+    5  interface ScheduleCardProps {
+
+   17  
+   18: //  Single Schedule Card Component
+   19  const ScheduleCard: React.FC<ScheduleCardProps> = ({
+
+   87  
+   88: //  Mock Schedules Data - واقعية لخطة 12 شهر (جزء شهري)
+   89  const mockSchedules = [
+
+  191  
+  192: //  Main Schedules Component
+  193  const Schedules: React.FC = () => {
+
+  230                  <div className="schedules-selected-info">
+  231:                     <p> تم حجز الموعد رقم {selectedSchedule} بنجاح!</p>
+  232                  </div>
+
+  234  
+  235:             {/*  إشعار مهم */}
+  236              <div className="schedules-notice">
+
+resources\js\src\pages\DashBoard\UserDashboard\SpecialRequest\SpecialRequestFormPage.tsx:
+  42  
+  43:     //  Loading state
+  44      if (loadingUser) {
+
+resources\js\src\pages\DashBoard\UserDashboard\usercomplexes\UserComplexes.tsx:
+  43  
+  44:     //  Map icons حسب الـ label
+  45      const getIcon = (label: string) => {
+
+resources\js\src\pages\DashBoard\UserDashboard\usercomplexes\hooks\useUserComplex.ts:
+  32  
+  33:                 //  CSRF Cookie
+  34                  await fetch("/sanctum/csrf-cookie", {
+
+  38  
+  39:                 //  CSRF Token
+  40                  const metaToken = document
+
+  54  
+  55:                 //  جلب بيانات المجمع
+  56                  const response = await fetch("/api/v1/user/complex", {
+
+resources\js\src\pages\DashBoard\UserDashboard\userMeet\UserMeetCard.tsx:
+   54              await navigator.clipboard.writeText(meetData.jitsi_url);
+   55:             toast.success(" تم نسخ رابط الحصة!");
+   56          } catch (err) {
+
+   61  
+   62:     // 🔥  يفتح TeacherRoom مع نفس الـ schedule ID
+   63      const joinMeeting = () => {
+
+  143                      <div className="userProfile__meetBtn">
+  144:                         {/* 🔥  الرابط يفتح TeacherRoom بالضغط عليه */}
+  145                          <div
+  146                              className="userProfile__meetBtnUrl"
+  147:                             onClick={joinMeeting} //  نفس منطق زر الدخول - يفتح TeacherRoom
+  148                              style={{
+
+  213  
+  214:                         {/*  خيار نسخ الرابط بشكل منفصل */}
+  215                          <button
+
+resources\js\src\pages\DashBoard\UserDashboard\userPlans\hooks\useStudentPlans.ts:
+   69          console.log("🔍 [DEBUG] CSRF Headers:", {
+   70:             token: token ? " Found" : "❌ Missing",
+   71              headers,
+
+  109  
+  110:             console.log(" [DEBUG] Parsed data:", data);
+  111              setDebugInfo((prev) => ({ ...prev, rawResponse: data }));
+
+  233      return {
+  234:         planData, //  return raw planData (filtered in component if needed)
+  235          stats,
+
+resources\js\src\pages\DashBoard\UserDashboard\userPresence\hooks\useStudentPresence.ts:
+   5      id: number;
+   6:     attendance_date: string; //  من sa.created_at
+   7      surah_name: string;
+
+  11      note: string | null;
+  12:     recorded_at: string; //  وقت التسجيل الفعلي
+  13  }
+
+  40  
+  41:                 //  1. CSRF Cookie
+  42                  await fetch("/sanctum/csrf-cookie", {
+
+  45                  });
+  46:                 console.log(" CSRF Cookie جاهز");
+  47  
+  48:                 //  2. CSRF Token
+  49                  const metaToken = document
+
+  65  
+  66:                 //  3. جلب بيانات الحضور
+  67                  const response = await fetch("/api/v1/user/presence", {
+
+  86                  const result = await response.json();
+  87:                 console.log(" Presence Result:", result);
+  88  
+  89:                 //  Debug للتواريخ
+  90                  if (result.success && result.presence_records) {
+
+resources\js\src\pages\DashBoard\UserDashboard\userProgress\UserProgress.tsx:
+   70  
+   71:                     {/*  إصلاح input warning - استخدم defaultValue + readOnly */}
+   72                      <div className="userProfile__plan" id="userProfile__plan">
+
+  104                          {lessons.map((lesson: any) => {
+  105:                             //  Rating = 3 → 3 نجوم ذهبي + 2 رمادي
+  106                              const filledStars = Math.floor(
+
+  154                                          >
+  155:                                             {/*  نجوم ملونة (filled) */}
+  156                                              {Array(filledStars)
+
+  166  
+  167:                                             {/*  نجوم رمادي (empty) */}
+  168                                              {Array(emptyStars)
+
+resources\js\src\pages\DashBoard\UserDashboard\userProgress\hooks\useStudentProgress.ts:
+   7      note: string;
+   8:     rating: number; //  من student_attendance.rating (0-5)
+   9      surah_name: string;
+
+  32  
+  33:                 //  1. CSRF Cookie
+  34                  await fetch("/sanctum/csrf-cookie", {
+
+  38  
+  39:                 //  2. CSRF Token
+  40                  const metaToken = document
+
+  54  
+  55:                 //  3. User session
+  56                  const sessionResponse = await fetch("/api/user", {
+
+  74  
+  75:                 //  4. بيانات التقدم
+  76                  const response = await fetch("/api/v1/user/progress", {
+
+  95                  const result = await response.json();
+  96:                 console.log(" Result lessons:", result.lessons);
+  97  
+  98:                 //  Debug الـ rating values
+  99                  result.lessons?.forEach((lesson: any, index: number) => {
+
+resources\js\src\pages\DashBoard\UserDashboard\widgets\UserProfile.tsx:
+  44  
+  45:                                 {/*  صورة اليوزر */}
+  46                                  <img
+
+  80              <PlanCards type="my-plans" />
+  81:             {/*  خطط متاحة للحجز */}
+  82              <PlanCards type="available" />
+
+resources\js\src\pages\DashBoard\UserDashboard\widgets\hooks\useAuthUser.ts:
+  19                      "X-Requested-With": "XMLHttpRequest",
+  20:                     //  Content-Type مش محتاج هنا لـ GET request
+  21                  },
+
+  43  
+  44:     //  Refresh function للـ manual refresh
+  45      const refetch = useCallback(() => {
+
+  48  
+  49:     //  Logout function
+  50      const logout = useCallback(async () => {
+
+resources\views\welcome.blade.php:
+  5      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  6:     <!--  CSRF Token - ضروري للـ POST requests -->
+  7      <meta name="csrf-token" content="{{ csrf_token() }}">
+
+routes\web.php:
+  12  Route::middleware('web')->group(function () {
+  13:     //  Auth Routes - هنا عشان الـ session تشتغل
+  14      Route::post('/student/register', [StudentRegistrationController::class, 'register']);
+
+  46  
+  47:     //  Logout
+  48      Route::post('/logout', function () {
+
+  70  
+  71: //  TEST ROUTE - ضعه في أول web middleware group
+  72  Route::middleware('web')->prefix('v1')->group(function () {
+  73:     //  DEBUG ENDPOINT - اختبره الأول
+  74      Route::get('debug-user', function () {
+
+  83  
+  84:     //  Schedule Create (الأساسي)
+  85      Route::prefix('schedule-create')->name('schedule-create.')->group(function () {
+
+  94      \Artisan::call('schedule:run');
+  95:     return ' Scheduler ran at ' . now();
+  96  });

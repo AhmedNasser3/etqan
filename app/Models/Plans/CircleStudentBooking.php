@@ -1,15 +1,16 @@
 <?php
-// app/Models/Plans/CircleStudentBooking.php
+// app/Models/Plans/CircleStudentBooking.php -  مُصحح كامل
+
 namespace App\Models\Plans;
 
-use App\Models\Auth\User;  // ✅ namespace صحيح
+use App\Models\Auth\User;
 use App\Models\Plans\Plan;
-use App\Models\Tenant\Student;
 use App\Models\Plans\PlanDetail;
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Plans\PlanCircleSchedule;
 use App\Models\Student\StudentPlanDetail;
+use App\Models\Tenant\Student;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -41,17 +42,27 @@ class CircleStudentBooking extends Model
         'booked_at' => 'datetime',
     ];
 
-    // ✅ العلاقات - كلها صحيحة
+    /**
+     *  العلاقات الأساسية - مُصححة للـ Guardian Controller
+     */
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
     }
 
-    public function student(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class, 'user_id');
+    }
+
+    /**
+     *  علاقات الخطة والحصص - مهمة للـ Guardian
+     */
     public function planDetail(): BelongsTo
     {
         return $this->belongsTo(PlanDetail::class, 'plan_details_id');
@@ -62,37 +73,59 @@ class CircleStudentBooking extends Model
         return $this->belongsTo(PlanCircleSchedule::class, 'plan_circle_schedule_id');
     }
 
-    // ✅ العلاقة المهمة - User
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
+    /**
+     *  تفاصيل خطة الطالب - الأهم للـ Guardian Dashboard
+     */
     public function studentPlanDetails(): HasMany
     {
         return $this->hasMany(StudentPlanDetail::class, 'circle_student_booking_id');
     }
 
-    // ✅ Scopes
-    public function scopeConfirmed($query)
+    /**
+     *  Scopes مفيدة للـ Guardian
+     */
+    public function scopeActive($query)
     {
-        return $query->where('status', 'confirmed');
+        return $query->where('status', 'confirmed')
+                     ->where('progress_status', '!=', 'completed');
     }
 
-    public function scopePending($query)
+    public function scopeForStudent($query, $userId)
     {
-        return $query->where('status', 'pending');
+        return $query->where('user_id', $userId);
     }
 
-    public function scopeInProgress($query)
+    public function scopeRecent($query, $limit = 5)
     {
-        return $query->where('progress_status', 'in_progress');
+        return $query->latest('started_at')->limit($limit);
     }
 
-    public function scopeMyCenter($query)
+    /**
+     *  Accessors للـ Guardian Dashboard
+     */
+    public function getProgressRateAttribute()
     {
-        return $query->whereHas('plan', fn($q) =>
-            $q->where('center_id', auth()->user()->center_id)
-        );
+        return $this->total_days > 0
+            ? round(($this->completed_days / $this->total_days) * 100, 1)
+            : 0;
+    }
+
+    public function getStatusColorAttribute()
+    {
+        return match($this->status) {
+            'confirmed' => 'bg-green-100 text-green-800',
+            'pending' => 'bg-yellow-100 text-yellow-800',
+            'cancelled' => 'bg-red-100 text-red-800',
+            default => 'bg-gray-100 text-gray-800'
+        };
+    }
+
+    public function getProgressColorAttribute()
+    {
+        return match(true) {
+            $this->progress_status === 'completed' => 'bg-green-100 text-green-800',
+            $this->progress_status === 'in_progress' => 'bg-blue-100 text-blue-800',
+            default => 'bg-gray-100 text-gray-800'
+        };
     }
 }

@@ -16,7 +16,7 @@ use Illuminate\Validation\Rule;
 class CirclesController extends Controller
 {
     /**
-     * عرض قائمة الحلقات ✅ محدث
+     * عرض قائمة الحلقات  محدث
      */
     public function index(Request $request): JsonResponse
     {
@@ -35,7 +35,7 @@ class CirclesController extends Controller
 
         Log::info('👤 User ID: ' . $user->id . ' - Center ID: ' . $user->center_id);
 
-        $query = Circle::with(['center', 'mosque', 'teacher']) // ✅ شيلنا students
+        $query = Circle::with(['center', 'mosque', 'teacher']) //  شيلنا students
             ->where('center_id', $user->center_id);
 
         if ($request->filled('search')) {
@@ -61,7 +61,7 @@ class CirclesController extends Controller
     }
 
     /**
-     * عرض حلقة واحدة محددة ✅ مصحح - شيلنا students!
+     * عرض حلقة واحدة محددة  مصحح - شيلنا students!
      */
     public function show(Circle $circle): JsonResponse
     {
@@ -81,7 +81,7 @@ class CirclesController extends Controller
             return response()->json(['message' => 'غير مصرح'], 403);
         }
 
-        // ✅ شيلنا students - ده اللي كان بيسبب Error 500!
+        //  شيلنا students - ده اللي كان بيسبب Error 500!
         $circle->load(['center', 'mosque', 'teacher']);
 
         Log::info('👁️ Circle viewed: ' . $circle->id . ' by user: ' . $user->id);
@@ -90,7 +90,7 @@ class CirclesController extends Controller
     }
 
     /**
-     * إنشاء حلقة جديدة ✅ محدث
+     * إنشاء حلقة جديدة  محدث
      */
     public function store(Request $request): JsonResponse
     {
@@ -116,16 +116,16 @@ class CirclesController extends Controller
         $request->validate($rules);
 
         $circle = Circle::create($request->all());
-        Log::info('✅ Circle created: ' . $circle->id . ' by user: ' . $user->id);
+        Log::info(' Circle created: ' . $circle->id . ' by user: ' . $user->id);
 
         return response()->json([
             'message' => 'تم إنشاء الحلقة بنجاح',
-            'data' => $circle->load(['center', 'mosque', 'teacher']) // ✅ شيلنا students
+            'data' => $circle->load(['center', 'mosque', 'teacher']) //  شيلنا students
         ], 201);
     }
 
     /**
-     * تعديل حلقة موجودة ✅ محدث
+     * تعديل حلقة موجودة  محدث
      */
     public function update(Request $request, Circle $circle): JsonResponse
     {
@@ -159,11 +159,11 @@ class CirclesController extends Controller
         $request->validate($rules);
 
         $circle->update($request->except(['_method', '_token']));
-        Log::info('✅ Circle updated: ' . $circle->id . ' by user: ' . $user->id);
+        Log::info(' Circle updated: ' . $circle->id . ' by user: ' . $user->id);
 
         return response()->json([
             'message' => 'تم تعديل الحلقة بنجاح',
-            'data' => $circle->fresh()->load(['center', 'mosque', 'teacher']) // ✅ شيلنا students
+            'data' => $circle->fresh()->load(['center', 'mosque', 'teacher']) //  شيلنا students
         ]);
     }
 

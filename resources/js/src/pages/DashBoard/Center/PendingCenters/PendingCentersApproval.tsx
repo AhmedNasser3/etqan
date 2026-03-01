@@ -21,7 +21,7 @@ const PendingCentersApproval: React.FC = () => {
 
     const [search, setSearch] = useState("");
 
-    // ✅ Filtering
+    //  Filtering
     const filteredCenters = centers.filter(
         (center: any) =>
             center.center?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,7 +41,7 @@ const PendingCentersApproval: React.FC = () => {
         try {
             const response = await confirmCenter(id);
             if (response.success) {
-                toast.success(response.message || "✅ تم اعتماد المجمع بنجاح!");
+                toast.success(response.message || " تم اعتماد المجمع بنجاح!");
                 refetch();
             }
         } catch (error: any) {
@@ -57,7 +57,7 @@ const PendingCentersApproval: React.FC = () => {
         try {
             const response = await rejectCenter(id);
             if (response.success) {
-                toast.success(response.message || "✅ تم رفض طلب المجمع بنجاح");
+                toast.success(response.message || " تم رفض طلب المجمع بنجاح");
                 refetch();
             }
         } catch (error: any) {
@@ -78,7 +78,7 @@ const PendingCentersApproval: React.FC = () => {
         try {
             const response = await deleteCenter(id);
             if (response.success) {
-                toast.success(response.message || "✅ تم حذف المجمع نهائياً");
+                toast.success(response.message || " تم حذف المجمع نهائياً");
                 refetch();
             }
         } catch (error: any) {
@@ -94,7 +94,15 @@ const PendingCentersApproval: React.FC = () => {
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-lg text-gray-600">
-                        جاري تحميل المجمعات المعلقة...
+                        <div className="navbar">
+                            <div className="navbar__inner">
+                                <div className="navbar__loading">
+                                    <div className="loading-spinner">
+                                        <div className="spinner-circle"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>{" "}
                     </p>
                 </div>
             </div>

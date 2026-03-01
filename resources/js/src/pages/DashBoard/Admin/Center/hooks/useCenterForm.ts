@@ -13,7 +13,7 @@ export interface CenterFormData {
     notes?: string;
 }
 
-// ✅ CSRF Token Helper
+//  CSRF Token Helper
 const getCsrfToken = (): string => {
     const cookies = document.cookie.split(";");
     const csrfCookie = cookies.find((cookie) =>
@@ -22,7 +22,7 @@ const getCsrfToken = (): string => {
     return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
 };
 
-// ✅ API Fetch Helper
+//  API Fetch Helper
 const apiFetch = async (url: string, options: RequestInit = {}) => {
     // CSRF Token أولاً
     if (!document.cookie.includes("XSRF-TOKEN=")) {
@@ -71,13 +71,13 @@ export const useCenterForm = (initialData?: Partial<CenterFormData> | null) => {
     const [loadingCountries, setLoadingCountries] = useState(false);
     const logoPreviewUrl = useRef<string | null>(null);
 
-    // ✅ تحميل قائمة الدول (اختياري)
+    //  تحميل قائمة الدول (اختياري)
     useEffect(() => {
         const loadCountries = async () => {
             try {
                 setLoadingCountries(true);
                 // يمكنك استخدام API خارجي أو قائمة محلية
-                console.log("✅ Countries loaded (static list)");
+                console.log(" Countries loaded (static list)");
             } catch (error) {
                 console.error("Failed to load countries:", error);
             } finally {
@@ -187,7 +187,7 @@ export const useCenterForm = (initialData?: Partial<CenterFormData> | null) => {
         [],
     );
 
-    // ✅ submitForm مع FormData headers صح
+    //  submitForm مع FormData headers صح
     const submitForm = useCallback(
         async (onSubmit: (data: FormData) => Promise<void>) => {
             if (!validateForm()) {

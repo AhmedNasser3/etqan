@@ -58,7 +58,7 @@ export const useUserNextMeet = () => {
             ]);
 
             if (response.ok) {
-                console.log("✅ [DEBUG 2] CSRF token refreshed successfully");
+                console.log(" [DEBUG 2] CSRF token refreshed successfully");
             } else {
                 console.warn(
                     "⚠️ [DEBUG 2] CSRF refresh failed but continuing...",
@@ -82,12 +82,12 @@ export const useUserNextMeet = () => {
             console.log("🔍 [DEBUG 3.2] Step 1: Refreshing CSRF...");
             await refreshCSRFToken();
             await new Promise((resolve) => setTimeout(resolve, 200)); // Wait for cookie
-            console.log("✅ [DEBUG 3.2] Step 1: CSRF refresh complete");
+            console.log(" [DEBUG 3.2] Step 1: CSRF refresh complete");
 
             // Step 2: Prepare request
             console.log("🔍 [DEBUG 3.3] Step 2: Getting headers...");
             const headers = getCSRFHeaders();
-            console.log("✅ [DEBUG 3.3] Step 2: Headers ready");
+            console.log(" [DEBUG 3.3] Step 2: Headers ready");
 
             // Step 3: Full URL log
             const fullUrl = new URL(
@@ -126,7 +126,7 @@ export const useUserNextMeet = () => {
                 );
             }
 
-            console.log("✅ [DEBUG 3.7] Step 6: JSON content confirmed");
+            console.log(" [DEBUG 3.7] Step 6: JSON content confirmed");
 
             // Step 7: Check HTTP status
             if (!response.ok) {
@@ -141,11 +141,11 @@ export const useUserNextMeet = () => {
                 );
             }
 
-            console.log("✅ [DEBUG 3.8] Step 7: HTTP 200 OK");
+            console.log(" [DEBUG 3.8] Step 7: HTTP 200 OK");
 
             // Step 8: Parse JSON
             const data = await response.json();
-            console.log("✅ [DEBUG 3.9] Step 8: JSON parsed:", {
+            console.log(" [DEBUG 3.9] Step 8: JSON parsed:", {
                 success: data.success,
                 has_next_meet: !!data.next_meet,
                 message: data.message,

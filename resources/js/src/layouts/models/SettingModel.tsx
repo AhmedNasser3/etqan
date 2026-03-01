@@ -71,7 +71,10 @@ const SettingModel: React.FC<SettingModelProps> = ({ isOpen, onClose }) => {
                                             </div>
                                         </div>
 
-                                        <div className="inputs__verifyOTPBirth">
+                                        <div
+                                            className="inputs__verifyOTPBirth"
+                                            id="userProfile__verifyOTPBirth"
+                                        >
                                             <div className="inputs__verifyOTP">
                                                 <label>رقم الهوية</label>
                                                 <input
@@ -93,7 +96,10 @@ const SettingModel: React.FC<SettingModelProps> = ({ isOpen, onClose }) => {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="inputs__verifyOTPBirth">
+                                        <div
+                                            className="inputs__verifyOTPBirth"
+                                            id="userProfile__verifyOTPBirth"
+                                        >
                                             <div className="inputs__verifyOTP">
                                                 <label>المرحلة الدراسية</label>
                                                 <select
@@ -114,27 +120,6 @@ const SettingModel: React.FC<SettingModelProps> = ({ isOpen, onClose }) => {
                                                     </option>
                                                 </select>
                                             </div>
-
-                                            <div className="inputs__verifyOTP">
-                                                <label>الحلقة المناسبة</label>
-                                                <select
-                                                    name="circle"
-                                                    id="circle"
-                                                >
-                                                    <option value="">
-                                                        اختر الحلقة
-                                                    </option>
-                                                    <option value="circle-1">
-                                                        حلقة المبتدئين 1
-                                                    </option>
-                                                    <option value="circle-2">
-                                                        حلقة المبتدئين 2
-                                                    </option>
-                                                    <option value="circle-3">
-                                                        حلقة المتقدمين
-                                                    </option>
-                                                </select>
-                                            </div>
                                         </div>
                                         <div className="inputs__verifyOTP">
                                             <label>
@@ -147,7 +132,10 @@ const SettingModel: React.FC<SettingModelProps> = ({ isOpen, onClose }) => {
                                                 placeholder="مثال: جُزء عم + 5 أجزاء حفظ"
                                             />
                                         </div>
-                                        <div className="inputs__verifyOTPBirth">
+                                        <div
+                                            className="inputs__verifyOTPBirth"
+                                            id="userProfile__verifyOTPBirth"
+                                        >
                                             <div className="inputs__verifyOTP">
                                                 <label>
                                                     وقت الحلقة (اختياري)
@@ -190,7 +178,10 @@ const SettingModel: React.FC<SettingModelProps> = ({ isOpen, onClose }) => {
                                                 </select>
                                             </div>
                                         </div>
-                                        <div className="inputs__verifyOTPBirth">
+                                        <div
+                                            className="inputs__verifyOTPBirth"
+                                            id="userProfile__verifyOTPBirth"
+                                        >
                                             <div className="inputs__email">
                                                 <label>
                                                     بريد ولي الأمر الإلكتروني *
@@ -206,7 +197,10 @@ const SettingModel: React.FC<SettingModelProps> = ({ isOpen, onClose }) => {
                                             <div className="inputs__verifyOTP">
                                                 <label>جوال ولي الأمر *</label>
                                                 <div className="inputs__phone-container">
-                                                    <div className="inputs__verifyOTPBirth">
+                                                    <div
+                                                        className="inputs__verifyOTPBirth"
+                                                        id="userProfile__verifyOTPBirth"
+                                                    >
                                                         <select
                                                             name="guardian_country_code"
                                                             id="guardian_country_code"
@@ -236,7 +230,10 @@ const SettingModel: React.FC<SettingModelProps> = ({ isOpen, onClose }) => {
                                         <div className="inputs__verifyOTP">
                                             <label>جوال الطالب (اختياري)</label>
                                             <div className="inputs__phone-container">
-                                                <div className="inputs__verifyOTPBirth">
+                                                <div
+                                                    className="inputs__verifyOTPBirth"
+                                                    id="userProfile__verifyOTPBirth"
+                                                >
                                                     <select
                                                         name="student_country_code"
                                                         id="student_country_code"

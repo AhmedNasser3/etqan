@@ -58,7 +58,7 @@ const CreateMosquePage: React.FC<CreateMosquePageProps> = ({
             }
 
             const result = await response.json();
-            console.log("✅ Create response:", result);
+            console.log(" Create response:", result);
 
             toast;
             onSuccess();
@@ -71,7 +71,7 @@ const CreateMosquePage: React.FC<CreateMosquePageProps> = ({
     const isCenterOwner = user?.role?.id === 1;
     const centerIsFixed = isCenterOwner && user?.center_id;
 
-    // ✅ فلترة المشرفين على نفس الـ center_id
+    //  فلترة المشرفين على نفس الـ center_id
     const selectedCenterId = formData.center_id
         ? parseInt(formData.center_id)
         : null;
@@ -144,13 +144,13 @@ const CreateMosquePage: React.FC<CreateMosquePageProps> = ({
                                     {centerIsFixed ? (
                                         <div className="w-full px-4 py-3 border border-green-300 bg-green-50 rounded-xl text-green-800 font-medium">
                                             <span className="flex items-center gap-2">
-                                                ✅{" "}
+                                                {" "}
                                                 {centersData[0]?.name ||
                                                     (centersData[0] as any)
                                                         ?.circle_name ||
                                                     "مجمعك"}
                                                 <span className="text-xs bg-green-100 px-2 py-1 rounded-full">
-                                                    محدد تلقائياً
+                                                    <br /> محدد تلقائياً
                                                 </span>
                                             </span>
                                             <input

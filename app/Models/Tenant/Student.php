@@ -1,12 +1,20 @@
 <?php
-// app/Models/Tenant/Student.php - المُصحح النهائي
+// app/Models/Tenant/Student.php -  الكامل مع كل الـ Relations المطلوبة للـ Guardian Controller
 
 namespace App\Models\Tenant;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Auth\User;
+use App\Models\Plans\CircleStudentBooking;
+use App\Models\Student\StudentAchievement;
+use App\Models\Student\StudentPlanDetail;
+use App\Models\Students\StudentAttendance;
 use App\Models\Tenant\Center;
+use App\Models\Tenant\Plan;
+use App\Models\Tenant\PlanCircleSchedule;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Student extends Model
 {
@@ -26,7 +34,6 @@ class Student extends Model
         'session_time',
         'notes',
         'status'
-        // ✅ مافيش balance و attendance_rate في DB
     ];
 
     protected $casts = [
@@ -35,25 +42,58 @@ class Student extends Model
     ];
 
     /**
-     * ✅ Relations
+     *  Basic Relations - العلاقات الأساسية
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function guardian()
+    public function guardian(): BelongsTo
     {
         return $this->belongsTo(User::class, 'guardian_id');
     }
 
-    public function center()
+    public function center(): BelongsTo
     {
         return $this->belongsTo(Center::class);
     }
 
     /**
-     * ✅ Scopes آمنة
+     *  GUARDIAN CONTROLLER RELATIONS - العلاقات المطلوبة للـ Guardian Controller 🔥
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(CircleStudentBooking::class, 'user_id');
+    }
+
+    public function achievements(): HasMany
+    {
+        return $this->hasMany(StudentAchievement::class, 'user_id');
+    }
+
+    public function attendance(): HasMany
+    {
+        return $this->hasMany(StudentAttendance::class, 'user_id');
+    }
+
+    /**
+     *  علاقة تفاصيل خطة الطالب
+     */
+    public function studentPlanDetails()
+    {
+        return $this->hasManyThrough(
+            StudentPlanDetail::class,
+            CircleStudentBooking::class,
+            'user_id', // Foreign key في CircleStudentBooking
+            'circle_student_booking_id', // Foreign key في StudentPlanDetail
+            'user_id', // Local key في Student
+            'id' // Local key في CircleStudentBooking
+        );
+    }
+
+    /**
+     *  Scopes آمنة
      */
     public function scopeByCenter($query, $centerId)
     {
@@ -81,7 +121,15 @@ class Student extends Model
     }
 
     /**
-     * ✅ بحث شامل آمن
+     *  Guardian Scope - لجلب أبناء ولي الأمر فقط
+     */
+    public function scopeForGuardian($query, $guardianId)
+    {
+        return $query->where('guardian_id', $guardianId);
+    }
+
+    /**
+     *  بحث شامل آمن
      */
     public function scopeSearch($query, $search)
     {
@@ -100,7 +148,7 @@ class Student extends Model
     }
 
     /**
-     * ✅ Accessors آمنة - مش بتعتمد على columns مش موجودة
+     *  Accessors مفيدة للـ Guardian Dashboard
      */
     public function getAgeAttribute()
     {
@@ -110,12 +158,9 @@ class Student extends Model
 
     public function getAttendanceRateAttribute()
     {
-        return '95%'; // ثابت لحد ما نحسبها
-    }
-
-    public function getFormattedBalanceAttribute()
-    {
-        return 'ر.0'; // WhatsApp only
+        $total = $this->attendance()->count();
+        $present = $this->attendance()->where('status', 'حاضر')->count();
+        return $total ? round(($present / $total) * 100, 1) . '%' : '0%';
     }
 
     public function getDisplayStatusAttribute()
@@ -137,18 +182,52 @@ class Student extends Model
     }
 
     /**
-     * ✅ Scope كامل لشؤون الطلاب - يشتغل مع Controller
+     *  Attendance Summary للـ Guardian
+     */
+    public function getAttendanceSummaryAttribute()
+    {
+        $attendance = $this->attendance()
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        return [
+            'present' => $attendance['حاضر'] ?? 0,
+            'absent' => $attendance['غائب'] ?? 0,
+            'total' => $this->attendance()->count(),
+            'rate' => $this->attendanceRate
+        ];
+    }
+
+    /**
+     *  Recent Attendance لآخر 7 أيام
+     */
+    public function getRecentAttendanceAttribute()
+    {
+        return $this->attendance()
+            ->where('created_at', '>=', now()->subDays(7))
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(fn($record) => [
+                'date' => $record->created_at->format('Y-m-d H:i'),
+                'status' => $record->status,
+                'note' => $record->note,
+                'rating' => $record->rating
+            ]);
+    }
+
+    /**
+     *  Scope كامل لشؤون الطلاب
      */
     public function scopeStudentAffairs($query, $centerId, $filters = [])
     {
         $query->byCenter($centerId);
 
-        // فلاتر الصف
         if (($filters['grade'] ?? null) && $filters['grade'] !== 'الكل') {
             $query->byGradeLevel($filters['grade']);
         }
 
-        // فلاتر الحالة
         if (($filters['status'] ?? null) && $filters['status'] !== 'الكل') {
             if ($filters['status'] === 'نشط') {
                 $query->active();
@@ -157,17 +236,20 @@ class Student extends Model
             }
         }
 
-        // بحث
         if ($filters['search'] ?? false) {
             $query->search($filters['search']);
         }
 
-        return $query->with(['user:id,name,email,phone,birth_date,avatar', 'guardian:id,name,phone,avatar'])
-                     ->orderBy('user.name', 'asc');
+        return $query->with([
+                'user:id,name,email,phone,birth_date,avatar',
+                'guardian:id,name,phone,avatar',
+                'attendance' => fn($q) => $q->latest()->limit(5)
+            ])
+            ->orderBy('user.name', 'asc');
     }
 
     /**
-     * ✅ إحصائيات آمنة - مش بتعتمد على balance
+     *  إحصائيات آمنة للـ Center
      */
     public static function getStats($centerId)
     {
@@ -178,7 +260,7 @@ class Student extends Model
             'totalStudents' => $total,
             'activeStudents' => $active,
             'pendingStudents' => $total - $active,
-            'totalBalance' => 0, // WhatsApp only
+            'totalBalance' => 0,
             'paymentRate' => $total ? round(($active / $total) * 100, 1) : 0
         ];
     }

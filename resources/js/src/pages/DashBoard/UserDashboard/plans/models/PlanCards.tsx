@@ -49,7 +49,7 @@ interface PlanCardProps {
     available_schedules_count?: number;
     schedule_summary?: ScheduleSummary[];
     center: { name: string };
-    details?: any[]; // ✅ للـ debug
+    details?: any[]; //  للـ debug
     isExpanded: boolean;
     onToggle: () => void;
     type: "available" | "my-plans";
@@ -68,7 +68,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
     available_schedules_count = 0,
     schedule_summary = [],
     center,
-    details = [], // ✅ للـ debug
+    details = [], //  للـ debug
     isExpanded,
     onToggle,
     type,
@@ -87,7 +87,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
     const scheduleItems = safeSummary.schedule_items || [];
     const totalSchedules = safeSummary.total_schedules || 0;
 
-    // ✅ Debug: شوف الـ details المتاحة
+    //  Debug: شوف الـ details المتاحة
     console.log(
         `🔍 [PlanCard ${id}] Details:`,
         details?.map((d: any) => d.id) || [],
@@ -95,7 +95,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
 
     const handleBookSchedule = async (
         scheduleId: number,
-        planDetailsId: number, // ✅ parameter جديد
+        planDetailsId: number, //  parameter جديد
         e: React.MouseEvent,
     ) => {
         e.stopPropagation();
@@ -181,7 +181,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                 .map(
                                     (schedule: ScheduleItem, index: number) => (
                                         <div
-                                            key={`${id}-${schedule.id}-${index}`} // ✅ Key محكم
+                                            key={`${id}-${schedule.id}-${index}`} //  Key محكم
                                             className="schedule-item-card"
                                         >
                                             <div className="schedule-item__mosque">
@@ -230,7 +230,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                                 onClick={(e) =>
                                                     handleBookSchedule(
                                                         schedule.id,
-                                                        1, // ✅ هنا كان المشكلة - كان fixed 1
+                                                        1, //  هنا كان المشكلة - كان fixed 1
                                                         e,
                                                     )
                                                 }
@@ -297,7 +297,7 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         bookSchedule,
     } = useStudentPlans(type, 1);
 
-    // ✅ handleBookSchedule محدث مع الـ planDetailsId الصحيح
+    //  handleBookSchedule محدث مع الـ planDetailsId الصحيح
     const handleBookSchedule = async (
         scheduleId: number,
         planId: number,
@@ -316,7 +316,7 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
                 planDetailsId,
             );
             if (result.success) {
-                alert(`✅ ${result.message}`);
+                alert(` ${result.message}`);
                 await refetch();
             } else {
                 alert(`❌ ${result.message}`);
@@ -360,24 +360,21 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         return (
             <div className="loading-container">
                 <div className="loading-spinner" />
-                <div>جاري تحميل الخطط...</div>
+                <div className="navbar">
+                    <div className="navbar__inner">
+                        <div className="navbar__loading">
+                            <div className="loading-spinner">
+                                <div className="spinner-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>{" "}
             </div>
         );
     }
 
     if (error) {
-        return (
-            <div className="error-container">
-                خطأ في تحميل الخطط: {error}
-                <button
-                    className="error-retry-btn"
-                    onClick={() => window.location.reload()}
-                >
-                    <ArrowPathIcon className="w-5 h-5 inline mr-2" />
-                    إعادة المحاولة
-                </button>
-            </div>
-        );
+        return <div className="error-container"></div>;
     }
 
     return (
@@ -399,7 +396,7 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
             <div className="plans-grid">
                 {plans.map((plan) => (
                     <div
-                        key={plan.id} // ✅ Key محكم
+                        key={plan.id} //  Key محكم
                         data-plan-id={plan.id}
                         className="plan-wrapper"
                     >
@@ -413,7 +410,7 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
                             }
                             schedule_summary={plan.schedule_summary || []}
                             center={plan.center || { name: "غير محدد" }}
-                            details={plan.details || []} // ✅ مرر الـ details
+                            details={plan.details || []} //  مرر الـ details
                             isExpanded={localExpandedPlans.has(plan.id)}
                             onToggle={() => togglePlan(plan.id)}
                             type={type}

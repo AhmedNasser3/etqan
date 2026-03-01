@@ -5,6 +5,7 @@ import UserMeetCard from "../userMeet/UserMeetCard";
 import EmailVerifyWidget from "./EmailVerifyWidget";
 import Medals from "./medals";
 import Men from "../../../../assets/images/facelessAvatar.png";
+import GuardianChildrenPage from "../GuardianChildren/GuardianChildrenPage";
 
 const UserProfile: React.FC = () => {
     const { user, loading } = useAuthUser();
@@ -75,6 +76,7 @@ const UserProfile: React.FC = () => {
 
             {/* <Schedules /> */}
             <UserMeetCard />
+            <GuardianChildrenPage />
             <PlanCards type="my-plans" />
             {/* ✅ خطط متاحة للحجز */}
             <PlanCards type="available" />

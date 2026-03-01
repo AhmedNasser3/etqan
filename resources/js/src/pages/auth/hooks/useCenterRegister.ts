@@ -40,16 +40,16 @@ export const useCenterRegister = (): UseCenterRegisterReturn => {
 
         const data = new FormData();
 
-        // ✅ تطابق الحقول مع Backend
+        //  تطابق الحقول مع Backend
         data.append("circle_name", form.name);
         data.append("domain", form.subdomain);
         data.append("manager_email", form.admin_email);
         data.append("manager_name", form.admin_name);
         data.append("manager_phone", form.phone);
-        data.append("country_code", "+966"); // ✅ إضافة country_code
+        data.append("country_code", "+966"); //  إضافة country_code
 
         if (form.avatar) {
-            data.append("logo", form.avatar); // ✅ تغيير من avatar إلى logo
+            data.append("logo", form.avatar); //  تغيير من avatar إلى logo
         }
 
         try {
@@ -64,24 +64,24 @@ export const useCenterRegister = (): UseCenterRegisterReturn => {
             );
 
             if (response.data.success) {
-                // ✅ عرض رسالة نجاح
+                //  عرض رسالة نجاح
                 alert(
-                    `✅ ${response.data.message}\n\nرابط تسجيل الدخول: ${response.data.login_url}\nكلمة المرور المؤقتة: ${response.data.temp_password}`,
+                    ` ${response.data.message}\n\nرابط تسجيل الدخول: ${response.data.login_url}\nكلمة المرور المؤقتة: ${response.data.temp_password}`,
                 );
 
-                // ✅ التوجيه للصفحة الرئيسية
+                //  التوجيه للصفحة الرئيسية
                 navigate("/");
             }
         } catch (error: any) {
             console.error("Registration Error:", error);
 
-            // ✅ معالجة الأخطاء بشكل صحيح
+            //  معالجة الأخطاء بشكل صحيح
             if (error.response?.data?.errors) {
                 // Laravel validation errors
                 const backendErrors: Record<string, string> = {};
                 const validationErrors = error.response.data.errors;
 
-                // ✅ تحويل أسماء الحقول من Backend إلى Frontend
+                //  تحويل أسماء الحقول من Backend إلى Frontend
                 Object.keys(validationErrors).forEach((key) => {
                     const errorMessage = Array.isArray(validationErrors[key])
                         ? validationErrors[key][0]

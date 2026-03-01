@@ -1,7 +1,7 @@
 import { FaHome } from "react-icons/fa";
 import { VscListFlat } from "react-icons/vsc";
 import { IoIosArrowDown } from "react-icons/io";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { HiLogin } from "react-icons/hi";
 import { LuUserRoundPlus } from "react-icons/lu";
 import { FaUserAlt } from "react-icons/fa";
@@ -9,22 +9,32 @@ import { IoSettings } from "react-icons/io5";
 import { BsTable } from "react-icons/bs";
 import { MdCallMade } from "react-icons/md";
 import { FaCircleQuestion } from "react-icons/fa6";
-import SettingModel from "../models/SettingModel";
 import { useAuthUser } from "../hooks/useAuthUser";
+import EditAccountPage from "@/src/pages/DashBoard/AccountEdit/EditAccountPage";
 
-const TeacherNavbar: React.FC = () => {
+const CenterNavbar: React.FC = () => {
     const [isRotated, setIsRotated] = useState(false);
     const [dropdowns, setDropdowns] = useState<{ [key: string]: boolean }>({});
-    const [showSettingModel, setShowSettingModel] = useState(false);
+
+    //  نفس نظام Navbar - حالات الـ Modal
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+
     const { user, loading } = useAuthUser();
 
-    const handleOpenSettingModel = () => {
-        setShowSettingModel(true);
-    };
+    //  handleOpenSettings - فتح الإعدادات (نفس النظام)
+    const handleOpenSettings = useCallback(() => {
+        setShowSettingsModal(true);
+    }, []);
 
-    const handleClosedSettingModel = () => {
-        setShowSettingModel(false);
-    };
+    //  handleCloseSettings - إغلاق الإعدادات (نفس النظام)
+    const handleCloseSettings = useCallback(() => {
+        setShowSettingsModal(false);
+    }, []);
+
+    //  handleSettingsSuccess - نجاح التعديل (نفس النظام)
+    const handleSettingsSuccess = useCallback(() => {
+        handleCloseSettings();
+    }, [handleCloseSettings]);
 
     const toggleDropdown = (key: string) => {
         setDropdowns((prev) => ({
@@ -67,102 +77,142 @@ const TeacherNavbar: React.FC = () => {
     }
 
     return (
-        <div
-            className={`navbar ${isRotated ? "active" : ""}`}
-            onClick={closeAllDropdowns}
-        >
-            <div className="navbar__inner">
-                <SettingModel
-                    isOpen={showSettingModel}
-                    onClose={handleClosedSettingModel}
+        <>
+            {/*  نفس نظام Navbar - Modal خارجي */}
+            {showSettingsModal && user && (
+                <EditAccountPage
+                    onClose={handleCloseSettings}
+                    onSuccess={handleSettingsSuccess}
                 />
-                <div className="navbar__container">
-                    <div
-                        className={`navbar__toggle ${isRotated ? "rotated" : ""}`}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsRotated(!isRotated);
-                            document
-                                .querySelector(".sidebar")
-                                ?.classList.toggle("active");
-                            document
-                                .querySelector(".navbar")
-                                ?.classList.toggle("active");
-                        }}
-                    >
-                        <i>
-                            <VscListFlat />
-                        </i>
+            )}
+
+            <div
+                className={`navbar ${isRotated ? "active" : ""}`}
+                onClick={closeAllDropdowns}
+            >
+                <div className="navbar__inner">
+                    <div className="navbar__container">
+                        <div
+                            className={`navbar__toggle ${isRotated ? "rotated" : ""}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsRotated(!isRotated);
+                                document
+                                    .querySelector(".sidebar")
+                                    ?.classList.toggle("active");
+                                document
+                                    .querySelector(".navbar")
+                                    ?.classList.toggle("active");
+                            }}
+                        >
+                            <i>
+                                <VscListFlat />
+                            </i>
+                        </div>
+
+                        {user ? (
+                            <div className="navbar__profileName">
+                                <div className="navbar__profile">
+                                    <span>{user.name.charAt(0)}</span>
+                                </div>
+                                <h4
+                                    className="navbar__link"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleDropdown("profile");
+                                    }}
+                                >
+                                    <i>
+                                        <IoIosArrowDown
+                                            className={`navbar__arrow ${dropdowns.profile ? "flipped" : ""}`}
+                                        />{" "}
+                                    </i>
+                                    {user.name}
+                                    <ul
+                                        className={`navbar__dropdown ${dropdowns.profile ? "dropped" : ""}`}
+                                        id="navbar__profileDropDown"
+                                    >
+                                        <>
+                                            <a href="/center-dashboard">
+                                                <li>
+                                                    <FaUserAlt /> مجمعي
+                                                </li>
+                                            </a>
+                                            <a href="/center-dashboard/mosque-manegment">
+                                                <li>
+                                                    <FaUserAlt /> إدارة المساجد
+                                                </li>
+                                            </a>
+                                        </>
+                                        <a href="/teacher-dashboard">
+                                            <li>
+                                                <FaUserAlt />
+                                                حسابي
+                                            </li>
+                                        </a>
+
+                                        {/*  الإعدادات داخل الـ dropdown - نفس Navbar الأول */}
+                                        <a href="#">
+                                            <li>
+                                                <IoSettings />
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenSettings();
+                                                    }}
+                                                    title="إعدادات الحساب"
+                                                    aria-label="إعدادات الحساب"
+                                                >
+                                                    الإعدادات
+                                                </button>
+                                            </li>
+                                        </a>
+                                        <a href="#">
+                                            <li>
+                                                <IoSettings />
+
+                                                <button onClick={handleLogout}>
+                                                    تسجيل الخروج
+                                                </button>
+                                            </li>
+                                        </a>
+                                    </ul>
+                                </h4>
+                            </div>
+                        ) : (
+                            <a
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    borderRadius: "10px",
+                                    padding: "6px",
+                                }}
+                                href="/login"
+                                id="navbar__active"
+                                className="navbar__link"
+                            >
+                                <HiLogin />
+                                تسجيل الدخول
+                            </a>
+                        )}
                     </div>
 
-                    {user ? (
-                        <div className="navbar__profileName">
-                            <div className="navbar__profile">
-                                <span>{user.name.charAt(0)}</span>
-                            </div>
-                            <h4
-                                className="navbar__link"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleDropdown("profile");
-                                }}
-                            >
-                                <i>
-                                    <IoIosArrowDown
-                                        className={`navbar__arrow ${dropdowns.profile ? "flipped" : ""}`}
-                                    />{" "}
-                                </i>
-                                {user.name}
-                                <ul
-                                    className={`navbar__dropdown ${dropdowns.profile ? "dropped" : ""}`}
-                                    id="navbar__profileDropDown"
-                                >
-                                    <a href="/teacher-dashboard">
-                                        <li>
-                                            <FaUserAlt />
-                                            حسابي
-                                        </li>
-                                    </a>
-                                    <a href="/teacher-dashboard/plans">
-                                        <li>
-                                            <BsTable />
-                                            جدول
-                                        </li>
-                                    </a>
-                                    <button onClick={handleLogout}>
-                                        <li>تسجيل الخروج</li>
-                                    </button>
-                                </ul>
-                            </h4>
-                        </div>
-                    ) : (
-                        <a
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                borderRadius: "10px",
-                                padding: "6px",
-                            }}
-                            href="/login"
-                            id="navbar__active"
-                            className="navbar__link"
-                        >
-                            <HiLogin />
-                            تسجيل الدخول
-                        </a>
-                    )}
-                </div>
+                    {/*  قسم الروابط المعلق (كما هو) */}
+                    <div className="navbar__links">
+                        <ul>{/* الروابط المعلقة */}</ul>
+                    </div>
 
-                <div className="navbar__user">
-                    <img
-                        src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
-                        alt="لوجو"
-                    />
+                    <div className="navbar__user">
+                        <img
+                            src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
+                            alt="لوجو"
+                        />
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 
-export default TeacherNavbar;
+export default CenterNavbar;

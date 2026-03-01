@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 class StudentUserController extends Controller
 {
     /**
-     * ✅ الحصة القادمة للطالب - csb → plan_circle_schedules بس!
+     *  الحصة القادمة للطالب - csb → plan_circle_schedules بس!
      */
     public function getNextMeet()
     {
@@ -19,7 +19,7 @@ class StudentUserController extends Controller
         Log::info('📅 [USER NEXT MEET] للطالب', ['user_id' => $userId]);
 
         try {
-            // ✅ 1. جيب booking الطالب من csb → pcs
+            //  1. جيب booking الطالب من csb → pcs
             $booking = DB::table('circle_student_bookings as csb')
                 ->join('plan_circle_schedules as pcs', 'csb.plan_circle_schedule_id', '=', 'pcs.id')
                 ->where('csb.user_id', $userId)
@@ -57,7 +57,7 @@ class StudentUserController extends Controller
                 ]);
             }
 
-            // ✅ 2. جيب معلومات المعلم بـ NULL SAFE
+            //  2. جيب معلومات المعلم بـ NULL SAFE
             $teacherInfo = null;
             if ($booking->circle_id) {
                 $teacherInfo = DB::table('circles')
@@ -74,16 +74,16 @@ class StudentUserController extends Controller
                 'teacher_data' => $teacherInfo ? (array) $teacherInfo : null
             ]);
 
-            // ✅ 3. بناء الـ Jitsi room name للطالب
+            //  3. بناء الـ Jitsi room name للطالب
             $roomName = $booking->jitsi_room_name ?: "halaqa-student-{$userId}-{$booking->id}";
             $jitsiUrl = "https://meet.jit.si/" . $roomName;
 
-            // ✅ 4. وقت متبقي (fake)
+            //  4. وقت متبقي (fake)
             $randomHours = rand(1, 6);
             $randomMinutes = rand(10, 59);
             $timeRemaining = $randomHours . ' ساعات و ' . $randomMinutes . ' دقيقة';
 
-            // ✅ 5. تنسيق الـ notes
+            //  5. تنسيق الـ notes
             $notes = nl2br(e($booking->notes ?:
                 '1- حفظ سورة البقرة من آية 41 إلى 51<br/>2- تسميع الآيات 30-40'));
 
@@ -121,7 +121,7 @@ class StudentUserController extends Controller
     }
 
     /**
-     * ✅ تقدم الطالب وملاحظات الحصص - مُصحح نهائياً
+     *  تقدم الطالب وملاحظات الحصص - مُصحح نهائياً
      */
     public function getStudentProgress()
     {
@@ -129,7 +129,7 @@ class StudentUserController extends Controller
         Log::info('📊 [STUDENT PROGRESS] بداية الطلب', ['user_id' => $userId]);
 
         try {
-            // ✅ 1. احسب التقدم العام
+            //  1. احسب التقدم العام
             $totalPlansQuery = DB::table('student_plan_details as spd')
                 ->join('circle_student_bookings as csb', 'spd.circle_student_booking_id', '=', 'csb.id')
                 ->where('csb.user_id', $userId);
@@ -145,7 +145,7 @@ class StudentUserController extends Controller
                 'overall_progress' => $overallProgress
             ]);
 
-            // ✅ 2. جيب الملاحظات من student_attendance مع created_at
+            //  2. جيب الملاحظات من student_attendance مع created_at
             $lessonsQuery = DB::table('student_attendance as sa')
                 ->join('student_plan_details as spd', 'sa.student_plan_detail_id', '=', 'spd.id')
                 ->leftJoin('plans as p', 'spd.plan_id', '=', 'p.id')
@@ -165,7 +165,7 @@ class StudentUserController extends Controller
 
             $lessons = $lessonsQuery->get();
 
-            // ✅ 3. لو مفيش attendance، جيب من student_plan_details
+            //  3. لو مفيش attendance، جيب من student_plan_details
             if ($lessons->isEmpty()) {
                 Log::info('📚 [NO ATTENDANCE] جاري جلب من student_plan_details');
                 $lessons = DB::table('student_plan_details as spd')
@@ -186,7 +186,7 @@ class StudentUserController extends Controller
                     ->get();
             }
 
-            Log::info('✅ [SUCCESS]', [
+            Log::info(' [SUCCESS]', [
                 'user_id' => $userId,
                 'lessons_count' => count($lessons),
                 'sample_lesson' => $lessons[0] ?? 'لا توجد دروس'
@@ -214,7 +214,7 @@ class StudentUserController extends Controller
     }
 
     /**
-     * ✅ حضور وغياب الطالب من student_attendance
+     *  حضور وغياب الطالب من student_attendance
      */
     public function getStudentPresence()
     {
@@ -222,7 +222,7 @@ class StudentUserController extends Controller
         Log::info('📋 [STUDENT PRESENCE] بداية الطلب', ['user_id' => $userId]);
 
         try {
-            // ✅ جيب سجلات الحضور والغياب من student_attendance
+            //  جيب سجلات الحضور والغياب من student_attendance
             $presenceRecords = DB::table('student_attendance as sa')
                 ->join('student_plan_details as spd', 'sa.student_plan_detail_id', '=', 'spd.id')
                 ->leftJoin('plans as p', 'spd.plan_id', '=', 'p.id')
@@ -244,7 +244,7 @@ class StudentUserController extends Controller
                 ->limit(10)
                 ->get();
 
-            // ✅ لو مفيش سجلات، جيب الحصص المحجوزة
+            //  لو مفيش سجلات، جيب الحصص المحجوزة
             if ($presenceRecords->isEmpty()) {
                 $presenceRecords = DB::table('circle_student_bookings as csb')
                     ->join('plan_circle_schedules as pcs', 'csb.plan_circle_schedule_id', '=', 'pcs.id')
@@ -267,13 +267,13 @@ class StudentUserController extends Controller
                     ->get();
             }
 
-            // ✅ إحصائيات الحضور
+            //  إحصائيات الحضور
             $totalRecords = count($presenceRecords);
             $presentCount = $presenceRecords->where('status', 'حاضر')->count();
             $absentCount = $totalRecords - $presentCount;
             $attendanceRate = $totalRecords > 0 ? round(($presentCount / $totalRecords) * 100, 1) : 0;
 
-            Log::info('✅ [PRESENCE SUCCESS]', [
+            Log::info(' [PRESENCE SUCCESS]', [
                 'user_id' => $userId,
                 'total_records' => $totalRecords,
                 'present_count' => $presentCount,
@@ -306,7 +306,7 @@ class StudentUserController extends Controller
     }
 
     /**
-     * ✅ جلب بيانات المجمع الخاص بالطالب مع الإحصائيات
+     *  جلب بيانات المجمع الخاص بالطالب مع الإحصائيات
      */
     public function getUserComplex()
     {
@@ -314,7 +314,7 @@ class StudentUserController extends Controller
         Log::info('🏛️ [USER COMPLEX] بداية الطلب', ['user_id' => $userId]);
 
         try {
-            // ✅ 1. جيب center_id الطالب من users
+            //  1. جيب center_id الطالب من users
             $userCenter = DB::table('users')
                 ->where('id', $userId)
                 ->where('status', 'active')
@@ -332,7 +332,7 @@ class StudentUserController extends Controller
                 'center_id' => $userCenter
             ]);
 
-            // ✅ 2. جيب بيانات المركز
+            //  2. جيب بيانات المركز
             $center = DB::table('centers')
                 ->where('id', $userCenter)
                 ->where('is_active', true)
@@ -346,14 +346,14 @@ class StudentUserController extends Controller
                 ]);
             }
 
-            // ✅ 3. إحصائيات الطلاب (من students → users.center_id)
+            //  3. إحصائيات الطلاب (من students → users.center_id)
             $studentsCount = DB::table('students')
                 ->join('users', 'students.user_id', '=', 'users.id')
                 ->where('users.center_id', $userCenter)
                 ->where('users.status', 'active')
                 ->count();
 
-            // ✅ 4. إحصائيات المعلمين (من teacher_payrolls → users.center_id)
+            //  4. إحصائيات المعلمين (من teacher_payrolls → users.center_id)
             $teachersCount = DB::table('teacher_payrolls')
                 ->join('users', 'teacher_payrolls.user_id', '=', 'users.id')
                 ->where('users.center_id', $userCenter)
@@ -361,23 +361,23 @@ class StudentUserController extends Controller
                 ->distinct('teacher_payrolls.teacher_id')
                 ->count();
 
-            // ✅ 5. إحصائيات الحلقات (من circles)
+            //  5. إحصائيات الحلقات (من circles)
             $circlesCount = DB::table('circles')
                 ->where('center_id', $userCenter)
                 ->count();
 
-            // ✅ 6. إحصائيات الخطط (من plans)
+            //  6. إحصائيات الخطط (من plans)
             $plansCount = DB::table('plans')
                 ->where('center_id', $userCenter)
                 ->count();
 
-            // ✅ 7. إحصائيات المساجد (من mosques)
+            //  7. إحصائيات المساجد (من mosques)
             $mosquesCount = DB::table('mosques')
                 ->where('center_id', $userCenter)
                 ->where('is_active', true)
                 ->count();
 
-            Log::info('✅ [COMPLEX STATS]', [
+            Log::info(' [COMPLEX STATS]', [
                 'center_id' => $userCenter,
                 'students' => $studentsCount,
                 'teachers' => $teachersCount,

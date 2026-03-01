@@ -22,7 +22,7 @@ const AuthRedirect = () => {
     }, [user, loading, navigate, location.pathname]);
 
     if (loading) {
-        return <div className="loading-center">جاري التحميل...</div>;
+        return <div className="loading-center"></div>;
     }
 
     return null; // مش هيظهر حاجة، بس هيشتغل الـ redirect

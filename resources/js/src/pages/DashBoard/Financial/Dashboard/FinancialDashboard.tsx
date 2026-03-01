@@ -6,146 +6,24 @@ import { PiWhatsappLogoDuotone } from "react-icons/pi";
 import { FiFileText, FiEdit2 } from "react-icons/fi";
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
 import { useTeacherPayrolls, PayrollItem } from "./hooks/useTeacherPayrolls";
-
-// ✅ Modal داخلي آمن 100%
-const FinancialModel = ({
-    isOpen,
-    onClose,
-    payroll,
-    onSubmit,
-}: {
-    isOpen: boolean;
-    onClose: () => void;
-    payroll?: Partial<PayrollItem> | null;
-    onSubmit?: (data: FormData) => void;
-}) => {
-    if (!isOpen) return null;
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (onSubmit) {
-            const formData = new FormData(e.currentTarget);
-            onSubmit(formData);
-        }
-        onClose();
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-            <div className="bg-white rounded-3xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-                <div className="flex justify-between items-center mb-8 border-b pb-4">
-                    <h2 className="text-2xl font-bold text-gray-800">
-                        تعديل بيانات الموظف
-                    </h2>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-xl transition-all"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
-                    </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            الاسم
-                        </label>
-                        <input
-                            name="name"
-                            defaultValue={
-                                payroll?.user?.name ||
-                                payroll?.teacher?.name ||
-                                ""
-                            }
-                            type="text"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            الراتب الأساسي
-                        </label>
-                        <input
-                            name="base_salary"
-                            defaultValue={payroll?.base_salary || ""}
-                            type="number"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            المستحق
-                        </label>
-                        <input
-                            name="total_due"
-                            defaultValue={payroll?.total_due || ""}
-                            type="number"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            required
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-4 px-8 rounded-2xl hover:from-blue-700 hover:to-blue-800 shadow-lg transition-all"
-                    >
-                        حفظ التعديلات
-                    </button>
-                </form>
-            </div>
-        </div>
-    );
-};
+import FinancialModel from "./models/FinancialModel";
 
 const FinancialDashboard: React.FC = () => {
-    // ✅ Safe destructuring مع fallback
-    let hookData;
-    try {
-        hookData = useTeacherPayrolls();
-    } catch (error) {
-        console.error("Hook error:", error);
-        hookData = {
-            payrolls: [],
-            rawPayrolls: [],
-            stats: null,
-            loading: false,
-            search: "",
-            setSearch: () => {},
-            filterStatus: "all" as const,
-            setFilterStatus: () => {},
-            markPaid: async () => false,
-        };
-    }
-
     const {
         payrolls: rawPayrolls = [],
-        stats = null,
         loading = false,
-        search = "",
-        setSearch = () => {},
+        search,
+        setSearch,
         filterStatus = "all",
-        setFilterStatus = () => {},
-        markPaid = async () => false,
-    } = hookData;
+        setFilterStatus,
+        markPaid,
+    } = useTeacherPayrolls();
 
     const [showFinancialModel, setShowFinancialModel] = useState(false);
-    const [editingPayroll, setEditingPayroll] =
-        useState<Partial<PayrollItem> | null>(null);
+    const [editingPayroll, setEditingPayroll] = useState<PayrollItem | null>(
+        null,
+    );
 
-    // ✅ Safe calculations
     const totalPayroll = useMemo(() => {
         return rawPayrolls.reduce((sum, emp) => {
             const value = parseFloat(emp?.total_due || "0");
@@ -155,7 +33,7 @@ const FinancialDashboard: React.FC = () => {
 
     const totalPending = useMemo(() => {
         return rawPayrolls
-            .filter((emp) => emp?.status === "pending")
+            .filter((emp: PayrollItem) => emp?.status === "pending")
             .reduce((sum, emp) => {
                 const value = parseFloat(emp?.total_due || "0");
                 return isNaN(value) ? sum : sum + value;
@@ -167,14 +45,10 @@ const FinancialDashboard: React.FC = () => {
         [totalPayroll, totalPending],
     );
 
-    // ✅ Safe handlers
-    const handleOpenFinancialModel = useCallback(
-        (payroll?: Partial<PayrollItem>) => {
-            setEditingPayroll(payroll || null);
-            setShowFinancialModel(true);
-        },
-        [],
-    );
+    const handleOpenFinancialModel = useCallback((payroll?: PayrollItem) => {
+        setEditingPayroll(payroll || null);
+        setShowFinancialModel(true);
+    }, []);
 
     const handleCloseFinancialModel = useCallback(() => {
         setShowFinancialModel(false);
@@ -228,15 +102,11 @@ const FinancialDashboard: React.FC = () => {
         return names[role as keyof typeof names] || "غير محدد";
     }, []);
 
-    // ✅ Loading state
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
                 <div className="text-center p-12">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-6"></div>
-                    <p className="text-xl font-semibold text-gray-700">
-                        جاري تحميل المستحقات المالية...
-                    </p>
                 </div>
             </div>
         );
@@ -343,7 +213,7 @@ const FinancialDashboard: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {rawPayrolls.map((item: any) => (
+                                    {rawPayrolls.map((item: PayrollItem) => (
                                         <tr
                                             key={item?.id || Math.random()}
                                             className={`hover:bg-gray-50 ${item?.status || ""}`}
@@ -351,7 +221,8 @@ const FinancialDashboard: React.FC = () => {
                                             <td className="p-4">
                                                 <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
                                                     {(
-                                                        item?.teacher?.name ||
+                                                        item?.teacher?.user
+                                                            ?.name ||
                                                         "غير معروف"
                                                     )
                                                         .split(" ")
@@ -363,8 +234,7 @@ const FinancialDashboard: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="p-4 font-medium">
-                                                {item?.user?.name ||
-                                                    item?.teacher?.name ||
+                                                {item?.teacher?.user?.name ||
                                                     "غير معروف"}
                                             </td>
                                             <td className="p-4">
@@ -408,7 +278,7 @@ const FinancialDashboard: React.FC = () => {
                                                 >
                                                     {item?.status === "paid"
                                                         ? "✅ مدفوع"
-                                                        : "⏳ معلق"}
+                                                        : " معلق"}
                                                 </span>
                                             </td>
                                             <td className="p-4">
@@ -472,7 +342,6 @@ const FinancialDashboard: React.FC = () => {
                             </table>
                         </div>
 
-                        {/* Stats Cards */}
                         <div className="plan__stats grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
                             <div className="stat-card bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4 space-x-reverse">
                                 <div className="stat-icon redColor p-3 rounded-xl bg-red-100">
@@ -515,7 +384,6 @@ const FinancialDashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Progress Bar */}
                         <div className="mt-12 bg-white p-8 rounded-2xl shadow-lg">
                             <div className="text-center">
                                 <h3 className="text-2xl font-bold mb-6">

@@ -17,7 +17,7 @@ class AttendanceDay extends Model
     protected $table = 'attendance_days';
 
     /**
-     * ✅ Fillable fields كاملة مع الحقول المفقودة
+     *  Fillable fields كاملة مع الحقول المفقودة
      */
     protected $fillable = [
         'teacher_id',
@@ -30,7 +30,7 @@ class AttendanceDay extends Model
     ];
 
     /**
-     * ✅ Casts محسنة مع Boolean support
+     *  Casts محسنة مع Boolean support
      */
     protected $casts = [
         'date' => 'date:Y-m-d',
@@ -40,7 +40,7 @@ class AttendanceDay extends Model
     ];
 
     /**
-     * ✅ العلاقات مع Type Hinting
+     *  العلاقات مع Type Hinting
      */
     public function teacher(): BelongsTo
     {
@@ -53,7 +53,7 @@ class AttendanceDay extends Model
     }
 
     /**
-     * ✅ User relationship عبر Teacher (الصحيح!)
+     *  User relationship عبر Teacher (الصحيح!)
      */
     public function user(): BelongsTo
     {
@@ -62,16 +62,16 @@ class AttendanceDay extends Model
     }
 
     /**
-     * ✅ Scope للحلقة (للـ ReportsController) - مصحح للأداء العالي
+     *  Scope للحلقة (للـ ReportsController) - مصحح للأداء العالي
      */
     public function scopeForCenter(Builder $query, $centerId): Builder
     {
-        // ✅ مباشرة على center_id (أسرع من whereHas)
+        //  مباشرة على center_id (أسرع من whereHas)
         return $query->where('center_id', $centerId);
     }
 
     /**
-     * ✅ Query Scopes محسنة
+     *  Query Scopes محسنة
      */
     public function scopePresent(Builder $query): Builder
     {
@@ -110,7 +110,7 @@ class AttendanceDay extends Model
     }
 
     /**
-     * ✅ Status Scopes متقدمة
+     *  Status Scopes متقدمة
      */
     public function scopeByStatus(Builder $query, array $statuses): Builder
     {
@@ -118,7 +118,7 @@ class AttendanceDay extends Model
     }
 
     /**
-     * ✅ Accessors للـ Frontend
+     *  Accessors للـ Frontend
      */
     public function getStatusLabelAttribute(): string
     {
@@ -164,7 +164,7 @@ class AttendanceDay extends Model
     }
 
     /**
-     * ✅ Helper Methods
+     *  Helper Methods
      */
     public function isPresent(): bool
     {
@@ -187,7 +187,7 @@ class AttendanceDay extends Model
     }
 
     /**
-     * ✅ Static Helper للتحقق من وجود سجل
+     *  Static Helper للتحقق من وجود سجل
      */
     public static function existsForTeacherCircleDate(int $teacherId, ?int $circleId, string $date): bool
     {
@@ -202,7 +202,7 @@ class AttendanceDay extends Model
     }
 
     /**
-     * ✅ Bulk create لليوم الحالي
+     *  Bulk create لليوم الحالي
      */
     public static function createForToday(int $teacherId, int $circleId, array $data): self
     {
@@ -218,7 +218,7 @@ class AttendanceDay extends Model
     }
 
     /**
-     * ✅ API Resource transformation (محسّن للـ Reports)
+     *  API Resource transformation (محسّن للـ Reports)
      */
     public function toApiArray(): array
     {

@@ -117,7 +117,15 @@ const TeacherCreateAchievementModal: React.FC<CreateAchievementModalProps> = ({
                                     يرجى إدخال بيانات الإنجاز بشكل صحيح
                                     {loadingData && (
                                         <span className="block text-sm text-blue-600 mt-1">
-                                            جاري تحميل طلابك...
+                                            <div className="navbar">
+                                                <div className="navbar__inner">
+                                                    <div className="navbar__loading">
+                                                        <div className="loading-spinner">
+                                                            <div className="spinner-circle"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>{" "}
                                         </span>
                                     )}
                                     {studentsData.length > 0 && (

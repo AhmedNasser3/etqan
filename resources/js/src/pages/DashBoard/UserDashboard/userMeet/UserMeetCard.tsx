@@ -5,6 +5,7 @@ import { FaStar } from "react-icons/fa";
 import { SiGoogledisplayandvideo360 } from "react-icons/si";
 import { IoCopy } from "react-icons/io5";
 import toast from "react-hot-toast";
+import GuardianChildrenPage from "../GuardianChildren/GuardianChildrenPage";
 
 const UserMeetCard: React.FC = () => {
     const { meetData, loading, error, refetch } = useUserNextMeet();
@@ -21,7 +22,15 @@ const UserMeetCard: React.FC = () => {
                             color: "#666",
                         }}
                     >
-                        ⏳ جاري تحميل الحصة القادمة...
+                        <div className="navbar">
+                            <div className="navbar__inner">
+                                <div className="navbar__loading">
+                                    <div className="loading-spinner">
+                                        <div className="spinner-circle"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>{" "}
                     </div>
                 </div>
             </div>

@@ -63,7 +63,7 @@ class StatsController extends Controller
             ->pluck('count', 'role')
             ->toArray();
 
-        // ✅ تأكد من وجود كل الـ roles حتى لو صفر
+        //  تأكد من وجود كل الـ roles حتى لو صفر
         $allRoles = ['teacher', 'supervisor', 'motivator', 'student_affairs', 'financial'];
         $stats = [];
 

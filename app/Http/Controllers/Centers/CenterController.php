@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Log;
 class CenterController extends Controller
 {
     /**
-     * ✅ جلب جميع المجمعات النشطة
+     * جلب جميع المجمعات النشطة
      */
     public function index()
     {
@@ -49,7 +49,7 @@ class CenterController extends Controller
     }
 
     /**
-     * ✅ تسجيل مجمع جديد
+     * تسجيل مجمع جديد
      */
     public function register(Request $request)
     {
@@ -74,16 +74,16 @@ class CenterController extends Controller
 
         DB::beginTransaction();
         try {
-            // ✅ إنشاء subdomain
+            // إنشاء subdomain
             $subdomain = $request->domain ?: Str::slug($request->circle_name);
 
-            // ✅ حفظ الصورة
+            // حفظ الصورة
             $logoPath = null;
             if ($request->hasFile('logo')) {
                 $logoPath = $request->file('logo')->store('centers', 'public');
             }
 
-            // ✅ إنشاء المجمع
+            // إنشاء المجمع
             $center = Center::create([
                 'name' => $request->circle_name,
                 'subdomain' => $subdomain,
@@ -93,7 +93,7 @@ class CenterController extends Controller
                 'is_active' => true
             ]);
 
-            // ✅ إنشاء أو جلب دور center_owner
+            // إنشاء أو جلب دور center_owner
             $centerOwnerRole = Role::firstOrCreate(
                 ['name' => 'center_owner'],
                 [
@@ -104,7 +104,7 @@ class CenterController extends Controller
                 ]
             );
 
-            // ✅ إنشاء حساب المدير
+            // إنشاء حساب المدير
             $admin = User::create([
                 'name' => $request->manager_name,
                 'email' => $request->manager_email,
@@ -115,7 +115,7 @@ class CenterController extends Controller
                 'phone' => $request->manager_phone
             ]);
 
-            // ✅ تسجيل في Audit Log
+            // تسجيل في Audit Log
             AuditLogService::logUserCreate(null, $admin->id, $admin->toArray());
             AuditLogService::log(null, 'create_center', 'App\\Models\\Tenant\\Center', $center->id, null, $center->toArray());
 
@@ -141,7 +141,7 @@ class CenterController extends Controller
     }
 
     /**
-     * ✅ عرض تفاصيل مجمع
+     * عرض تفاصيل مجمع
      */
     public function show(string $id)
     {
@@ -169,7 +169,7 @@ class CenterController extends Controller
     }
 
     /**
-     * ✅ تحديث بيانات مجمع
+     * تحديث بيانات مجمع
      */
     public function update(Request $request, string $id)
     {
@@ -186,7 +186,7 @@ class CenterController extends Controller
 
         DB::beginTransaction();
         try {
-            // ✅ تحديث الصورة
+            // تحديث الصورة
             if ($request->hasFile('logo')) {
                 if ($center->logo && Storage::disk('public')->exists($center->logo)) {
                     Storage::disk('public')->delete($center->logo);
@@ -195,7 +195,7 @@ class CenterController extends Controller
                 $center->logo = $logoPath;
             }
 
-            // ✅ تحديث البيانات
+            // تحديث البيانات
             $updateData = [];
 
             if ($request->has('circle_name')) {
@@ -215,7 +215,7 @@ class CenterController extends Controller
                 $center->update($updateData);
             }
 
-            // ✅ Audit Log
+            // Audit Log
             if (function_exists('auth') && auth()->check()) {
                 AuditLogService::log(
                     auth()->user(),
@@ -250,7 +250,7 @@ class CenterController extends Controller
     }
 
     /**
-     * ✅ حذف مجمع
+     * حذف مجمع
      */
     public function destroy(string $id)
     {
@@ -295,7 +295,7 @@ class CenterController extends Controller
     }
 
     /**
-     * ✅ تفعيل مجمع
+     * تفعيل مجمع
      */
     public function activate(string $id)
     {
@@ -322,7 +322,7 @@ class CenterController extends Controller
     }
 
     /**
-     * ✅ إيقاف مجمع
+     * إيقاف مجمع
      */
     public function deactivate(string $id)
     {
@@ -347,4 +347,52 @@ class CenterController extends Controller
             'message' => 'تم إيقاف المجمع بنجاح'
         ]);
     }
+
+// جلب كل المجمعات المتاحة للجميع (بدون أي شروط)
+public function allCenters(Request $request)
+{
+    try {
+        $centers = Center::where('is_active', true)
+            ->select([
+                'id',
+                'name as circleName',
+                'subdomain as domain',
+                'email',
+                'phone',
+                'logo',
+                'is_active',
+                'created_at'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $formattedCenters = $centers->map(function ($center) {
+            return [
+                'id' => $center->id,
+                'circleName' => $center->circleName,
+                'managerEmail' => $center->email ?? 'غير محدد',
+                'managerPhone' => $center->phone ?? 'غير محدد',
+                'circleLink' => $center->domain . '.' . parse_url(config('app.url'), PHP_URL_HOST),
+                'domain' => $center->domain,
+                'logo' => $center->logo ? asset('storage/' . $center->logo) : null,
+                'countryCode' => 'SA',
+                'is_active' => $center->is_active,
+                'created_at' => $center->created_at->format('Y-m-d H:i:s'),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $formattedCenters,
+            'total' => $formattedCenters->count(),
+            'message' => 'تم جلب جميع المجمعات المتاحة بنجاح'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'خطأ في جلب المجمعات: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

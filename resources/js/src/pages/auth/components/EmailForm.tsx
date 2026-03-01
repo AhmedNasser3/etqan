@@ -102,19 +102,6 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({
                                 <option value="high">ثانوي</option>
                             </select>
                         </div>
-                        <div className="inputs__verifyOTP">
-                            <label>الحلقة المناسبة</label>
-                            <select name="circle" id="circle" required>
-                                <option value="">اختر الحلقة</option>
-                                <option value="circle-1">
-                                    حلقة المبتدئين 1
-                                </option>
-                                <option value="circle-2">
-                                    حلقة المبتدئين 2
-                                </option>
-                                <option value="circle-3">حلقة المتقدمين</option>
-                            </select>
-                        </div>
                     </div>
 
                     <div className="inputs__verifyOTP">
@@ -240,7 +227,7 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({
                                 border: "1px solid #c3e6cb",
                             }}
                         >
-                            ✅ تم التسجيل بنجاح! سيتم مراجعة الطلب قريباً.
+                            تم التسجيل بنجاح! سيتم مراجعة الطلب قريباً.
                         </div>
                     )}
 

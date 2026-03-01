@@ -34,7 +34,7 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
         user,
     } = useMosqueFormUpdate(initialMosque || undefined);
 
-    // ✅ handleSubmit للتحديث مع _method=PUT
+    //  handleSubmit للتحديث مع _method=PUT
     const handleSubmit = async (formDataSubmit: FormData) => {
         if (!mosqueId) {
             toast.error("معرف المسجد مطلوب");
@@ -76,7 +76,7 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
             }
 
             const result = await response.json();
-            console.log("✅ Update response:", result);
+            console.log(" Update response:", result);
 
             toast;
             onSuccess();
@@ -161,7 +161,7 @@ const UpdateMosquePage: React.FC<UpdateMosquePageProps> = ({
                                     {centerIsFixed ? (
                                         <div className="w-full px-4 py-3 border border-green-300 bg-green-50 rounded-xl text-green-800 font-medium">
                                             <span className="flex items-center gap-2">
-                                                ✅{" "}
+                                                {" "}
                                                 {centersData[0]?.name ||
                                                     centersData[0]
                                                         ?.circle_name ||

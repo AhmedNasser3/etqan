@@ -85,7 +85,15 @@ const StudentAffairs: React.FC = () => {
                     height: "400px",
                 }}
             >
-                <div>جاري تحميل الطلاب...</div>
+                <div className="navbar">
+                    <div className="navbar__inner">
+                        <div className="navbar__loading">
+                            <div className="loading-spinner">
+                                <div className="spinner-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>{" "}
             </div>
         );
     }

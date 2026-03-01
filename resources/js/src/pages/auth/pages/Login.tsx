@@ -153,6 +153,16 @@ const Login: React.FC = () => {
                                                 </span>
                                             </a>
                                         </div>
+                                        <div
+                                            className="inputs__verifyOTPtimer"
+                                            id="verifyPopout__verifyOTPtimer"
+                                        >
+                                            <a href="/center-register">
+                                                <span className="resend-link">
+                                                    إنشاء حساب مجمع
+                                                </span>
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

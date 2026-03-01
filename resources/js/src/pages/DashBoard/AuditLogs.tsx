@@ -88,7 +88,15 @@ const AuditLogPage: React.FC = () => {
                 <div className="teacherMotivate__inner">
                     <div style={{ padding: "50px", textAlign: "center" }}>
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p>جاري تحميل سجلات التدقيق...</p>
+                        <div className="navbar">
+                            <div className="navbar__inner">
+                                <div className="navbar__loading">
+                                    <div className="loading-spinner">
+                                        <div className="spinner-circle"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>{" "}
                     </div>
                 </div>
             </div>
@@ -179,7 +187,7 @@ const AuditLogPage: React.FC = () => {
 
                                 <button
                                     onClick={exportLogs}
-                                    className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="p-2  text-white rounded hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={
                                         loading || displayedLogs.length === 0
                                     }
@@ -260,7 +268,7 @@ const AuditLogPage: React.FC = () => {
                                                 {log.userRole}
                                             </span>
                                         </td>
-                                        <td className="font-semibold text-blue-600">
+                                        <td className="font-semibold">
                                             {log.action}
                                         </td>
                                         <td className="font-medium text-gray-800">

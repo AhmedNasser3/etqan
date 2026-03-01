@@ -60,7 +60,7 @@ export const useSpecialRequestEdit = ({
         },
     });
 
-    // ✅ Validation يدوي
+    //  Validation يدوي
     const validateForm = (data: SpecialRequestFormData): boolean => {
         // WhatsApp validation
         const whatsappRegex = /^01[0-9]{9}$/;
@@ -84,7 +84,7 @@ export const useSpecialRequestEdit = ({
         return true;
     };
 
-    // ✅ CSRF Token
+    //  CSRF Token
     useEffect(() => {
         const getCsrfToken = () => {
             const metaToken = document.querySelector(
@@ -109,7 +109,7 @@ export const useSpecialRequestEdit = ({
         getCsrfToken();
     }, []);
 
-    // ✅ تحميل من localStorage
+    //  تحميل من localStorage
     useEffect(() => {
         if (specialRequestId) {
             try {
@@ -132,7 +132,7 @@ export const useSpecialRequestEdit = ({
         }
     }, [specialRequestId, setValue]);
 
-    // ✅ حفظ تلقائي
+    //  حفظ تلقائي
     const watchedValues = watch();
     useEffect(() => {
         if (specialRequestId) {
@@ -143,7 +143,7 @@ export const useSpecialRequestEdit = ({
         }
     }, [watchedValues, specialRequestId]);
 
-    // ✅ الـ submit المهم - تحويل string → array
+    //  الـ submit المهم - تحويل string → array
     const submitForm = useCallback(
         async (data: SpecialRequestFormData) => {
             if (!validateForm(data) || isSubmitting || !csrfToken) {
@@ -156,7 +156,7 @@ export const useSpecialRequestEdit = ({
 
                 const formData = new FormData();
 
-                // ✅ البيانات الأساسية
+                //  البيانات الأساسية
                 formData.append("whatsapp_number", data.whatsapp_number.trim());
                 formData.append("name", data.name.trim());
 
@@ -175,7 +175,7 @@ export const useSpecialRequestEdit = ({
                     formData.append(`available_schedule[${index}]`, line);
                 });
 
-                // ✅ باقي الحقول كـ arrays أو strings
+                //  باقي الحقول كـ arrays أو strings
                 if (data.memorized_parts?.trim()) {
                     const memorizedLines = data.memorized_parts
                         .trim()
@@ -270,7 +270,7 @@ export const useSpecialRequestEdit = ({
         [csrfToken, specialRequestId, isSubmitting, onSuccess, reset, setError],
     );
 
-    // ✅ حذف
+    //  حذف
     const deleteRequest = useCallback(async () => {
         if (!specialRequestId || deleting || !csrfToken) return;
 

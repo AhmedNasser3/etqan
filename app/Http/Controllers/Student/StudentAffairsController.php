@@ -1,5 +1,5 @@
 <?php
-// app/Http/Controllers/Student/StudentAffairsController.php - ✅ مُصحح نهائياً مع دالة show()
+// app/Http/Controllers/Student/StudentAffairsController.php -  مُصحح نهائياً مع دالة show()
 
 namespace App\Http\Controllers\Student;
 
@@ -16,7 +16,7 @@ use Illuminate\Validation\Rule;
 class StudentAffairsController extends Controller
 {
     /**
-     * ✅ عرض جدول شؤون الطلاب مع الفلاتر
+     *  عرض جدول شؤون الطلاب مع الفلاتر
      */
     public function index(Request $request)
     {
@@ -31,7 +31,7 @@ class StudentAffairsController extends Controller
             $query->where('grade_level', $request->grade);
         }
 
-        // فلترة الحالة - ✅ مش هيستعمل status لأنه مش موجود
+        // فلترة الحالة -  مش هيستعمل status لأنه مش موجود
         if ($request->status && $request->status !== 'الكل') {
             Log::info("فلترة الحالة: " . $request->status);
         }
@@ -87,7 +87,7 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     * ✅ جلب بيانات طالب واحد للتعديل - ⭐ الدالة الجديدة
+     *  جلب بيانات طالب واحد للتعديل - ⭐ الدالة الجديدة
      */
     public function show($id)
     {
@@ -131,7 +131,7 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     * ✅ تحديث بيانات الطالب
+     *  تحديث بيانات الطالب
      */
     public function update(Request $request, $id)
     {
@@ -150,13 +150,13 @@ class StudentAffairsController extends Controller
             $q->where('center_id', Auth::user()->center_id);
         })->findOrFail($id);
 
-        // ✅ تحديث الحقول الموجودة فقط
+        //  تحديث الحقول الموجودة فقط
         $updateData = $request->only([
             'id_number', 'grade_level', 'circle',
             'health_status', 'reading_level', 'session_time', 'notes'
         ]);
 
-        // ✅ status يدوياً لو عايز تضيفه بعدين
+        //  status يدوياً لو عايز تضيفه بعدين
         if ($request->status) {
             $updateData['status'] = $request->status;
         }
@@ -173,7 +173,7 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     * ✅ تسديد مصروفات - معطل
+     *  تسديد مصروفات - معطل
      */
     public function payBalance(Request $request, $id)
     {
@@ -184,7 +184,7 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     * ✅ WhatsApp تذكير
+     *  WhatsApp تذكير
      */
     public function whatsappReminder($id)
     {
@@ -209,7 +209,7 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     * ✅ طباعة بطاقة PDF
+     *  طباعة بطاقة PDF
      */
     public function printCard($id)
     {
@@ -226,7 +226,7 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     * ✅ حساب الرصيد - بدون payments table
+     *  حساب الرصيد - بدون payments table
      */
     private function getBalance($studentId)
     {
@@ -236,7 +236,7 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     * ✅ حساب الحضور
+     *  حساب الحضور
      */
     private function getAttendanceRate($studentId, $centerId)
     {
@@ -245,7 +245,7 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     * ✅ تنسيق رقم الهاتف
+     *  تنسيق رقم الهاتف
      */
     private function formatPhone($phone)
     {
@@ -253,7 +253,7 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     * ✅ الإحصائيات - ✅ مُصحح بدون عمود status
+     *  الإحصائيات -  مُصحح بدون عمود status
      */
     private function getStats($centerId)
     {
@@ -271,7 +271,7 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     * ✅ حساب العمر
+     *  حساب العمر
      */
     private function calculateAge($birthDate)
     {

@@ -32,7 +32,7 @@ const CenterSidebar: React.FC = () => {
 
     const { loading, hasPermission } = usePermissions();
 
-    // ✅ Active page logic مع permissions
+    //  Active page logic مع permissions
     useEffect(() => {
         if (loading) return;
 
@@ -113,7 +113,7 @@ const CenterSidebar: React.FC = () => {
         }
     }, [loading, hasPermission]);
 
-    // ✅ Toggle submenu فقط
+    //  Toggle submenu فقط
     const toggleMenu = (menuKey: string, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -123,14 +123,14 @@ const CenterSidebar: React.FC = () => {
         }));
     };
 
-    // ✅ Submenu link click
+    //  Submenu link click
     const handleSubLinkClick = (href: string, parentKey: string) => {
         setActiveSubPage(href);
         setActivePage(parentKey);
         setOpenMenus((prev) => ({ ...prev, [parentKey]: true }));
     };
 
-    // ✅ Menu items
+    //  Menu items
     const baseMenuItems: MenuItem[] = [
         {
             key: "dashboard",
@@ -193,6 +193,10 @@ const CenterSidebar: React.FC = () => {
             activePage: "staff",
             submenu: [
                 {
+                    href: "/center-dashboard/teachers-management",
+                    title: "ادارة معلمين",
+                },
+                {
                     href: "/center-dashboard/staff-approval",
                     title: "اعتماد المعلمين",
                 },
@@ -225,14 +229,25 @@ const CenterSidebar: React.FC = () => {
                     href: "/center-dashboard/teaceher-salary-manegment",
                     title: "قواعد الراتب",
                 },
+                {
+                    href: "/center-dashboard/custom-salary-manegment",
+                    title: "رواتب مخصصة",
+                },
             ],
         },
+        // {
+        //     key: "domain",
+        //     href: "/center-dashboard/centers-approval",
+        //     icon: <MdOutlineDomain />,
+        //     title: "اعتماد المجمعات",
+        //     activePage: "domain",
+        // },
         {
-            key: "domain",
-            href: "/center-dashboard/centers-approval",
-            icon: <MdOutlineDomain />,
-            title: "اعتماد المجمعات",
-            activePage: "domain",
+            key: "education",
+            href: "/center-dashboard/special-request-manegment",
+            icon: <FaChalkboardTeacher />,
+            title: "طلبات لحلقات خاصة ",
+            activePage: "education",
         },
         {
             key: "education",
@@ -243,7 +258,7 @@ const CenterSidebar: React.FC = () => {
         },
         {
             key: "attendance",
-            href: "/center-dashboard/motivation-supervisor",
+            href: "/center-dashboard/achieve-manegment",
             icon: <FaBullhorn />,
             title: "إدارة التحفيزات",
             activePage: "attendance",
@@ -255,13 +270,13 @@ const CenterSidebar: React.FC = () => {
             title: "إدارة الطلاب",
             activePage: "reports",
         },
-        {
-            key: "certificates",
-            href: "/center-dashboard/report-dashboard",
-            icon: <FaFileAlt />,
-            title: "مكتبة التقارير",
-            activePage: "certificates",
-        },
+        // {
+        //     key: "certificates",
+        //     href: "/center-dashboard/report-dashboard",
+        //     icon: <FaFileAlt />,
+        //     title: "مكتبة التقارير",
+        //     activePage: "certificates",
+        // },
         {
             key: "messages",
             href: "/center-dashboard/audit-log",
@@ -305,7 +320,7 @@ const CenterSidebar: React.FC = () => {
                             >
                                 <div className="sidebar__title">
                                     {item.href === "#" ? (
-                                        // ✅ Submenu toggle - نفس الهيكل القديم
+                                        //  Submenu toggle - نفس الهيكل القديم
                                         <a
                                             href="#"
                                             className="no-link"
@@ -317,7 +332,7 @@ const CenterSidebar: React.FC = () => {
                                             <h2>{item.title}</h2>
                                         </a>
                                     ) : (
-                                        // ✅ Main navigation - نفس الهيكل القديم ✅ شغال 100%
+                                        //  Main navigation - نفس الهيكل القديم  شغال 100%
                                         <a href={item.href}>
                                             <i>{item.icon}</i>
                                             <h2>{item.title}</h2>

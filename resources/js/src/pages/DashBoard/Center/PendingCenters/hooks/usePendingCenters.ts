@@ -72,7 +72,7 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 };
 
 /**
- * ✅ Hook لجلب جميع المجمعات المعلقة
+ *  Hook لجلب جميع المجمعات المعلقة
  */
 export function usePendingCenters() {
     const [centers, setCenters] = useState<PendingCenter[]>([]);
@@ -111,7 +111,7 @@ export function usePendingCenters() {
 }
 
 /**
- * ✅ Hook لجلب مجمع معين
+ *  Hook لجلب مجمع معين
  */
 export function usePendingCenter(id: number) {
     const [center, setCenter] = useState<PendingCenter | null>(null);
@@ -149,7 +149,7 @@ export function usePendingCenter(id: number) {
 }
 
 /**
- * ✅ Hook لقبول المجمع (تفعيل)
+ *  Hook لقبول المجمع (تفعيل)
  */
 export function useConfirmCenter() {
     const [loading, setLoading] = useState(false);
@@ -173,7 +173,7 @@ export function useConfirmCenter() {
 }
 
 /**
- * ✅ Hook لرفض المجمع (تعطيل)
+ *  Hook لرفض المجمع (تعطيل)
  */
 export function useRejectCenter() {
     const [loading, setLoading] = useState(false);
@@ -197,7 +197,7 @@ export function useRejectCenter() {
 }
 
 /**
- * ✅ Hook لحذف المجمع نهائياً
+ *  Hook لحذف المجمع نهائياً
  */
 export function useDeleteCenter() {
     const [loading, setLoading] = useState(false);

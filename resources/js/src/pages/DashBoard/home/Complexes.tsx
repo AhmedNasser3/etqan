@@ -1,88 +1,101 @@
+// Complexes.tsx - نفس الديزاين + useCenters hook 🚀
 import { PiStudentDuotone } from "react-icons/pi";
 import { PiChalkboardTeacherDuotone } from "react-icons/pi";
 import { GrPlan } from "react-icons/gr";
 import { PiBookOpenDuotone } from "react-icons/pi";
-
-const complexesData = [
-    {
-        title: "مجمع القرآن الكريم بالشارقة",
-        description:
-            "مجمع قرآني يركز على حفظ القرآن الكريم وتدريسه للأطفال والكبار، مع برامج تدريبية متخصصة.",
-        img: "https://yt3.googleusercontent.com/n6vRPQ0akipMZ1zkcCvEWUpU1reKrNfNESHncsQJsDFiIyPkQeEZuc-DXRnQ1pKIci7XFh_Oow=s900-c-k-c0x00ffffff-no-rj",
-        stats: [
-            { label: "الطلاب", value: "63", icon: <PiStudentDuotone /> },
-            {
-                label: "المعلمين",
-                value: "4",
-                icon: <PiChalkboardTeacherDuotone />,
-            },
-            { label: "الخطط", value: "19", icon: <GrPlan /> },
-            { label: "الكتب", value: "1,200", icon: <PiBookOpenDuotone /> },
-        ],
-    },
-    {
-        title: "مجمع الملك فهد لطباعة المصحف",
-        description:
-            "مجمع قرآني يركز على حفظ القرآن الكريم وتدريسه للأطفال والكبار، مع برامج تدريبية متخصصة.",
-        img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSMQpLentR96boXCSpy9Qvzf5TttQjgggkjhg&s",
-        stats: [
-            { label: "الطلاب", value: "1,250", icon: <PiStudentDuotone /> },
-            {
-                label: "المعلمين",
-                value: "85",
-                icon: <PiChalkboardTeacherDuotone />,
-            },
-            { label: "الخطط", value: "45", icon: <GrPlan /> },
-            { label: "المصاحف", value: "50M", icon: <PiBookOpenDuotone /> },
-        ],
-    },
-    {
-        title: "مركز الإمام الشافعي",
-        description:
-            "مجمع قرآني يركز على حفظ القرآن الكريم وتدريسه للأطفال والكبار، مع برامج تدريبية متخصصة.",
-        img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5l66UixhcLVRMdW9S9CriXaQlN5CAubKrF9xR3KiBaXEDP218t3fpcHFH60QNqXF3f1s&usqp=CAU",
-        stats: [
-            { label: "الطلاب", value: "320", icon: <PiStudentDuotone /> },
-            {
-                label: "المعلمين",
-                value: "22",
-                icon: <PiChalkboardTeacherDuotone />,
-            },
-            { label: "الخطط", value: "12", icon: <GrPlan /> },
-            { label: "القراءات", value: "10", icon: <PiBookOpenDuotone /> },
-        ],
-    },
-    {
-        title: "مجمع الإمام البخاري",
-        description:
-            "مجمع قرآني يركز على حفظ القرآن الكريم وتدريسه للأطفال والكبار، مع برامج تدريبية متخصصة.",
-        img: "https://mir-s3-cdn-cf.behance.net/projects/404/df8b43228755373.Y3JvcCw4MDgsNjMyLDAsMA.png",
-        stats: [
-            { label: "الطلاب", value: "180", icon: <PiStudentDuotone /> },
-            {
-                label: "المعلمين",
-                value: "15",
-                icon: <PiChalkboardTeacherDuotone />,
-            },
-            { label: "الخطط", value: "8", icon: <GrPlan /> },
-            { label: "الحفاظ", value: "45", icon: <PiBookOpenDuotone /> },
-        ],
-    },
-];
+import { useMemo, useCallback } from "react";
+import useCenters from "./hooks/useCenters";
 
 const Complexes: React.FC = () => {
+    const {
+        centers,
+        loading,
+        error,
+        refetch,
+        goToCenter,
+        totalCenters,
+        useDemoData,
+        toggleDemoMode,
+    } = useCenters();
+
+    // ✅ دالة الـ icons زي القديم
+    const getIconForStat = useCallback((label: string): React.ReactNode => {
+        switch (label) {
+            case "الطلاب":
+                return <PiStudentDuotone className="text-xl" />;
+            case "المعلمين":
+                return <PiChalkboardTeacherDuotone className="text-xl" />;
+            case "الخطط":
+                return <GrPlan className="text-xl" />;
+            case "الكتب":
+            case "المصاحف":
+            case "القراءات":
+            case "الحفاظ":
+                return <PiBookOpenDuotone className="text-xl" />;
+            default:
+                return <PiBookOpenDuotone className="text-xl" />;
+        }
+    }, []);
+
+    // ✅ Centers مع الـ icons
+    const centersWithIcons = useMemo(() => {
+        return centers.map((center) => ({
+            ...center,
+            stats: center.stats.map((stat) => ({
+                ...stat,
+                icon: getIconForStat(stat.label),
+            })),
+        }));
+    }, [centers, getIconForStat]);
+
+    // ✅ Loading
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px] p-8">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                    <div className="navbar">
+                        <div className="navbar__inner">
+                            <div className="navbar__loading">
+                                <div className="loading-spinner">
+                                    <div className="spinner-circle"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="complexes">
+            {/* ✅ نفس Header القديم */}
             <div className="testimonials__mainTitle">
-                <button>جميع المجمعات</button>
+                <button className="text-2xl font-bold text-purple-600">
+                    جميع المجمعات ({totalCenters})
+                </button>
+                {useDemoData && (
+                    <span className="px-3 py-1 bg-yellow-200 text-yellow-800 text-xs rounded-full ml-2">
+                        🧪 تجريبي
+                    </span>
+                )}
                 <h1>اكتشف المجمعات</h1>
             </div>
+
+            {/* ✅ نفس الـ Layout القديم */}
             <div className="complexes__inner">
-                {complexesData.map((complex, index) => (
-                    <div key={index} className="complexes__container">
+                {centersWithIcons.map((complex, index) => (
+                    <div
+                        key={complex.id || index}
+                        className="complexes__container"
+                    >
                         <div className="complexes__data">
                             <div className="complexes__img">
-                                <img src={complex.img} alt={complex.title} />
+                                <img
+                                    src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
+                                    alt={complex.title}
+                                />
                             </div>
                             <div className="complexes__text">
                                 <div className="complexes__title">
@@ -93,12 +106,14 @@ const Complexes: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* ✅ نفس الـ Footer القديم */}
                         <div className="complexes__footer">
                             <div className="complexes__footerContainer">
                                 <div className="complexes__footerData">
                                     {complex.stats.map((stat, statIndex) => (
                                         <div
-                                            key={statIndex}
+                                            key={`${complex.id}-stat-${statIndex}`}
                                             className="complexes__footerBoxs"
                                         >
                                             <div className="complexes__footerTitle">
@@ -116,15 +131,21 @@ const Complexes: React.FC = () => {
                                         </div>
                                     ))}
                                 </div>
+
+                                {/* ✅ نفس الأزرار القديمة + الـ functionality الجديد */}
                                 <div className="complexes__footerBtContainer">
                                     <div
                                         className="complexes__footerBtn"
                                         id={`complexes__footerBtnView`}
                                     >
-                                        <button>مشاهدة التفاصيل</button>
-                                    </div>
-                                    <div className="complexes__footerBtn">
-                                        <button>الاشتراك مع هذا المجمع</button>
+                                        <button
+                                            onClick={() =>
+                                                goToCenter(complex.subdomain)
+                                            }
+                                            className="w-full"
+                                        >
+                                            مشاهدة التفاصيل
+                                        </button>
                                     </div>
                                 </div>
                             </div>

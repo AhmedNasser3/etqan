@@ -50,7 +50,7 @@ class AccountController extends Controller
 
         $user = Auth::user();
 
-        // ✅ الحل الجذري: إصلاح FormData مع PUT + web middleware
+        //  الحل الجذري: إصلاح FormData مع PUT + web middleware
         if (str_contains($request->header('Content-Type', ''), 'multipart/form-data')) {
             Log::info('🔧 Multipart FormData detected - fixing parsing...');
 
@@ -66,10 +66,10 @@ class AccountController extends Controller
                 'password_confirmation' => $request->input('password_confirmation'),
             ]);
 
-            Log::info('✅ After FormData Fix: ', $request->all());
+            Log::info(' After FormData Fix: ', $request->all());
         }
 
-        // ✅ Validation مباشر وشامل
+        //  Validation مباشر وشامل
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|min:2',
             'email' => 'required|email|max:255',
@@ -104,13 +104,13 @@ class AccountController extends Controller
         $current_password = $request->input('current_password');
         $password = $request->input('password');
 
-        Log::info('✅ Final Parsed Data:', [
+        Log::info(' Final Parsed Data:', [
             'name' => $name,
             'email' => $email,
             'phone' => $phone
         ]);
 
-        // ✅ التحقق من التكرار
+        //  التحقق من التكرار
         if (User::where('email', $email)->where('id', '!=', $user->id)->exists()) {
             return response()->json([
                 'success' => false,
@@ -127,7 +127,7 @@ class AccountController extends Controller
             ], 422);
         }
 
-        // ✅ تحديث كلمة المرور
+        //  تحديث كلمة المرور
         if (!empty($password)) {
             if (empty($current_password)) {
                 return response()->json([
@@ -148,7 +148,7 @@ class AccountController extends Controller
             $user->password = Hash::make($password);
         }
 
-        // ✅ تحديث البيانات الأساسية
+        //  تحديث البيانات الأساسية
         $user->update([
             'name' => $name,
             'email' => $email,
@@ -157,7 +157,7 @@ class AccountController extends Controller
             'gender' => $gender,
         ]);
 
-        // ✅ تحديث الصورة
+        //  تحديث الصورة
         if ($request->hasFile('avatar')) {
             Log::info('🖼️ Processing new avatar...');
 
@@ -168,11 +168,11 @@ class AccountController extends Controller
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
             $user->update(['avatar' => $avatarPath]);
 
-            Log::info('✅ New avatar saved: ' . $avatarPath);
+            Log::info(' New avatar saved: ' . $avatarPath);
         }
 
         $user->fresh(); // Refresh model
-        Log::info('✅ Account Updated Successfully:', $user->toArray());
+        Log::info(' Account Updated Successfully:', $user->toArray());
 
         return response()->json([
             'success' => true,

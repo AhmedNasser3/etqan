@@ -38,7 +38,7 @@ class DailyAttendance extends Command
         foreach ($activeTeachers as $teacher) {
             $this->line("👤 جاري معالجة: {$teacher->name}", 'blue');
 
-            // ✅ حلقات المعلم من جدول circles حيث teacher_id = المعلم
+            //  حلقات المعلم من جدول circles حيث teacher_id = المعلم
             $teacherCircles = Circle::where('teacher_id', $teacher->id)->pluck('id');
 
             $this->line("  📚 عدد الحلقات: {$teacherCircles->count()}", 'gray');
@@ -62,7 +62,7 @@ class DailyAttendance extends Command
                         'notes' => 'غياب أوتوماتيك',
                     ]);
                     $createdCount++;
-                    $this->line("    ✅ سجل غياب جديد للحلقة #{$circleId}", 'green');
+                    $this->line("     سجل غياب جديد للحلقة #{$circleId}", 'green');
                 } else {
                     $skippedCount++;
                     $this->line("    ⏭️  سجل موجود للحلقة #{$circleId}", 'yellow');
@@ -72,7 +72,7 @@ class DailyAttendance extends Command
 
         $this->line('');
         $this->info("📈 الإحصائيات النهائية:");
-        $this->line("  ✅ تم إنشاء: {$createdCount} سجل", 'green');
+        $this->line("   تم إنشاء: {$createdCount} سجل", 'green');
         $this->line("  ⏭️  تم تجاهل: {$skippedCount} سجل", 'yellow');
         $this->line("  📅 لليوم: {$today->format('Y-m-d')}", 'cyan');
 

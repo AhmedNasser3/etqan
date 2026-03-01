@@ -109,7 +109,7 @@ export const useStudentPlans = (
         perPage: number;
     } | null>(null);
 
-    // ✅ CSRF Headers مُحسّنة مع fallback + refresh
+    //  CSRF Headers مُحسّنة مع fallback + refresh
     const getCSRFHeaders = useCallback(() => {
         const token = document
             .querySelector('meta[name="csrf-token"]')
@@ -123,7 +123,7 @@ export const useStudentPlans = (
         };
     }, []);
 
-    // ✅ CSRF Token Refresh
+    //  CSRF Token Refresh
     const refreshCSRFToken = useCallback(async () => {
         console.log("🔄 [CSRF] Refreshing token...");
         try {
@@ -136,7 +136,7 @@ export const useStudentPlans = (
         }
     }, []);
 
-    // ✅ Initialize CSRF
+    //  Initialize CSRF
     useEffect(() => {
         console.log("🔍 [CSRF] Initializing for web middleware...");
         refreshCSRFToken();
@@ -317,7 +317,7 @@ export const useStudentPlans = (
         return fetchPlans(pagination?.currentPage || 1, planType);
     }, [fetchPlans, pagination?.currentPage, planType]);
 
-    // ✅ bookSchedule مع **Auto-fix ذكي** للـ planDetailsId
+    //  bookSchedule مع **Auto-fix ذكي** للـ planDetailsId
     const bookSchedule = useCallback(
         async (
             scheduleId: number,
@@ -335,11 +335,11 @@ export const useStudentPlans = (
                     planDetailsId,
                 });
 
-                // ✅ 1. Refresh CSRF
+                //  1. Refresh CSRF
                 await refreshCSRFToken();
                 await new Promise((resolve) => setTimeout(resolve, 100));
 
-                // ✅ 2. **التحقق الذكي من planDetailsId + Auto-fix**
+                //  2. **التحقق الذكي من planDetailsId + Auto-fix**
                 let finalPlanDetailsId = planDetailsId;
                 console.log(
                     "🔍 [VALIDATION] Checking plan details for planId:",
@@ -368,13 +368,13 @@ export const useStudentPlans = (
                         const validDetails =
                             planData.details?.data || planData.details || [];
 
-                        // ✅ تحقق إذا كان الـ ID موجود
+                        //  تحقق إذا كان الـ ID موجود
                         const detailExists = validDetails.find(
                             (d: any) => Number(d.id) === Number(planDetailsId),
                         );
 
                         if (!detailExists && validDetails.length > 0) {
-                            // ✅ Auto-fix: استخدم أول detail متاح
+                            //  Auto-fix: استخدم أول detail متاح
                             finalPlanDetailsId = Number(validDetails[0].id);
                             console.log(
                                 "🔧 [AUTO-FIX] Changed planDetailsId from",
@@ -385,7 +385,7 @@ export const useStudentPlans = (
                             );
                         } else if (detailExists) {
                             console.log(
-                                "✅ [VALIDATION] planDetailsId صحيح:",
+                                " [VALIDATION] planDetailsId صحيح:",
                                 planDetailsId,
                             );
                             finalPlanDetailsId = Number(planDetailsId);
@@ -403,7 +403,7 @@ export const useStudentPlans = (
                     );
                 }
 
-                // ✅ 3. الـ Booking الفعلي بالـ ID النهائي
+                //  3. الـ Booking الفعلي بالـ ID النهائي
                 console.log(
                     "🚀 [FINAL] Booking with planDetailsId:",
                     finalPlanDetailsId,
@@ -417,7 +417,7 @@ export const useStudentPlans = (
                         credentials: "include",
                         body: JSON.stringify({
                             plan_id: planId,
-                            plan_details_id: finalPlanDetailsId, // ✅ الـ ID المُصحح
+                            plan_details_id: finalPlanDetailsId, //  الـ ID المُصحح
                         }),
                     },
                 );
@@ -448,7 +448,7 @@ export const useStudentPlans = (
                 }
 
                 const result = await response.json();
-                console.log("✅ [bookSchedule] SUCCESS:", result);
+                console.log(" [bookSchedule] SUCCESS:", result);
 
                 if (result.success !== false) {
                     await Promise.all([refetch(), fetchBookings()]);
@@ -504,7 +504,7 @@ export const useStudentPlans = (
                 }
 
                 const result = await response.json();
-                console.log("✅ [cancelBooking] SUCCESS:", result);
+                console.log(" [cancelBooking] SUCCESS:", result);
 
                 if (result.success !== false) {
                     await Promise.all([refetch(), fetchBookings()]);
@@ -512,7 +512,7 @@ export const useStudentPlans = (
 
                 return {
                     success: true,
-                    message: result.message || "تم الإلغاء بنجاح ✅",
+                    message: result.message || "تم الإلغاء بنجاح ",
                 };
             } catch (err: any) {
                 console.error("❌ [cancelBooking] Error:", err);

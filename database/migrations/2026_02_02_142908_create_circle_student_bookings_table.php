@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('circle_student_bookings', function (Blueprint $table) {
             $table->id();
 
-            $table->unsignedBigInteger('plan_id'); // ✅ خطة الـ 12 شهر
-            $table->unsignedBigInteger('plan_details_id'); // ✅ يوم الحصة من plan_details
+            $table->unsignedBigInteger('plan_id'); //  خطة الـ 12 شهر
+            $table->unsignedBigInteger('plan_details_id'); //  يوم الحصة من plan_details
             $table->unsignedBigInteger('plan_circle_schedule_id');
             $table->unsignedBigInteger('user_id');
 
@@ -30,17 +30,17 @@ return new class extends Migration
             $table->timestamp('booked_at')->useCurrent();
             $table->timestamps();
 
-            // ✅ Unique constraints
+            //  Unique constraints
             $table->unique(['plan_circle_schedule_id', 'user_id'], 'schedule_user_unique');
             $table->unique(['plan_id', 'plan_details_id', 'user_id'], 'plan_day_user_unique');
 
-            // ✅ Indexes
+            //  Indexes
             $table->index(['user_id', 'progress_status'], 'user_progress_idx');
             $table->index(['plan_id', 'plan_details_id'], 'plan_day_idx');
             $table->index('current_day', 'current_day_idx');
         });
 
-        // ✅ Foreign Keys
+        //  Foreign Keys
         Schema::table('circle_student_bookings', function (Blueprint $table) {
             $table->foreign('plan_id')
                   ->references('id')

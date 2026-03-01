@@ -61,7 +61,7 @@ class PlanCircleSchedule extends Model
         });
     }
 
-    // ✅ إنشاء Jitsi room name فريد
+    //  إنشاء Jitsi room name فريد
     public static function generateUniqueJitsiRoom(): string
     {
         do {
@@ -71,7 +71,7 @@ class PlanCircleSchedule extends Model
         return $roomName;
     }
 
-    // ✅ Accessor للـ Jitsi URL
+    //  Accessor للـ Jitsi URL
     public function getJitsiUrlAttribute(): string
     {
         return $this->jitsi_room_name
@@ -79,7 +79,7 @@ class PlanCircleSchedule extends Model
             : 'https://meet.jit.si/halaqa-teacher-default';
     }
 
-    // ✅ العلاقات الأساسية
+    //  العلاقات الأساسية
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
@@ -95,19 +95,19 @@ class PlanCircleSchedule extends Model
         return $this->belongsTo(User::class, 'teacher_id');
     }
 
-    // ✅ العلاقة المهمة مع الحجوزات
+    //  العلاقة المهمة مع الحجوزات
     public function bookings(): HasMany
     {
         return $this->hasMany(CircleStudentBooking::class, 'plan_circle_schedule_id');
     }
 
-    // ✅ علاقة مباشرة مع أول طالب محجوز
+    //  علاقة مباشرة مع أول طالب محجوز
     public function firstStudentBooking()
     {
         return $this->hasOne(CircleStudentBooking::class, 'plan_circle_schedule_id');
     }
 
-    // ✅ جلب الطالب الأول مع معلوماته
+    //  جلب الطالب الأول مع معلوماته
     public function firstStudent()
     {
         return $this->hasOneThrough(
@@ -120,7 +120,7 @@ class PlanCircleSchedule extends Model
         );
     }
 
-    // ✅ عدد الطلاب المحجوزين
+    //  عدد الطلاب المحجوزين
     public function getBookedStudentsCountAttribute()
     {
         return $this->bookings()->count();
@@ -150,13 +150,13 @@ class PlanCircleSchedule extends Model
             : 0;
     }
 
-    // ✅ Scope للمعلم الحالي
+    //  Scope للمعلم الحالي
     public function scopeForTeacher($query, $teacherId)
     {
         return $query->where('teacher_id', $teacherId);
     }
 
-    // ✅ Scope للحصص المتاحة
+    //  Scope للحصص المتاحة
     public function scopeAvailable($query)
     {
         return $query->where('is_available', true);

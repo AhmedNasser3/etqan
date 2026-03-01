@@ -7,7 +7,7 @@ interface UseOtpInputsReturn {
     handleInputChange: (index: number, value: string) => void;
     handleKeyDown: (
         index: number,
-        e: React.KeyboardEvent<HTMLInputElement>
+        e: React.KeyboardEvent<HTMLInputElement>,
     ) => void;
 }
 
@@ -28,19 +28,20 @@ export const useOtpInputs = (otpLength: number = 4): UseOtpInputsReturn => {
             const newOtpValue = newOtp.join("");
             setOtpValue(newOtpValue);
 
-            // ✅ تحقق من الـ inputs الفعلية مش الـ otpValue
+            //  تحقق من الـ inputs الفعلية مش الـ otpValue
             const isFilled = inputsRef.current.every(
-                (input, i) => input?.value.length === 1 || newOtpValue[i] !== ""
+                (input, i) =>
+                    input?.value.length === 1 || newOtpValue[i] !== "",
             );
             setOtpFilled(isFilled);
         },
-        [otpValue]
+        [otpValue],
     );
 
     const handleInputChange = useCallback(
         (index: number, value: string) => {
             if (/[0-9]/.test(value) || value === "") {
-                // ✅ حدث الـ input value الأول
+                //  حدث الـ input value الأول
                 const targetInput = inputsRef.current[index];
                 if (targetInput) {
                     targetInput.value = value;
@@ -48,7 +49,7 @@ export const useOtpInputs = (otpLength: number = 4): UseOtpInputsReturn => {
 
                 updateOtpValue(index, value);
 
-                // ✅ التنقل بين الـ inputs
+                //  التنقل بين الـ inputs
                 if (value && index < otpLength - 1) {
                     inputsRef.current[index + 1]?.focus();
                 } else if (value === "" && index > 0) {
@@ -56,7 +57,7 @@ export const useOtpInputs = (otpLength: number = 4): UseOtpInputsReturn => {
                 }
             }
         },
-        [otpLength, updateOtpValue]
+        [otpLength, updateOtpValue],
     );
 
     const handleKeyDown = useCallback(
@@ -64,19 +65,19 @@ export const useOtpInputs = (otpLength: number = 4): UseOtpInputsReturn => {
             if (e.key === "Backspace") {
                 e.preventDefault();
 
-                // ✅ لو الـ input فاضي ومش أول input، روح للي قبله
+                //  لو الـ input فاضي ومش أول input، روح للي قبله
                 if (otpValue[index] === "" && index > 0) {
                     inputsRef.current[index - 1]?.focus();
                 }
 
-                // ✅ امسح الـ input الحالي
+                //  امسح الـ input الحالي
                 handleInputChange(index, "");
             }
         },
-        [otpValue, handleInputChange]
+        [otpValue, handleInputChange],
     );
 
-    // ✅ تحديث الـ otpFilled لما الـ otpValue يتغير
+    //  تحديث الـ otpFilled لما الـ otpValue يتغير
     useEffect(() => {
         const isFilled =
             otpValue.length === otpLength &&

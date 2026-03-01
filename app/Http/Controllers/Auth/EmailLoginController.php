@@ -31,7 +31,7 @@ class EmailLoginController extends Controller
 
         $email = strtolower(trim($request->email)); // توحيد شكل الإيميل
 
-        // ✅ بحث عن المستخدم أولاً
+        //  بحث عن المستخدم أولاً
         $user = User::where('email', $email)->first();
         $status = $user?->status ?? 'none'; // none يعني م_Handle برقم الـ user
 
@@ -43,10 +43,10 @@ class EmailLoginController extends Controller
             ], 403);
         }
 
-        // ✅ توليد OTP
+        //  توليد OTP
         $otp = rand(1000, 9999);
 
-        // ✅ حفظ في الـ Cache
+        //  حفظ في الـ Cache
         Cache::put("otp_{$email}", $otp, now()->addMinutes(10));
         Cache::put("email_session_{$otp}", $email, now()->addMinutes(10));
 
@@ -79,7 +79,7 @@ class EmailLoginController extends Controller
         $otp = $request->otp;
         $email = Cache::get("email_session_{$otp}");
 
-        // ✅ تحقق من وجود الـ email في الـ Redis/session
+        //  تحقق من وجود الـ email في الـ Redis/session
         if (!$email) {
             return response()->json([
                 'success' => false,
@@ -87,7 +87,7 @@ class EmailLoginController extends Controller
             ], 422);
         }
 
-        // ✅ تحقق من صحة OTP
+        //  تحقق من صحة OTP
         $cachedOtp = Cache::get("otp_{$email}");
 
         if ($otp != $cachedOtp) {
@@ -97,15 +97,15 @@ class EmailLoginController extends Controller
             ], 422);
         }
 
-        // ✅ تنظيف الـ Cache بعد الاستخدام
+        //  تنظيف الـ Cache بعد الاستخدام
         Cache::forget("otp_{$email}");
         Cache::forget("email_session_{$otp}");
 
-        // ✅ البحث عن المستخدم أو إنشاؤه
+        //  البحث عن المستخدم أو إنشاؤه
         $user = User::where('email', $email)->first();
 
         if (!$user) {
-            // ✅ إنشاء Guest/Input User بهوية مؤقتة
+            //  إنشاء Guest/Input User بهوية مؤقتة
             $user = User::create([
                 'name'          => 'مستخدم ضيف',
                 'email'         => $email,
@@ -115,7 +115,7 @@ class EmailLoginController extends Controller
                 'created_from'  => 'otp_email'
             ]);
         } elseif ($user->status !== 'active') {
-            // ✅ لو غير مُوقّح مسبقًا
+            //  لو غير مُوقّح مسبقًا
             return response()->json([
                 'success' => false,
                 'reason' => 'pending',
@@ -123,7 +123,7 @@ class EmailLoginController extends Controller
             ], 403);
         }
 
-        // ✅ تسجيل الدخول
+        //  تسجيل الدخول
         Auth::login($user, true); // remember me
 
         Session::put('email_login', $email);

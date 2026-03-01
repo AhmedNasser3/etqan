@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Validator;
 class AttendanceController extends Controller
 {
     /**
-     * ✅ ADMIN: عرض سجلات حضور جميع الموظفين (محدث لـ center_id)
+     *  ADMIN: عرض سجلات حضور جميع الموظفين (محدث لـ center_id)
      */
     public function staffAttendance(Request $request)
     {
@@ -86,7 +86,7 @@ class AttendanceController extends Controller
                         'teacher_id' => (int) $item->teacher_id,
                         'teacher_name' => $item->teacher?->name ?? 'غير معروف',
                         'role' => optional($item->teacher?->user)->role ?? 'معلم',
-                        'center_name' => optional($item->center)->name ?? '-', // ✅ circle_name → center_name
+                        'center_name' => optional($item->center)->name ?? '-', //  circle_name → center_name
                         'status' => $item->status ?? 'absent',
                         'notes' => $item->notes ?? 'غياب أوتوماتيك',
                         'date' => $item->date?->format('Y-m-d'),
@@ -150,10 +150,10 @@ class AttendanceController extends Controller
                 ], 404);
             }
 
-            Log::info('✅ Attendance found', [
+            Log::info(' Attendance found', [
                 'id' => $attendance->id,
                 'teacher_id' => $attendance->teacher_id,
-                'center_id' => $attendance->center_id, // ✅ center_id
+                'center_id' => $attendance->center_id, //  center_id
                 'current_status' => $attendance->status
             ]);
 
@@ -170,7 +170,7 @@ class AttendanceController extends Controller
 
             $attendance->update($updateData);
 
-            Log::info('✅ Staff attendance updated successfully', [
+            Log::info(' Staff attendance updated successfully', [
                 'attendance_id' => $attendanceId,
                 'new_status' => $request->status,
                 'user_id' => Auth::id()
@@ -179,7 +179,7 @@ class AttendanceController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'تم تحديث حالة الحضور بنجاح',
-                'data' => $attendance->fresh()->load(['teacher.user', 'center']) // ✅ circle → center
+                'data' => $attendance->fresh()->load(['teacher.user', 'center']) //  circle → center
             ], 200, [], JSON_UNESCAPED_UNICODE);
 
         } catch (\Exception $e) {
@@ -201,7 +201,7 @@ class AttendanceController extends Controller
      */
    /**
  * 🆕 QUICK CHECK-IN: تسجيل حضور سريع بزر واحد للمعلم
- * Route: POST /api/v1/attendance/quick-checkin ✅
+ * Route: POST /api/v1/attendance/quick-checkin
  *//**
  * 🆕 QUICK CHECK-IN: تسجيل حضور سريع بدون تأخير
  * بسجّل الوقت الحالي status = present دايماً
@@ -214,7 +214,7 @@ public function quickCheckin(Request $request)
         'request_data' => $request->all(),
     ]);
 
-    // ✅ تحقق من الصلاحيات أولاً
+    //  تحقق من الصلاحيات أولاً
     if (!Auth::check()) {
         Log::warning('❌ No auth user in quickCheckin');
         return response()->json([
@@ -226,7 +226,7 @@ public function quickCheckin(Request $request)
     $user = Auth::user();
     Log::info('👤 User found', ['user_id' => $user->id, 'name' => $user->name]);
 
-    // ✅ 1. جيب الـ Teacher record
+    //  1. جيب الـ Teacher record
     $teacher = Teacher::where('user_id', $user->id)->first();
 
     if (!$teacher) {
@@ -238,12 +238,12 @@ public function quickCheckin(Request $request)
         ], 404);
     }
 
-    Log::info('✅ Teacher found', [
+    Log::info(' Teacher found', [
         'teacher_id' => $teacher->id,
         'teacher_name' => $teacher->name
     ]);
 
-    // ✅ 2. تحقق من الـ Center
+    //  2. تحقق من الـ Center
     $centerId = $user->center_id;
 
     if (!$centerId || $centerId == 0) {
@@ -258,14 +258,14 @@ public function quickCheckin(Request $request)
         ], 400);
     }
 
-    Log::info('✅ Center found', ['center_id' => $centerId]);
+    Log::info(' Center found', ['center_id' => $centerId]);
 
     $todayDate = Carbon::today()->format('Y-m-d');
     $currentTime = Carbon::now();
     $checkinTime = $currentTime->format('H:i:s');
 
     try {
-        // ✅ 3. تحقق من وجود حضور اليوم
+        //  3. تحقق من وجود حضور اليوم
         $existingAttendance = AttendanceDay::where('teacher_id', $teacher->id)
             ->where('center_id', $centerId)
             ->whereDate('date', $todayDate)
@@ -280,7 +280,7 @@ public function quickCheckin(Request $request)
 
             return response()->json([
                 'success' => true,
-                'message' => '✅ تم تسجيل الحضور اليوم الساعة ' . $existingAttendance->created_at->format('H:i'),
+                'message' => ' تم تسجيل الحضور اليوم الساعة ' . $existingAttendance->created_at->format('H:i'),
                 'data' => [
                     'status' => $existingAttendance->status,
                     'time' => $existingAttendance->created_at->format('H:i'),
@@ -291,19 +291,19 @@ public function quickCheckin(Request $request)
             ], 200);
         }
 
-        // ✅ 4. إنشاء سجل حضور جديد - بدون تأخير خالص!
+        //  4. إنشاء سجل حضور جديد - بدون تأخير خالص!
         $attendance = AttendanceDay::create([
             'teacher_id' => $teacher->id,
             'center_id' => $centerId,
             'date' => $todayDate,
-            'status' => 'present',                    // ✅ دايماً present
-            'delay_minutes' => 0,                     // ✅ صفر دايماً
-            'notes' => "حضور سريع - {$checkinTime}",  // ✅ وقت الحضور بس
+            'status' => 'present',                    //  دايماً present
+            'delay_minutes' => 0,                     //  صفر دايماً
+            'notes' => "حضور سريع - {$checkinTime}",  //  وقت الحضور بس
             'created_at' => $currentTime,
             'updated_at' => $currentTime
         ]);
 
-        Log::info('✅ Quick checkin CREATED successfully', [
+        Log::info(' Quick checkin CREATED successfully', [
             'attendance_id' => $attendance->id,
             'teacher_id' => $teacher->id,
             'center_id' => $centerId,
@@ -312,10 +312,10 @@ public function quickCheckin(Request $request)
             'delay_minutes' => 0
         ]);
 
-        // ✅ 5. إرجاع الاستجابة الناجحة
+        //  5. إرجاع الاستجابة الناجحة
         return response()->json([
             'success' => true,
-            'message' => "✅ تم تسجيل الحضور بنجاح الساعة {$checkinTime}",
+            'message' => " تم تسجيل الحضور بنجاح الساعة {$checkinTime}",
             'data' => [
                 'id' => $attendance->id,
                 'status' => 'present',
@@ -354,13 +354,13 @@ public function quickCheckin(Request $request)
 
 
     /**
-     * ✅ عرض سجلات الحضور الخاصة بالمعلم المسجل (محدث لـ center_id)
+     *  عرض سجلات الحضور الخاصة بالمعلم المسجل (محدث لـ center_id)
      */
     public function index(Request $request)
     {
         $user = Auth::user();
 
-        // ✅ جيب teacher_id من جدول teachers بناءً على user_id
+        //  جيب teacher_id من جدول teachers بناءً على user_id
         $teacher = Teacher::where('user_id', $user->id)->first();
 
         if (!$teacher) {
@@ -370,7 +370,7 @@ public function quickCheckin(Request $request)
             ], 404);
         }
 
-        $centerId = $user->center_id; // ✅ من user.center_id
+        $centerId = $user->center_id; //  من user.center_id
 
         if (!$centerId) {
             return response()->json([
@@ -379,9 +379,9 @@ public function quickCheckin(Request $request)
             ], 400);
         }
 
-        $query = AttendanceDay::with(['teacher', 'center']) // ✅ circle → center
+        $query = AttendanceDay::with(['teacher', 'center']) //  circle → center
             ->where('teacher_id', $teacher->id)
-            ->where('center_id', $centerId) // ✅ center_id filter
+            ->where('center_id', $centerId) //  center_id filter
             ->orderBy('date', 'desc');
 
         if ($request->filled('date')) {
@@ -390,13 +390,13 @@ public function quickCheckin(Request $request)
 
         $attendances = $query->paginate(20);
 
-        // ✅ جيب المركز الخاص باليوزر
+        //  جيب المركز الخاص باليوزر
         $centers = Center::where('id', $centerId)->select('id', 'name')->get();
 
         return response()->json([
             'success' => true,
             'data' => $attendances,
-            'centers' => $centers, // ✅ بدل circles
+            'centers' => $centers, //  بدل circles
             'filters' => $request->only(['date'])
         ]);
     }
@@ -406,25 +406,25 @@ public function quickCheckin(Request $request)
         $user = Auth::user();
         $teacher = Teacher::where('user_id', $user->id)->first();
 
-        // ✅ تحقق من teacher_id + center_id
+        //  تحقق من teacher_id + center_id
         if ($attendanceDay->teacher_id !== $teacher->id || $attendanceDay->center_id !== $user->center_id) {
             return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $attendanceDay->load(['teacher.user', 'center']) // ✅ circle → center
+            'data' => $attendanceDay->load(['teacher.user', 'center']) //  circle → center
         ]);
     }
 
     /**
-     * ✅ تسجيل حضور جديد للمعلم المسجل (محدث لـ center_id)
+     *  تسجيل حضور جديد للمعلم المسجل (محدث لـ center_id)
      */
     public function store(Request $request)
     {
         $user = Auth::user();
 
-        // ✅ جيب teacher_id من جدول teachers
+        //  جيب teacher_id من جدول teachers
         $teacher = Teacher::where('user_id', $user->id)->first();
 
         if (!$teacher) {
@@ -434,7 +434,7 @@ public function quickCheckin(Request $request)
             ], 404);
         }
 
-        $centerId = $user->center_id; // ✅ من user.center_id
+        $centerId = $user->center_id; //  من user.center_id
 
         if (!$centerId) {
             return response()->json([
@@ -459,7 +459,7 @@ public function quickCheckin(Request $request)
             ], 422);
         }
 
-        // ✅ تحقق من عدم التكرار: teacher_id + center_id + date
+        //  تحقق من عدم التكرار: teacher_id + center_id + date
         $existing = AttendanceDay::where('teacher_id', $teacher->id)
             ->where('center_id', $centerId)
             ->whereDate('date', $todayDate)
@@ -474,7 +474,7 @@ public function quickCheckin(Request $request)
 
         $attendance = AttendanceDay::create([
             'teacher_id' => $teacher->id,
-            'center_id' => $centerId, // ✅ بدل circle_id
+            'center_id' => $centerId, //  بدل circle_id
             'date' => $todayDate,
             'status' => $request->status,
             'delay_minutes' => $request->delay_minutes,
@@ -484,7 +484,7 @@ public function quickCheckin(Request $request)
         return response()->json([
             'success' => true,
             'message' => 'تم تسجيل الحضور بنجاح',
-            'data' => $attendance->load(['teacher', 'center']) // ✅ circle → center
+            'data' => $attendance->load(['teacher', 'center']) //  circle → center
         ], 201);
     }
 
@@ -493,7 +493,7 @@ public function quickCheckin(Request $request)
         $user = Auth::user();
         $teacher = Teacher::where('user_id', $user->id)->first();
 
-        // ✅ تحقق من teacher_id + center_id
+        //  تحقق من teacher_id + center_id
         if ($attendanceDay->teacher_id !== $teacher->id || $attendanceDay->center_id !== $user->center_id) {
             return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
         }
@@ -520,7 +520,7 @@ public function quickCheckin(Request $request)
         return response()->json([
             'success' => true,
             'message' => 'تم تحديث سجل الحضور بنجاح',
-            'data' => $attendanceDay->fresh()->load(['teacher', 'center']) // ✅ circle → center
+            'data' => $attendanceDay->fresh()->load(['teacher', 'center']) //  circle → center
         ]);
     }
 
@@ -529,7 +529,7 @@ public function quickCheckin(Request $request)
         $user = Auth::user();
         $teacher = Teacher::where('user_id', $user->id)->first();
 
-        // ✅ تحقق من teacher_id + center_id
+        //  تحقق من teacher_id + center_id
         if ($attendanceDay->teacher_id !== $teacher->id || $attendanceDay->center_id !== $user->center_id) {
             return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
         }
@@ -554,10 +554,10 @@ public function quickCheckin(Request $request)
             ], 404);
         }
 
-        $centerId = $user->center_id; // ✅ من user.center_id
+        $centerId = $user->center_id; //  من user.center_id
 
         $stats = AttendanceDay::where('teacher_id', $teacher->id)
-            ->where('center_id', $centerId) // ✅ center_id filter
+            ->where('center_id', $centerId) //  center_id filter
             ->selectRaw('
                 COUNT(*) as total,
                 SUM(CASE WHEN status = "present" THEN 1 ELSE 0 END) as present,
@@ -575,7 +575,7 @@ public function quickCheckin(Request $request)
     }
 
 /**
- * ✅ GET /api/v1/attendance/today - تحقق من حضور اليوم
+ *  GET /api/v1/attendance/today - تحقق من حضور اليوم
  * Frontend يستخدمه لمعرفة لو الزر مفتوح ولا لأ
  */
 public function today()
@@ -584,7 +584,7 @@ public function today()
         'user_id' => Auth::id()
     ]);
 
-    // ✅ تحقق من تسجيل الدخول
+    //  تحقق من تسجيل الدخول
     if (!Auth::check()) {
         return response()->json([
             'success' => false,
@@ -595,25 +595,25 @@ public function today()
 
     $user = Auth::user();
 
-    // ✅ 1. جيب الـ Teacher record (مش firstOrFail!)
+    //  1. جيب الـ Teacher record (مش firstOrFail!)
     $teacher = Teacher::where('user_id', $user->id)->first();
 
     if (!$teacher) {
         Log::info('ℹ️ No teacher record found', ['user_id' => $user->id]);
         return response()->json([
-            'success' => true,  // ✅ success = true عشان الـ Frontend يفتح الزر
+            'success' => true,  //  success = true عشان الـ Frontend يفتح الزر
             'message' => 'لا يوجد بيانات معلم',
-            'data' => [],       // ✅ array فارغ = مفيش حضور = الزر مفتوح
+            'data' => [],       //  array فارغ = مفيش حضور = الزر مفتوح
             'has_attendance' => false
-        ], 200); // ✅ 200 مش 404
+        ], 200); //  200 مش 404
     }
 
-    Log::info('✅ Teacher found', [
+    Log::info(' Teacher found', [
         'teacher_id' => $teacher->id,
         'user_id' => $user->id
     ]);
 
-    // ✅ 2. تحقق من الـ center_id
+    //  2. تحقق من الـ center_id
     $centerId = $user->center_id;
 
     if (!$centerId || $centerId == 0) {
@@ -626,14 +626,14 @@ public function today()
         ], 200);
     }
 
-    // ✅ 3. جيب حضور اليوم (get() مش firstOrFail!)
+    //  3. جيب حضور اليوم (get() مش firstOrFail!)
     $todayDate = Carbon::today();
     $todayAttendance = AttendanceDay::where('teacher_id', $teacher->id)
         ->where('center_id', $centerId)
         ->whereDate('date', $todayDate)
         ->with(['teacher.user', 'center'])
         ->orderBy('created_at', 'desc')
-        ->get(); // ✅ get() = array فارغ لو مفيش results
+        ->get(); //  get() = array فارغ لو مفيش results
 
     $hasAttendanceToday = $todayAttendance->isNotEmpty();
 

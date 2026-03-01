@@ -25,13 +25,13 @@ class FeaturedController extends Controller
             return response()->json(['error' => 'المجمع غير موجود'], 404);
         }
 
-        // جلب عدد الطلاب للمجمع ✅ نفس الكود القديم
+        // جلب عدد الطلاب للمجمع  نفس الكود القديم
         $studentsCount = Student::where('center_id', $center->id)->count();
 
-        // جلب عدد الحلقات للمجمع من جدول circles ✅ نفس الكود القديم
+        // جلب عدد الحلقات للمجمع من جدول circles  نفس الكود القديم
         $episodesCount = Circle::where('center_id', $center->id)->count();
 
-        // جلب أول 7 طلاب لعرض الـ testimonials ✅ نفس الكود القديم
+        // جلب أول 7 طلاب لعرض الـ testimonials  نفس الكود القديم
         $students = Student::where('center_id', $center->id)
             ->with('user')
             ->limit(7)
@@ -46,7 +46,7 @@ class FeaturedController extends Controller
             ];
         })->toArray();
 
-        // ✅ جلب المعلمين من خلال user.center_id (الصحيح)
+        //  جلب المعلمين من خلال user.center_id (الصحيح)
         $teachers = Teacher::whereHas('user', function ($query) use ($center) {
                 $query->where('center_id', $center->id);
             })
@@ -74,8 +74,8 @@ class FeaturedController extends Controller
                 'episodes' => $episodesCount,
                 'progress' => 92,
             ],
-            'testimonials' => $testimonials,           // ✅ الطلاب (نفس الاسم القديم)
-            'teacher_testimonials' => $teacherTestimonials  // ✅ المعلمين الجدد
+            'testimonials' => $testimonials,           //  الطلاب (نفس الاسم القديم)
+            'teacher_testimonials' => $teacherTestimonials  //  المعلمين الجدد
         ]);
     }
 }

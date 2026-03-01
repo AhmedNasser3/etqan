@@ -1,5 +1,5 @@
 // components/CenterStudentTestimonials.tsx
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { IoIosArrowBack } from "react-icons/io";
 import { IoIosArrowForward } from "react-icons/io";
 import { useCenterData } from "../hooks/useCenterData";
@@ -16,7 +16,7 @@ const CenterStudentTestimonials: React.FC = () => {
     const { testimonials, loading } = useCenterData();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [slideWidth, setSlideWidth] = useState(374);
-    const [isMobile, setIsMobile] = useState(false);
+    const [visibleCards, setVisibleCards] = useState(4);
     const testimonialsRef = useRef<HTMLDivElement>(null);
 
     const getSlideWidth = () => {
@@ -25,46 +25,60 @@ const CenterStudentTestimonials: React.FC = () => {
         return 374;
     };
 
-    const visibleCards = window.innerWidth <= 768 ? 1 : 4;
+    const getVisibleCards = () => {
+        return window.innerWidth <= 768 ? 1 : 4;
+    };
+
     const maxIndex = Math.max(0, testimonials.length - visibleCards);
 
+    // حساب الـ slide width والـ visible cards
     useEffect(() => {
         const handleResize = () => {
             const newSlideWidth = getSlideWidth();
-            const newIsMobile = window.innerWidth <= 768;
+            const newVisibleCards = getVisibleCards();
 
             setSlideWidth(newSlideWidth);
-            setIsMobile(newIsMobile);
+            setVisibleCards(newVisibleCards);
 
-            if (currentIndex > maxIndex) {
-                setCurrentIndex(Math.max(0, maxIndex));
+            // تصحيح الـ index عند تغيير العرض
+            if (
+                currentIndex >
+                Math.max(0, testimonials.length - newVisibleCards)
+            ) {
+                setCurrentIndex(
+                    Math.max(0, testimonials.length - newVisibleCards),
+                );
             }
         };
 
         handleResize();
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
-    }, [testimonials.length, maxIndex]);
+    }, [testimonials.length]); // فقط testimonials.length
 
-    const nextSlide = () => {
+    const nextSlide = useCallback(() => {
         setCurrentIndex((prev) => Math.min(prev + 1, maxIndex));
-    };
+    }, [maxIndex]);
 
-    const prevSlide = () => {
+    const prevSlide = useCallback(() => {
         setCurrentIndex((prev) => Math.max(prev - 1, 0));
-    };
+    }, []);
 
-    const goToSlide = (index: number) => {
-        setCurrentIndex(Math.max(0, Math.min(index, maxIndex)));
-    };
+    const goToSlide = useCallback(
+        (index: number) => {
+            setCurrentIndex(Math.max(0, Math.min(index, maxIndex)));
+        },
+        [maxIndex],
+    );
 
     const getActiveDotIndex = () => currentIndex;
 
+    // إذا كان في loading أو مفيش طلاب خالص
     if (loading || testimonials.length === 0) {
         return (
             <div className="testimonials">
                 <div className="testimonials__mainTitle">
-                    <h1>جاري تحميل الطلاب المتفوقين...</h1>
+                    <h1>لا يوجد طلاب لهذا المجمع</h1>
                 </div>
             </div>
         );

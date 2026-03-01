@@ -66,7 +66,15 @@ const UserPlans: React.FC = () => {
     if (loading) {
         return (
             <div className="loading flex items-center justify-center py-12">
-                جاري تحميل خطتك...
+                <div className="navbar">
+                    <div className="navbar__inner">
+                        <div className="navbar__loading">
+                            <div className="loading-spinner">
+                                <div className="spinner-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>{" "}
             </div>
         );
     }

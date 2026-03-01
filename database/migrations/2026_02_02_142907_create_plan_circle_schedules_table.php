@@ -27,13 +27,13 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            // ✅ الحل: اسم قصير للـ unique constraint
+            //  الحل: اسم قصير للـ unique constraint
             $table->unique(
                 ['plan_id', 'circle_id', 'schedule_date', 'start_time'],
-                'pcs_unique_schedule' // اسم قصير جداً ✅
+                'pcs_unique_schedule' // اسم قصير جداً
             );
 
-            // ✅ Indexes محسنة
+            //  Indexes محسنة
             $table->index(['plan_id', 'is_available'], 'idx_plan_available');
             $table->index(['circle_id', 'is_available'], 'idx_circle_available');
             $table->index(['teacher_id', 'is_available'], 'idx_teacher_available');

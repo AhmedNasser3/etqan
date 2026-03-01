@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class TeacherStudentsController extends Controller
 {
     /**
-     * ✅ جلب طلاب المعلم الحالي فقط (نفس طريقة getUniqueStudents)
+     *  جلب طلاب المعلم الحالي فقط (نفس طريقة getUniqueStudents)
      */
     public function getTeacherStudents(Request $request)
     {
@@ -28,7 +28,7 @@ class TeacherStudentsController extends Controller
                 return response()->json(['message' => 'لست معلم مسجل'], 404);
             }
 
-            // ✅ نفس الـ Query اللي اشتغلت قبل كده
+            //  نفس الـ Query اللي اشتغلت قبل كده
             $studentDetails = DB::table('student_plan_details as spd')
                 ->join('circle_student_bookings as csb', 'spd.circle_student_booking_id', '=', 'csb.id')
                 ->where('spd.teacher_id', $teacher->id)
@@ -62,7 +62,7 @@ class TeacherStudentsController extends Controller
     }
 
     /**
-     * ✅ INDEX - حساب النقاط الصافية لطلاب المعلم (إضافة - خصم)
+     *  INDEX - حساب النقاط الصافية لطلاب المعلم (إضافة - خصم)
      */
     public function index(Request $request)
     {
@@ -76,7 +76,7 @@ class TeacherStudentsController extends Controller
             return response()->json(['message' => 'لست معلم مسجل'], 404);
         }
 
-        // ✅ جلب الطلاب الأول عشان نحسبلهم النقاط
+        //  جلب الطلاب الأول عشان نحسبلهم النقاط
         $teacherStudentIds = DB::table('student_plan_details as spd')
             ->join('circle_student_bookings as csb', 'spd.circle_student_booking_id', '=', 'csb.id')
             ->where('spd.teacher_id', $teacher->id)
@@ -92,7 +92,7 @@ class TeacherStudentsController extends Controller
             'data' => $achievements->getCollection()->map(function ($achievement) use ($teacherStudentIds) {
                 $userId = $achievement->user_id;
 
-                // ✅ حساب النقاط الصافية: الإضافات - الخصومات
+                //  حساب النقاط الصافية: الإضافات - الخصومات
                 $addedPoints = StudentAchievement::whereIn('user_id', $teacherStudentIds)
                     ->where('user_id', $userId)
                     ->where('points_action', 'added')
@@ -131,7 +131,7 @@ class TeacherStudentsController extends Controller
     }
 
     /**
-     * ✅ STORE - إضافة إنجاز لطالب تابع للمعلم
+     *  STORE - إضافة إنجاز لطالب تابع للمعلم
      */
     public function store(Request $request)
     {
@@ -150,7 +150,7 @@ class TeacherStudentsController extends Controller
                 'required',
                 'exists:users,id',
                 function ($attribute, $value, $fail) use ($teacher) {
-                    // ✅ التحقق أن الطالب تابع للمعلم
+                    //  التحقق أن الطالب تابع للمعلم
                     $hasStudent = DB::table('student_plan_details as spd')
                         ->join('circle_student_bookings as csb', 'spd.circle_student_booking_id', '=', 'csb.id')
                         ->where('spd.teacher_id', $teacher->id)
@@ -186,7 +186,7 @@ class TeacherStudentsController extends Controller
     }
 
     /**
-     * ✅ SHOW - عرض إنجاز واحد
+     *  SHOW - عرض إنجاز واحد
      */
     public function show($id)
     {
@@ -213,7 +213,7 @@ class TeacherStudentsController extends Controller
     }
 
     /**
-     * ✅ UPDATE - تحديث إنجاز
+     *  UPDATE - تحديث إنجاز
      */
     public function update(Request $request, $id)
     {
@@ -272,7 +272,7 @@ class TeacherStudentsController extends Controller
     }
 
     /**
-     * ✅ DELETE - حذف إنجاز
+     *  DELETE - حذف إنجاز
      */
     public function destroy($id)
     {
@@ -303,7 +303,7 @@ class TeacherStudentsController extends Controller
     }
 
     /**
-     * ✅ حساب النقاط الصافية للطالب المحدد
+     *  حساب النقاط الصافية للطالب المحدد
      */
     public function studentTotalPoints($studentId)
     {
@@ -341,7 +341,7 @@ class TeacherStudentsController extends Controller
         $status = match(true) {
             $total >= 100 => 'ممتاز ⭐',
             $total >= 50 => 'جيد 👍',
-            $total >= 0 => 'متوسط ✅',
+            $total >= 0 => 'متوسط ',
             default => 'يحتاج تحسين ⚠️'
         };
 
@@ -354,7 +354,7 @@ class TeacherStudentsController extends Controller
         ]);
     }
 
-    // ✅ الدوال القديمة تبقى زي ما هي
+    //  الدوال القديمة تبقى زي ما هي
     public function getUniqueStudents()
     {
         $currentUser = Auth::user();

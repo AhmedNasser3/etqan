@@ -64,7 +64,7 @@ const Register: React.FC = () => {
                     </div>
                 </div>
             </div>
-            {/* ✅ اختيار الجنس */}
+            {/*  اختيار الجنس */}
             <div className="gender-selector">
                 <div className="gender-buttons">
                     <button

@@ -239,7 +239,7 @@ const PayrollReports: React.FC = () => {
                                             >
                                                 {item.status === "calculated"
                                                     ? "✅ محسوب"
-                                                    : "⏳ معلق"}
+                                                    : " معلق"}
                                             </span>
                                         </td>
                                         <td>

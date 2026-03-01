@@ -37,7 +37,7 @@ export const useMosqueFormUpdate = (initialData?: any) => {
         notes: initialData?.notes || "",
     });
     const [errors, setErrors] = useState<FormErrors>({});
-    const [isSubmitting, setIsSubmitting] = useState(false); // ✅ مضاف
+    const [isSubmitting, setIsSubmitting] = useState(false); //  مضاف
     const [centersData, setCentersData] = useState<CenterType[]>([]);
     const [usersData, setUsersData] = useState<UserOption[]>([]);
     const [loadingData, setLoadingData] = useState(true);
@@ -58,7 +58,7 @@ export const useMosqueFormUpdate = (initialData?: any) => {
             if (response.ok) {
                 const responseData = await response.json();
                 const actualUser = responseData.user || responseData;
-                console.log("✅ ACTUAL USER:", actualUser);
+                console.log(" ACTUAL USER:", actualUser);
                 setUser(actualUser);
             }
         } catch (error) {
@@ -138,7 +138,7 @@ export const useMosqueFormUpdate = (initialData?: any) => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("✅ Teachers loaded:", data.data?.length);
+                console.log(" Teachers loaded:", data.data?.length);
                 setUsersData(data.data || []);
             }
         } catch (error) {
@@ -203,7 +203,7 @@ export const useMosqueFormUpdate = (initialData?: any) => {
                 return;
             }
 
-            if (isSubmitting) return; // ✅ الآن isSubmitting معرّف
+            if (isSubmitting) return; //  الآن isSubmitting معرّف
 
             setIsSubmitting(true);
             try {
@@ -229,13 +229,13 @@ export const useMosqueFormUpdate = (initialData?: any) => {
                 setIsSubmitting(false);
             }
         },
-        [formData, validateForm, isSubmitting], // ✅ مضاف isSubmitting
+        [formData, validateForm, isSubmitting], //  مضاف isSubmitting
     );
 
     return {
         formData,
         errors,
-        isSubmitting, // ✅ موجود الآن
+        isSubmitting, //  موجود الآن
         centersData,
         usersData,
         loadingData,
