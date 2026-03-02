@@ -35,7 +35,7 @@ const StudentApproval: React.FC = () => {
     const [debugInfo, setDebugInfo] = useState<any>(null);
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
-    //  Fixed filtering - handle missing nested properties safely
+    // Fixed filtering - handle missing nested properties safely
     const filteredStudents = students.filter(
         (student: any) =>
             student.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -52,12 +52,32 @@ const StudentApproval: React.FC = () => {
         refetch();
     }, []);
 
-    //  Debug button handler
+    // ✅ Debug button handler - معدل للـ API structure الصحيح
     const handleDebug = async () => {
         try {
+            // استخدام نفس الـ apiCall pattern مع CSRF و session
             const response = await fetch(
-                "http://127.0.0.1:8000/api/v1/centers/pending-students-debug",
+                "/api/v1/centers/pending-students-debug",
+                {
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRF-TOKEN":
+                            document
+                                .querySelector('meta[name="csrf-token"]')
+                                ?.getAttribute("content") || "",
+                    },
+                },
             );
+
+            if (!response.ok) {
+                throw new Error(
+                    `HTTP ${response.status}: ${response.statusText}`,
+                );
+            }
+
             const data = await response.json();
             setDebugInfo(data);
             toast.success("تم جلب معلومات التشخيص");
@@ -136,7 +156,7 @@ const StudentApproval: React.FC = () => {
                 student={selectedStudent}
             />
             <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                {/*  Debug Section */}
+                {/* Debug Section */}
                 {debugInfo && (
                     <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
                         <h3 className="font-bold text-yellow-800 mb-2">
@@ -225,6 +245,17 @@ const StudentApproval: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* ✅ Debug Button في الهيدر */}
+                    <div className="flex justify-between items-center mb-4">
+                        <button
+                            onClick={handleDebug}
+                            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm"
+                        >
+                            <FiDatabase />
+                            <span>تشخيص البيانات</span>
+                        </button>
                     </div>
 
                     <div className="plan__daily-table">
