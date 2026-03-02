@@ -1,4 +1,4 @@
-//  usePermissions Hook - مُصحح ومتكامل 100%
+// usePermissions Hook - مُصحح ومتكامل 100% مع الـ Controller الجديد
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 
@@ -8,9 +8,9 @@ interface Permissions {
     staff: boolean | string[];
     financial: boolean | string[];
     domain: boolean;
-    education: boolean;
+    education: boolean | string[]; // ✅ مُحدث لدعم array permissions
     attendance: boolean;
-    reports: boolean | string[];
+    reports: boolean;
     certificates: boolean;
     messages: boolean;
 }
@@ -31,7 +31,7 @@ export const usePermissions = (): UserPermissions => {
         staff: false,
         financial: false,
         domain: false,
-        education: false,
+        education: false, // ✅ يبدأ false لحد ما يجيلنا الـ response
         attendance: false,
         reports: false,
         certificates: false,
@@ -42,7 +42,7 @@ export const usePermissions = (): UserPermissions => {
     const [error, setError] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    //  Helper لجلب CSRF token محسن
+    // Helper لجلب CSRF token محسن
     const getCsrfToken = useCallback((): string => {
         const metaToken = document
             .querySelector('meta[name="csrf-token"]')
@@ -64,9 +64,9 @@ export const usePermissions = (): UserPermissions => {
         return "";
     }, []);
 
-    //  Fetch function مُصحح
+    // Fetch function مُصحح ومُحسن
     const fetchPermissions = useCallback(async (): Promise<void> => {
-        //  Abort previous request
+        // Abort previous request
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
@@ -81,7 +81,7 @@ export const usePermissions = (): UserPermissions => {
 
             console.log(
                 "🔍 Fetching permissions with CSRF:",
-                csrfToken ? " Found" : "❌ Missing",
+                csrfToken ? "✅ Found" : "❌ Missing",
             );
 
             const response = await fetch("/api/user/permissions", {
@@ -97,7 +97,7 @@ export const usePermissions = (): UserPermissions => {
                 },
             });
 
-            //  تحقق من response.ok الأول
+            // تحقق من response.ok الأول
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 const errorMsg =
@@ -108,7 +108,7 @@ export const usePermissions = (): UserPermissions => {
                 throw new Error(errorMsg);
             }
 
-            //  تحقق من content-type
+            // تحقق من content-type
             const contentType = response.headers.get("content-type");
             if (!contentType?.includes("application/json")) {
                 const textResponse = await response.text();
@@ -121,9 +121,9 @@ export const usePermissions = (): UserPermissions => {
             }
 
             const data = await response.json();
-            console.log(" Permissions response:", data);
+            console.log("✅ Permissions response:", data);
 
-            //  إصلاح خطأ toast (كان مكتوب toast بس بدون .success)
+            // ✅ حفظ الـ permissions الجديدة من الـ Controller
             if (data.success !== false) {
                 setPermissions(data.permissions || {});
                 setRole(data.role || null);
@@ -133,7 +133,7 @@ export const usePermissions = (): UserPermissions => {
             }
         } catch (err: any) {
             if (err.name === "AbortError") {
-                console.log(" Request aborted");
+                console.log("⏹️ Request aborted");
                 return;
             }
 
@@ -141,10 +141,10 @@ export const usePermissions = (): UserPermissions => {
             setError(err.message || "Failed to fetch permissions");
             toast.error(err.message || "فشل في جلب الصلاحيات");
 
-            //  Default fallback permissions حسب الـ role الافتراضي
+            // Default fallback permissions آمن
             setPermissions({
                 dashboard: true,
-                mosque: ["students/approval"], // اعتماد الطلاب دايماً يظهر
+                mosque: false,
                 staff: false,
                 financial: false,
                 domain: false,
@@ -154,68 +154,68 @@ export const usePermissions = (): UserPermissions => {
                 certificates: false,
                 messages: false,
             });
-            setRole("teacher");
+            setRole(null);
         } finally {
             setLoading(false);
             abortControllerRef.current = null;
         }
     }, [getCsrfToken]);
 
-    //  Permission checker مُحسن ومُصحح لكل الـ roles
+    // ✅ Permission checker مُحسن للـ Controller الجديد
     const hasPermission = useCallback(
         (menuKey: string, subPath?: string): boolean => {
             const perm = permissions[menuKey as keyof Permissions];
 
             console.log(
-                `🔍 Checking permission [${menuKey}]${subPath ? ` - ${subPath}` : ""}:`,
+                `🔍 Checking permission [${menuKey}]${subPath ? ` → ${subPath}` : ""}:`,
                 perm,
             );
 
-            //  Boolean permissions
+            // Boolean permissions (true/false مباشرة)
             if (typeof perm === "boolean") {
                 return perm;
             }
 
-            //  Array permissions مع path matching مُحسن
+            // ✅ Array permissions مع path matching مُحسن للـ Controller الجديد
             if (Array.isArray(perm) && subPath) {
+                // تنظيف الـ subPath للمقارنة
                 const cleanSubPath = subPath
                     .replace("/center-dashboard/", "")
-                    .replace("/api/", "")
-                    .replace(/^\/|\/$/g, ""); // تنظيف البداية والنهاية
+                    .replace(/^\/|\/$/g, ""); // إزالة / البداية والنهاية
 
                 console.log(
                     `🔍 Clean path: "${cleanSubPath}" vs permissions:`,
                     perm,
                 );
 
-                //  تحقق من وجود أي permission يطابق الـ path
+                // تحقق من تطابق الـ path مع أي permission في الـ array
                 return perm.some((allowedPath) => {
                     const cleanAllowedPath = allowedPath.replace(
                         /^\/|\/$/g,
                         "",
                     );
                     return (
-                        cleanSubPath === cleanAllowedPath ||
-                        cleanSubPath.includes(cleanAllowedPath) ||
-                        cleanAllowedPath.includes(cleanSubPath)
+                        cleanSubPath === cleanAllowedPath || // تطابق تام
+                        cleanSubPath.startsWith(cleanAllowedPath) || // subpath يبدأ بـ allowed
+                        cleanAllowedPath.startsWith(cleanSubPath) // allowed يبدأ بـ subpath
                     );
                 });
             }
 
-            //  إذا array فاضي أو مش موجود = false
+            // إذا array فاضي أو مش موجود = false
             return Array.isArray(perm) ? !!perm.length : false;
         },
         [permissions],
     );
 
-    //  Initial fetch
+    // Initial fetch
     useEffect(() => {
         fetchPermissions();
     }, [fetchPermissions]);
 
-    //  Debug effect مُحسن
+    // Debug effect مُحسن
     useEffect(() => {
-        console.log("🔍 Permissions state:", {
+        console.log("🔍 Permissions state updated:", {
             permissions,
             role,
             loading,
@@ -223,7 +223,7 @@ export const usePermissions = (): UserPermissions => {
         });
     }, [permissions, role, loading, error]);
 
-    //  Cleanup
+    // Cleanup
     useEffect(() => {
         return () => {
             if (abortControllerRef.current) {
@@ -232,7 +232,7 @@ export const usePermissions = (): UserPermissions => {
         };
     }, []);
 
-    //  Refetch function
+    // Refetch function
     const refetch = useCallback(async () => {
         await fetchPermissions();
     }, [fetchPermissions]);

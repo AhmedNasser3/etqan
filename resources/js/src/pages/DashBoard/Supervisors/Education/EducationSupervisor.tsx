@@ -370,7 +370,10 @@ const EducationalSupervisor: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="inputs__verifyOTPBirth">
+                    <div
+                        className="inputs__verifyOTPBirth"
+                        id="userProfile__verifyOTPBirth"
+                    >
                         <div className="userProfile__progressContent">
                             <div className="userProfile__progressTitle">
                                 <h1>متوسط الأداء</h1>

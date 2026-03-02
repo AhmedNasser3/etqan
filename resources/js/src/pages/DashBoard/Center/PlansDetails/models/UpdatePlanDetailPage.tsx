@@ -183,7 +183,6 @@ const UpdatePlanDetailPage: React.FC<UpdatePlanDetailPageProps> = ({
                                 className="inputs__submitBtn"
                                 id="ParentModel__btn"
                             >
-                                {" "}
                                 <button
                                     type="button"
                                     onClick={() => submitForm(handleSubmit)}

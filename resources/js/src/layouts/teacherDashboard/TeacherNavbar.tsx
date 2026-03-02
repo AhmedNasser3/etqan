@@ -20,6 +20,32 @@ const TeacherNavbar: React.FC = () => {
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const { user, loading } = useAuthUser();
 
+    // ✅ تحديد اسم اللوحة والرابط حسب الـ role
+    const getDashboardConfig = () => {
+        if (!user?.teacher?.role)
+            return { title: "لوحة التحكم", link: "/teacher-dashboard" };
+
+        switch (user.teacher.role) {
+            case "teacher":
+                return { title: "لوحة المعلم", link: "/teacher-dashboard" };
+            case "supervisor":
+                return { title: "لوحة المشرف", link: "/supervisor-dashboard" };
+            case "motivator":
+                return { title: "لوحة الدافع", link: "/motivator-dashboard" };
+            case "student_affairs":
+                return {
+                    title: "لوحة شؤون الطلاب",
+                    link: "/student-affairs-dashboard",
+                };
+            case "financial":
+                return { title: "لوحة المالية", link: "/financial-dashboard" };
+            default:
+                return { title: "لوحة التحكم", link: "/center-dashboard" };
+        }
+    };
+
+    const dashboardConfig = getDashboardConfig();
+
     const handleOpenSettingModel = () => {
         setShowSettingModel(true);
     };
@@ -138,12 +164,14 @@ const TeacherNavbar: React.FC = () => {
                                         className={`navbar__dropdown ${dropdowns.profile ? "dropped" : ""}`}
                                         id="navbar__profileDropDown"
                                     >
-                                        <a href="/teacher-dashboard">
+                                        {/* ✅ الرابط والاسم حسب الـ role */}
+                                        <a href={dashboardConfig.link}>
                                             <li>
                                                 <FaUserAlt />
-                                                حسابي
+                                                {dashboardConfig.title}
                                             </li>
                                         </a>
+
                                         <a href="#">
                                             <li
                                                 onClick={(e) => {
@@ -156,19 +184,23 @@ const TeacherNavbar: React.FC = () => {
                                                 الإعدادات
                                             </li>
                                         </a>
-                                        <a href="/teacher-dashboard/plans">
+
+                                        {/* ✅ رابط الجدول حسب الـ role */}
+                                        <a
+                                            href={
+                                                dashboardConfig.link + "/plans"
+                                            }
+                                        >
                                             <li>
                                                 <BsTable />
-                                                جدول
+                                                جدول الجلسات
                                             </li>
                                         </a>
-                                        <a href="#">
-                                            <li>
-                                                <IoSettings />
 
-                                                <button onClick={handleLogout}>
-                                                    تسجيل الخروج
-                                                </button>
+                                        <a href="#">
+                                            <li onClick={handleLogout}>
+                                                <IoSettings />
+                                                تسجيل الخروج
                                             </li>
                                         </a>
                                     </ul>

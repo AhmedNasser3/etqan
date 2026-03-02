@@ -1,4 +1,5 @@
-import { useAuthUser } from "./hooks/useAuthUser"; // ضبط المسار حسب مكان الهوك
+// UserProfile.tsx - ✅ محدث مع شرط GuardianChildrenPage
+import { useAuthUser } from "./hooks/useAuthUser";
 import PlanCards from "../plans/models/PlanCards";
 import Schedules from "../plans/models/Sheduls";
 import UserMeetCard from "../userMeet/UserMeetCard";
@@ -9,6 +10,10 @@ import GuardianChildrenPage from "../GuardianChildren/GuardianChildrenPage";
 
 const UserProfile: React.FC = () => {
     const { user, loading } = useAuthUser();
+
+    // ✅ الشروط لعرض GuardianChildrenPage
+    const isGuardian = user?.role?.name === "guardian" || user?.role_id === 2;
+    const showGuardianChildren = isGuardian && !loading;
 
     return (
         <div className="userProfile">
@@ -53,30 +58,31 @@ const UserProfile: React.FC = () => {
                     </div>
                     <EmailVerifyWidget />
                 </div>
+            </div>
 
-                {/* خططي الخاصة */}
-
-                <div className="userProfile__doupleSide">
-                    <Medals />
-                    <div className="userProfile__progress">
-                        <div className="userProfile__progressContainer">
-                            <div className="userProfile__progressContent">
-                                <div className="userProfile__progressTitle">
-                                    <h1>مستوى تقدم الطالب</h1>
-                                </div>
-                                <p>98%</p>
-                                <div className="userProfile__progressBar">
-                                    <span></span>
-                                </div>
+            {/* خططي الخاصة */}
+            <div className="userProfile__doupleSide">
+                <Medals />
+                <div className="userProfile__progress">
+                    <div className="userProfile__progressContainer">
+                        <div className="userProfile__progressContent">
+                            <div className="userProfile__progressTitle">
+                                <h1>مستوى تقدم الطالب</h1>
+                            </div>
+                            <p>98%</p>
+                            <div className="userProfile__progressBar">
+                                <span></span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* <Schedules /> */}
             <UserMeetCard />
-            <GuardianChildrenPage />
+
+            {/* ✅ GuardianChildrenPage - يظهر للـ Guardian فقط */}
+            {showGuardianChildren && <GuardianChildrenPage />}
+
             <PlanCards type="my-plans" />
             {/* ✅ خطط متاحة للحجز */}
             <PlanCards type="available" />

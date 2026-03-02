@@ -423,6 +423,7 @@ const SchedulesManagement: React.FC = () => {
 
                 <div
                     className="inputs__verifyOTPBirth"
+                    id="userProfile__verifyOTPBirth"
                     style={{ width: "100%" }}
                 >
                     <div className="userProfile__progressContent">

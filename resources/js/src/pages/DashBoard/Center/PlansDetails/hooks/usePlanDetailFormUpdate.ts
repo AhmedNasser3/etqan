@@ -14,7 +14,7 @@ interface FormData {
     day_number: string;
     new_memorization: string;
     review_memorization: string;
-    status: "pending" | "current" | "current" | "completed";
+    status: "pending" | "current" | "completed";
 }
 
 interface FormErrors {
@@ -68,7 +68,6 @@ export const usePlanDetailFormUpdate = (detailId: number) => {
 
     const fetchPlanDays = useCallback(async () => {
         try {
-            // Get plan ID from detail URL or API
             const response = await fetch(`/api/v1/plan-details/${detailId}`, {
                 credentials: "include",
                 headers: { Accept: "application/json" },
@@ -123,13 +122,15 @@ export const usePlanDetailFormUpdate = (detailId: number) => {
                 const formDataSubmit = new FormData();
                 formDataSubmit.append("_method", "PUT");
                 formDataSubmit.append("day_number", formData.day_number);
+
+                // ✅ إرسال null للحقول الفارغة
                 formDataSubmit.append(
                     "new_memorization",
-                    formData.new_memorization,
+                    formData.new_memorization.trim() || null,
                 );
                 formDataSubmit.append(
                     "review_memorization",
-                    formData.review_memorization,
+                    formData.review_memorization.trim() || null,
                 );
                 formDataSubmit.append("status", formData.status);
 

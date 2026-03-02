@@ -1,6 +1,6 @@
-// pages/auth/Login.tsx
-
+// pages/auth/Login.tsx - مُصحح مع دعم Multi-Tenant كامل (login مع slug)
 import React, { useState } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import { useOtpVerification } from "../hooks/useOtpVerification";
 import VerifyOtpPopout from "./VerifyOtpPopout";
 import ModalNotification from "../../../../components/ModalNotification";
@@ -10,17 +10,38 @@ const Login: React.FC = () => {
     const [email, setEmail] = useState("");
     const [isVerified, setIsVerified] = useState(false);
 
+    // ✅ جلب centerSlug من الـ URL parameters والـ pathname
+    const { centerSlug: paramSlug } = useParams<{ centerSlug?: string }>();
+    const location = useLocation();
+
+    // ✅ استخراج centerSlug من أي مكان في الـ URL
+    const getCenterSlug = () => {
+        const pathParts = location.pathname.split("/").filter(Boolean);
+
+        // ✅ البحث عن centerSlug في أي مكان قبل login
+        for (let i = 0; i < pathParts.length - 1; i++) {
+            if (pathParts[i + 1] === "login") {
+                return pathParts[i]; // center-slug قبل login
+            }
+        }
+
+        // ✅ أو من useParams
+        return paramSlug || null;
+    };
+
+    const centerSlug = getCenterSlug();
+
     const { verified, loading, sendOtp, modal, closeModal } =
         useOtpVerification();
 
     const handleOpenPopup = async () => {
         if (!email || email.trim().length < 5) {
-            // لو حاب تحط رسالة تنبيه كمستقلة أحسن، اتركها alert أو أحوّلها أيضًا لـ modal
             alert("البريد الإلكتروني غير صالح.");
             return;
         }
 
-        await sendOtp(email);
+        // ✅ تمرير centerSlug للـ Backend
+        await sendOtp(email, centerSlug);
         setShowPopup(true);
     };
 
@@ -29,6 +50,13 @@ const Login: React.FC = () => {
         setShowPopup(false);
         window.location.href = "/";
     };
+
+    // ✅ بناء الروابط الثلاثة مع الـ centerSlug
+    const getRegisterLink = () =>
+        centerSlug ? `/register/${centerSlug}` : "/register";
+    const getTeacherRegisterLink = () =>
+        centerSlug ? `/${centerSlug}/teacher-register` : "/teacher-register";
+    const getCenterRegisterLink = () => "/center-register"; // ثابتة
 
     return (
         <>
@@ -103,11 +131,7 @@ const Login: React.FC = () => {
                                                 >
                                                     <button
                                                         disabled={!isVerified}
-                                                        className={`login-btn ${
-                                                            isVerified
-                                                                ? "login-btn-active"
-                                                                : ""
-                                                        }`}
+                                                        className={`login-btn ${isVerified ? "login-btn-active" : ""}`}
                                                         onClick={() => {
                                                             if (!isVerified)
                                                                 return;
@@ -131,33 +155,47 @@ const Login: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* روابط التسجيل */}
-                                        <div
-                                            className="inputs__verifyOTPtimer"
-                                            id="verifyPopout__verifyOTPtimer"
-                                        >
-                                            <a href="/register">
+                                        {/* ✅ الروابط الثلاثة كاملة مع الـ centerSlug */}
+                                        <div className="inputs__verifyOTPtimer">
+                                            <a href={getRegisterLink()}>
                                                 <span className="resend-link">
                                                     ليس لديك حساب؟
+                                                    {centerSlug && (
+                                                        <small
+                                                            style={{
+                                                                marginLeft:
+                                                                    "5px",
+                                                                opacity: 0.8,
+                                                            }}
+                                                        >
+                                                            ({centerSlug})
+                                                        </small>
+                                                    )}
                                                 </span>
                                             </a>
                                         </div>
 
-                                        <div
-                                            className="inputs__verifyOTPtimer"
-                                            id="verifyPopout__verifyOTPtimer"
-                                        >
-                                            <a href="/teacher-register">
+                                        <div className="inputs__verifyOTPtimer">
+                                            <a href={getTeacherRegisterLink()}>
                                                 <span className="resend-link">
                                                     إنشاء حساب معلم
+                                                    {centerSlug && (
+                                                        <small
+                                                            style={{
+                                                                marginLeft:
+                                                                    "5px",
+                                                                opacity: 0.8,
+                                                            }}
+                                                        >
+                                                            ({centerSlug})
+                                                        </small>
+                                                    )}
                                                 </span>
                                             </a>
                                         </div>
-                                        <div
-                                            className="inputs__verifyOTPtimer"
-                                            id="verifyPopout__verifyOTPtimer"
-                                        >
-                                            <a href="/center-register">
+
+                                        <div className="inputs__verifyOTPtimer">
+                                            <a href={getCenterRegisterLink()}>
                                                 <span className="resend-link">
                                                     إنشاء حساب مجمع
                                                 </span>
@@ -186,7 +224,6 @@ const Login: React.FC = () => {
                 </div>
             </div>
 
-            {/* Popout Modal Notification */}
             <ModalNotification
                 show={modal.show}
                 title={modal.title}

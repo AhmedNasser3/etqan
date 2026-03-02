@@ -1,16 +1,7 @@
-import { LiaCertificateSolid } from "react-icons/lia";
-import { PiCertificateDuotone } from "react-icons/pi";
+// Medals.tsx - مُصحح مع الأوسمة الجديدة فقط حسب عدد الحصص
+import { FaMedal } from "react-icons/fa";
 import { ReactNode, useState } from "react";
-import {
-    FaStar,
-    FaCalendarCheck,
-    FaBookOpen,
-    FaTrophy,
-    FaChartLine,
-    FaUsers,
-    FaGift,
-    FaMicrophone,
-} from "react-icons/fa";
+import { useStudentProgress } from "../userProgress/hooks/useStudentProgress";
 
 interface MedalProps {
     icon: ReactNode;
@@ -19,76 +10,101 @@ interface MedalProps {
 }
 
 const Medals: React.FC = () => {
-    const medals: MedalProps[] = [
-        {
-            icon: <LiaCertificateSolid />,
-            title: "متميز",
-            tooltip: "متميز في الحفظ والتسميع",
-        },
-        {
-            icon: <PiCertificateDuotone />,
-            title: "حاصل على شهادة",
-            tooltip: "شهادة إتمام الختمة",
-        },
-        {
-            icon: <FaStar />,
-            title: "نجم الحلقة",
-            tooltip: "أعلى نقاط في الحلقة هذا الأسبوع",
-        },
-        {
-            icon: <FaCalendarCheck />,
-            title: "حضور مثالي",
-            tooltip: "100% حضور بدون غياب",
-        },
-        {
-            icon: <FaBookOpen />,
-            title: "ختمة كاملة",
-            tooltip: "إتمام حفظ القرآن كاملاً",
-        },
-        {
-            icon: <FaTrophy />,
-            title: "بطل التسميع",
-            tooltip: "أفضل تقييم في التسميع الشهري",
-        },
-        {
-            icon: <FaChartLine />,
-            title: "الأسرع تقدماً",
-            tooltip: "أعلى نسبة تقدم في الحفظ",
-        },
-        {
-            icon: <FaUsers />,
-            title: "لوحة الشرف",
-            tooltip: "المركز الأول في ترتيب الحلقة",
-        },
-        {
-            icon: <FaGift />,
-            title: "مكافأة الشهر",
-            tooltip: "فاز بسحب هدايا التحفيز",
-        },
-        {
-            icon: <FaMicrophone />,
-            title: "تسميع مميز",
-            tooltip: "أفضل تسجيل تسميع عن بعد",
-        },
-    ];
+    // ✅ استخدام useStudentProgress hook
+    const { data, loading } = useStudentProgress();
+    const totalLessons = data?.lessons?.length || 0;
+
+    // ✅ الأوسمة الجديدة فقط حسب عدد الحصص (بدون الأوسمة القديمة)
+    const getMedals = (): MedalProps[] => {
+        const medals: MedalProps[] = [];
+
+        if (totalLessons >= 1) {
+            medals.push({
+                icon: <FaMedal className="text-gray-400 text-lg" />,
+                title: "إكمال 1 حصة",
+                tooltip: `مبروك! أكملت ${totalLessons} حصة${totalLessons > 1 ? "s" : ""}`,
+            });
+        }
+        if (totalLessons >= 10) {
+            medals.push({
+                icon: <FaMedal className="text-blue-500 text-lg" />,
+                title: "إكمال 10 حصص",
+                tooltip: `مبروك! أكملت ${totalLessons} حصة${totalLessons > 1 ? "s" : ""}`,
+            });
+        }
+        if (totalLessons >= 50) {
+            medals.push({
+                icon: <FaMedal className="text-green-500 text-xl" />,
+                title: "إكمال 50 حصة",
+                tooltip: `مبروك! أكملت ${totalLessons} حصة${totalLessons > 1 ? "s" : ""}`,
+            });
+        }
+        if (totalLessons >= 100) {
+            medals.push({
+                icon: <FaMedal className="text-purple-500 text-xl" />,
+                title: "إكمال 100 حصة",
+                tooltip: `مبروك! أكملت ${totalLessons} حصة${totalLessons > 1 ? "s" : ""}`,
+            });
+        }
+        if (totalLessons >= 300) {
+            medals.push({
+                icon: <FaMedal className="text-yellow-400 text-2xl" />,
+                title: "إكمال 300 حصة - البطل",
+                tooltip: `مبروك! أكملت ${totalLessons} حصص - أنت البطل الأعلى!`,
+            });
+        }
+
+        return medals;
+    };
+
+    const medals = getMedals();
+
+    if (loading) {
+        return (
+            <div className="userProfile__medal">
+                <div className="userProfile__medalContainer">
+                    <div className="userProfile__medalContent loading">
+                        <div className="userProfile__medalTitle">
+                            <div className="loading-skeleton"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="userProfile__medal">
             <div className="userProfile__medalContainer">
-                {medals.map((medal, index) => (
-                    <MedalItem
-                        key={index}
-                        icon={medal.icon}
-                        title={medal.title}
-                        tooltip={medal.tooltip}
-                    />
-                ))}
+                {medals.length > 0 ? (
+                    medals.map((medal, index) => (
+                        <MedalItem
+                            key={index}
+                            icon={medal.icon}
+                            title={medal.title}
+                            tooltip={medal.tooltip}
+                        />
+                    ))
+                ) : (
+                    <div className="userProfile__medalContent empty">
+                        <div className="userProfile__medalTitle">
+                            <FaMedal className="text-gray-300 text-lg" />
+                        </div>
+                        <div className="tooltip">
+                            أكمل أول حصة لتحصل على وسام!
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
-const MedalItem: React.FC<MedalProps> = ({ icon, title, tooltip }) => {
+const MedalItem: React.FC<{
+    icon: ReactNode;
+    title: string;
+    tooltip: string;
+}> = ({ icon, title, tooltip }) => {
     const [showTooltip, setShowTooltip] = useState(false);
 
     return (

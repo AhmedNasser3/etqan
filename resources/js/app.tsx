@@ -74,6 +74,9 @@ import CenterNavbar from "./src/layouts/centerDashboard/CenterNavbar";
 import AdminDashboard from "./src/pages/DashBoard/Admin/AdminDashboard";
 import MyTeachersManagement from "./src/pages/DashBoard/Center/MyTeachers/MyTeachersManagement";
 import CustomSalariesManagement from "./src/pages/DashBoard/Center/TeacherCustomSalaries/CustomSalariesManagement";
+import StudentTransferManagement from "./src/pages/DashBoard/Center/StudentTransfers/StudentTransferManagement";
+import StudentAffairsPlatform from "./src/pages/DashBoard/Admin/StudentAffairsPlatform/StudentAffairsPlatform";
+import PublicNavbar from "./src/layouts/PublicNavbar/PublicNavbar";
 
 function UserLayout() {
     return (
@@ -119,7 +122,7 @@ function CenterLayout() {
 function PublicLayout() {
     return (
         <>
-            <Navbar />
+            <PublicNavbar />
             <Sidebar />
             <main className="page">
                 <div className="page__container">
@@ -133,7 +136,7 @@ function DashLayout() {
     return (
         <>
             <Navbar />
-            <Sidebar />
+            {/* <Sidebar /> */}
             <main className="page">
                 <div className="page__container">
                     <Outlet />
@@ -173,7 +176,7 @@ function App() {
                         path="register/:centerSlug?"
                         element={<Register />}
                     />
-                    <Route path="login" element={<Login />} />
+                    <Route path=":centerSlug?/login" element={<Login />} />
                     <Route
                         path=":centerSlug?/teacher-register"
                         element={<TeacherRegister />}
@@ -291,6 +294,10 @@ function App() {
                             element={<MeetingsManagement />}
                         />
                         <Route
+                            path="plan-transfer-management"
+                            element={<StudentTransferManagement />}
+                        />
+                        <Route
                             path="teachers-management"
                             element={<MyTeachersManagement />}
                         />
@@ -329,6 +336,10 @@ function App() {
                         <Route
                             path="admin-approval"
                             element={<PendingCentersApproval />}
+                        />
+                        <Route
+                            path="student-affairs-platform"
+                            element={<StudentAffairsPlatform />}
                         />
                     </Route>
 

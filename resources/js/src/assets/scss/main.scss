@@ -1135,3 +1135,239 @@
         font-size: 15px;
     }
 }
+// styles/components/transfer-preview.scss
+
+.transfer-preview-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+}
+
+.transfer-preview-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+
+    .transfer-preview-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+
+        span {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+        }
+    }
+
+    h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    p {
+        font-size: 14px;
+        color: #64748b;
+        margin: 4px 0 0 0;
+        font-weight: 500;
+    }
+}
+
+.transfer-preview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+    padding: 20px;
+}
+
+.transfer-preview-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    font-size: 14px;
+    color: #334155;
+
+    &.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .transfer-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    span:last-child {
+        strong {
+            color: #1e293b;
+            font-weight: 700;
+        }
+    }
+}
+
+.transfer-preview-warning {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #92400e;
+
+    .transfer-icon {
+        width: 32px;
+        height: 32px;
+        background: #f59e0b;
+        color: white;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    strong {
+        color: #b45309;
+    }
+}
+
+// 🔥 Icons Colors (أخضر داكن + رمادي غامق)
+.transfer-preview-item .transfer-icon {
+    &[data-icon="plan"] {
+        background: linear-gradient(135deg, #059669, #047857);
+        color: white;
+    }
+    &[data-icon="circle"] {
+        background: linear-gradient(135deg, #065f46, #047857);
+        color: white;
+    }
+    &[data-icon="date"] {
+        background: linear-gradient(135deg, #1e40af, #1d4ed8);
+        color: white;
+    }
+    &[data-icon="time"] {
+        background: linear-gradient(135deg, #0f766e, #0d9488);
+        color: white;
+    }
+    &[data-icon="teacher"] {
+        background: linear-gradient(135deg, #374151, #4b5563);
+        color: white;
+    }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+    .transfer-preview-box {
+        padding: 16px;
+
+        &:hover {
+            transform: none;
+        }
+    }
+
+    .transfer-preview-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+
+        h3 {
+            font-size: 16px;
+        }
+
+        p {
+            font-size: 13px;
+        }
+    }
+
+    .transfer-preview-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 16px;
+    }
+
+    .transfer-preview-item {
+        padding: 10px 0;
+        font-size: 13px;
+
+        .transfer-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
+    }
+
+    .transfer-preview-warning {
+        padding: 12px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .transfer-preview-box {
+        padding: 14px;
+    }
+
+    .transfer-preview-grid {
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .transfer-preview-item {
+        font-size: 12px;
+        padding: 8px 0;
+
+        .transfer-icon {
+            width: 28px;
+            height: 28px;
+            font-size: 13px;
+        }
+    }
+}
+
+// Animation on load
+.transfer-preview-box {
+    animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}

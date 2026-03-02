@@ -1,36 +1,35 @@
-// StudentAffairs.tsx - النسخة المُصححة بدون refetch
+// TeachersAffairsPlatform.tsx - صفحة شؤون المعلمين للمنصة الكاملة
 import React, { useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical, GrDocumentText } from "react-icons/gr";
-import { PiWhatsappLogoDuotone, PiStudent } from "react-icons/pi";
-import { FiEdit2 } from "react-icons/fi";
-import { useStudentAffairs } from "./hooks/useStudentAffairs";
-import StudentAffairsUpdate from "./models/StudentAffairsUpdate";
+import { PiWhatsappLogoDuotone, PiUserCircle } from "react-icons/pi";
+import { FiEdit2, FiPrinter } from "react-icons/fi";
+import { useTeachersAffairsPlatform } from "./hooks/useTeachersAffairsPlatform";
+import TeachersAffairsUpdatePlatform from "./models/TeachersAffairsUpdatePlatform";
 
-const StudentAffairs: React.FC = () => {
+const TeachersAffairsPlatform: React.FC = () => {
     const {
-        students,
+        teachers,
         loading,
         search,
         setSearch,
-        filterGrade,
-        setFilterGrade,
+        filterRole,
+        setFilterRole,
         filterStatus,
         setFilterStatus,
         stats,
         sendWhatsappReminder,
         printCard,
-        // ❌ شيلنا refetch لأنه مش موجود
-    } = useStudentAffairs();
+    } = useTeachersAffairsPlatform();
 
     // ✅ States للـ Modal
     const [showUpdateModal, setShowUpdateModal] = useState(false);
-    const [selectedStudentId, setSelectedStudentId] = useState<number | null>(
+    const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(
         null,
     );
 
-    const filteredStudentsCount = students.length;
+    const filteredTeachersCount = teachers.length;
 
     const handleWhatsappReminder = async (id: number, phone: string) => {
         const success = await sendWhatsappReminder(id, phone);
@@ -39,34 +38,48 @@ const StudentAffairs: React.FC = () => {
         }
     };
 
-    const handlePrintReport = (id: number) => {
+    const handlePrintCard = (id: number) => {
         printCard(id);
     };
 
     // ✅ فتح Modal التعديل
-    const handleEdit = useCallback((studentId: number) => {
-        setSelectedStudentId(studentId);
+    const handleEdit = useCallback((teacherId: number) => {
+        setSelectedTeacherId(teacherId);
         setShowUpdateModal(true);
     }, []);
 
     // ✅ إغلاق Modal
     const handleCloseUpdateModal = useCallback(() => {
         setShowUpdateModal(false);
-        setSelectedStudentId(null);
+        setSelectedTeacherId(null);
     }, []);
 
-    // ✅ نجاح التعديل - بدون refetch
+    // ✅ نجاح التعديل
     const handleUpdateSuccess = useCallback(() => {
-        toast.success("تم تحديث بيانات الطالب بنجاح! ✨");
+        toast.success("تم تحديث بيانات المعلم بنجاح! ✨");
         handleCloseUpdateModal();
-        // ✅ لو عايز تحديث البيانات، ضيف window.location.reload() أو اعمل refetch في الـ hook
     }, [handleCloseUpdateModal]);
 
     const getStatusColor = (status: string) => {
         switch (status) {
             case "نشط":
                 return "text-green-600 bg-green-100";
-            case "متأخر مالياً":
+            case "معلق":
+                return "text-red-600 bg-red-100";
+            default:
+                return "text-gray-600 bg-gray-100";
+        }
+    };
+
+    const getSalaryStatusColor = (status: string) => {
+        switch (status) {
+            case "مدفوع":
+                return "text-green-600 bg-green-100";
+            case "مستحق":
+                return "text-orange-600 bg-orange-100";
+            case "جزئي":
+                return "text-yellow-600 bg-yellow-100";
+            case "معلق":
                 return "text-red-600 bg-red-100";
             default:
                 return "text-gray-600 bg-gray-100";
@@ -93,23 +106,22 @@ const StudentAffairs: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </div>{" "}
+                </div>
             </div>
         );
     }
 
     return (
         <>
-            {/* ✅ Modal التعديل */}
-            {showUpdateModal && selectedStudentId && (
-                <StudentAffairsUpdate
-                    studentId={selectedStudentId}
+            {/* ✅ Modal التعديل للمنصة */}
+            {showUpdateModal && selectedTeacherId && (
+                <TeachersAffairsUpdatePlatform
+                    teacherId={selectedTeacherId}
                     onClose={handleCloseUpdateModal}
                     onSuccess={handleUpdateSuccess}
                 />
             )}
 
-            {/* باقي الكود زي ما هو بالظبط - بدون أي تغيير */}
             <div className="teacherMotivate" style={{ padding: "0 15%" }}>
                 <div className="teacherMotivate__inner">
                     <div
@@ -118,8 +130,8 @@ const StudentAffairs: React.FC = () => {
                     >
                         <div className="userProfile__planTitle">
                             <h1>
-                                شؤون الطلاب{" "}
-                                <span>{filteredStudentsCount} طالب</span>
+                                شؤون المعلمين - المنصة الكاملة{" "}
+                                <span>{filteredTeachersCount} معلم</span>
                             </h1>
                         </div>
 
@@ -128,11 +140,10 @@ const StudentAffairs: React.FC = () => {
                                 <i>
                                     <RiRobot2Fill />
                                 </i>
-                                يمكنك متابعة الحضور والمصروفات وطباعة البطاقات
-                                بضغطة واحدة
+                                إدارة جميع المعلمين في جميع المجامع بضغطة واحدة
                             </div>
                             <div className="plan__current">
-                                <h2>إدارة بيانات الطلاب وأولياء الأمور</h2>
+                                <h2>إدارة بيانات المعلمين والرواتب - المنصة</h2>
                                 <div
                                     className="plan__date-range"
                                     style={{
@@ -142,16 +153,18 @@ const StudentAffairs: React.FC = () => {
                                     }}
                                 >
                                     <select
-                                        value={filterGrade}
+                                        value={filterRole}
                                         onChange={(e) =>
-                                            setFilterGrade(e.target.value)
+                                            setFilterRole(e.target.value)
                                         }
                                         className="p-2 border rounded"
                                         disabled={loading}
                                     >
                                         <option>الكل</option>
-                                        <option>الأول الابتدائي</option>
-                                        <option>الثاني الابتدائي</option>
+                                        {/* هتحتاج تجيب الـ roles من الـ API */}
+                                        <option>مدير</option>
+                                        <option>معلم</option>
+                                        <option>مشرف</option>
                                     </select>
                                     <select
                                         value={filterStatus}
@@ -167,7 +180,7 @@ const StudentAffairs: React.FC = () => {
                                     </select>
                                     <input
                                         type="search"
-                                        placeholder="البحث بالاسم أو الهوية أو ولي الأمر..."
+                                        placeholder="البحث بالاسم أو الهاتف أو الإيميل..."
                                         value={search}
                                         onChange={(e) =>
                                             setSearch(e.target.value)
@@ -179,29 +192,34 @@ const StudentAffairs: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* باقي الجدول والـ stats زي ما هما بالظبط */}
                         <div className="plan__daily-table">
                             <table>
                                 <thead>
                                     <tr>
+                                        <th>المجمع</th>
                                         <th>الصورة</th>
                                         <th>الاسم</th>
-                                        <th>رقم الهوية</th>
-                                        <th>الصف</th>
-                                        <th>الحلقة</th>
-                                        <th>ولي الأمر</th>
+                                        <th>رقم المعلم</th>
+                                        <th>العمر</th>
+                                        <th>الوظيفة</th>
+                                        <th>الهاتف</th>
                                         <th>الحضور</th>
-                                        <th>المصروفات</th>
+                                        <th>الراتب</th>
                                         <th>الحالة</th>
                                         <th>الإجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {students.map((item) => (
+                                    {teachers.map((item) => (
                                         <tr
                                             key={item.id}
                                             className={`plan__row ${item.status}`}
                                         >
+                                            <td>
+                                                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs">
+                                                    {item.center_name}
+                                                </span>
+                                            </td>
                                             <td className="teacherStudent__img">
                                                 <div className="w-12 h-12 rounded-full overflow-hidden">
                                                     <img
@@ -212,20 +230,24 @@ const StudentAffairs: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td>{item.name}</td>
-                                            <td>{item.idNumber}</td>
                                             <td>
-                                                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                                                    {item.grade}
+                                                <span className="font-mono text-sm">
+                                                    #{item.teacherId}
                                                 </span>
                                             </td>
-                                            <td>{item.circle}</td>
+                                            <td>{item.age}</td>
+                                            <td>
+                                                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                                                    {item.role}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <div className="text-sm">
                                                     <div>
-                                                        {item.guardianName}
+                                                        {item.phone_formatted}
                                                     </div>
-                                                    <div className="text-blue-600">
-                                                        {item.guardianPhone}
+                                                    <div className="text-blue-600 text-xs">
+                                                        {item.email}
                                                     </div>
                                                 </div>
                                             </td>
@@ -234,21 +256,28 @@ const StudentAffairs: React.FC = () => {
                                                     {item.attendanceRate}
                                                 </span>
                                             </td>
-                                            <td className="text-green-600 font-bold">
-                                                {item.balance}
+                                            <td>
+                                                <span
+                                                    className={`px-2 py-1 rounded-full text-xs font-bold ${getSalaryStatusColor(
+                                                        item.salaryStatus,
+                                                    )}`}
+                                                >
+                                                    {item.salaryStatus}
+                                                </span>
                                             </td>
                                             <td>
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(item.status)}`}
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(
+                                                        item.status,
+                                                    )}`}
                                                 >
                                                     {item.status}
                                                 </span>
                                             </td>
                                             <td>
                                                 <div className="teacherStudent__btns">
-                                                    {/* ✅ زر التعديل الجديد */}
                                                     <button
-                                                        className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 border-blue-300 text-blue-600 hover:bg-blue-50 w-12 h-12 mr-1"
+                                                        className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 border-blue-300 text-blue-600 hover:bg-blue-50 w-12 h-12"
                                                         onClick={() =>
                                                             handleEdit(item.id)
                                                         }
@@ -260,13 +289,14 @@ const StudentAffairs: React.FC = () => {
                                             </td>
                                         </tr>
                                     ))}
-                                    {students.length === 0 && (
+                                    {teachers.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan={10}
+                                                colSpan={11}
                                                 className="text-center py-8 text-gray-500"
                                             >
-                                                لا توجد بيانات طلاب لهذا الفلتر
+                                                لا توجد بيانات معلمين لهذا
+                                                الفلتر
                                             </td>
                                         </tr>
                                     )}
@@ -274,18 +304,18 @@ const StudentAffairs: React.FC = () => {
                             </table>
                         </div>
 
-                        {/* باقي الـ Stats والـ Progress Bars زي ما هي */}
+                        {/* ✅ الـ Stats الخاصة بالمعلمين */}
                         <div className="plan__stats">
                             <div className="stat-card">
                                 <div className="stat-icon greenColor">
                                     <i>
-                                        <PiStudent />
+                                        <PiUserCircle />
                                     </i>
                                 </div>
                                 <div>
-                                    <h3>إجمالي الطلاب</h3>
+                                    <h3>إجمالي المعلمين في المنصة</h3>
                                     <p className="text-2xl font-bold text-green-600">
-                                        {stats.totalStudents || 0}
+                                        {stats.totalTeachers || 0}
                                     </p>
                                 </div>
                             </div>
@@ -296,9 +326,9 @@ const StudentAffairs: React.FC = () => {
                                     </i>
                                 </div>
                                 <div>
-                                    <h3>الطلاب النشطين</h3>
+                                    <h3>المعلمين النشطين</h3>
                                     <p className="text-2xl font-bold text-yellow-600">
-                                        {stats.activeStudents || 0}
+                                        {stats.activeTeachers || 0}
                                     </p>
                                 </div>
                             </div>
@@ -309,21 +339,18 @@ const StudentAffairs: React.FC = () => {
                                     </i>
                                 </div>
                                 <div>
-                                    <h3>الطلاب المعلقين</h3>
+                                    <h3>المعلمين المعلقين</h3>
                                     <p className="text-2xl font-bold text-red-600">
-                                        {stats.pendingStudents || 0}
+                                        {stats.pendingTeachers || 0}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div
-                            className="inputs__verifyOTPBirth"
-                            id="userProfile__verifyOTPBirth"
-                        >
+                        <div className="inputs__verifyOTPBirth">
                             <div className="userProfile__progressContent">
                                 <div className="userProfile__progressTitle">
-                                    <h1>نسبة النشاط</h1>
+                                    <h1>نسبة دفع الرواتب في المنصة</h1>
                                 </div>
                                 <p>{stats.paymentRate || 0}%</p>
                                 <div className="userProfile__progressBar">
@@ -336,16 +363,16 @@ const StudentAffairs: React.FC = () => {
                             </div>
                             <div className="userProfile__progressContent">
                                 <div className="userProfile__progressTitle">
-                                    <h1>الطلاب النشطين</h1>
+                                    <h1>المعلمين النشطين</h1>
                                 </div>
                                 <p>
-                                    {stats.activeStudents}/{stats.totalStudents}
+                                    {stats.activeTeachers}/{stats.totalTeachers}
                                 </p>
                                 <div className="userProfile__progressBar">
                                     <span
                                         style={{
-                                            width: stats.totalStudents
-                                                ? `${(stats.activeStudents / stats.totalStudents) * 100}%`
+                                            width: stats.totalTeachers
+                                                ? `${(stats.activeTeachers / stats.totalTeachers) * 100}%`
                                                 : "0%",
                                         }}
                                     ></span>
@@ -359,4 +386,4 @@ const StudentAffairs: React.FC = () => {
     );
 };
 
-export default StudentAffairs;
+export default TeachersAffairsPlatform;

@@ -37,6 +37,9 @@ const TeacherSessionsTable: React.FC = () => {
     const [attendanceStatus, setAttendanceStatus] = useState<"حاضر" | "غائب">(
         "غائب",
     );
+    const [sessionStatus, setSessionStatus] = useState<
+        "مكتمل" | "غائب" | "قيد الانتظار" | "إعادة"
+    >("قيد الانتظار");
     const [note, setNote] = useState("");
     const [rating, setRating] = useState(0);
     const [updating, setUpdating] = useState(false);
@@ -57,6 +60,13 @@ const TeacherSessionsTable: React.FC = () => {
 
             if (data.success && data.session) {
                 setSession(data.session);
+                // ✅ تحديث القيم من الـ backend
+                setAttendanceStatus(
+                    data.session.status === "غائب" ? "غائب" : "حاضر",
+                );
+                setSessionStatus(data.session.status as any);
+                setNote("");
+                setRating(0);
                 if (data.total === 1) {
                     toast.success("تم جلب الجلسة الحالية بنجاح");
                 }
@@ -109,7 +119,7 @@ const TeacherSessionsTable: React.FC = () => {
         }
     };
 
-    // ✅ تحديث الجلسة مع CSRF Token
+    // ✅ تحديث الجلسة مع كل السيناريوهات
     const updateSessionStatus = async () => {
         if (!session) return;
 
@@ -124,17 +134,14 @@ const TeacherSessionsTable: React.FC = () => {
                         "Content-Type": "application/json",
                         Accept: "application/json",
                         "X-Requested-With": "XMLHttpRequest",
-                        "X-CSRF-TOKEN": csrfToken, // ✅ CSRF Token
+                        "X-CSRF-TOKEN": csrfToken,
                     },
                     body: JSON.stringify({
                         session_id: session.id,
-                        status:
-                            session.status === "قيد الانتظار"
-                                ? "مكتمل"
-                                : "قيد الانتظار",
-                        attendance_status: attendanceStatus,
-                        note: note,
-                        rating: rating,
+                        status: sessionStatus, // ✅ إرسال الـ status المختار
+                        attendance_status: attendanceStatus, // ✅ إرسال الـ attendance_status
+                        note: note || null, // ✅ ملاحظة اختيارية
+                        rating: rating || 0, // ✅ تقييم اختياري
                     }),
                 },
             );
@@ -144,7 +151,7 @@ const TeacherSessionsTable: React.FC = () => {
             if (data.success) {
                 toast.success(data.message);
                 setEditing(false);
-                fetchTeacherSessions();
+                fetchTeacherSessions(); // ✅ تحديث البيانات من الـ backend
             } else {
                 toast.error(data.message || "فشل في التحديث");
             }
@@ -176,9 +183,11 @@ const TeacherSessionsTable: React.FC = () => {
     const getStatusColor = (status: string) => {
         switch (status) {
             case "مكتمل":
+            case "حاضر":
                 return "bg-green-100 text-green-800";
             case "قيد الانتظار":
                 return "bg-yellow-100 text-yellow-800";
+            case "غائب":
             case "إعادة":
                 return "bg-red-100 text-red-800";
             default:
@@ -347,13 +356,12 @@ const TeacherSessionsTable: React.FC = () => {
                                         <td className="px-4 py-3">
                                             {editing ? (
                                                 <select
-                                                    value={session.status}
+                                                    value={sessionStatus}
                                                     onChange={(e) =>
-                                                        setSession({
-                                                            ...session,
-                                                            status: e.target
-                                                                .value,
-                                                        })
+                                                        setSessionStatus(
+                                                            e.target
+                                                                .value as any,
+                                                        )
                                                     }
                                                     className="px-3 py-1 border rounded-full text-xs font-medium bg-white"
                                                 >
@@ -362,6 +370,9 @@ const TeacherSessionsTable: React.FC = () => {
                                                     </option>
                                                     <option value="مكتمل">
                                                         مكتمل
+                                                    </option>
+                                                    <option value="غائب">
+                                                        غائب
                                                     </option>
                                                     <option value="إعادة">
                                                         إعادة
@@ -446,7 +457,7 @@ const TeacherSessionsTable: React.FC = () => {
                                                     </span>
                                                 )}
                                                 {editing && (
-                                                    <div className="flex gap-1">
+                                                    <div className="flex gap-1 items-center">
                                                         {[1, 2, 3, 4, 5].map(
                                                             (star) => (
                                                                 <button
@@ -498,9 +509,17 @@ const TeacherSessionsTable: React.FC = () => {
                                     <button
                                         onClick={() => {
                                             setEditing(false);
+                                            // ✅ إعادة تعيين القيم
+                                            setAttendanceStatus(
+                                                session.status === "غائب"
+                                                    ? "غائب"
+                                                    : "حاضر",
+                                            );
+                                            setSessionStatus(
+                                                session.status as any,
+                                            );
                                             setNote("");
                                             setRating(0);
-                                            setAttendanceStatus("غائب");
                                         }}
                                         className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2 text-sm"
                                     >
@@ -509,7 +528,16 @@ const TeacherSessionsTable: React.FC = () => {
                                 </>
                             ) : (
                                 <button
-                                    onClick={() => setEditing(true)}
+                                    onClick={() => {
+                                        setEditing(true);
+                                        // ✅ تحميل القيم الحالية عند الـ edit
+                                        setAttendanceStatus(
+                                            session.status === "غائب"
+                                                ? "غائب"
+                                                : "حاضر",
+                                        );
+                                        setSessionStatus(session.status as any);
+                                    }}
                                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm"
                                 >
                                     تعديل الجلسة

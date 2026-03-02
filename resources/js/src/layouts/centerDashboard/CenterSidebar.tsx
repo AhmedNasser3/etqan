@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { usePermissions } from "./hooks/usePermissions";
 import { TbLayoutDashboardFilled } from "react-icons/tb";
-import { IoIosArrowDown } from "react-icons/io";
 import { MdOutlineDomain } from "react-icons/md";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import { FaBullhorn } from "react-icons/fa";
@@ -32,12 +31,13 @@ const CenterSidebar: React.FC = () => {
 
     const { loading, hasPermission } = usePermissions();
 
-    //  Active page logic مع permissions
+    // ✅ Active page logic مُصحح مع كل الـ roles الجديدة
     useEffect(() => {
         if (loading) return;
 
         const currentPath = window.location.pathname;
 
+        // Mosque subpages
         if (
             currentPath.includes("students/approval") &&
             hasPermission("mosque", "/center-dashboard/students/approval")
@@ -46,6 +46,15 @@ const CenterSidebar: React.FC = () => {
             setActiveSubPage("/center-dashboard/students/approval");
             setOpenMenus((prev) => ({ ...prev, mosque: true }));
         } else if (
+            currentPath.includes("booking-manegment") &&
+            hasPermission("mosque", "/center-dashboard/booking-manegment")
+        ) {
+            setActivePage("mosque");
+            setActiveSubPage("/center-dashboard/booking-manegment");
+            setOpenMenus((prev) => ({ ...prev, mosque: true }));
+        }
+        // Staff subpages
+        else if (
             currentPath.includes("staff-approval") &&
             hasPermission("staff", "/center-dashboard/staff-approval")
         ) {
@@ -66,46 +75,92 @@ const CenterSidebar: React.FC = () => {
             setActivePage("staff");
             setActiveSubPage("/center-dashboard/user-suspend");
             setOpenMenus((prev) => ({ ...prev, staff: true }));
-        } else if (
-            currentPath.includes("financial-dashboard") ||
-            currentPath.includes("payroll-exports") ||
-            currentPath.includes("payroll-reports") ||
-            currentPath.includes("payroll-settings")
+        }
+        // Financial subpages
+        else if (
+            currentPath.includes("financial-dashboard") &&
+            hasPermission("financial", "/center-dashboard/financial-dashboard")
         ) {
-            if (hasPermission("financial")) {
-                setActivePage("financial");
-                setActiveSubPage(currentPath);
-                setOpenMenus((prev) => ({ ...prev, financial: true }));
-            }
+            setActivePage("financial");
+            setActiveSubPage("/center-dashboard/financial-dashboard");
+            setOpenMenus((prev) => ({ ...prev, financial: true }));
         } else if (
-            currentPath.includes("education") &&
-            hasPermission("education")
+            currentPath.includes("teaceher-salary-manegment") &&
+            hasPermission(
+                "financial",
+                "/center-dashboard/teaceher-salary-manegment",
+            )
+        ) {
+            setActivePage("financial");
+            setActiveSubPage("/center-dashboard/teaceher-salary-manegment");
+            setOpenMenus((prev) => ({ ...prev, financial: true }));
+        } else if (
+            currentPath.includes("custom-salary-manegment") &&
+            hasPermission(
+                "financial",
+                "/center-dashboard/custom-salary-manegment",
+            )
+        ) {
+            setActivePage("financial");
+            setActiveSubPage("/center-dashboard/custom-salary-manegment");
+            setOpenMenus((prev) => ({ ...prev, financial: true }));
+        }
+        // Education pages حسب الـ role
+        else if (
+            currentPath.includes("education-supervisor") &&
+            hasPermission("education", "/center-dashboard/education-supervisor")
         ) {
             setActivePage("education");
-            setActiveSubPage("");
+            setActiveSubPage("/center-dashboard/education-supervisor");
         } else if (
-            currentPath.includes("certificates") &&
-            hasPermission("certificates")
+            currentPath.includes("special-request-manegment") &&
+            hasPermission(
+                "education",
+                "/center-dashboard/special-request-manegment",
+            )
         ) {
-            setActivePage("certificates");
-            setActiveSubPage("");
+            setActivePage("education");
+            setActiveSubPage("/center-dashboard/special-request-manegment");
         } else if (
-            currentPath.includes("messages") &&
-            hasPermission("messages")
+            currentPath.includes("students/approval") &&
+            hasPermission("education", "/center-dashboard/students/approval")
         ) {
-            setActivePage("messages");
+            setActivePage("education");
+            setActiveSubPage("/center-dashboard/students/approval");
+        } else if (
+            currentPath.includes("plan-transfer-management") &&
+            hasPermission(
+                "education",
+                "/center-dashboard/plan-transfer-management",
+            )
+        ) {
+            setActivePage("education");
+            setActiveSubPage("/center-dashboard/plan-transfer-management");
+        }
+        // Direct pages
+        else if (
+            currentPath.includes("achieve-manegment") &&
+            hasPermission("attendance")
+        ) {
+            setActivePage("attendance");
             setActiveSubPage("");
         } else if (
-            currentPath.includes("reports") &&
+            currentPath.includes("student-supervisor") &&
             hasPermission("reports")
         ) {
             setActivePage("reports");
             setActiveSubPage("");
         } else if (
-            currentPath.includes("attendance") &&
-            hasPermission("attendance")
+            currentPath.includes("centers-approval") &&
+            hasPermission("domain")
         ) {
-            setActivePage("attendance");
+            setActivePage("domain");
+            setActiveSubPage("");
+        } else if (
+            currentPath.includes("audit-log") &&
+            hasPermission("messages")
+        ) {
+            setActivePage("messages");
             setActiveSubPage("");
         } else {
             setActivePage("dashboard");
@@ -113,7 +168,7 @@ const CenterSidebar: React.FC = () => {
         }
     }, [loading, hasPermission]);
 
-    //  Toggle submenu فقط
+    // Toggle submenu فقط
     const toggleMenu = (menuKey: string, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -123,15 +178,16 @@ const CenterSidebar: React.FC = () => {
         }));
     };
 
-    //  Submenu link click
+    // Submenu link click
     const handleSubLinkClick = (href: string, parentKey: string) => {
         setActiveSubPage(href);
         setActivePage(parentKey);
         setOpenMenus((prev) => ({ ...prev, [parentKey]: true }));
     };
 
-    //  Menu items
+    // ✅ Menu items مُقسمة حسب الصلاحيات الجديدة
     const baseMenuItems: MenuItem[] = [
+        // Dashboard - دايماً موجود
         {
             key: "dashboard",
             href: "/center-dashboard",
@@ -140,6 +196,8 @@ const CenterSidebar: React.FC = () => {
             activePage: "dashboard",
             alwaysShow: true,
         },
+
+        // 1. المساجد والحلقات (للمجمع وشؤون الطلاب)
         {
             key: "mosque",
             href: "#",
@@ -168,10 +226,6 @@ const CenterSidebar: React.FC = () => {
                     title: "تفاصيل الخطط",
                 },
                 {
-                    href: "/center-dashboard/students/approval",
-                    title: "اعتماد الطلاب",
-                },
-                {
                     href: "/center-dashboard/shedule-manegment",
                     title: "مواعيد الحلقات",
                 },
@@ -181,6 +235,8 @@ const CenterSidebar: React.FC = () => {
                 },
             ],
         },
+
+        // 2. إدارة الموظفين (للمجمع بس)
         {
             key: "staff",
             href: "#",
@@ -194,7 +250,7 @@ const CenterSidebar: React.FC = () => {
             submenu: [
                 {
                     href: "/center-dashboard/teachers-management",
-                    title: "ادارة معلمين",
+                    title: "إدارة معلمين",
                 },
                 {
                     href: "/center-dashboard/staff-approval",
@@ -210,6 +266,8 @@ const CenterSidebar: React.FC = () => {
                 },
             ],
         },
+
+        // 3. الإدارة المالية (للمالي بس)
         {
             key: "financial",
             href: "#",
@@ -235,27 +293,52 @@ const CenterSidebar: React.FC = () => {
                 },
             ],
         },
-        // {
-        //     key: "domain",
-        //     href: "/center-dashboard/centers-approval",
-        //     icon: <MdOutlineDomain />,
-        //     title: "اعتماد المجمعات",
-        //     activePage: "domain",
-        // },
+
+        // 4. اعتماد المجمعات (للمجمع بس)
+        {
+            key: "domain",
+            href: "/center-dashboard/centers-approval",
+            icon: <MdOutlineDomain />,
+            title: "اعتماد المجمعات",
+            activePage: "domain",
+        },
+
+        // 5. إدارة التعليم (للمشرف وشؤون الطلاب)
         {
             key: "education",
-            href: "/center-dashboard/special-request-manegment",
-            icon: <FaChalkboardTeacher />,
-            title: "طلبات لحلقات خاصة ",
+            href: "#",
+            icon: (
+                <FaChalkboardTeacher
+                    className={`arrow-icon ${openMenus.education ? "rotated" : ""}`}
+                />
+            ),
+            title: "إدارة التعليم",
             activePage: "education",
+            submenu: [
+                {
+                    href: "/center-dashboard/education-supervisor",
+                    title: "إدارة معلمين وحلقات",
+                },
+                {
+                    href: "/center-dashboard/special-request-manegment",
+                    title: "طلبات لحلقات خاصة",
+                },
+                {
+                    href: "/center-dashboard/students/approval",
+                    title: "اعتماد الطلاب",
+                },
+                {
+                    href: "/center-dashboard/plan-transfer-management",
+                    title: "نقل الطلاب من الخطط",
+                },
+                {
+                    href: "/center-dashboard/request-domain-manegment",
+                    title: "طلب دومين خاص",
+                },
+            ],
         },
-        {
-            key: "education",
-            href: "/center-dashboard/education-supervisor",
-            icon: <FaChalkboardTeacher />,
-            title: "إدارة معلمين وحلقات",
-            activePage: "education",
-        },
+
+        // 6. إدارة التحفيزات (للتحفيزي وشؤون الطلاب والمشرف)
         {
             key: "attendance",
             href: "/center-dashboard/achieve-manegment",
@@ -263,6 +346,8 @@ const CenterSidebar: React.FC = () => {
             title: "إدارة التحفيزات",
             activePage: "attendance",
         },
+
+        // 7. إدارة الطلاب (للتحفيزي وشؤون الطلاب والمشرف)
         {
             key: "reports",
             href: "/center-dashboard/student-supervisor",
@@ -270,13 +355,8 @@ const CenterSidebar: React.FC = () => {
             title: "إدارة الطلاب",
             activePage: "reports",
         },
-        // {
-        //     key: "certificates",
-        //     href: "/center-dashboard/report-dashboard",
-        //     icon: <FaFileAlt />,
-        //     title: "مكتبة التقارير",
-        //     activePage: "certificates",
-        // },
+
+        // 8. سجل الإجراءات (للمجمع بس)
         {
             key: "messages",
             href: "/center-dashboard/audit-log",
@@ -320,7 +400,7 @@ const CenterSidebar: React.FC = () => {
                             >
                                 <div className="sidebar__title">
                                     {item.href === "#" ? (
-                                        //  Submenu toggle - نفس الهيكل القديم
+                                        // Submenu toggle
                                         <a
                                             href="#"
                                             className="no-link"
@@ -332,7 +412,7 @@ const CenterSidebar: React.FC = () => {
                                             <h2>{item.title}</h2>
                                         </a>
                                     ) : (
-                                        //  Main navigation - نفس الهيكل القديم  شغال 100%
+                                        // Main navigation
                                         <a href={item.href}>
                                             <i>{item.icon}</i>
                                             <h2>{item.title}</h2>
@@ -340,7 +420,7 @@ const CenterSidebar: React.FC = () => {
                                     )}
                                 </div>
 
-                                {/* Submenu - نفس الهيكل القديم */}
+                                {/* Submenu */}
                                 {item.submenu && hasPermission(item.key) && (
                                     <ul
                                         className={`sub-menu ${openMenus[item.key as string] ? "open" : ""}`}

@@ -385,12 +385,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
                         ? "خطط متاحة للحجز"
                         : `خططي (${plans.length})`}
                 </h1>
-                {plans[0]?.center && (
-                    <div className="plan-cards-center">
-                        <BuildingOfficeIcon className="w-5 h-5 inline mr-2" />
-                        {plans[0].center.name}
-                    </div>
-                )}
             </header>
 
             <div className="plans-grid">

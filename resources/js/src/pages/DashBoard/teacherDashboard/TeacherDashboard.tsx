@@ -134,26 +134,6 @@ const TeacherDashboard: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* تفاصيل الحصة */}
-                                    <div className="userProfile__meetDetails">
-                                        <div className="userProfile__meetDate">
-                                            <h1>الطالب/</h1>
-                                            <span>{meetData.student_name}</span>
-                                        </div>
-                                        <div className="userProfile__meetConatin">
-                                            <div className="userProfile__meetDescription">
-                                                <h2 className="userProfile__meetDescription active">
-                                                    محتوى الحصة
-                                                </h2>
-                                                <div
-                                                    dangerouslySetInnerHTML={{
-                                                        __html: meetData.notes,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
                                     {/* أزرار الحصة */}
                                     <div className="userProfile__meetBtn">
                                         <div

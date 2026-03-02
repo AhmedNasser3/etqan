@@ -365,6 +365,7 @@ const StudentBookingsManagement: React.FC = () => {
                 {bookings.length > 0 && (
                     <div
                         className="inputs__verifyOTPBirth mt-8"
+                        id="userProfile__verifyOTPBirth"
                         style={{ width: "100%" }}
                     >
                         <div className="userProfile__progressContent">

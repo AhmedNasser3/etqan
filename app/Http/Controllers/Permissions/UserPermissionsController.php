@@ -25,7 +25,7 @@ class UserPermissionsController extends Controller
             'email' => $user?->email ?? 'no email'
         ]);
 
-        //  1. تحقق صاحب المجمع (Center Owner) - الأولوية الأولى
+        // 1. تحقق صاحب المجمع (Center Owner) - الأولوية الأولى
         if ($user && $this->isCenterOwner($user)) {
             Log::info('👑 CENTER OWNER detected', ['user_id' => $user->id, 'email' => $user->email]);
 
@@ -38,7 +38,7 @@ class UserPermissionsController extends Controller
             ]);
         }
 
-        //  2. تحقق teacher role العادي  إصلاح الترتيب المنطقي
+        // 2. تحقق teacher role العادي
         if (!$user || !$user->teacher) {
             Log::warning('⚠️ No teacher role found', ['user_id' => $user?->id]);
 
@@ -51,7 +51,7 @@ class UserPermissionsController extends Controller
             ]);
         }
 
-        //  3. Teacher permissions حسب الـ role
+        // 3. Teacher permissions حسب الـ role
         $role = $user->teacher->role;
         $permissions = $this->getRolePermissions($role);
 
@@ -74,12 +74,12 @@ class UserPermissionsController extends Controller
     }
 
     /**
-     *  تحقق إذا كان الـ user صاحب مجمع (email موجود في centers table)
+     * تحقق إذا كان الـ user صاحب مجمع (email موجود في centers table)
      */
     private function isCenterOwner($user): bool
     {
         if (!$user || !$user->email) {
-            return false; //  إصلاح: false بدلاً من true
+            return false;
         }
 
         $isOwner = Center::where('email', $user->email)->exists();
@@ -93,7 +93,7 @@ class UserPermissionsController extends Controller
     }
 
     /**
-     *  صلاحيات كاملة لصاحب المجمع (كل القوائم تظهر)
+     * صلاحيات كاملة لصاحب المجمع (كل القوائم تظهر)
      */
     private function getFullAdminPermissions(): array
     {
@@ -131,14 +131,14 @@ class UserPermissionsController extends Controller
     }
 
     /**
-     *  Role-based permissions مُحدثة ومُصححة لكل الـ roles
+     * Role-based permissions مُحدثة ومُصححة لكل الـ roles حسب المتطلبات
      */
     private function getRolePermissions(string $role): array
     {
         $permissions = [
             'teacher' => [
                 'dashboard' => true,
-                'mosque' => ['students/approval'], // اعتماد الطلاب بس
+                'mosque' => false,
                 'staff' => false,
                 'financial' => false,
                 'domain' => false,
@@ -151,39 +151,65 @@ class UserPermissionsController extends Controller
 
             'supervisor' => [
                 'dashboard' => true,
-                'mosque' => ['students/approval', 'shedule-manegment', 'circle-manegment'],
-                'staff' => ['staff-approval', 'staff-attendance'],
-                'financial' => true,
-                'domain' => false, //  مش هيظهر اعتماد المجمعات
-                'education' => true,
+                // mosque submenu
+                'mosque' => [
+                    'students/approval',
+                    'booking-manegment'
+                ],
+                // staff
+                'staff' => false,
+                // financial
+                'financial' => false,
+                // domain
+                'domain' => false,
+                // education pages
+                'education' => [
+                    'education-supervisor',
+                    'special-request-manegment',
+                    'students/approval',
+                    'plan-transfer-management'
+                ],
+                // attendance
                 'attendance' => true,
+                // reports - إدارة الطلاب
                 'reports' => true,
-                'certificates' => true,
-                'messages' => true
+                'certificates' => false,
+                'messages' => false
             ],
 
             'motivator' => [
-                'dashboard' => false,
+                'dashboard' => true,
                 'mosque' => false,
                 'staff' => false,
                 'financial' => false,
                 'domain' => false,
                 'education' => false,
-                'attendance' => true, // حضور بس
-                'reports' => false,
+                // إدارة التحفيزات + إدارة الطلاب
+                'attendance' => true,
+                'reports' => true,
                 'certificates' => false,
                 'messages' => false
             ],
 
             'student_affairs' => [
                 'dashboard' => true,
-                'mosque' => ['students/approval', 'booking-manegment'], // شؤون الطلاب
+                // mosque submenu
+                'mosque' => [
+                    'students/approval',
+                    'booking-manegment'
+                ],
                 'staff' => false,
                 'financial' => false,
                 'domain' => false,
-                'education' => false,
-                'attendance' => false,
-                'reports' => true, // إدارة الطلاب
+                // education pages
+                'education' => [
+                    'students/approval',
+                    'plan-transfer-management',
+                    'special-request-manegment'
+                ],
+                // إدارة التحفيزات + إدارة الطلاب
+                'attendance' => true,
+                'reports' => true,
                 'certificates' => false,
                 'messages' => false
             ],
@@ -191,8 +217,13 @@ class UserPermissionsController extends Controller
             'financial' => [
                 'dashboard' => true,
                 'mosque' => false,
-                'staff' => ['staff-attendance'], // حضور المعلمين
-                'financial' => ['financial-dashboard', 'payroll-reports', 'teaceher-salary-manegment'],
+                'staff' => false,
+                // financial submenu only
+                'financial' => [
+                    'financial-dashboard',
+                    'teaceher-salary-manegment',
+                    'custom-salary-manegment'
+                ],
                 'domain' => false,
                 'education' => false,
                 'attendance' => false,

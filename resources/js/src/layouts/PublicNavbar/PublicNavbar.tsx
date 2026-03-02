@@ -4,134 +4,32 @@ import { HiLogin } from "react-icons/hi";
 import { FaUserAlt } from "react-icons/fa";
 import { IoSettings } from "react-icons/io5";
 import { BsTable } from "react-icons/bs";
+import { useAuthUser } from "../hooks/useAuthUser";
 import { useLocation } from "react-router-dom";
-import EditAccountPage from "../pages/DashBoard/AccountEdit/EditAccountPage";
-import { useAuthUser } from "./hooks/useAuthUser";
-import { useState, useCallback } from "react";
+import EditAccountPage from "../../pages/DashBoard/AccountEdit/EditAccountPage";
+import { useState, useCallback, useEffect } from "react";
 
-const Navbar: React.FC = () => {
+const PublicNavbar: React.FC = () => {
     const [isRotated, setIsRotated] = useState(false);
     const [dropdowns, setDropdowns] = useState<{ [key: string]: boolean }>({});
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const { user, loading } = useAuthUser();
     const location = useLocation();
 
-    // ✅ جلب centerSlug من الـ URL
+    // ✅ جلب الـ centerSlug من الـ URL
     const getCenterSlug = () => {
+        // تحليل الـ pathname لاستخراج centerSlug
         const pathParts = location.pathname.split("/").filter(Boolean);
+
+        // لو الـ path زي: /center-slug/register أو /center-slug
         if (pathParts.length >= 1 && pathParts[0] !== "") {
             return pathParts[0];
         }
+
         return null;
     };
 
     const centerSlug = getCenterSlug();
-
-    // ✅ تحديد الروابط حسب الـ role
-    const getRoleLinks = () => {
-        if (!user) return [];
-
-        // ✅ 1. معلم (teacher)
-        if (user?.teacher?.role == "teacher") {
-            return [
-                {
-                    href: "/teacher-dashboard",
-                    label: "لوحة المعلم",
-                    icon: <FaUserAlt />,
-                },
-                {
-                    href: "/teacher-dashboard/plans",
-                    label: "جدول الجلسات",
-                    icon: <BsTable />,
-                },
-            ];
-        }
-        if (
-            user?.teacher?.role == "financial" ||
-            user?.teacher?.role == "motivator" ||
-            user?.teacher?.role == "supervisor" ||
-            user?.teacher?.role == "student_affairs"
-        ) {
-            return [
-                {
-                    href: "/center-dashboard",
-                    label: "لوحة المشرف المالي",
-                    icon: <FaUserAlt />,
-                },
-            ];
-        }
-
-        // ✅ 2. صاحب مجمع (center_owner)
-        if (
-            user?.center_owner === true ||
-            user?.role?.name === "center_owner" ||
-            user?.role_id === 1
-        ) {
-            return [
-                {
-                    href: "/center-dashboard",
-                    label: "مجمعي",
-                    icon: <FaUserAlt />,
-                },
-            ];
-        }
-
-        // ✅ 3. طالب (student)
-        if (user?.role?.name === "student") {
-            return [
-                {
-                    href: "/user-dashboard",
-                    label: "حسابي",
-                    icon: <FaUserAlt />,
-                },
-            ];
-        }
-
-        // ✅ 4. الموظفين حسب الـ role (الـ 5 roles)
-        if (user?.teacher?.role) {
-            const roleConfig: {
-                [key: string]: { title: string; link: string };
-            } = {
-                teacher: { title: "لوحة المعلم", link: "/teacher-dashboard" },
-                supervisor: {
-                    title: "لوحة المشرف",
-                    link: "/supervisor-dashboard",
-                },
-                motivator: {
-                    title: "لوحة الدافع",
-                    link: "/motivator-dashboard",
-                },
-                student_affairs: {
-                    title: "لوحة شؤون الطلاب",
-                    link: "/student-affairs-dashboard",
-                },
-                financial: {
-                    title: "لوحة المالية",
-                    link: "/financial-dashboard",
-                },
-            };
-
-            const config = roleConfig[user.teacher.role] || {
-                title: "لوحة التحكم",
-                link: "/center-dashboard",
-            };
-            return [
-                { href: config.link, label: config.title, icon: <FaUserAlt /> },
-                {
-                    href: `${config.link}/plans`,
-                    label: "جدول الجلسات",
-                    icon: <BsTable />,
-                },
-            ];
-        }
-
-        // ✅ 5. مستخدم عادي
-        return [
-            { href: "/user-dashboard", label: "حسابي", icon: <FaUserAlt /> },
-        ];
-    };
-
-    const roleLinks = getRoleLinks();
 
     const handleOpenSettings = useCallback(() => {
         setShowSettingsModal(true);
@@ -175,12 +73,12 @@ const Navbar: React.FC = () => {
         }
     };
 
-    // ✅ بناء رابط تسجيل الدخول مع الـ centerSlug
-    const getLoginLink = () => {
+    // ✅ بناء رابط التسجيل مع الـ centerSlug
+    const getRegisterLink = () => {
         if (centerSlug) {
-            return `/${centerSlug}/login`;
+            return `/${centerSlug}/register`;
         }
-        return "/login";
+        return "/register";
     };
 
     if (loading) {
@@ -234,15 +132,59 @@ const Navbar: React.FC = () => {
                                         className={`navbar__dropdown ${dropdowns.profile ? "dropped" : ""}`}
                                         id="navbar__profileDropDown"
                                     >
-                                        {/* ✅ عرض الروابط حسب الـ role */}
-                                        {roleLinks.map((link, index) => (
-                                            <a key={index} href={link.href}>
+                                        {/* ✅ 1. معلم */}
+                                        {user?.teacher && (
+                                            <>
+                                                <a href="/teacher-dashboard">
+                                                    <li>
+                                                        <FaUserAlt />
+                                                        لوحة المعلم
+                                                    </li>
+                                                </a>
+                                                <a href="/teacher-dashboard/plans">
+                                                    <li>
+                                                        <BsTable />
+                                                        جدول
+                                                    </li>
+                                                </a>
+                                            </>
+                                        )}
+
+                                        {/* ✅ 2. صاحب مجمع */}
+                                        {(user?.center_owner === true ||
+                                            user?.role?.name ===
+                                                "center_owner" ||
+                                            user?.role_id === 1) && (
+                                            <a href="/center-dashboard">
                                                 <li>
-                                                    {link.icon}
-                                                    {link.label}
+                                                    <FaUserAlt />
+                                                    مجمعي
                                                 </li>
                                             </a>
-                                        ))}
+                                        )}
+
+                                        {/* ✅ 3. طالب */}
+                                        {user?.role?.name === "student" && (
+                                            <a href="/user-dashboard">
+                                                <li>
+                                                    <FaUserAlt />
+                                                    حسابي
+                                                </li>
+                                            </a>
+                                        )}
+
+                                        {/* ✅ 4. مستخدم عادي */}
+                                        {user &&
+                                            !user.teacher &&
+                                            !user.center_owner &&
+                                            !user?.role?.name && (
+                                                <a href="/user-dashboard">
+                                                    <li>
+                                                        <FaUserAlt />
+                                                        حسابي
+                                                    </li>
+                                                </a>
+                                            )}
 
                                         {/* ✅ الإعدادات */}
                                         <a href="#">
@@ -268,7 +210,7 @@ const Navbar: React.FC = () => {
                                 </h4>
                             </div>
                         ) : (
-                            // ✅ تسجيل الدخول مع الـ centerSlug الديناميكي
+                            // ✅ انشاء حساب مع الـ centerSlug
                             <a
                                 style={{
                                     display: "flex",
@@ -277,12 +219,22 @@ const Navbar: React.FC = () => {
                                     borderRadius: "10px",
                                     padding: "6px",
                                 }}
-                                href={getLoginLink()}
+                                href={getRegisterLink()}
                                 id="navbar__active"
                                 className="navbar__link"
                             >
                                 <HiLogin />
-                                تسجيل الدخول
+                                انشاء حساب
+                                {centerSlug && (
+                                    <small
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            opacity: 0.7,
+                                        }}
+                                    >
+                                        ({centerSlug})
+                                    </small>
+                                )}
                             </a>
                         )}
                     </div>
@@ -303,4 +255,4 @@ const Navbar: React.FC = () => {
     );
 };
 
-export default Navbar;
+export default PublicNavbar;

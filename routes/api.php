@@ -1,6 +1,8 @@
 <?php
 // Routes كاملة مع إصلاح Route Model Binding + Schedule Create
 use App\Http\Controllers\Account\AccountController;
+use App\Http\Controllers\Admin\StudentAffairsAdminController;
+use App\Http\Controllers\Admin\TeachersAffairsAdminController;
 use App\Http\Controllers\Auth\TeacherRegisterController;
 use App\Http\Controllers\Center\IdeaDomainRequestController;
 use App\Http\Controllers\Centers\CenterController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\Student\StudentAchievementController;
 use App\Http\Controllers\Student\StudentAffairsController;
 use App\Http\Controllers\Student\StudentBookingsController;
 use App\Http\Controllers\Student\StudentPlansController;
+use App\Http\Controllers\Student\StudentTransferController;
 use App\Http\Controllers\Students\PendingStudentController;
 use App\Http\Controllers\Students\StudentUserController;
 use App\Http\Controllers\Students\TeacherStudentSessionsController;
@@ -40,6 +43,9 @@ use App\Http\Controllers\Users\UserSuspendController;
 use App\Models\Auth\User;
 use Illuminate\Support\Facades\Route;
 // routes/api.php
+// Admin route - No authentication required
+Route::get('/admin/idea-domain-requests', [IdeaDomainRequestController::class, 'adminIndex']);
+
 Route::middleware(['web'])->prefix('v1/teachers')->group(function () {
     Route::get('my-teachers', [MyTeachersController::class, 'index']);
     Route::get('my-teachers/pending', [MyTeachersController::class, 'pending']);
@@ -48,6 +54,27 @@ Route::middleware(['web'])->prefix('v1/teachers')->group(function () {
 
     // 🔁 Toggle: تفعيل/تعطيل معلم (Active ↔ Suspended)
     Route::post('my-teachers/{id}/toggle-status', [MyTeachersController::class, 'toggleStatus']);
+});
+Route::middleware(['web'])->prefix('v1/student')->name('student.')->group(function () {
+    // عرض الحجوزات المتاحة للنقل
+    Route::get('transfer/bookings', [StudentTransferController::class, 'index'])
+        ->name('transfer.bookings');
+
+    // عرض الخطط المتاحة للنقل إليها
+    Route::get('transfer/{bookingId}/plans', [StudentTransferController::class, 'availablePlans'])
+        ->name('transfer.plans');
+
+    // عرض الحلقات المتاحة لخطة معينة
+    Route::get('transfer/plans/{planId}/circles', [StudentTransferController::class, 'availableCircles'])
+        ->name('transfer.circles');
+
+    // 🔥 الجديد! عرض المواعيد المتاحة لحلقة معينة
+    Route::get('transfer/circles/{circleId}/schedules', [StudentTransferController::class, 'availableSchedules'])
+        ->name('transfer.schedules');
+
+    // تنفيذ النقل
+    Route::post('transfer/{bookingId}', [StudentTransferController::class, 'transfer'])
+        ->name('transfer.execute');
 });
 
 Route::middleware(['web'])->prefix('v1/teacher')->name('teacher.')->group(function () {
@@ -167,6 +194,7 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
 //  4. STUDENT AFFAIRS Routes
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
     Route::prefix('student-affairs')->name('student-affairs.')->group(function () {
+        // الروتات العادية للمجمع الحالي
         Route::get('/', [StudentAffairsController::class, 'index'])->name('index');
         Route::get('/{id}', [StudentAffairsController::class, 'show'])->name('show');
         Route::put('/{id}', [StudentAffairsController::class, 'update'])->name('update');
@@ -175,7 +203,35 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/{id}/whatsapp', [StudentAffairsController::class, 'whatsappReminder'])->name('whatsapp');
         Route::get('/{id}/print-card', [StudentAffairsController::class, 'printCard'])->name('print-card');
     });
+
+
 });
+Route::prefix('v1')->name('api.v1.')->group(function () {
+
+    // ✅ المنصة الكاملة (Super Admin فقط)
+    Route::prefix('student-affairs-platform')->name('student-affairs-platform.')->group(function () {
+        Route::get('/', [StudentAffairsAdminController::class, 'index'])->name('index');
+        Route::get('/{id}', [StudentAffairsAdminController::class, 'show'])->name('show');
+        Route::put('/{id}', [StudentAffairsAdminController::class, 'update'])->name('update');
+        Route::post('/{id}/whatsapp', [StudentAffairsAdminController::class, 'whatsappReminder'])->name('whatsapp');
+        Route::get('/{id}/print-card', [StudentAffairsAdminController::class, 'printCard'])->name('print-card');
+        Route::get('/stats', [StudentAffairsAdminController::class, 'stats'])->name('stats');
+    });
+});
+
+Route::prefix('v1')->name('api.v1.')->group(function () {
+
+    // ✅ المنصة الكاملة - شؤون المعلمين (Super Admin فقط)
+    Route::prefix('teachers-affairs-platform')->name('teachers-affairs-platform.')->group(function () {
+        Route::get('/', [TeachersAffairsAdminController::class, 'index'])->name('index');
+        Route::get('/{id}', [TeachersAffairsAdminController::class, 'show'])->name('show');
+        Route::put('/{id}', [TeachersAffairsAdminController::class, 'update'])->name('update');
+        Route::post('/{id}/whatsapp', [TeachersAffairsAdminController::class, 'whatsappReminder'])->name('whatsapp');
+        Route::get('/{id}/print-card', [TeachersAffairsAdminController::class, 'printCard'])->name('print-card');
+        Route::get('/stats', [TeachersAffairsAdminController::class, 'stats'])->name('stats');
+    });
+});
+
 
 //  5. STUDENT ACHIEVEMENTS Routes
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {

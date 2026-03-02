@@ -6,6 +6,7 @@ use App\Models\Center\IdeaDomainRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Center\Center; // Assuming you have a Center model
 
 class IdeaDomainRequestController extends Controller
 {
@@ -142,5 +143,17 @@ class IdeaDomainRequestController extends Controller
 
         $ideaDomainRequest->delete();
         return response()->json(['message' => 'تم الحذف بنجاح']);
+    }
+
+    /**
+     * Admin: Display all domain requests with center names (No authentication required)
+     */
+    public function adminIndex()
+    {
+        $requests = IdeaDomainRequest::with('center:name,id') // Load center name and id
+            ->latest()
+            ->get();
+
+        return response()->json($requests);
     }
 }

@@ -1,14 +1,14 @@
-// StudentAffairs.tsx - النسخة المُصححة بدون refetch
+// StudentAffairsPlatform.tsx - صفحة شؤون الطلاب للمنصة الكاملة
 import React, { useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical, GrDocumentText } from "react-icons/gr";
 import { PiWhatsappLogoDuotone, PiStudent } from "react-icons/pi";
 import { FiEdit2 } from "react-icons/fi";
-import { useStudentAffairs } from "./hooks/useStudentAffairs";
-import StudentAffairsUpdate from "./models/StudentAffairsUpdate";
+import { useStudentAffairsPlatform } from "./hooks/useStudentAffairsPlatform";
+import StudentAffairsUpdatePlatform from "./models/StudentAffairsUpdatePlatform";
 
-const StudentAffairs: React.FC = () => {
+const StudentAffairsPlatform: React.FC = () => {
     const {
         students,
         loading,
@@ -21,8 +21,7 @@ const StudentAffairs: React.FC = () => {
         stats,
         sendWhatsappReminder,
         printCard,
-        // ❌ شيلنا refetch لأنه مش موجود
-    } = useStudentAffairs();
+    } = useStudentAffairsPlatform();
 
     // ✅ States للـ Modal
     const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -55,11 +54,10 @@ const StudentAffairs: React.FC = () => {
         setSelectedStudentId(null);
     }, []);
 
-    // ✅ نجاح التعديل - بدون refetch
+    // ✅ نجاح التعديل
     const handleUpdateSuccess = useCallback(() => {
         toast.success("تم تحديث بيانات الطالب بنجاح! ✨");
         handleCloseUpdateModal();
-        // ✅ لو عايز تحديث البيانات، ضيف window.location.reload() أو اعمل refetch في الـ hook
     }, [handleCloseUpdateModal]);
 
     const getStatusColor = (status: string) => {
@@ -100,16 +98,15 @@ const StudentAffairs: React.FC = () => {
 
     return (
         <>
-            {/* ✅ Modal التعديل */}
+            {/* ✅ Modal التعديل للمنصة */}
             {showUpdateModal && selectedStudentId && (
-                <StudentAffairsUpdate
+                <StudentAffairsUpdatePlatform
                     studentId={selectedStudentId}
                     onClose={handleCloseUpdateModal}
                     onSuccess={handleUpdateSuccess}
                 />
             )}
 
-            {/* باقي الكود زي ما هو بالظبط - بدون أي تغيير */}
             <div className="teacherMotivate" style={{ padding: "0 15%" }}>
                 <div className="teacherMotivate__inner">
                     <div
@@ -118,7 +115,7 @@ const StudentAffairs: React.FC = () => {
                     >
                         <div className="userProfile__planTitle">
                             <h1>
-                                شؤون الطلاب{" "}
+                                شؤون الطلاب - المنصة الكاملة{" "}
                                 <span>{filteredStudentsCount} طالب</span>
                             </h1>
                         </div>
@@ -128,11 +125,12 @@ const StudentAffairs: React.FC = () => {
                                 <i>
                                     <RiRobot2Fill />
                                 </i>
-                                يمكنك متابعة الحضور والمصروفات وطباعة البطاقات
-                                بضغطة واحدة
+                                إدارة جميع الطلاب في جميع المجامع بضغطة واحدة
                             </div>
                             <div className="plan__current">
-                                <h2>إدارة بيانات الطلاب وأولياء الأمور</h2>
+                                <h2>
+                                    إدارة بيانات الطلاب وأولياء الأمور - المنصة
+                                </h2>
                                 <div
                                     className="plan__date-range"
                                     style={{
@@ -179,11 +177,11 @@ const StudentAffairs: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* باقي الجدول والـ stats زي ما هما بالظبط */}
                         <div className="plan__daily-table">
                             <table>
                                 <thead>
                                     <tr>
+                                        <th>المجمع</th>
                                         <th>الصورة</th>
                                         <th>الاسم</th>
                                         <th>رقم الهوية</th>
@@ -202,6 +200,11 @@ const StudentAffairs: React.FC = () => {
                                             key={item.id}
                                             className={`plan__row ${item.status}`}
                                         >
+                                            <td>
+                                                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs">
+                                                    {item.center_name}
+                                                </span>
+                                            </td>
                                             <td className="teacherStudent__img">
                                                 <div className="w-12 h-12 rounded-full overflow-hidden">
                                                     <img
@@ -239,14 +242,16 @@ const StudentAffairs: React.FC = () => {
                                             </td>
                                             <td>
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(item.status)}`}
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(
+                                                        item.status,
+                                                    )}`}
                                                 >
                                                     {item.status}
                                                 </span>
                                             </td>
                                             <td>
                                                 <div className="teacherStudent__btns">
-                                                    {/* ✅ زر التعديل الجديد */}
+                                                    {/* ✅ زر التعديل */}
                                                     <button
                                                         className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 border-blue-300 text-blue-600 hover:bg-blue-50 w-12 h-12 mr-1"
                                                         onClick={() =>
@@ -263,7 +268,7 @@ const StudentAffairs: React.FC = () => {
                                     {students.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan={10}
+                                                colSpan={11}
                                                 className="text-center py-8 text-gray-500"
                                             >
                                                 لا توجد بيانات طلاب لهذا الفلتر
@@ -274,7 +279,7 @@ const StudentAffairs: React.FC = () => {
                             </table>
                         </div>
 
-                        {/* باقي الـ Stats والـ Progress Bars زي ما هي */}
+                        {/* الـ Stats */}
                         <div className="plan__stats">
                             <div className="stat-card">
                                 <div className="stat-icon greenColor">
@@ -283,7 +288,7 @@ const StudentAffairs: React.FC = () => {
                                     </i>
                                 </div>
                                 <div>
-                                    <h3>إجمالي الطلاب</h3>
+                                    <h3>إجمالي الطلاب في المنصة</h3>
                                     <p className="text-2xl font-bold text-green-600">
                                         {stats.totalStudents || 0}
                                     </p>
@@ -323,7 +328,7 @@ const StudentAffairs: React.FC = () => {
                         >
                             <div className="userProfile__progressContent">
                                 <div className="userProfile__progressTitle">
-                                    <h1>نسبة النشاط</h1>
+                                    <h1>نسبة النشاط في المنصة</h1>
                                 </div>
                                 <p>{stats.paymentRate || 0}%</p>
                                 <div className="userProfile__progressBar">
@@ -359,4 +364,4 @@ const StudentAffairs: React.FC = () => {
     );
 };
 
-export default StudentAffairs;
+export default StudentAffairsPlatform;

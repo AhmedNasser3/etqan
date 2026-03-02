@@ -265,6 +265,13 @@
             height: 32px;
         }
     }
+    #navbar {
+        &__profileDropDown {
+            right: 20%;
+            top: 70px;
+            width: 300px;
+        }
+    }
 }
 
 @media screen and (max-width: 480px) {
@@ -277,7 +284,7 @@
         }
 
         &__profileName {
-            display: none;
+            display: flex;
         }
     }
 }

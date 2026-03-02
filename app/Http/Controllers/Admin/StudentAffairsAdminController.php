@@ -1,37 +1,33 @@
 <?php
-// app/Http/Controllers/Student/StudentAffairsController.php -  مُصحح نهائياً مع دالة show()
+// app/Http/Controllers/Admin/StudentAffairsAdminController.php - ✅ مُصحح نهائياً مع اسم المجمع
 
-namespace App\Http\Controllers\Student;
+namespace App\Http\Controllers\Admin;
 
 use App\Models\Auth\User;
+use App\Models\Tenant\Center;
 use Illuminate\Http\Request;
 use App\Models\Tenant\Student;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
-class StudentAffairsController extends Controller
+class StudentAffairsAdminController extends Controller
 {
     /**
-     *  عرض جدول شؤون الطلاب مع الفلاتر
+     * عرض جدول شؤون الطلاب لكل المنصة (Super Admin) - مع اسم المجمع
      */
     public function index(Request $request)
     {
-        $myCenterId = Auth::user()->center_id;
-
-        $query = Student::whereHas('user', function($q) use ($myCenterId) {
-            $q->where('center_id', $myCenterId);
-        });
+        $query = Student::query();
 
         // فلترة الصف
         if ($request->grade && $request->grade !== 'الكل') {
             $query->where('grade_level', $request->grade);
         }
 
-        // فلترة الحالة -  مش هيستعمل status لأنه مش موجود
+        // فلترة الحالة - مش هيستعمل status لأنه مش موجود
         if ($request->status && $request->status !== 'الكل') {
             Log::info("فلترة الحالة: " . $request->status);
         }
@@ -47,11 +43,11 @@ class StudentAffairsController extends Controller
             });
         }
 
-        $query->with(['user:id,name,email,phone,birth_date,avatar', 'guardian:id,name,phone']);
+        $query->with(['user:id,name,email,phone,birth_date,avatar,center_id', 'guardian:id,name,phone', 'user.center']);
         $students = $query->orderBy('id_number', 'asc')->paginate(15);
 
-        // حساب الحضور والمصروفات
-        $mappedData = $students->getCollection()->map(function($student) use ($myCenterId) {
+        // حساب الحضور والمصروفات مع اسم المجمع
+        $mappedData = $students->getCollection()->map(function($student) {
             return [
                 'id' => $student->id,
                 'name' => $student->user->name ?? $student->name ?? 'غير محدد',
@@ -62,18 +58,20 @@ class StudentAffairsController extends Controller
                 'circle' => $student->circle ?? 'غير محدد',
                 'guardianName' => $student->guardian->name ?? 'غير محدد',
                 'guardianPhone' => $student->guardian->phone ?? $student->user->phone ?? 'غير محدد',
-                'attendanceRate' => $this->getAttendanceRate($student->id, $myCenterId),
+                'center_name' => $student->user->center ? $student->user->center->name : 'غير محدد', // ✅ اسم المجمع الحقيقي
+                'center_id' => $student->user->center_id,
+                'attendanceRate' => $this->getAttendanceRate($student->id),
                 'balance' => $this->getBalance($student->id),
                 'status' => 'نشط',
-                'img' => $student->user->avatar ?? 'https://via.placeholder.com/150?text=Student',
+                'img' => $this->getDefaultAvatar($student->user->name ?? 'Student'),
                 'guardian_phone_formatted' => $this->formatPhone($student->guardian->phone ?? $student->user->phone ?? '')
             ];
         });
 
-        $stats = $this->getStats($myCenterId);
+        $stats = $this->getStats();
         $grades = Student::distinct()->pluck('grade_level')->filter();
 
-        $response = [
+        return response()->json([
             'data' => $mappedData,
             'current_page' => $students->currentPage(),
             'last_page' => $students->lastPage(),
@@ -81,57 +79,69 @@ class StudentAffairsController extends Controller
             'total' => $students->total(),
             'stats' => $stats,
             'grades' => $grades
-        ];
-
-        return response()->json($response);
+        ]);
     }
 
     /**
-     *  جلب بيانات طالب واحد للتعديل - ⭐ الدالة الجديدة
+     * جلب بيانات طالب واحد للمنصة الكاملة (Admin)
      */
-    public function show($id)
-    {
-        try {
-            $student = Student::whereHas('user', function($q) {
-                $q->where('center_id', Auth::user()->center_id);
-            })->with(['user:id,name,email,phone,birth_date,avatar', 'guardian:id,name,phone'])
-              ->find($id);
 
-            if (!$student) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'الطالب غير موجود'
-                ], 404);
-            }
+public function show($id)
+{
+    try {
+        $student = Student::with([
+            'user:id,name,email,phone,birth_date,avatar,center_id',
+            'guardian:id,name,phone'
+        ])->find($id);
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id' => $student->id,
-                    'id_number' => $student->id_number ?? '',
-                    'grade_level' => $student->grade_level ?? '',
-                    'circle' => $student->circle ?? '',
-                    'status' => $student->status ?? 'نشط',
-                    'health_status' => $student->health_status ?? '',
-                    'reading_level' => $student->reading_level ?? '',
-                    'session_time' => $student->session_time ?? '',
-                    'notes' => $student->notes ?? '',
-                    'name' => $student->user->name ?? 'غير محدد',
-                    'guardian_name' => $student->guardian->name ?? 'غير محدد',
-                    'guardian_phone' => $student->guardian->phone ?? $student->user->phone ?? ''
-                ]
-            ]);
-        } catch (\Exception $e) {
-            Log::error('❌ خطأ في جلب بيانات الطالب ID: ' . $id . ' - ' . $e->getMessage());
+        if (!$student || !$student->user) {
             return response()->json([
                 'success' => false,
-                'message' => 'خطأ في جلب بيانات الطالب'
-            ], 500);
+                'message' => 'الطالب غير موجود'
+            ], 404);
         }
+
+        // ✅ جلب اسم المركز بـ query منفصل (آمن)
+        $centerName = 'غير محدد';
+        if ($student->user->center_id) {
+            $centerName = Center::where('id', $student->user->center_id)
+                               ->value('name') ?? 'مجمع ' . $student->user->center_id;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $student->id,
+                'id_number' => $student->id_number ?? '',
+                'grade_level' => $student->grade_level ?? '',
+                'circle' => $student->circle ?? '',
+                'status' => 'نشط',
+                'health_status' => $student->health_status ?? '',
+                'reading_level' => $student->reading_level ?? '',
+                'session_time' => $student->session_time ?? '',
+                'notes' => $student->notes ?? '',
+                'name' => $student->user->name ?? 'غير محدد',
+                'idNumber' => $student->id_number ?? '',
+                'guardian_name' => $student->guardian?->name ?? 'غير محدد',
+                'guardian_phone' => $student->guardian?->phone ?? $student->user->phone ?? '',
+                'center_id' => $student->user->center_id ?? '',
+                'center_name' => $centerName,  // ✅ اسم المركز الحقيقي
+                'email' => $student->user->email ?? '',
+                'phone' => $student->user->phone ?? ''
+            ]
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('❌ خطأ show student ID: ' . $id . ' - ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'خطأ في الخادم'
+        ], 500);
     }
+}
+
 
     /**
-     *  تحديث بيانات الطالب
+     * تحديث بيانات الطالب للمنصة الكاملة (Admin)
      */
     public function update(Request $request, $id)
     {
@@ -146,53 +156,31 @@ class StudentAffairsController extends Controller
             'notes' => 'nullable|string'
         ]);
 
-        $student = Student::whereHas('user', function($q) {
-            $q->where('center_id', Auth::user()->center_id);
-        })->findOrFail($id);
+        $student = Student::findOrFail($id);
 
-        //  تحديث الحقول الموجودة فقط
         $updateData = $request->only([
             'id_number', 'grade_level', 'circle',
             'health_status', 'reading_level', 'session_time', 'notes'
         ]);
 
-        //  status يدوياً لو عايز تضيفه بعدين
-        if ($request->status) {
-            $updateData['status'] = $request->status;
-        }
-
         $student->update($updateData);
 
-        Log::info('✏️ [تحديث طالب] تم تحديث الطالب ID: ' . $id);
+        Log::info('✏️ [Admin - تحديث طالب المنصة] تم تحديث الطالب ID: ' . $id);
 
         return response()->json([
             'success' => true,
             'message' => 'تم تحديث بيانات الطالب بنجاح',
-            'student' => $student->fresh(['user', 'guardian'])
+            'student' => $student->fresh(['user.center', 'guardian'])
         ]);
     }
 
     /**
-     *  تسديد مصروفات - معطل
-     */
-    public function payBalance(Request $request, $id)
-    {
-        return response()->json([
-            'success' => false,
-            'message' => 'خاصية الدفع غير مفعلة حالياً - استخدم واتساب للمتابعة'
-        ]);
-    }
-
-    /**
-     *  WhatsApp تذكير
+     * WhatsApp تذكير للمنصة الكاملة (Admin)
      */
     public function whatsappReminder($id)
     {
-        $student = Student::whereHas('user', function($q) {
-                $q->where('center_id', Auth::user()->center_id);
-            })
-            ->with(['user', 'guardian'])
-            ->findOrFail($id);
+        $student = Student::with(['user', 'guardian'])
+                         ->findOrFail($id);
 
         $guardianPhone = $student->guardian->phone ?? $student->user->phone ?? $student->phone;
         $studentName = $student->user->name ?? $student->name;
@@ -209,15 +197,12 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     *  طباعة بطاقة PDF
+     * طباعة بطاقة PDF للمنصة الكاملة (Admin)
      */
     public function printCard($id)
     {
-        $student = Student::whereHas('user', function($q) {
-                $q->where('center_id', Auth::user()->center_id);
-            })
-            ->with(['user', 'guardian'])
-            ->findOrFail($id);
+        $student = Student::with(['user.center', 'guardian'])
+                         ->findOrFail($id);
 
         $pdf = Pdf::loadView('pdf.student-card', compact('student'));
         $filename = 'بطاقة_الطالب_' . ($student->user->name ?? $student->name) . '.pdf';
@@ -226,8 +211,23 @@ class StudentAffairsController extends Controller
     }
 
     /**
-     *  حساب الرصيد - بدون payments table
+     * إحصائيات متقدمة للمنصة (Admin)
      */
+    public function stats()
+    {
+        $totalStudents = Student::count();
+        $totalCenters = Center::count();
+
+        return response()->json([
+            'totalStudents' => $totalStudents,
+            'activeStudents' => $totalStudents,
+            'suspendedStudents' => 0,
+            'totalCenters' => $totalCenters,    // ✅ إحصائية جديدة
+            'paymentRate' => 95
+        ]);
+    }
+
+    // الدوال الخاصة
     private function getBalance($studentId)
     {
         $balances = [0, 50, 100, 150, 200, 250, 300, 350, 400];
@@ -235,31 +235,20 @@ class StudentAffairsController extends Controller
         return $balance > 0 ? 'ر.' . number_format($balance) : 'ر.0';
     }
 
-    /**
-     *  حساب الحضور
-     */
-    private function getAttendanceRate($studentId, $centerId)
+    private function getAttendanceRate($studentId)
     {
         $rates = [85, 90, 92, 95, 97, 98, 100];
         return $rates[array_rand($rates)] . '%';
     }
 
-    /**
-     *  تنسيق رقم الهاتف
-     */
     private function formatPhone($phone)
     {
         return preg_replace('/[^0-9]/', '', $phone);
     }
 
-    /**
-     *  الإحصائيات -  مُصحح بدون عمود status
-     */
-    private function getStats($centerId)
+    private function getStats()
     {
-        $total = Student::whereHas('user', function($q) use ($centerId) {
-            $q->where('center_id', $centerId);
-        })->count();
+        $total = Student::count();
 
         return [
             'totalStudents' => $total,
@@ -270,9 +259,12 @@ class StudentAffairsController extends Controller
         ];
     }
 
-    /**
-     *  حساب العمر
-     */
+    private function getDefaultAvatar($name = 'Student')
+    {
+        $nameEncoded = urlencode($name);
+        return "https://ui-avatars.com/api/?name={$nameEncoded}&size=150&background=4F46E5&color=fff&bold=true";
+    }
+
     private function calculateAge($birthDate)
     {
         return now()->diffInYears($birthDate);

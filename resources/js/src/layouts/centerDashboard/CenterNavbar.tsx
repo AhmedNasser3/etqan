@@ -138,11 +138,6 @@ const CenterNavbar: React.FC = () => {
                                                     <FaUserAlt /> مجمعي
                                                 </li>
                                             </a>
-                                            <a href="/center-dashboard/mosque-manegment">
-                                                <li>
-                                                    <FaUserAlt /> إدارة المساجد
-                                                </li>
-                                            </a>
                                         </>
                                         <a href="/teacher-dashboard">
                                             <li>

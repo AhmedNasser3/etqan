@@ -14,99 +14,115 @@ use Illuminate\Validation\Rule;
 class TeacherStudentSessionsController extends Controller
 {
     /**
-     *  جلب الجلسة الحالية للمعلم
+     * جلب الجلسة الحالية للمعلم
      */
-    public function getTeacherStudentSessions(Request $request)
-    {
-        $user = Auth::user();
+/**
+ * جلب الجلسة الحالية للمعلم
+ */
+public function getTeacherStudentSessions(Request $request)
+{
+    $user = Auth::user();
 
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'تحتاج تسجيل دخول'
-            ], 401);
-        }
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'تحتاج تسجيل دخول'
+        ], 401);
+    }
 
-        $teacher = Teacher::where('user_id', $user->id)->first();
+    $teacher = Teacher::where('user_id', $user->id)->first();
 
-        if (!$teacher) {
-            return response()->json([
-                'success' => true,
-                'message' => 'لست مسجل كمعلم',
-                'teacher_id' => null,
-                'session' => null,
-                'total' => 0
-            ]);
-        }
-
-        $teacherId = $teacher->id;
-
-        $lastCompletedSession = StudentPlanDetail::where('teacher_id', $teacherId)
-            ->where('status', 'مكتمل')
-            ->orderBy('day_number', 'desc')
-            ->orderBy('session_time', 'desc')
-            ->first();
-
-        $lastDayNumber = $lastCompletedSession ? $lastCompletedSession->day_number : 0;
-
-        $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
-            ->where('status', 'قيد الانتظار')
-            ->where('day_number', '>', $lastDayNumber)
-            ->orderBy('day_number', 'asc')
-            ->orderBy('session_time', 'asc')
-            ->first();
-
-        if (!$nextPendingSession) {
-            $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
-                ->where('status', 'قيد الانتظار')
-                ->orderBy('day_number', 'asc')
-                ->orderBy('session_time', 'asc')
-                ->first();
-        }
-
-        $session = null;
-        if ($nextPendingSession) {
-            $student = DB::table('circle_student_bookings as b')
-                ->join('users', 'b.user_id', '=', 'users.id')
-                ->where('b.id', $nextPendingSession->circle_student_booking_id)
-                ->select('b.id as booking_id', 'users.id as user_id', 'users.name as student_name', 'users.avatar as student_image')
-                ->first();
-
-            $attendance = StudentAttendance::where('student_plan_detail_id', $nextPendingSession->id)->first();
-
-            $session = [
-                'id' => $nextPendingSession->id,
-                'day_number' => $nextPendingSession->day_number,
-                'session_time' => $nextPendingSession->session_time,
-                'status' => $nextPendingSession->status,
-                'new_memorization' => $nextPendingSession->new_memorization ?? null,
-                'review_memorization' => $nextPendingSession->review_memorization ?? null,
-                'circle_student_booking_id' => $nextPendingSession->circle_student_booking_id,
-                'plan_id' => $nextPendingSession->plan_id,
-                'circle_id' => $nextPendingSession->circle_id,
-                'plan_circle_schedule_id' => $nextPendingSession->plan_circle_schedule_id,
-                'student_name' => $student->student_name ?? 'طالب غير محدد',
-                'student_id' => $student->user_id ?? null,
-                'student_image' => $student->student_image ?? null,
-                'attendance_status' => $attendance ? $attendance->status : null,
-                'attendance_note' => $attendance ? $attendance->note : null,
-                'attendance_rating' => $attendance ? $attendance->rating : 0,
-            ];
-        }
-
+    if (!$teacher) {
         return response()->json([
             'success' => true,
-            'user_id' => $user->id,
-            'teacher_id' => $teacherId,
-            'teacher_name' => $user->name,
-            'teacher_role' => $teacher->role ?? null,
-            'session' => $session,
-            'total' => $session ? 1 : 0
+            'message' => 'لست مسجل كمعلم',
+            'teacher_id' => null,
+            'session' => null,
+            'total' => 0
         ]);
     }
 
+    $teacherId = $teacher->id;
+
+    // ✅ آخر جلسة مكتملة (مش غائب)
+    $lastCompletedSession = StudentPlanDetail::where('teacher_id', $teacherId)
+        ->where('status', 'مكتمل')
+        ->orderBy('day_number', 'desc')
+        ->orderBy('session_time', 'desc')
+        ->first();
+
+    $lastDayNumber = $lastCompletedSession ? $lastCompletedSession->day_number : 0;
+
+    // ✅ الأولوية 1: جلسات قيد الانتظار في الأيام الجاية
+    $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
+        ->where('status', 'قيد الانتظار')
+        ->where('day_number', '>', $lastDayNumber)
+        ->orderBy('day_number', 'asc')
+        ->orderBy('session_time', 'asc')
+        ->first();
+
+    // ✅ الأولوية 2: جلسات إعادة (مهمة جداً)
+    if (!$nextPendingSession) {
+        $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
+            ->where('status', 'إعادة')
+            ->orderBy('day_number', 'asc')
+            ->orderBy('session_time', 'asc')
+            ->first();
+    }
+
+    // ✅ الأولوية 3: أي جلسة قيد الانتظار
+    if (!$nextPendingSession) {
+        $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
+            ->where('status', 'قيد الانتظار')
+            ->orderBy('day_number', 'asc')
+            ->orderBy('session_time', 'asc')
+            ->first();
+    }
+
+    $session = null;
+    if ($nextPendingSession) {
+        $student = DB::table('circle_student_bookings as b')
+            ->join('users', 'b.user_id', '=', 'users.id')
+            ->where('b.id', $nextPendingSession->circle_student_booking_id)
+            ->select('b.id as booking_id', 'users.id as user_id', 'users.name as student_name', 'users.avatar as student_image')
+            ->first();
+
+        $attendance = StudentAttendance::where('student_plan_detail_id', $nextPendingSession->id)->first();
+
+        $session = [
+            'id' => $nextPendingSession->id,
+            'day_number' => $nextPendingSession->day_number,
+            'session_time' => $nextPendingSession->session_time,
+            'status' => $nextPendingSession->status,
+            'new_memorization' => $nextPendingSession->new_memorization ?? null,
+            'review_memorization' => $nextPendingSession->review_memorization ?? null,
+            'circle_student_booking_id' => $nextPendingSession->circle_student_booking_id,
+            'plan_id' => $nextPendingSession->plan_id,
+            'circle_id' => $nextPendingSession->circle_id,
+            'plan_circle_schedule_id' => $nextPendingSession->plan_circle_schedule_id,
+            'student_name' => $student->student_name ?? 'طالب غير محدد',
+            'student_id' => $student->user_id ?? null,
+            'student_image' => $student->student_image ?? null,
+            'attendance_status' => $attendance ? $attendance->status : null,
+            'attendance_note' => $attendance ? $attendance->note : null,
+            'attendance_rating' => $attendance ? $attendance->rating : 0,
+        ];
+    }
+
+    return response()->json([
+        'success' => true,
+        'user_id' => $user->id,
+        'teacher_id' => $teacherId,
+        'teacher_name' => $user->name,
+        'teacher_role' => $teacher->role ?? null,
+        'session' => $session,
+        'total' => $session ? 1 : 0
+    ]);
+}
+
+
     /**
-     *  تعديل حالة الجلسة + الحضور والغياب
+     * تعديل حالة الجلسة + الحضور والغياب
      */
     public function updateSessionStatus(Request $request)
     {
@@ -129,7 +145,7 @@ class TeacherStudentSessionsController extends Controller
 
         $request->validate([
             'session_id' => 'required|exists:student_plan_details,id',
-            'status' => ['required', Rule::in(['مكتمل', 'قيد الانتظار', 'إعادة'])],
+            'status' => ['required', Rule::in(['مكتمل', 'غائب', 'قيد الانتظار', 'إعادة'])], // ✅ أضفت "غائب"
             'attendance_status' => ['required', Rule::in(['حاضر', 'غائب'])],
             'note' => 'nullable|string|max:500',
             'rating' => 'nullable|integer|min:0|max:5'
@@ -152,15 +168,18 @@ class TeacherStudentSessionsController extends Controller
             ], 404);
         }
 
+        // ✅ منطق ذكي للـ status بناءً على الـ attendance_status
+        $finalSessionStatus = $this->determineSessionStatus($sessionStatus, $attendanceStatus);
+
         DB::beginTransaction();
 
         try {
-            //  1. تحديث حالة الجلسة
+            // 1. تحديث حالة الجلسة بالـ status النهائي
             $session->update([
-                'status' => $sessionStatus
+                'status' => $finalSessionStatus
             ]);
 
-            //  2. جيب بيانات الطالب
+            // 2. جيب بيانات الطالب
             $studentBooking = DB::table('circle_student_bookings')
                 ->where('id', $session->circle_student_booking_id)
                 ->first();
@@ -169,13 +188,13 @@ class TeacherStudentSessionsController extends Controller
                 throw new \Exception('حجز الطالب غير موجود');
             }
 
-            //  3. تحقق لو الطالب + student_plan_detail_id موجودين قبل كده
+            // 3. تحقق لو الطالب + student_plan_detail_id موجودين قبل كده
             $existingAttendance = StudentAttendance::where('user_id', $studentBooking->user_id)
                 ->where('student_plan_detail_id', $session->id)
                 ->first();
 
             if ($existingAttendance) {
-                //  موجود = UPDATE
+                // موجود = UPDATE
                 $existingAttendance->update([
                     'status' => $attendanceStatus,
                     'note' => $note,
@@ -184,7 +203,7 @@ class TeacherStudentSessionsController extends Controller
                 $attendanceMessage = 'تم تعديل سجل الحضور';
                 $attendanceAction = 'updated';
             } else {
-                //  مش موجود = CREATE جديد
+                // مش موجود = CREATE جديد
                 StudentAttendance::create([
                     'user_id' => $studentBooking->user_id,
                     'plan_circle_schedule_id' => $session->plan_circle_schedule_id,
@@ -203,7 +222,7 @@ class TeacherStudentSessionsController extends Controller
                 'success' => true,
                 'message' => "تم تحديث الجلسة بنجاح، {$attendanceMessage}",
                 'session_id' => $sessionId,
-                'new_status' => $sessionStatus,
+                'new_status' => $finalSessionStatus,
                 'attendance_status' => $attendanceStatus,
                 'attendance_action' => $attendanceAction
             ]);
@@ -218,7 +237,26 @@ class TeacherStudentSessionsController extends Controller
     }
 
     /**
-     *  جلب سجل الحضور للجلسة الحالية
+     * ✅ دالة ذكية لتحديد الـ status النهائي بناءً على المدخلات
+     */
+    private function determineSessionStatus($requestedStatus, $attendanceStatus)
+    {
+        // إذا كان الـ attendance_status = غائب، خلي الـ status = غائب
+        if ($attendanceStatus === 'غائب') {
+            return 'غائب';
+        }
+
+        // إذا كان الـ requested status = مكتمل أو قيد الانتظار أو إعادة، استخدمه
+        if (in_array($requestedStatus, ['مكتمل', 'قيد الانتظار', 'إعادة'])) {
+            return $requestedStatus;
+        }
+
+        // الافتراضي = مكتمل للحاضر
+        return 'مكتمل';
+    }
+
+    /**
+     * جلب سجل الحضور للجلسة الحالية
      */
     public function getSessionAttendance(Request $request)
     {
