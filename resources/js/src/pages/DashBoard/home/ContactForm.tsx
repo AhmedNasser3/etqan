@@ -1,10 +1,7 @@
 const ContactForm: React.FC = () => {
     return (
-        <div className="contactForm">
-            <div
-                className="testimonials__mainTitle"
-                style={{ margin: "24px 0" }}
-            >
+        <div className="contactForm" style={{ margin: "24px 0" }}>
+            <div className="testimonials__mainTitle">
                 <h1>تواصل معنا</h1>
             </div>
             <div className="contactForm__container">

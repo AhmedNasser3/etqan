@@ -31,7 +31,7 @@ const CenterSidebar: React.FC = () => {
 
     const { loading, hasPermission } = usePermissions();
 
-    // ✅ Active page logic مُصحح مع كل الـ roles الجديدة
+    //  Active page logic مُصحح مع كل الـ roles الجديدة
     useEffect(() => {
         if (loading) return;
 
@@ -185,7 +185,7 @@ const CenterSidebar: React.FC = () => {
         setOpenMenus((prev) => ({ ...prev, [parentKey]: true }));
     };
 
-    // ✅ Menu items مُقسمة حسب الصلاحيات الجديدة
+    //  Menu items مُقسمة حسب الصلاحيات الجديدة
     const baseMenuItems: MenuItem[] = [
         // Dashboard - دايماً موجود
         {

@@ -13,7 +13,7 @@ const HowItWorksSection: React.FC = () => {
             {
                 threshold: 0.3,
                 rootMargin: "0px 0px -10% 0px",
-            }
+            },
         );
 
         if (sectionRef.current) {
@@ -44,7 +44,7 @@ const HowItWorksSection: React.FC = () => {
                                 "all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
                         }}
                     >
-                        <h1>كيف تعمل منصة إتقان؟</h1>
+                        <h1>كيف تعمل منصة سراج</h1>
                         <p>
                             تعرف على الخطوات التالية لتتمكن من إنشاء مجمعك الخاص
                             بنفسك.

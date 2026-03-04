@@ -15,7 +15,7 @@ use Illuminate\Validation\Rule;
 class PlanDetailController extends Controller
 {
     /**
-     * 1- خطط المجمع الخاص بي (للـ dropdown) - ✅ محدث مع total_months
+     * 1- خطط المجمع الخاص بي (للـ dropdown) -  محدث مع total_months
      */
     public function myCenterPlans(Request $request): JsonResponse
     {
@@ -42,7 +42,7 @@ class PlanDetailController extends Controller
                     'plans.id',
                     'plans.plan_name',
                     'plans.center_id',
-                    'plans.total_months',    // ✅ الآن مضمون!
+                    'plans.total_months',    //  الآن مضمون!
                     'plans.created_at'
                 ])
                 ->addSelect(DB::raw('(SELECT COUNT(*) FROM plan_details WHERE plan_details.plan_id = plans.id) as details_count'))
@@ -56,7 +56,7 @@ class PlanDetailController extends Controller
                     'id' => $plan->id,
                     'plan_name' => $plan->plan_name,
                     'center_id' => $plan->center_id,
-                    'total_months' => $plan->total_months ?? 1,  // ✅ قيمة افتراضية
+                    'total_months' => $plan->total_months ?? 1,  //  قيمة افتراضية
                     'details_count' => $plan->details_count ?? 0,
                     'center' => $plan->center,
                     'created_at' => $plan->created_at,
@@ -65,7 +65,7 @@ class PlanDetailController extends Controller
 
             $plans->setCollection($plansData);
 
-            Log::info('✅ Found ' . $plans->total() . ' plans for center: ' . $user->center_id);
+            Log::info(' Found ' . $plans->total() . ' plans for center: ' . $user->center_id);
             Log::info('📊 Plans with total_months: ', $plansData->toArray());
 
             return response()->json($plans);
@@ -100,7 +100,7 @@ class PlanDetailController extends Controller
         $details = PlanDetail::whereHas('plan', function($q) use ($user) {
                 $q->where('center_id', $user->center_id);
             })
-            ->with('plan:id,plan_name,total_months,center_id')  // ✅ إضافة total_months
+            ->with('plan:id,plan_name,total_months,center_id')  //  إضافة total_months
             ->orderBy('plan_id')
             ->orderBy('day_number')
             ->paginate(50);
@@ -128,7 +128,7 @@ class PlanDetailController extends Controller
     }
 
     /**
-     * 🔥 4- الحذف الجماعي (BULK DELETE) - الجديد المطلوب ✅
+     * 🔥 4- الحذف الجماعي (BULK DELETE) - الجديد المطلوب
      */
     public function bulkDelete(Request $request): JsonResponse
     {

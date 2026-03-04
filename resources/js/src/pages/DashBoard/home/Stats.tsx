@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { FaMosque } from "react-icons/fa6";
+import { MdConfirmationNumber } from "react-icons/md";
+import { FaHeartCirclePlus } from "react-icons/fa6";
 
 const Stats: React.FC = () => {
     const [counters, setCounters] = useState({
@@ -13,7 +16,7 @@ const Stats: React.FC = () => {
         start: number,
         end: number,
         duration: number,
-        setter: (value: number) => void
+        setter: (value: number) => void,
     ) => {
         const startTime = Date.now();
         const step = () => {
@@ -35,15 +38,15 @@ const Stats: React.FC = () => {
         if (hasAnimated) return;
 
         animateCounter(0, 12345, 2000, (value) =>
-            setCounters((prev) => ({ ...prev, students: value }))
+            setCounters((prev) => ({ ...prev, students: value })),
         );
 
-        animateCounter(0, 567, 2000, (value) =>
-            setCounters((prev) => ({ ...prev, episodes: value }))
+        animateCounter(0, 42, 2000, (value) =>
+            setCounters((prev) => ({ ...prev, episodes: value })),
         );
 
         animateCounter(0, 92, 2000, (value) =>
-            setCounters((prev) => ({ ...prev, progress: value }))
+            setCounters((prev) => ({ ...prev, progress: value })),
         );
 
         setHasAnimated(true);
@@ -62,7 +65,7 @@ const Stats: React.FC = () => {
                     }
                 });
             },
-            { threshold: 0.3 }
+            { threshold: 0.3 },
         );
 
         if (statsRef.current) {
@@ -80,22 +83,31 @@ const Stats: React.FC = () => {
                         <div className="stats__data">
                             <h2>{formatNumber(counters.students)}</h2>
                             <span>+</span>
-                        </div>
-                        <h2>عدد الطلاب</h2>
-                    </div>
-                    <div className="stats__content">
-                        <div className="stats__data">
-                            <h2>{formatNumber(counters.episodes)}</h2>
-                            <span>+</span>
+                            <span>
+                                <MdConfirmationNumber />
+                            </span>
                         </div>
                         <h2>عدد الحلقات</h2>
                     </div>
                     <div className="stats__content">
                         <div className="stats__data">
-                            <h2>{formatNumber(counters.progress, true)}</h2>
-                            <span>%</span>
+                            <h2>{formatNumber(counters.episodes)}</h2>
+                            <span>+</span>
+                            <span>
+                                <FaMosque />
+                            </span>
                         </div>
-                        <h2>معدل التقدم</h2>
+                        <h2>عدد المساجد لدينا</h2>
+                    </div>
+                    <div className="stats__content">
+                        <div className="stats__data">
+                            <h2>{formatNumber(counters.progress, true)}</h2>
+                            <span>+</span>
+                            <span>
+                                <FaHeartCirclePlus />
+                            </span>
+                        </div>
+                        <h2>الجهات المستفيدة</h2>
                     </div>
                 </div>
             </div>

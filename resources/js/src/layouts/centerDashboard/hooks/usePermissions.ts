@@ -8,7 +8,7 @@ interface Permissions {
     staff: boolean | string[];
     financial: boolean | string[];
     domain: boolean;
-    education: boolean | string[]; // ✅ مُحدث لدعم array permissions
+    education: boolean | string[]; //  مُحدث لدعم array permissions
     attendance: boolean;
     reports: boolean;
     certificates: boolean;
@@ -31,7 +31,7 @@ export const usePermissions = (): UserPermissions => {
         staff: false,
         financial: false,
         domain: false,
-        education: false, // ✅ يبدأ false لحد ما يجيلنا الـ response
+        education: false, //  يبدأ false لحد ما يجيلنا الـ response
         attendance: false,
         reports: false,
         certificates: false,
@@ -81,7 +81,7 @@ export const usePermissions = (): UserPermissions => {
 
             console.log(
                 "🔍 Fetching permissions with CSRF:",
-                csrfToken ? "✅ Found" : "❌ Missing",
+                csrfToken ? " Found" : "❌ Missing",
             );
 
             const response = await fetch("/api/user/permissions", {
@@ -121,13 +121,12 @@ export const usePermissions = (): UserPermissions => {
             }
 
             const data = await response.json();
-            console.log("✅ Permissions response:", data);
+            console.log(" Permissions response:", data);
 
-            // ✅ حفظ الـ permissions الجديدة من الـ Controller
+            //  حفظ الـ permissions الجديدة من الـ Controller
             if (data.success !== false) {
                 setPermissions(data.permissions || {});
                 setRole(data.role || null);
-                toast.success("تم تحميل الصلاحيات بنجاح");
             } else {
                 throw new Error(data.message || "Failed to fetch permissions");
             }
@@ -161,7 +160,7 @@ export const usePermissions = (): UserPermissions => {
         }
     }, [getCsrfToken]);
 
-    // ✅ Permission checker مُحسن للـ Controller الجديد
+    //  Permission checker مُحسن للـ Controller الجديد
     const hasPermission = useCallback(
         (menuKey: string, subPath?: string): boolean => {
             const perm = permissions[menuKey as keyof Permissions];
@@ -176,7 +175,7 @@ export const usePermissions = (): UserPermissions => {
                 return perm;
             }
 
-            // ✅ Array permissions مع path matching مُحسن للـ Controller الجديد
+            //  Array permissions مع path matching مُحسن للـ Controller الجديد
             if (Array.isArray(perm) && subPath) {
                 // تنظيف الـ subPath للمقارنة
                 const cleanSubPath = subPath

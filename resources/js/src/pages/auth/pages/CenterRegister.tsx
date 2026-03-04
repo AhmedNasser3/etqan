@@ -4,8 +4,11 @@ import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
 import { useCenterRegister } from "../hooks/useCenterRegister";
 
-const CenterRegister = () => {
+const CenterRegister: React.FC = () => {
     const [countryCode, setCountryCode] = useState<string>("+966");
+    const [selectedGender, setSelectedGender] = useState<"male" | "female">(
+        "male",
+    );
     const {
         form,
         errors,
@@ -37,21 +40,11 @@ const CenterRegister = () => {
     }, [errors.general]);
 
     return (
-        <div
-            className="auth"
-            style={{ display: "flex", justifyContent: "center", width: "100%" }}
-        >
+        <div className="auth">
             <Toaster />
             <div className="auth__inner">
                 <div className="auth__container">
-                    <div
-                        className="auth__content"
-                        style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            width: "1500px",
-                        }}
-                    >
+                    <div className="auth__content">
                         <div className="auth__form">
                             <div className="auth__formContainer">
                                 <div className="auth__formContent">
@@ -81,7 +74,7 @@ const CenterRegister = () => {
                                                                         .value,
                                                                 })
                                                             }
-                                                            placeholder="مجمع الإتقان النسائي"
+                                                            placeholder="مجمع  سراج النسائي"
                                                             className={
                                                                 errors.name
                                                                     ? "error"
@@ -96,7 +89,7 @@ const CenterRegister = () => {
                                                     </div>
                                                     <div className="inputs__Firstname">
                                                         <label>
-                                                            Subdomain *
+                                                            رابط مجمعك *
                                                         </label>
                                                         <div className="flex">
                                                             <input
@@ -114,16 +107,9 @@ const CenterRegister = () => {
                                                                                 .value,
                                                                     })
                                                                 }
-                                                                placeholder="center1"
+                                                                placeholder="game3, etqan, seraj : يرجي كتابته بالانجليزية مثل "
                                                                 className={`flex-1 ${errors.subdomain ? "error" : ""}`}
                                                             />
-                                                            <span className="bg-gray-100 px-4 py-3 border rounded-r-lg border-l-0">
-                                                                .
-                                                                {window.location.host
-                                                                    .split(".")
-                                                                    .slice(-2)
-                                                                    .join(".")}
-                                                            </span>
                                                         </div>
                                                         {errors.subdomain && (
                                                             <span className="error-message">
@@ -135,7 +121,10 @@ const CenterRegister = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="inputs__verifyOTPBirth">
+                                                <div
+                                                    className="inputs__verifyOTPBirth"
+                                                    id="userProfile__verifyOTPBirth"
+                                                >
                                                     <div className="inputs__verifyOTP">
                                                         <label>
                                                             بريد مدير المجمع *
@@ -204,7 +193,10 @@ const CenterRegister = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="inputs__verifyOTPBirth">
+                                                <div
+                                                    className="inputs__verifyOTPBirth"
+                                                    id="userProfile__verifyOTPBirth"
+                                                >
                                                     <div className="inputs__verifyOTP">
                                                         <label>
                                                             رقم الجوال *
@@ -307,6 +299,18 @@ const CenterRegister = () => {
                                         </a>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        <div className="auth__bg">
+                            <div className="auth__bgContainer">
+                                <div className="auth__bgData">
+                                    <h1>تسجيل المجمع</h1>
+                                    <p>
+                                        بالقرأن نحيا (منصة سراج لتسهيل حفظ
+                                        القرأن)
+                                    </p>
+                                </div>
+                                <div className="auth__bgImg"></div>
                             </div>
                         </div>
                     </div>

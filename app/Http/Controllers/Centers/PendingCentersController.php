@@ -12,24 +12,37 @@ use Illuminate\Support\Facades\URL;
 class PendingCentersController extends Controller
 {
     /**
-     *  جلب كل المجامع من centers table (الأعمدة الحقيقية)
+     * جلب المجامع اللي اليوزر بتاعها (role_id=1) معطل أو pending
      */
     public function index(Request $request)
     {
         try {
-            $centers = DB::table('centers')
+            $centers = DB::table('centers as c')
+                ->leftJoin('users as u', function($join) {
+                    $join->on('u.center_id', '=', 'c.id')
+                         ->where('u.role_id', 1); // ✅ صاحب المجمع role_id = 1
+                })
                 ->select(
-                    'id',
-                    'name',
-                    'subdomain',
-                    'email',
-                    'phone',
-                    'logo',
-                    'is_active',
-                    'address',
-                    'created_at'
+                    'c.id',
+                    'c.name',
+                    'c.subdomain',
+                    'c.email as center_email',
+                    'c.phone',
+                    'c.logo',
+                    'c.is_active',
+                    'c.address',
+                    'c.created_at',
+                    'u.id as user_id',
+                    'u.name as user_name',
+                    'u.email as user_email',
+                    'u.status as user_status'
                 )
-                ->orderBy('created_at', 'desc')
+                ->where(function($query) {
+                    // ✅ يوزر معطل/pending أو مافيش يوزر
+                    $query->whereIn('u.status', ['inactive', 'pending'])
+                          ->orWhereNull('u.id');
+                })
+                ->orderBy('c.created_at', 'desc')
                 ->get();
 
             return response()->json([
@@ -41,38 +54,59 @@ class PendingCentersController extends Controller
                         'subdomain' => $center->subdomain,
                         'domain' => $center->subdomain . '.localhost',
                         'center_url' => URL::to('/center-dashboard/' . $center->subdomain),
-                        'email' => $center->email ?? 'غير محدد',
+                        'email' => $center->center_email ?? 'غير محدد',
                         'phone' => $center->phone ?? 'غير محدد',
                         'logo' => $center->logo ? URL::to('storage/' . $center->logo) : null,
                         'is_active' => (bool)$center->is_active,
                         'address' => $center->address ?? 'غير محدد',
                         'created_at' => $center->created_at ? date('Y-m-d H:i', strtotime($center->created_at)) : null,
-                        'students_count' => 0, //  مؤقت - هتحسبه بعدين
+                        'user_name' => $center->user_name ?? 'غير محدد',
+                        'user_email' => $center->user_email ?? 'غير محدد',
+                        'user_status' => $center->user_status ?? 'pending',
+                        'students_count' => 0,
                     ];
                 }),
                 'total' => $centers->count()
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Fetch Centers Error: ' . $e->getMessage(), [
+            Log::error('Fetch Pending Centers Error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ أثناء جلب المجامع: ' . $e->getMessage()
+                'message' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     *  عرض تفاصيل مجمع واحد
+     * عرض تفاصيل مجمع واحد
      */
     public function show($id)
     {
         try {
-            $center = DB::table('centers')
-                ->where('id', $id)
-                ->select('id', 'name', 'subdomain', 'email', 'phone', 'logo', 'is_active', 'address', 'created_at')
+            $center = DB::table('centers as c')
+                ->leftJoin('users as u', function($join) {
+                    $join->on('u.center_id', '=', 'c.id')
+                         ->where('u.role_id', 1);
+                })
+                ->where('c.id', $id)
+                ->select(
+                    'c.id',
+                    'c.name',
+                    'c.subdomain',
+                    'c.email as center_email',
+                    'c.phone',
+                    'c.logo',
+                    'c.is_active',
+                    'c.address',
+                    'c.created_at',
+                    'u.id as user_id',
+                    'u.name as user_name',
+                    'u.email as user_email',
+                    'u.status as user_status'
+                )
                 ->first();
 
             if (!$center) {
@@ -87,12 +121,15 @@ class PendingCentersController extends Controller
                     'subdomain' => $center->subdomain,
                     'domain' => $center->subdomain . '.localhost',
                     'center_url' => URL::to('/center-dashboard/' . $center->subdomain),
-                    'email' => $center->email ?? 'غير محدد',
+                    'email' => $center->center_email ?? 'غير محدد',
                     'phone' => $center->phone ?? 'غير محدد',
                     'logo' => $center->logo ? URL::to('storage/' . $center->logo) : null,
                     'is_active' => (bool)$center->is_active,
                     'address' => $center->address ?? 'غير محدد',
                     'created_at' => $center->created_at ? date('Y-m-d H:i', strtotime($center->created_at)) : null,
+                    'user_name' => $center->user_name ?? 'غير محدد',
+                    'user_email' => $center->user_email ?? 'غير محدد',
+                    'user_status' => $center->user_status ?? 'pending',
                     'students_count' => 0,
                 ]
             ]);
@@ -106,34 +143,49 @@ class PendingCentersController extends Controller
     }
 
     /**
-     *  تفعيل المجمع
+     * تفعيل المجمع + اليوزر صاحب المجمع (role_id=1)
      */
     public function confirm($id)
     {
         DB::beginTransaction();
         try {
+            // جلب اليوزر صاحب المجمع
+            $owner = DB::table('users')
+                ->where('center_id', $id)
+                ->where('role_id', 1)
+                ->select('id', 'name')
+                ->first();
+
             $center = DB::table('centers')->where('id', $id)->first();
 
             if (!$center) {
                 return response()->json(['success' => false, 'message' => 'المجمع غير موجود'], 404);
             }
 
+            // تفعيل المجمع
             DB::table('centers')->where('id', $id)->update(['is_active' => true]);
+
+            // تفعيل اليوزر صاحب المجمع
+            if ($owner) {
+                DB::table('users')->where('id', $owner->id)->update(['status' => 'active']);
+            }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'تم تفعيل المجمع بنجاح',
+                'message' => 'تم تفعيل المجمع والمستخدم بنجاح',
                 'data' => [
-                    'id' => $id,
-                    'name' => $center->name,
+                    'center_id' => $id,
+                    'center_name' => $center->name,
+                    'user_id' => $owner->id ?? null,
                     'status' => 'active'
                 ]
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Confirm Center Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ أثناء التفعيل: ' . $e->getMessage()
@@ -142,43 +194,58 @@ class PendingCentersController extends Controller
     }
 
     /**
-     *  تعطيل المجمع
+     * رفض المجمع + اليوزر صاحب المجمع
      */
     public function reject($id)
     {
         DB::beginTransaction();
         try {
+            // جلب اليوزر صاحب المجمع
+            $owner = DB::table('users')
+                ->where('center_id', $id)
+                ->where('role_id', 1)
+                ->select('id', 'name')
+                ->first();
+
             $center = DB::table('centers')->where('id', $id)->first();
 
             if (!$center) {
                 return response()->json(['success' => false, 'message' => 'المجمع غير موجود'], 404);
             }
 
+            // تعطيل المجمع
             DB::table('centers')->where('id', $id)->update(['is_active' => false]);
+
+            // تعطيل اليوزر صاحب المجمع
+            if ($owner) {
+                DB::table('users')->where('id', $owner->id)->update(['status' => 'inactive']);
+            }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'تم تعطيل المجمع بنجاح',
+                'message' => 'تم تعطيل المجمع والمستخدم بنجاح',
                 'data' => [
-                    'id' => $id,
-                    'name' => $center->name,
+                    'center_id' => $id,
+                    'center_name' => $center->name,
+                    'user_id' => $owner->id ?? null,
                     'status' => 'inactive'
                 ]
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Reject Center Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ أثناء التعطيل: ' . $e->getMessage()
+                'message' => 'حدث خطأ أثناء الرفض: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     *  حذف المجمع نهائياً
+     * حذف المجمع نهائياً
      */
     public function destroy($id)
     {
@@ -192,13 +259,16 @@ class PendingCentersController extends Controller
 
             $centerName = $center->name;
 
-            //  حذف اللوجو
+            // حذف اللوجو
             if ($center->logo) {
                 $logoPath = str_replace('storage/', '', $center->logo);
                 if (Storage::disk('public')->exists($logoPath)) {
                     Storage::disk('public')->delete($logoPath);
                 }
             }
+
+            // حذف اليوزر صاحب المجمع
+            DB::table('users')->where('center_id', $id)->where('role_id', 1)->delete();
 
             DB::table('centers')->where('id', $id)->delete();
 
@@ -211,6 +281,7 @@ class PendingCentersController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Destroy Center Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ أثناء الحذف: ' . $e->getMessage()

@@ -663,29 +663,6 @@ const PlanDetailsManagement: React.FC = () => {
                     <table>
                         <thead>
                             <tr>
-                                <th
-                                    colSpan={7}
-                                    className="bg-purple-50 text-purple-800 py-4 text-lg"
-                                >
-                                    📋 تفاصيل خطة: <strong>{planName}</strong>{" "}
-                                    (رقم: {planIdNum})
-                                    {selectedPlanName && (
-                                        <span className="ml-2 text-sm text-gray-500">
-                                            (تم تصفية حسب: "{selectedPlanName}")
-                                        </span>
-                                    )}
-                                    {(!selectedPlanName ||
-                                        selectedPlanName === "") &&
-                                        filteredDetails.length !==
-                                            details.length && (
-                                            <span className="ml-2 text-sm text-blue-500">
-                                                (تم العثور على{" "}
-                                                {filteredDetails.length} نتيجة)
-                                            </span>
-                                        )}
-                                </th>
-                            </tr>
-                            <tr>
                                 <th>
                                     <input
                                         type="checkbox"

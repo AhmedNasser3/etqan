@@ -44,7 +44,7 @@ public function getTeacherStudentSessions(Request $request)
 
     $teacherId = $teacher->id;
 
-    // ✅ آخر جلسة مكتملة (مش غائب)
+    //  آخر جلسة مكتملة (مش غائب)
     $lastCompletedSession = StudentPlanDetail::where('teacher_id', $teacherId)
         ->where('status', 'مكتمل')
         ->orderBy('day_number', 'desc')
@@ -53,7 +53,7 @@ public function getTeacherStudentSessions(Request $request)
 
     $lastDayNumber = $lastCompletedSession ? $lastCompletedSession->day_number : 0;
 
-    // ✅ الأولوية 1: جلسات قيد الانتظار في الأيام الجاية
+    //  الأولوية 1: جلسات قيد الانتظار في الأيام الجاية
     $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
         ->where('status', 'قيد الانتظار')
         ->where('day_number', '>', $lastDayNumber)
@@ -61,7 +61,7 @@ public function getTeacherStudentSessions(Request $request)
         ->orderBy('session_time', 'asc')
         ->first();
 
-    // ✅ الأولوية 2: جلسات إعادة (مهمة جداً)
+    //  الأولوية 2: جلسات إعادة (مهمة جداً)
     if (!$nextPendingSession) {
         $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
             ->where('status', 'إعادة')
@@ -70,7 +70,7 @@ public function getTeacherStudentSessions(Request $request)
             ->first();
     }
 
-    // ✅ الأولوية 3: أي جلسة قيد الانتظار
+    //  الأولوية 3: أي جلسة قيد الانتظار
     if (!$nextPendingSession) {
         $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
             ->where('status', 'قيد الانتظار')
@@ -145,7 +145,7 @@ public function getTeacherStudentSessions(Request $request)
 
         $request->validate([
             'session_id' => 'required|exists:student_plan_details,id',
-            'status' => ['required', Rule::in(['مكتمل', 'غائب', 'قيد الانتظار', 'إعادة'])], // ✅ أضفت "غائب"
+            'status' => ['required', Rule::in(['مكتمل', 'غائب', 'قيد الانتظار', 'إعادة'])], //  أضفت "غائب"
             'attendance_status' => ['required', Rule::in(['حاضر', 'غائب'])],
             'note' => 'nullable|string|max:500',
             'rating' => 'nullable|integer|min:0|max:5'
@@ -168,7 +168,7 @@ public function getTeacherStudentSessions(Request $request)
             ], 404);
         }
 
-        // ✅ منطق ذكي للـ status بناءً على الـ attendance_status
+        //  منطق ذكي للـ status بناءً على الـ attendance_status
         $finalSessionStatus = $this->determineSessionStatus($sessionStatus, $attendanceStatus);
 
         DB::beginTransaction();
@@ -237,7 +237,7 @@ public function getTeacherStudentSessions(Request $request)
     }
 
     /**
-     * ✅ دالة ذكية لتحديد الـ status النهائي بناءً على المدخلات
+     *  دالة ذكية لتحديد الـ status النهائي بناءً على المدخلات
      */
     private function determineSessionStatus($requestedStatus, $attendanceStatus)
     {

@@ -83,6 +83,16 @@ Route::middleware(['web'])->prefix('v1/teacher')->name('teacher.')->group(functi
     Route::get('custom-salaries/teacher/{teacherId}', [TeacherCustomSalaryController::class, 'getActiveForTeacher']);
 });
 
+Route::prefix('super')->group(function () {
+    Route::prefix('centers')->group(function () {
+        Route::get('pending', [PendingCentersController::class, 'index']);     // ✅ /api/super/centers/pending
+        Route::get('pending/{id}', [PendingCentersController::class, 'show']);
+        Route::post('pending/{id}/confirm', [PendingCentersController::class, 'confirm']);
+        Route::post('pending/{id}/reject', [PendingCentersController::class, 'reject']);
+        Route::delete('pending/{id}', [PendingCentersController::class, 'destroy']);
+    });
+});
+
 // routes/api.php - الكامل مع كل الـ routes
 Route::middleware(['web'])->prefix('v1/teachers')->group(function () {
     Route::get('room', [TeacherRoomController::class, 'getTeacherRoom']);
@@ -98,15 +108,6 @@ Route::middleware(['web'])->prefix('v1/teachers')->group(function () {
     Route::middleware('web')->get('/v1/teacher-sessions', [TeacherStudentSessionsController::class, 'getTeacherStudentSessions'])
     ->name('teacher.student.sessions');
 
-    Route::middleware(['web'])->prefix('v1/super')->group(function () {
-    Route::prefix('centers')->group(function () {
-    Route::get('/pending', [PendingCentersController::class, 'index']);
-    Route::get('/pending/{id}', [PendingCentersController::class, 'show']);
-    Route::post('/pending/{id}/confirm', [PendingCentersController::class, 'confirm']);
-    Route::post('/pending/{id}/reject', [PendingCentersController::class, 'reject']);
-    Route::delete('/pending/{id}', [PendingCentersController::class, 'destroy']);
-    });
-    });
 
 // routes/api.php
 

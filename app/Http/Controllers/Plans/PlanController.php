@@ -33,7 +33,7 @@ class PlanController extends Controller
 
         Log::info('👤 User ID: ' . $user->id . ' - Center ID: ' . $user->center_id);
 
-        // ✅ الحل النهائي - select صريح + withCount بس
+        //  الحل النهائي - select صريح + withCount بس
         $plans = Plan::select([
                 'id',
                 'plan_name',
@@ -82,7 +82,7 @@ class PlanController extends Controller
             return response()->json(['message' => 'غير مصرح'], 403);
         }
 
-        // ✅ نفس التعديل هنا
+        //  نفس التعديل هنا
         $plans = Plan::select([
                 'id',
                 'plan_name',
@@ -125,7 +125,7 @@ class PlanController extends Controller
         $request->validate($rules);
 
         $plan = Plan::create($request->all());
-        Log::info('✅ Plan created: ' . $plan->id . ' by user: ' . $user->id);
+        Log::info(' Plan created: ' . $plan->id . ' by user: ' . $user->id);
 
         return response()->json([
             'message' => 'تم إنشاء الخطة بنجاح',
@@ -196,7 +196,7 @@ class PlanController extends Controller
         $request->validate($rules);
 
         $plan->update($request->except(['_method', '_token']));
-        Log::info('✅ Plan updated: ' . $plan->id . ' by user: ' . $user->id);
+        Log::info(' Plan updated: ' . $plan->id . ' by user: ' . $user->id);
 
         return response()->json([
             'message' => 'تم تعديل الخطة بنجاح',

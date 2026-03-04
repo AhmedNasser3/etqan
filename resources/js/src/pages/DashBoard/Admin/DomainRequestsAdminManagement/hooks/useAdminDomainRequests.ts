@@ -24,7 +24,7 @@ export const useAdminDomainRequests = () => {
     const [error, setError] = useState<string | null>(null);
     const fetchRef = useRef(0); // لمنع الـ multiple calls
 
-    // ✅ fetchRequests - محسن بدون infinite loop
+    //  fetchRequests - محسن بدون infinite loop
     const fetchRequests = useCallback(async () => {
         const currentFetchId = ++fetchRef.current;
 
@@ -39,7 +39,7 @@ export const useAdminDomainRequests = () => {
                 },
             });
 
-            // ✅ منع الـ stale data
+            //  منع الـ stale data
             if (currentFetchId !== fetchRef.current) return;
 
             if (!res.ok) {
@@ -64,7 +64,7 @@ export const useAdminDomainRequests = () => {
         }
     }, []);
 
-    // ✅ deleteRequest - محسن
+    //  deleteRequest - محسن
     const deleteRequest = useCallback(async (id: number) => {
         try {
             const res = await fetch(`/api/center/idea-domain-requests/${id}`, {
@@ -81,7 +81,7 @@ export const useAdminDomainRequests = () => {
             }
 
             const data = await res.json();
-            toast.success(data.message || "تم الحذف بنجاح ✅");
+            toast.success(data.message || "تم الحذف بنجاح ");
             return data;
         } catch (err: any) {
             const errorMessage = err.message || "فشل في حذف الطلب";
@@ -90,7 +90,7 @@ export const useAdminDomainRequests = () => {
         }
     }, []);
 
-    // ✅ تحميل البيانات عند الـ mount
+    //  تحميل البيانات عند الـ mount
     useEffect(() => {
         fetchRequests();
     }, [fetchRequests]);

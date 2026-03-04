@@ -13,7 +13,7 @@ const DomainRequestsAdminManagement: React.FC = () => {
 
     const [search, setSearch] = useState("");
 
-    // ✅ Auto refetch عند تحميل الصفحة
+    //  Auto refetch عند تحميل الصفحة
     useEffect(() => {
         refetch();
     }, [refetch]);
@@ -30,7 +30,7 @@ const DomainRequestsAdminManagement: React.FC = () => {
 
             try {
                 await deleteRequest(request.id);
-                toast.success("تم حذف الطلب بنجاح ✅");
+                toast.success("تم حذف الطلب بنجاح ");
                 await refetch();
             } catch (error: any) {
                 toast.error(error.message || "فشل في حذف الطلب");
@@ -39,7 +39,7 @@ const DomainRequestsAdminManagement: React.FC = () => {
         [deleteRequest, refetch],
     );
 
-    // ✅ Search محسن مع debounce effect
+    //  Search محسن مع debounce effect
     const filteredRequests = useMemo(
         () =>
             requests.filter(
@@ -59,7 +59,7 @@ const DomainRequestsAdminManagement: React.FC = () => {
         [requests, search],
     );
 
-    // ✅ Stats محسنة
+    //  Stats محسنة
     const stats = useMemo(
         () => ({
             total: requests.length,
@@ -68,7 +68,7 @@ const DomainRequestsAdminManagement: React.FC = () => {
         [requests],
     );
 
-    // ✅ Loading state محسن
+    //  Loading state محسن
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px] p-8">
@@ -82,7 +82,7 @@ const DomainRequestsAdminManagement: React.FC = () => {
         );
     }
 
-    // ✅ Error state محسن
+    //  Error state محسن
     if (error) {
         return (
             <div className="flex items-center justify-center min-h-[400px] p-8">

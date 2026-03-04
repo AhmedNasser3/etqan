@@ -130,7 +130,6 @@ const useCenters = () => {
 
                 setCenters(transformedCenters);
                 if (isInitialLoad.current && !hasShownApiToast.current) {
-                    toast.success(`✅ ${transformedCenters.length} مجمع`);
                     hasShownApiToast.current = true;
                 }
             } else {
@@ -182,7 +181,6 @@ const useCenters = () => {
     const goToCenter = useCallback((subdomain: string) => {
         const centerUrl = `${window.location.origin}/${subdomain}`;
         window.open(centerUrl, "_blank", "noopener,noreferrer");
-        toast.success("✅ تم فتح المجمع");
     }, []);
 
     const toggleDemoMode = useCallback(() => {

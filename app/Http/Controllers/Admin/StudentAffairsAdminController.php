@@ -1,5 +1,5 @@
 <?php
-// app/Http/Controllers/Admin/StudentAffairsAdminController.php - ✅ مُصحح نهائياً مع اسم المجمع
+// app/Http/Controllers/Admin/StudentAffairsAdminController.php -  مُصحح نهائياً مع اسم المجمع
 
 namespace App\Http\Controllers\Admin;
 
@@ -58,7 +58,7 @@ class StudentAffairsAdminController extends Controller
                 'circle' => $student->circle ?? 'غير محدد',
                 'guardianName' => $student->guardian->name ?? 'غير محدد',
                 'guardianPhone' => $student->guardian->phone ?? $student->user->phone ?? 'غير محدد',
-                'center_name' => $student->user->center ? $student->user->center->name : 'غير محدد', // ✅ اسم المجمع الحقيقي
+                'center_name' => $student->user->center ? $student->user->center->name : 'غير محدد', //  اسم المجمع الحقيقي
                 'center_id' => $student->user->center_id,
                 'attendanceRate' => $this->getAttendanceRate($student->id),
                 'balance' => $this->getBalance($student->id),
@@ -101,7 +101,7 @@ public function show($id)
             ], 404);
         }
 
-        // ✅ جلب اسم المركز بـ query منفصل (آمن)
+        //  جلب اسم المركز بـ query منفصل (آمن)
         $centerName = 'غير محدد';
         if ($student->user->center_id) {
             $centerName = Center::where('id', $student->user->center_id)
@@ -125,7 +125,7 @@ public function show($id)
                 'guardian_name' => $student->guardian?->name ?? 'غير محدد',
                 'guardian_phone' => $student->guardian?->phone ?? $student->user->phone ?? '',
                 'center_id' => $student->user->center_id ?? '',
-                'center_name' => $centerName,  // ✅ اسم المركز الحقيقي
+                'center_name' => $centerName,  //  اسم المركز الحقيقي
                 'email' => $student->user->email ?? '',
                 'phone' => $student->user->phone ?? ''
             ]
@@ -222,7 +222,7 @@ public function show($id)
             'totalStudents' => $totalStudents,
             'activeStudents' => $totalStudents,
             'suspendedStudents' => 0,
-            'totalCenters' => $totalCenters,    // ✅ إحصائية جديدة
+            'totalCenters' => $totalCenters,    //  إحصائية جديدة
             'paymentRate' => 95
         ]);
     }

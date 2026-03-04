@@ -293,8 +293,6 @@ const PlansManagement: React.FC = () => {
                                 <th>اسم الخطة</th>
                                 <th>المجمع</th>
                                 <th>المدة</th>
-                                <th>عدد الأيام</th>
-                                <th>اليوم الحالي</th>
                                 <th>الإجراءات</th>
                             </tr>
                         </thead>
@@ -322,8 +320,6 @@ const PlansManagement: React.FC = () => {
                                         <td>{item.plan_name}</td>
                                         <td>{getCenterName(item)}</td>
                                         <td>{item.total_months} شهر</td>
-                                        <td>{item.details_count || 0}</td>
-                                        <td>{item.current_day || "-"}</td>
                                         <td>
                                             <div className="teacherStudent__btns">
                                                 <button

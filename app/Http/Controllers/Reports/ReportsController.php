@@ -151,7 +151,7 @@ class ReportsController extends Controller
     }
 
     /**
-     * تقارير السجلات الإدارية ✅ محدث مع أسماء المستخدمين
+     * تقارير السجلات الإدارية  محدث مع أسماء المستخدمين
      */
     private function getAuditLogReports($centerId): Collection
     {
@@ -198,7 +198,7 @@ class ReportsController extends Controller
     }
 
     /**
-     * جلب سجلات التدقيق ✅ محدث مع أسماء المستخدمين
+     * جلب سجلات التدقيق  محدث مع أسماء المستخدمين
      */
     public function auditLogReport(Request $request, $period = null)
     {
@@ -250,7 +250,7 @@ class ReportsController extends Controller
     }
 
     /**
-     * جلب كل السجلات ✅ محدث مع أسماء المستخدمين
+     * جلب كل السجلات  محدث مع أسماء المستخدمين
      */
     public function allAuditLogs(Request $request)
     {

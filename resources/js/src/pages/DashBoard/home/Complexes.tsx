@@ -18,7 +18,7 @@ const Complexes: React.FC = () => {
         toggleDemoMode,
     } = useCenters();
 
-    // ✅ دالة الـ icons زي القديم
+    //  دالة الـ icons زي القديم
     const getIconForStat = useCallback((label: string): React.ReactNode => {
         switch (label) {
             case "الطلاب":
@@ -37,7 +37,7 @@ const Complexes: React.FC = () => {
         }
     }, []);
 
-    // ✅ Centers مع الـ icons
+    //  Centers مع الـ icons
     const centersWithIcons = useMemo(() => {
         return centers.map((center) => ({
             ...center,
@@ -48,7 +48,7 @@ const Complexes: React.FC = () => {
         }));
     }, [centers, getIconForStat]);
 
-    // ✅ Loading
+    //  Loading
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px] p-8">
@@ -70,7 +70,7 @@ const Complexes: React.FC = () => {
 
     return (
         <div className="complexes">
-            {/* ✅ نفس Header القديم */}
+            {/*  نفس Header القديم */}
             <div className="testimonials__mainTitle">
                 <button className="text-2xl font-bold text-purple-600">
                     جميع المجمعات ({totalCenters})
@@ -83,74 +83,85 @@ const Complexes: React.FC = () => {
                 <h1>اكتشف المجمعات</h1>
             </div>
 
-            {/* ✅ نفس الـ Layout القديم */}
+            {/*  نفس الـ Layout القديم */}
             <div className="complexes__inner">
                 {centersWithIcons.map((complex, index) => (
-                    <div
-                        key={complex.id || index}
-                        className="complexes__container"
+                    <button
+                        onClick={() => goToCenter(complex.subdomain)}
+                        className="w-full"
                     >
-                        <div className="complexes__data">
-                            <div className="complexes__img">
-                                <img
-                                    src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
-                                    alt={complex.title}
-                                />
-                            </div>
-                            <div className="complexes__text">
-                                <div className="complexes__title">
-                                    <h2>{complex.title}</h2>
+                        <div
+                            key={complex.id || index}
+                            className="complexes__container"
+                        >
+                            <div className="complexes__data">
+                                <div className="complexes__img">
+                                    <img
+                                        src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
+                                        alt={complex.title}
+                                    />
                                 </div>
-                                <div className="complexes__description">
-                                    <p>{complex.description}</p>
+                                <div className="complexes__text">
+                                    <div className="complexes__title">
+                                        <h2>{complex.title}</h2>
+                                    </div>
+                                    <div className="complexes__description">
+                                        <p>{complex.description}</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* ✅ نفس الـ Footer القديم */}
-                        <div className="complexes__footer">
-                            <div className="complexes__footerContainer">
-                                <div className="complexes__footerData">
-                                    {complex.stats.map((stat, statIndex) => (
-                                        <div
-                                            key={`${complex.id}-stat-${statIndex}`}
-                                            className="complexes__footerBoxs"
-                                        >
-                                            <div className="complexes__footerTitle">
-                                                <h1>{stat.label}</h1>
-                                                <div className="complexes__footerIcon">
-                                                    <i>{stat.icon}</i>
+                            {/*  نفس الـ Footer القديم */}
+                            <div className="complexes__footer">
+                                <div className="complexes__footerContainer">
+                                    <div className="complexes__footerData">
+                                        {complex.stats.map(
+                                            (stat, statIndex) => (
+                                                <div
+                                                    key={`${complex.id}-stat-${statIndex}`}
+                                                    className="complexes__footerBoxs"
+                                                >
+                                                    <div className="complexes__footerTitle">
+                                                        <h1>{stat.label}</h1>
+                                                        <div className="complexes__footerIcon">
+                                                            <i>{stat.icon}</i>
+                                                        </div>
+                                                    </div>
+                                                    <div className="complexes__footerDescription">
+                                                        <p>
+                                                            {stat.label}:{" "}
+                                                            <span>
+                                                                {stat.value}
+                                                            </span>
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="complexes__footerDescription">
-                                                <p>
-                                                    {stat.label}:{" "}
-                                                    <span>{stat.value}</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                            ),
+                                        )}
+                                    </div>
 
-                                {/* ✅ نفس الأزرار القديمة + الـ functionality الجديد */}
-                                <div className="complexes__footerBtContainer">
-                                    <div
-                                        className="complexes__footerBtn"
-                                        id={`complexes__footerBtnView`}
-                                    >
-                                        <button
-                                            onClick={() =>
-                                                goToCenter(complex.subdomain)
-                                            }
-                                            className="w-full"
+                                    {/*  نفس الأزرار القديمة + الـ functionality الجديد */}
+                                    <div className="complexes__footerBtContainer">
+                                        <div
+                                            className="complexes__footerBtn"
+                                            id={`complexes__footerBtnView`}
                                         >
-                                            مشاهدة التفاصيل
-                                        </button>
+                                            <button
+                                                onClick={() =>
+                                                    goToCenter(
+                                                        complex.subdomain,
+                                                    )
+                                                }
+                                                className="w-full"
+                                            >
+                                                مشاهدة التفاصيل
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </button>
                 ))}
             </div>
         </div>

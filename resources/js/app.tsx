@@ -77,6 +77,7 @@ import CustomSalariesManagement from "./src/pages/DashBoard/Center/TeacherCustom
 import StudentTransferManagement from "./src/pages/DashBoard/Center/StudentTransfers/StudentTransferManagement";
 import StudentAffairsPlatform from "./src/pages/DashBoard/Admin/StudentAffairsPlatform/StudentAffairsPlatform";
 import PublicNavbar from "./src/layouts/PublicNavbar/PublicNavbar";
+import AdminSidebar from "./src/layouts/adminDashboard/AdminSidebar";
 
 function UserLayout() {
     return (
@@ -148,8 +149,8 @@ function DashLayout() {
 function AdminDashLayout() {
     return (
         <>
-            <Navbar />
-            <Sidebar />
+            <CenterNavbar />
+            <AdminSidebar />
             <main className="page">
                 <div className="page__container">
                     <Outlet />
@@ -334,9 +335,10 @@ function App() {
                             element={<CentersMangement />}
                         />
                         <Route
-                            path="admin-approval"
+                            path="admin-centers-approval"
                             element={<PendingCentersApproval />}
                         />
+
                         <Route
                             path="student-affairs-platform"
                             element={<StudentAffairsPlatform />}

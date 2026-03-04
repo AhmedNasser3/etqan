@@ -51,6 +51,7 @@
 @media screen and (max-width: 1024px) {
     .stats {
         &__container {
+            justify-content: center !important;
             display: grid;
         }
         &__data {

@@ -71,7 +71,6 @@ export const useCenterStats = () => {
 
             if (result.success && result.data) {
                 setStats(result.data);
-                toast.success(" تم تحميل الإحصائيات بنجاح");
             } else {
                 throw new Error(
                     result.data?.message || "خطأ في استجابة الخادم",

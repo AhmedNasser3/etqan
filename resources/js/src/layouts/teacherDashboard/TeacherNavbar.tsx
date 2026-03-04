@@ -20,7 +20,7 @@ const TeacherNavbar: React.FC = () => {
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const { user, loading } = useAuthUser();
 
-    // ✅ تحديد اسم اللوحة والرابط حسب الـ role
+    //  تحديد اسم اللوحة والرابط حسب الـ role
     const getDashboardConfig = () => {
         if (!user?.teacher?.role)
             return { title: "لوحة التحكم", link: "/teacher-dashboard" };
@@ -164,7 +164,7 @@ const TeacherNavbar: React.FC = () => {
                                         className={`navbar__dropdown ${dropdowns.profile ? "dropped" : ""}`}
                                         id="navbar__profileDropDown"
                                     >
-                                        {/* ✅ الرابط والاسم حسب الـ role */}
+                                        {/*  الرابط والاسم حسب الـ role */}
                                         <a href={dashboardConfig.link}>
                                             <li>
                                                 <FaUserAlt />
@@ -185,7 +185,7 @@ const TeacherNavbar: React.FC = () => {
                                             </li>
                                         </a>
 
-                                        {/* ✅ رابط الجدول حسب الـ role */}
+                                        {/*  رابط الجدول حسب الـ role */}
                                         <a
                                             href={
                                                 dashboardConfig.link + "/plans"

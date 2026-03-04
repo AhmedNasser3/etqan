@@ -187,7 +187,6 @@ const StudentAffairs: React.FC = () => {
                                         <th>الصورة</th>
                                         <th>الاسم</th>
                                         <th>رقم الهوية</th>
-                                        <th>الصف</th>
                                         <th>الحلقة</th>
                                         <th>ولي الأمر</th>
                                         <th>الحضور</th>
@@ -213,11 +212,7 @@ const StudentAffairs: React.FC = () => {
                                             </td>
                                             <td>{item.name}</td>
                                             <td>{item.idNumber}</td>
-                                            <td>
-                                                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                                                    {item.grade}
-                                                </span>
-                                            </td>
+
                                             <td>{item.circle}</td>
                                             <td>
                                                 <div className="text-sm">

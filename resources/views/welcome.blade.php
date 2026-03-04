@@ -9,7 +9,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet"/>
     <link rel="shortcut icon" href="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png" type="image/x-icon">
-    <title>إتقان</title>
+    <title>سراج</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.2/xlsx.full.min.js"></script>
 
     @viteReactRefresh

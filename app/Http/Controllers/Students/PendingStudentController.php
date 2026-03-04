@@ -15,7 +15,7 @@ class PendingStudentController extends Controller
 {
     public function index(Request $request)
     {
-        // ✅ التحقق من وجود المستخدم و center_id قبل أي شيء
+        //  التحقق من وجود المستخدم و center_id قبل أي شيء
         $user = Auth::user();
 
         if (!$user) {
@@ -40,7 +40,7 @@ class PendingStudentController extends Controller
             ->whereHas('user', function($q) {
                 $q->where('status', 'pending');
             })
-            ->where('center_id', $user->center_id); // ✅ مجمع المستخدم الحالي
+            ->where('center_id', $user->center_id); //  مجمع المستخدم الحالي
 
         $students = $query->orderBy('created_at', 'desc')->get();
 

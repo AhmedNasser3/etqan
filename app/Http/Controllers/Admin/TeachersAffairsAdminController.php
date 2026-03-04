@@ -1,5 +1,5 @@
 <?php
-// app/Http/Controllers/Admin/TeachersAffairsAdminController.php - ✅ مُصحح نهائياً لجميع المعلمين في المنصة
+// app/Http/Controllers/Admin/TeachersAffairsAdminController.php -  مُصحح نهائياً لجميع المعلمين في المنصة
 
 namespace App\Http\Controllers\Admin;
 
@@ -51,17 +51,17 @@ class TeachersAffairsAdminController extends Controller
             return [
                 'id' => $teacher->id,
                 'name' => $teacher->user->name ?? 'غير محدد',
-                'teacherId' => $teacher->id, // ✅ رقم المعلم
+                'teacherId' => $teacher->id, //  رقم المعلم
                 'age' => $teacher->user->birth_date ?
                     $this->calculateAge($teacher->user->birth_date) . ' سنوات' : 'غير محدد',
-                'role' => $teacher->role ?? 'غير محدد', // ✅ الوظيفة
+                'role' => $teacher->role ?? 'غير محدد', //  الوظيفة
                 'phone' => $teacher->user->phone ?? 'غير محدد',
                 'center_name' => $this->getCenterName($teacher->user->center_id),
                 'center_id' => $teacher->user->center_id,
                 'email' => $teacher->user->email ?? 'غير محدد',
                 'attendanceRate' => $this->getAttendanceRate($teacher->id),
-                'salaryStatus' => $this->getSalaryStatus($teacher->id), // ✅ حالة الراتب
-                'status' => 'نشط', // ✅ ثابت
+                'salaryStatus' => $this->getSalaryStatus($teacher->id), //  حالة الراتب
+                'status' => 'نشط', //  ثابت
                 'img' => $this->getDefaultAvatar($teacher->user->name ?? 'Teacher'),
                 'phone_formatted' => $this->formatPhone($teacher->user->phone ?? '')
             ];
@@ -77,7 +77,7 @@ class TeachersAffairsAdminController extends Controller
             'per_page' => $teachers->perPage(),
             'total' => $teachers->total(),
             'stats' => $stats,
-            'roles' => $roles // ✅ بدل الصفوف
+            'roles' => $roles //  بدل الصفوف
         ]);
     }
 
@@ -171,7 +171,7 @@ class TeachersAffairsAdminController extends Controller
     public function printCard($id)
     {
         $teacher = Teacher::with(['user'])->findOrFail($id);
-        $pdf = Pdf::loadView('pdf.teacher-card', compact('teacher')); // ✅ view مختلف
+        $pdf = Pdf::loadView('pdf.teacher-card', compact('teacher')); //  view مختلف
         $filename = 'بطاقة_المعلم_' . ($teacher->user->name ?? $teacher->name) . '.pdf';
 
         return $pdf->download($filename);
@@ -193,7 +193,7 @@ class TeachersAffairsAdminController extends Controller
         ]);
     }
 
-    // ✅ الدوال الخاصة بالمعلمين
+    //  الدوال الخاصة بالمعلمين
     private function getCenterName($centerId)
     {
         if (!$centerId) return 'غير محدد';

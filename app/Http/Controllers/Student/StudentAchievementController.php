@@ -21,9 +21,9 @@ class StudentAchievementController extends Controller
             $user = Auth::user();
 
             $students = User::select('users.id', 'users.name', 'users.email', 'users.phone', 'users.center_id')
-                ->join('students', 'users.id', '=', 'students.user_id') // ✅ JOIN مع جدول students
+                ->join('students', 'users.id', '=', 'students.user_id') //  JOIN مع جدول students
                 ->where('users.center_id', $user->center_id)
-                ->where('users.role_id', 3) // ✅ افتراض role_id = 3 للطلاب
+                ->where('users.role_id', 3) //  افتراض role_id = 3 للطلاب
                 ->orderBy('users.name', 'asc')
                 ->get();
 
@@ -54,7 +54,7 @@ class StudentAchievementController extends Controller
                       $subQuery->select(DB::raw(1))
                                ->from('students')
                                ->whereColumn('students.user_id', 'users.id');
-                  }); // ✅ الطلاب فقط
+                  }); //  الطلاب فقط
             })
             ->with('user:id,name,email,center_id,phone')
             ->orderBy('created_at', 'desc')
@@ -126,7 +126,7 @@ class StudentAchievementController extends Controller
                 'required',
                 'exists:users,id',
                 function ($attribute, $value, $fail) {
-                    // ✅ التحقق من أن الـ user طالب فعلي
+                    //  التحقق من أن الـ user طالب فعلي
                     $targetUser = User::select('center_id')
                         ->join('students', 'users.id', '=', 'students.user_id')
                         ->where('users.id', $value)
@@ -236,7 +236,7 @@ class StudentAchievementController extends Controller
     {
         $myCenterId = Auth::user()->center_id;
 
-        // ✅ التحقق من أن الطالب مسجل في جدول students
+        //  التحقق من أن الطالب مسجل في جدول students
         $isValidStudent = User::join('students', 'users.id', '=', 'students.user_id')
             ->where('users.id', $studentId)
             ->where('users.center_id', $myCenterId)

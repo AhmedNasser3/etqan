@@ -14,24 +14,53 @@ import { IoCheckmarkCircleOutline } from "react-icons/io5";
 import { MdDelete } from "react-icons/md";
 
 const PendingCentersApproval: React.FC = () => {
-    const { centers, loading: centersLoading, refetch } = usePendingCenters();
-    const { confirmCenter, loading: confirmLoading } = useConfirmCenter();
-    const { rejectCenter, loading: rejectLoading } = useRejectCenter();
-    const { deleteCenter, loading: deleteLoading } = useDeleteCenter();
+    const {
+        centers,
+        loading: centersLoading,
+        total,
+        refetch,
+    } = usePendingCenters();
+    const {
+        confirmCenter,
+        loading: confirmLoading,
+        error: confirmError,
+    } = useConfirmCenter();
+    const {
+        rejectCenter,
+        loading: rejectLoading,
+        error: rejectError,
+    } = useRejectCenter();
+    const {
+        deleteCenter,
+        loading: deleteLoading,
+        error: deleteError,
+    } = useDeleteCenter();
 
     const [search, setSearch] = useState("");
 
-    //  Filtering
+    // ✅ تصفية متوافقة مع الهيكل الجديد
     const filteredCenters = centers.filter(
-        (center: any) =>
-            center.center?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        (center) =>
             center.name?.toLowerCase().includes(search.toLowerCase()) ||
+            center.user_name?.toLowerCase().includes(search.toLowerCase()) ||
             center.email?.toLowerCase().includes(search.toLowerCase()) ||
-            center.center?.subdomain
-                ?.toLowerCase()
-                .includes(search.toLowerCase()) ||
-            center.phone?.toLowerCase().includes(search.toLowerCase()),
+            center.subdomain?.toLowerCase().includes(search.toLowerCase()) ||
+            center.phone?.toLowerCase().includes(search.toLowerCase()) ||
+            center.user_email?.toLowerCase().includes(search.toLowerCase()),
     );
+
+    // ✅ إخفاء أخطاء الـ hooks
+    useEffect(() => {
+        if (confirmError) {
+            toast.error(`❌ خطأ في التفعيل: ${confirmError}`);
+        }
+        if (rejectError) {
+            toast.error(`❌ خطأ في الرفض: ${rejectError}`);
+        }
+        if (deleteError) {
+            toast.error(`❌ خطأ في الحذف: ${deleteError}`);
+        }
+    }, [confirmError, rejectError, deleteError]);
 
     useEffect(() => {
         refetch();
@@ -41,7 +70,7 @@ const PendingCentersApproval: React.FC = () => {
         try {
             const response = await confirmCenter(id);
             if (response.success) {
-                toast.success(response.message || " تم اعتماد المجمع بنجاح!");
+                toast.success(response.message || "تم اعتماد المجمع بنجاح!");
                 refetch();
             }
         } catch (error: any) {
@@ -57,7 +86,7 @@ const PendingCentersApproval: React.FC = () => {
         try {
             const response = await rejectCenter(id);
             if (response.success) {
-                toast.success(response.message || " تم رفض طلب المجمع بنجاح");
+                toast.success(response.message || "تم رفض طلب المجمع بنجاح");
                 refetch();
             }
         } catch (error: any) {
@@ -78,7 +107,7 @@ const PendingCentersApproval: React.FC = () => {
         try {
             const response = await deleteCenter(id);
             if (response.success) {
-                toast.success(response.message || " تم حذف المجمع نهائياً");
+                toast.success(response.message || "تم حذف المجمع نهائياً");
                 refetch();
             }
         } catch (error: any) {
@@ -94,15 +123,7 @@ const PendingCentersApproval: React.FC = () => {
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-lg text-gray-600">
-                        <div className="navbar">
-                            <div className="navbar__inner">
-                                <div className="navbar__loading">
-                                    <div className="loading-spinner">
-                                        <div className="spinner-circle"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>{" "}
+                        جاري تحميل المجامع...
                     </p>
                 </div>
             </div>
@@ -113,6 +134,7 @@ const PendingCentersApproval: React.FC = () => {
         <>
             <Toaster position="top-center" />
             <div className="userProfile__plan" style={{ padding: "0 15%" }}>
+                {/* ✅ إحصائيات محدثة */}
                 <div className="plan__stats">
                     <div className="stat-card">
                         <div className="stat-icon redColor">
@@ -123,7 +145,7 @@ const PendingCentersApproval: React.FC = () => {
                         <div>
                             <h3>إجمالي المجمعات</h3>
                             <p className="text-2xl font-bold text-red-600">
-                                {centers.length}
+                                {total || centers.length}
                             </p>
                         </div>
                     </div>
@@ -147,13 +169,9 @@ const PendingCentersApproval: React.FC = () => {
                             </i>
                         </div>
                         <div>
-                            <h3>مفعلة</h3>
+                            <h3>مطلوبة</h3>
                             <p className="text-2xl font-bold text-green-600">
-                                {
-                                    centers.filter(
-                                        (c: any) => c.center?.is_active,
-                                    ).length
-                                }
+                                {centers.length}
                             </p>
                         </div>
                     </div>
@@ -203,18 +221,19 @@ const PendingCentersApproval: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredCenters.map((item: any) => (
+                                {filteredCenters.map((item) => (
                                     <tr
                                         key={item.id}
-                                        className={`plan__row ${item.status === "pending" ? "pending" : ""}`}
+                                        className="plan__row pending"
                                     >
+                                        {/* ✅ شعار محدث */}
                                         <td className="teacherStudent__img">
                                             <div className="w-12 h-12 rounded-full overflow-hidden">
-                                                {item.center?.logo ? (
+                                                {item.logo ? (
                                                     <img
-                                                        src={item.center.logo}
+                                                        src={item.logo}
                                                         alt={
-                                                            item.center?.name ||
+                                                            item.name ||
                                                             "شعار المجمع"
                                                         }
                                                         className="w-full h-full object-cover"
@@ -226,7 +245,7 @@ const PendingCentersApproval: React.FC = () => {
                                                 ) : (
                                                     <div className="w-full h-full bg-blue-100 flex items-center justify-center">
                                                         <span className="text-blue-600 font-bold text-xl">
-                                                            {item.center?.name?.charAt(
+                                                            {item.name?.charAt(
                                                                 0,
                                                             ) || "م"}
                                                         </span>
@@ -234,13 +253,14 @@ const PendingCentersApproval: React.FC = () => {
                                                 )}
                                             </div>
                                         </td>
+
+                                        {/* ✅ البيانات محدثة */}
                                         <td>
                                             <span className="font-medium">
-                                                {item.center?.name ||
-                                                    "غير محدد"}
+                                                {item.name || "غير محدد"}
                                             </span>
                                         </td>
-                                        <td>{item.name || "غير محدد"}</td>
+                                        <td>{item.user_name || "غير محدد"}</td>
                                         <td>
                                             <span className="text-gray-600">
                                                 {item.email || "-"}
@@ -253,7 +273,7 @@ const PendingCentersApproval: React.FC = () => {
                                         </td>
                                         <td>
                                             <span className="text-blue-600 font-mono text-sm">
-                                                {item.center?.subdomain || "-"}
+                                                {item.subdomain || "-"}
                                             </span>
                                         </td>
                                         <td>
@@ -262,21 +282,8 @@ const PendingCentersApproval: React.FC = () => {
                                             </span>
                                         </td>
                                         <td>
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                                    item.status === "pending"
-                                                        ? "bg-yellow-100 text-yellow-800"
-                                                        : item.status ===
-                                                            "active"
-                                                          ? "bg-green-100 text-green-800"
-                                                          : "bg-red-100 text-red-800"
-                                                }`}
-                                            >
-                                                {item.status === "pending"
-                                                    ? "معلق"
-                                                    : item.status === "active"
-                                                      ? "نشط"
-                                                      : "غير نشط"}
+                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                معلق
                                             </span>
                                         </td>
                                         <td>
@@ -353,33 +360,26 @@ const PendingCentersApproval: React.FC = () => {
                         </table>
                     </div>
 
+                    {/* ✅ إحصائيات محدثة */}
                     <div
                         className="inputs__verifyOTPBirth"
                         id="userProfile__verifyOTPBirth"
                     >
                         <div className="userProfile__progressContent">
                             <div className="userProfile__progressTitle">
-                                <h1>معدل الاعتماد</h1>
+                                <h1>معدل المعالجة</h1>
                             </div>
                             <p>
-                                {Math.round(
-                                    (centers.filter(
-                                        (c: any) => c.status === "active",
-                                    ).length /
-                                        Math.max(centers.length, 1)) *
-                                        100,
-                                )}
-                                %
+                                {centers.length > 0
+                                    ? `${Math.round((filteredCenters.length / centers.length) * 100)}%`
+                                    : "0%"}
                             </p>
                             <div className="userProfile__progressBar">
                                 <span
                                     style={{
                                         width: `${Math.min(
                                             Math.round(
-                                                (centers.filter(
-                                                    (c: any) =>
-                                                        c.status === "active",
-                                                ).length /
+                                                (filteredCenters.length /
                                                     Math.max(
                                                         centers.length,
                                                         1,
@@ -394,15 +394,11 @@ const PendingCentersApproval: React.FC = () => {
                         </div>
                         <div className="userProfile__progressContent">
                             <div className="userProfile__progressTitle">
-                                <h1>متوسط وقت المعالجة</h1>
+                                <h1>عدد الطلبات</h1>
                             </div>
-                            <p>
-                                {centers.length > 0
-                                    ? `${Math.round(centers.length / 5)} ساعة`
-                                    : "0 ساعة"}
-                            </p>
+                            <p>{total || centers.length}</p>
                             <div className="userProfile__progressBar">
-                                <span style={{ width: "70%" }}></span>
+                                <span style={{ width: "100%" }}></span>
                             </div>
                         </div>
                     </div>

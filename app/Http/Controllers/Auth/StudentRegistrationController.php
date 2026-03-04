@@ -32,7 +32,7 @@ class StudentRegistrationController extends Controller
             'notes' => 'nullable|string',
             'gender' => 'required|in:male,female',
             'center_slug' => 'nullable|string',
-            'student_email' => 'required|email', // ✅ بدون unique دلوقتي
+            'student_email' => 'required|email', //  بدون unique دلوقتي
         ]);
 
         DB::beginTransaction();
@@ -83,7 +83,7 @@ class StudentRegistrationController extends Controller
             $guardian = $this->findOrCreateGuardian($validated, $centerId);
             $student = $this->createStudent($validated, $guardian->id, $centerId);
 
-            // ✅ إضافة Tenant جديد أو التحقق من وجوده
+            //  إضافة Tenant جديد أو التحقق من وجوده
             $this->handleTenant($guardian, $centerId, $student);
 
             AuditLogService::logUserCreate(auth()->user(), $guardian->id, $validated);
@@ -202,7 +202,7 @@ class StudentRegistrationController extends Controller
     }
 
     /**
-     * ✅ الدالة الجديدة لمعالجة Tenant
+     *  الدالة الجديدة لمعالجة Tenant
      */
     private function handleTenant(User $user, int $centerId, Student $student): void
     {

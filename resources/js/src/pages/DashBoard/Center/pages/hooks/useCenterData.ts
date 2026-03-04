@@ -29,7 +29,7 @@ interface CenterData {
 export const useCenterData = () => {
     const { centerSlug } = useParams<{ centerSlug?: string }>();
     const [centerData, setCenterData] = useState<CenterData>({
-        center: { id: 0, name: "إتقان - منصة القرآن الكريم" },
+        center: { id: 0, name: "سراج - منصة القرآن الكريم" },
         stats: { students: 12345, episodes: 567, progress: 92 },
         testimonials: [], // فارغ في البداية
         loading: true,

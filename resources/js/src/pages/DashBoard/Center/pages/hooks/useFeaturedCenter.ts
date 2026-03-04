@@ -24,7 +24,7 @@ export const useFeaturedCenter = () => {
         if (!slug) {
             setCenterInfo({
                 id: 0,
-                name: "إتقان - منصة القرآن الكريم",
+                name: "سراج - منصة القرآن الكريم",
                 loading: false,
                 error: null,
             });

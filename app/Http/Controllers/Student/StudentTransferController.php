@@ -140,7 +140,7 @@ class StudentTransferController extends Controller
     }
 
     /**
-     * 🔥 عرض المواعيد المتاحة لحلقة معينة + خطة معينة ✅ مُصحح!
+     * 🔥 عرض المواعيد المتاحة لحلقة معينة + خطة معينة  مُصحح!
      * GET /api/v1/student/transfer/circles/{circleId}/schedules?plan_id=3
      */
     public function availableSchedules(Request $request, $circleId)
@@ -162,7 +162,7 @@ class StudentTransferController extends Controller
             ], 422);
         }
 
-        // 🔥 المواعيد الخاصة بالحلقة + الخطة + مجمع اليوزر ✅
+        // 🔥 المواعيد الخاصة بالحلقة + الخطة + مجمع اليوزر
         $schedules = PlanCircleSchedule::with(['circle', 'teacher'])
             ->where('circle_id', $circleId)
             ->whereHas('plan', fn($q) => $q->where('id', $planId)) // 🔥 فلترة بـ plan_id
@@ -341,7 +341,7 @@ class StudentTransferController extends Controller
             StudentPlanDetail::create([
                 'circle_student_booking_id' => $booking->id,
                 'plan_id' => $newPlanId,
-                'teacher_id' => $teacher->id,        // ✅ teacher.id الصحيح
+                'teacher_id' => $teacher->id,        //  teacher.id الصحيح
                 'circle_id' => $newSchedule->circle_id,
                 'plan_circle_schedule_id' => $newSchedule->id,
                 'day_number' => $detail->day_number,

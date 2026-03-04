@@ -3,6 +3,7 @@ import CentersManagement from "./Center/CentersMangement";
 import StudentAffairsPlatform from "./StudentAffairsPlatform/StudentAffairsPlatform";
 import TeachersAffairsPlatform from "./TeachersAffairsPlatform/TeachersAffairsPlatform";
 import DomainRequestsAdminManagement from "./DomainRequestsAdminManagement/DomainRequestsAdminManagement";
+import PendingCentersApproval from "../Center/PendingCenters/PendingCentersApproval";
 
 const AdminDashboard: React.FC = () => {
     return (
@@ -12,6 +13,7 @@ const AdminDashboard: React.FC = () => {
                 <StudentAffairsPlatform />
                 <TeachersAffairsPlatform />
                 <DomainRequestsAdminManagement />
+                <PendingCentersApproval />
             </div>
         </div>
     );

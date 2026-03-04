@@ -10,22 +10,22 @@ const Login: React.FC = () => {
     const [email, setEmail] = useState("");
     const [isVerified, setIsVerified] = useState(false);
 
-    // ✅ جلب centerSlug من الـ URL parameters والـ pathname
+    // جلب centerSlug من الـ URL parameters والـ pathname
     const { centerSlug: paramSlug } = useParams<{ centerSlug?: string }>();
     const location = useLocation();
 
-    // ✅ استخراج centerSlug من أي مكان في الـ URL
+    // استخراج centerSlug من أي مكان في الـ URL
     const getCenterSlug = () => {
         const pathParts = location.pathname.split("/").filter(Boolean);
 
-        // ✅ البحث عن centerSlug في أي مكان قبل login
+        // البحث عن centerSlug في أي مكان قبل login
         for (let i = 0; i < pathParts.length - 1; i++) {
             if (pathParts[i + 1] === "login") {
                 return pathParts[i]; // center-slug قبل login
             }
         }
 
-        // ✅ أو من useParams
+        // أو من useParams
         return paramSlug || null;
     };
 
@@ -40,7 +40,7 @@ const Login: React.FC = () => {
             return;
         }
 
-        // ✅ تمرير centerSlug للـ Backend
+        // تمرير centerSlug للـ Backend
         await sendOtp(email, centerSlug);
         setShowPopup(true);
     };
@@ -51,11 +51,11 @@ const Login: React.FC = () => {
         window.location.href = "/";
     };
 
-    // ✅ بناء الروابط الثلاثة مع الـ centerSlug
+    // بناء الروابط الثلاثة مع الـ centerSlug
     const getRegisterLink = () =>
-        centerSlug ? `/register/${centerSlug}` : "/register";
+        centerSlug ? `/register/${centerSlug}` : "/center-register";
     const getTeacherRegisterLink = () =>
-        centerSlug ? `/${centerSlug}/teacher-register` : "/teacher-register";
+        centerSlug ? `/${centerSlug}/teacher-register` : "/center-register";
     const getCenterRegisterLink = () => "/center-register"; // ثابتة
 
     return (
@@ -155,51 +155,34 @@ const Login: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* ✅ الروابط الثلاثة كاملة مع الـ centerSlug */}
+                                        {/* الروابط حسب وجود الـ centerSlug */}
                                         <div className="inputs__verifyOTPtimer">
-                                            <a href={getRegisterLink()}>
-                                                <span className="resend-link">
-                                                    ليس لديك حساب؟
-                                                    {centerSlug && (
-                                                        <small
-                                                            style={{
-                                                                marginLeft:
-                                                                    "5px",
-                                                                opacity: 0.8,
-                                                            }}
-                                                        >
-                                                            ({centerSlug})
-                                                        </small>
-                                                    )}
-                                                </span>
-                                            </a>
-                                        </div>
-
-                                        <div className="inputs__verifyOTPtimer">
-                                            <a href={getTeacherRegisterLink()}>
-                                                <span className="resend-link">
-                                                    إنشاء حساب معلم
-                                                    {centerSlug && (
-                                                        <small
-                                                            style={{
-                                                                marginLeft:
-                                                                    "5px",
-                                                                opacity: 0.8,
-                                                            }}
-                                                        >
-                                                            ({centerSlug})
-                                                        </small>
-                                                    )}
-                                                </span>
-                                            </a>
-                                        </div>
-
-                                        <div className="inputs__verifyOTPtimer">
-                                            <a href={getCenterRegisterLink()}>
-                                                <span className="resend-link">
-                                                    إنشاء حساب مجمع
-                                                </span>
-                                            </a>
+                                            {centerSlug ? (
+                                                <div
+                                                    style={{ display: "grid" }}
+                                                >
+                                                    <a href={getRegisterLink()}>
+                                                        <span className="resend-link">
+                                                            انشيئ حساب طالب
+                                                        </span>
+                                                    </a>
+                                                    <a
+                                                        href={getTeacherRegisterLink()}
+                                                    >
+                                                        <span className="resend-link">
+                                                            إنشاء حساب معلم
+                                                        </span>
+                                                    </a>
+                                                </div>
+                                            ) : (
+                                                <a
+                                                    href={getCenterRegisterLink()}
+                                                >
+                                                    <span className="resend-link">
+                                                        إنشاء حساب مجمع
+                                                    </span>
+                                                </a>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -213,7 +196,7 @@ const Login: React.FC = () => {
                                     <div className="auth__bgData">
                                         <h1>تسجيل دخول</h1>
                                         <p>
-                                            بالقرآن نحيا (منصة اتقان لتسهيل حفظ
+                                            بالقرآن نحيا (منصة سراج لتسهيل حفظ
                                             القرآن)
                                         </p>
                                     </div>

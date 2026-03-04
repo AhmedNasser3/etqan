@@ -43,7 +43,7 @@ const HistoryModel: React.FC<HistoryModelProps> = ({ isOpen, onClose }) => {
                                 </h1>
                                 <p>
                                     تم وقف الموظف بسبب:
-                                    <span>انتهاك شروط وسياسة منصة اتقان</span>
+                                    <span>انتهاك شروط وسياسة منصة سراج</span>
                                 </p>
                             </div>
                         </div>
@@ -60,7 +60,7 @@ const HistoryModel: React.FC<HistoryModelProps> = ({ isOpen, onClose }) => {
                                 </h1>
                                 <p>
                                     تم وقف الموظف بسبب:
-                                    <span>انتهاك شروط وسياسة منصة اتقان</span>
+                                    <span>انتهاك شروط وسياسة منصة سراج</span>
                                 </p>
                             </div>
                         </div>
@@ -77,7 +77,7 @@ const HistoryModel: React.FC<HistoryModelProps> = ({ isOpen, onClose }) => {
                                 </h1>
                                 <p>
                                     تم وقف الموظف بسبب:
-                                    <span>انتهاك شروط وسياسة منصة اتقان</span>
+                                    <span>انتهاك شروط وسياسة منصة سراج</span>
                                 </p>
                             </div>
                         </div>
@@ -94,7 +94,7 @@ const HistoryModel: React.FC<HistoryModelProps> = ({ isOpen, onClose }) => {
                                 </h1>
                                 <p>
                                     تم وقف الموظف بسبب:
-                                    <span>انتهاك شروط وسياسة منصة اتقان</span>
+                                    <span>انتهاك شروط وسياسة منصة سراج</span>
                                 </p>
                             </div>
                         </div>
@@ -111,7 +111,7 @@ const HistoryModel: React.FC<HistoryModelProps> = ({ isOpen, onClose }) => {
                                 </h1>
                                 <p>
                                     تم وقف الموظف بسبب:
-                                    <span>انتهاك شروط وسياسة منصة اتقان</span>
+                                    <span>انتهاك شروط وسياسة منصة سراج</span>
                                 </p>
                             </div>
                         </div>
@@ -128,7 +128,7 @@ const HistoryModel: React.FC<HistoryModelProps> = ({ isOpen, onClose }) => {
                                 </h1>
                                 <p>
                                     تم وقف الموظف بسبب:
-                                    <span>انتهاك شروط وسياسة منصة اتقان</span>
+                                    <span>انتهاك شروط وسياسة منصة سراج</span>
                                 </p>
                             </div>
                         </div>

@@ -16,7 +16,7 @@ const Navbar: React.FC = () => {
     const { user, loading } = useAuthUser();
     const location = useLocation();
 
-    // ✅ جلب centerSlug من الـ URL
+    // جلب centerSlug من الـ URL
     const getCenterSlug = () => {
         const pathParts = location.pathname.split("/").filter(Boolean);
         if (pathParts.length >= 1 && pathParts[0] !== "") {
@@ -27,11 +27,11 @@ const Navbar: React.FC = () => {
 
     const centerSlug = getCenterSlug();
 
-    // ✅ تحديد الروابط حسب الـ role
+    // تحديد الروابط حسب الـ role
     const getRoleLinks = () => {
         if (!user) return [];
 
-        // ✅ 1. معلم (teacher)
+        // 1. معلم (teacher)
         if (user?.teacher?.role == "teacher") {
             return [
                 {
@@ -61,7 +61,7 @@ const Navbar: React.FC = () => {
             ];
         }
 
-        // ✅ 2. صاحب مجمع (center_owner)
+        // 2. صاحب مجمع (center_owner)
         if (
             user?.center_owner === true ||
             user?.role?.name === "center_owner" ||
@@ -76,7 +76,7 @@ const Navbar: React.FC = () => {
             ];
         }
 
-        // ✅ 3. طالب (student)
+        // 3. طالب (student)
         if (user?.role?.name === "student") {
             return [
                 {
@@ -87,7 +87,7 @@ const Navbar: React.FC = () => {
             ];
         }
 
-        // ✅ 4. الموظفين حسب الـ role (الـ 5 roles)
+        // 4. الموظفين حسب الـ role (الـ 5 roles)
         if (user?.teacher?.role) {
             const roleConfig: {
                 [key: string]: { title: string; link: string };
@@ -125,7 +125,7 @@ const Navbar: React.FC = () => {
             ];
         }
 
-        // ✅ 5. مستخدم عادي
+        // 5. مستخدم عادي
         return [
             { href: "/user-dashboard", label: "حسابي", icon: <FaUserAlt /> },
         ];
@@ -175,7 +175,7 @@ const Navbar: React.FC = () => {
         }
     };
 
-    // ✅ بناء رابط تسجيل الدخول مع الـ centerSlug
+    // بناء رابط تسجيل الدخول مع الـ centerSlug
     const getLoginLink = () => {
         if (centerSlug) {
             return `/${centerSlug}/login`;
@@ -234,7 +234,7 @@ const Navbar: React.FC = () => {
                                         className={`navbar__dropdown ${dropdowns.profile ? "dropped" : ""}`}
                                         id="navbar__profileDropDown"
                                     >
-                                        {/* ✅ عرض الروابط حسب الـ role */}
+                                        {/* عرض الروابط حسب الـ role */}
                                         {roleLinks.map((link, index) => (
                                             <a key={index} href={link.href}>
                                                 <li>
@@ -244,7 +244,7 @@ const Navbar: React.FC = () => {
                                             </a>
                                         ))}
 
-                                        {/* ✅ الإعدادات */}
+                                        {/* الإعدادات */}
                                         <a href="#">
                                             <li
                                                 onClick={(e) => {
@@ -258,7 +258,7 @@ const Navbar: React.FC = () => {
                                             </li>
                                         </a>
 
-                                        {/* ✅ تسجيل الخروج */}
+                                        {/* تسجيل الخروج */}
                                         <a href="#">
                                             <li onClick={handleLogout}>
                                                 تسجيل الخروج
@@ -268,22 +268,42 @@ const Navbar: React.FC = () => {
                                 </h4>
                             </div>
                         ) : (
-                            // ✅ تسجيل الدخول مع الـ centerSlug الديناميكي
-                            <a
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "6px",
-                                    borderRadius: "10px",
-                                    padding: "6px",
-                                }}
-                                href={getLoginLink()}
-                                id="navbar__active"
-                                className="navbar__link"
-                            >
-                                <HiLogin />
-                                تسجيل الدخول
-                            </a>
+                            <div style={{ display: "flex" }}>
+                                <a
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "6px",
+                                        borderRadius: "10px",
+                                        padding: "6px",
+                                        margin: "0 6px",
+                                    }}
+                                    href={getLoginLink()}
+                                    id="navbar__active"
+                                    className="navbar__link"
+                                >
+                                    <HiLogin />
+                                    تسجيل الدخول
+                                </a>
+                                {/* 👇 إخفاء "انشيئ مجمعك الخاص" لو فيه centerSlug */}
+                                {!centerSlug && (
+                                    <a
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "6px",
+                                            borderRadius: "10px",
+                                            padding: "6px",
+                                        }}
+                                        href="/center-register"
+                                        id="navbar__active"
+                                        className="navbar__link"
+                                    >
+                                        <HiLogin />
+                                        انشيئ مجمعك الخاص
+                                    </a>
+                                )}
+                            </div>
                         )}
                     </div>
 

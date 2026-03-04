@@ -16,7 +16,7 @@ const PublicNavbar: React.FC = () => {
     const { user, loading } = useAuthUser();
     const location = useLocation();
 
-    // ✅ جلب الـ centerSlug من الـ URL
+    //  جلب الـ centerSlug من الـ URL
     const getCenterSlug = () => {
         // تحليل الـ pathname لاستخراج centerSlug
         const pathParts = location.pathname.split("/").filter(Boolean);
@@ -73,7 +73,7 @@ const PublicNavbar: React.FC = () => {
         }
     };
 
-    // ✅ بناء رابط التسجيل مع الـ centerSlug
+    //  بناء رابط التسجيل مع الـ centerSlug
     const getRegisterLink = () => {
         if (centerSlug) {
             return `/${centerSlug}/register`;
@@ -132,7 +132,7 @@ const PublicNavbar: React.FC = () => {
                                         className={`navbar__dropdown ${dropdowns.profile ? "dropped" : ""}`}
                                         id="navbar__profileDropDown"
                                     >
-                                        {/* ✅ 1. معلم */}
+                                        {/*  1. معلم */}
                                         {user?.teacher && (
                                             <>
                                                 <a href="/teacher-dashboard">
@@ -150,7 +150,7 @@ const PublicNavbar: React.FC = () => {
                                             </>
                                         )}
 
-                                        {/* ✅ 2. صاحب مجمع */}
+                                        {/*  2. صاحب مجمع */}
                                         {(user?.center_owner === true ||
                                             user?.role?.name ===
                                                 "center_owner" ||
@@ -163,7 +163,7 @@ const PublicNavbar: React.FC = () => {
                                             </a>
                                         )}
 
-                                        {/* ✅ 3. طالب */}
+                                        {/*  3. طالب */}
                                         {user?.role?.name === "student" && (
                                             <a href="/user-dashboard">
                                                 <li>
@@ -173,7 +173,7 @@ const PublicNavbar: React.FC = () => {
                                             </a>
                                         )}
 
-                                        {/* ✅ 4. مستخدم عادي */}
+                                        {/*  4. مستخدم عادي */}
                                         {user &&
                                             !user.teacher &&
                                             !user.center_owner &&
@@ -186,7 +186,7 @@ const PublicNavbar: React.FC = () => {
                                                 </a>
                                             )}
 
-                                        {/* ✅ الإعدادات */}
+                                        {/*  الإعدادات */}
                                         <a href="#">
                                             <li
                                                 onClick={(e) => {
@@ -200,7 +200,7 @@ const PublicNavbar: React.FC = () => {
                                             </li>
                                         </a>
 
-                                        {/* ✅ تسجيل الخروج */}
+                                        {/*  تسجيل الخروج */}
                                         <a href="#">
                                             <li onClick={handleLogout}>
                                                 تسجيل الخروج
@@ -210,7 +210,7 @@ const PublicNavbar: React.FC = () => {
                                 </h4>
                             </div>
                         ) : (
-                            // ✅ انشاء حساب مع الـ centerSlug
+                            //  انشاء حساب مع الـ centerSlug
                             <a
                                 style={{
                                     display: "flex",
