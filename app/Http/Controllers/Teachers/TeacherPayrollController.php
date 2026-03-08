@@ -19,7 +19,7 @@ class TeacherPayrollController extends Controller
      */
     private function getBaseSalary($teacherId)
     {
-        // ✅ 1- جرب المرتب المخصص الأول
+        //  1- جرب المرتب المخصص الأول
         $customSalary = DB::table('teacher_custom_salaries')
             ->where('teacher_id', $teacherId)
             ->where('is_active', 1)
@@ -34,7 +34,7 @@ class TeacherPayrollController extends Controller
             return (float) $customSalary->custom_base_salary;
         }
 
-        // ✅ 2- لو مفيش مخصص → salary_config العادي
+        //  2- لو مفيش مخصص → salary_config العادي
         $teacher = Teacher::select('role')->find($teacherId);
         $salaryConfig = TeacherSalary::where('role', $teacher->role)->first();
 
@@ -140,7 +140,7 @@ class TeacherPayrollController extends Controller
 
         $payroll = TeacherPayroll::create($payrollData);
 
-        Log::info('✅ Payroll created', [
+        Log::info(' Payroll created', [
             'teacher_id' => $teacherId,
             'user_id' => $userId,
             'salary_config_id' => $salaryConfigId,
@@ -230,14 +230,14 @@ class TeacherPayrollController extends Controller
                 $salaryConfig = TeacherSalary::where('role', $teacher->role)->first();
                 $salaryConfigId = $salaryConfig?->id ?? null;
 
-                // ✅ استخدم المرتب المخصص أو الافتراضي
+                //  استخدم المرتب المخصص أو الافتراضي
                 $baseSalary = $this->getBaseSalary($teacher->id);
 
                 TeacherPayroll::create([
                     'teacher_id' => $teacher->id,
                     'user_id' => $teacher->user_id,
                     'salary_config_id' => $salaryConfigId,
-                    'base_salary' => $baseSalary,  // ✅ مخصص أو default
+                    'base_salary' => $baseSalary,  //  مخصص أو default
                     'attendance_days' => 22,
                     'deductions' => 200,
                     'total_due' => $baseSalary - 200,
@@ -247,7 +247,7 @@ class TeacherPayrollController extends Controller
                     'period_end' => now()->endOfMonth(),
                 ]);
 
-                Log::info("✅ Auto payroll created", [
+                Log::info(" Auto payroll created", [
                     'teacher_id' => $teacher->id,
                     'role' => $teacher->role,
                     'base_salary' => $baseSalary,

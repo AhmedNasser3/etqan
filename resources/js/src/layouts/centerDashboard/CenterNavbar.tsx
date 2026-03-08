@@ -11,6 +11,8 @@ import { MdCallMade } from "react-icons/md";
 import { FaCircleQuestion } from "react-icons/fa6";
 import { useAuthUser } from "../hooks/useAuthUser";
 import EditAccountPage from "@/src/pages/DashBoard/AccountEdit/EditAccountPage";
+import Logo from "../../assets/images/logo.png";
+import { FaSignOutAlt } from "react-icons/fa";
 
 const CenterNavbar: React.FC = () => {
     const [isRotated, setIsRotated] = useState(false);
@@ -139,12 +141,6 @@ const CenterNavbar: React.FC = () => {
                                                 </li>
                                             </a>
                                         </>
-                                        <a href="/teacher-dashboard">
-                                            <li>
-                                                <FaUserAlt />
-                                                حسابي
-                                            </li>
-                                        </a>
 
                                         {/*  الإعدادات داخل الـ dropdown - نفس Navbar الأول */}
                                         <a href="#">
@@ -163,12 +159,9 @@ const CenterNavbar: React.FC = () => {
                                             </li>
                                         </a>
                                         <a href="#">
-                                            <li>
-                                                <IoSettings />
-
-                                                <button onClick={handleLogout}>
-                                                    تسجيل الخروج
-                                                </button>
+                                            <li onClick={handleLogout}>
+                                                <FaSignOutAlt />
+                                                تسجيل الخروج
                                             </li>
                                         </a>
                                     </ul>
@@ -199,10 +192,7 @@ const CenterNavbar: React.FC = () => {
                     </div>
 
                     <div className="navbar__user">
-                        <img
-                            src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
-                            alt="لوجو"
-                        />
+                        <img src={Logo} alt="لوجو" />
                     </div>
                 </div>
             </div>

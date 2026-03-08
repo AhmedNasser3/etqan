@@ -28,7 +28,7 @@ class TeacherCustomSalaryController extends Controller
 
         $query = TeacherCustomSalary::with(['teacher.user'])
             ->whereHas('teacher.user', function($q) use ($userCenterId) {
-                $q->where('center_id', $userCenterId); // ✅ مركزك بس!
+                $q->where('center_id', $userCenterId); //  مركزك بس!
             })
             ->when($request->teacher_id, fn($q, $id) => $q->where('teacher_id', $id))
             ->when($request->search, function($q, $search) use ($userCenterId) {
@@ -80,7 +80,7 @@ class TeacherCustomSalaryController extends Controller
             ], 403);
         }
 
-        // ✅ منع التكرار
+        //  منع التكرار
         $existingActive = TeacherCustomSalary::where('teacher_id', $validated['teacher_id'])
             ->where('is_active', 1)
             ->first();
@@ -98,10 +98,10 @@ class TeacherCustomSalaryController extends Controller
             'notes' => $validated['notes'] ?? null,
             'is_active' => $validated['is_active'] ?? 1,
             'created_by' => Auth::id(),
-            'center_id' => $userCenterId, // ✅ حفظ مركزك
+            'center_id' => $userCenterId, //  حفظ مركزك
         ]);
 
-        Log::info('✅ راتب مخصص جديد', [
+        Log::info(' راتب مخصص جديد', [
             'salary_id' => $salary->id,
             'teacher_id' => $validated['teacher_id'],
             'center_id' => $userCenterId,
@@ -163,7 +163,7 @@ class TeacherCustomSalaryController extends Controller
         $salary->update($validated);
         $salary->refresh();
 
-        Log::info('✅ تحديث راتب مخصص', [
+        Log::info(' تحديث راتب مخصص', [
             'salary_id' => $id,
             'center_id' => $userCenterId,
             'new_amount' => $salary->custom_base_salary

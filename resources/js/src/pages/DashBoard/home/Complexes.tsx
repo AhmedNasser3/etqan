@@ -5,7 +5,7 @@ import { GrPlan } from "react-icons/gr";
 import { PiBookOpenDuotone } from "react-icons/pi";
 import { useMemo, useCallback } from "react";
 import useCenters from "./hooks/useCenters";
-
+import Img from "../../../assets/images/logo.png";
 const Complexes: React.FC = () => {
     const {
         centers,
@@ -27,7 +27,7 @@ const Complexes: React.FC = () => {
                 return <PiChalkboardTeacherDuotone className="text-xl" />;
             case "الخطط":
                 return <GrPlan className="text-xl" />;
-            case "الكتب":
+            case "حلقات":
             case "المصاحف":
             case "القراءات":
             case "الحفاظ":
@@ -80,7 +80,7 @@ const Complexes: React.FC = () => {
                         🧪 تجريبي
                     </span>
                 )}
-                <h1>اكتشف المجمعات</h1>
+                <h1>جمعيات تحفيظ القرآن الكريم</h1>{" "}
             </div>
 
             {/*  نفس الـ Layout القديم */}
@@ -96,10 +96,7 @@ const Complexes: React.FC = () => {
                         >
                             <div className="complexes__data">
                                 <div className="complexes__img">
-                                    <img
-                                        src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
-                                        alt={complex.title}
-                                    />
+                                    <img src={Img} alt={complex.title} />
                                 </div>
                                 <div className="complexes__text">
                                     <div className="complexes__title">

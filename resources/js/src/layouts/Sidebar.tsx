@@ -11,6 +11,7 @@ import { FaUserCheck } from "react-icons/fa";
 import { GrCertificate } from "react-icons/gr";
 import SettingModel from "./models/SettingModel";
 import { useAuthUser } from "./hooks/useAuthUser";
+import { FaSignOutAlt } from "react-icons/fa";
 
 const Sidebar: React.FC = () => {
     const [activePage, setActivePage] = useState("dashboard");

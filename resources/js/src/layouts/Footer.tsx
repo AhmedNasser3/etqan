@@ -20,7 +20,7 @@ const Footer: React.FC = () => {
                 <div className="footer__section footer__brand">
                     <div className="footer__logo">
                         <h2 className="footer__logo-text">
-                            سراج
+                            إتقان
                             <span className="footer__logo-glow">✨</span>
                         </h2>
                     </div>
@@ -146,7 +146,7 @@ const Footer: React.FC = () => {
             <div className="footer__cta-section">
                 <div className="footer__cta-container">
                     <div className="footer__cta-content">
-                        <h3>ابدأ رحلتك مع سراج الآن</h3>
+                        <h3>ابدأ رحلتك مع إتقان الآن</h3>
                         <Link to="/center-register" className="footer__cta-btn">
                             سجل مجمعك التعليمي الان
                             <FaArrowRight className="footer__cta-icon" />
@@ -159,7 +159,7 @@ const Footer: React.FC = () => {
             <div className="footer__bottom">
                 <div className="footer__bottom-container">
                     <p className="footer__copyright">
-                        © ٢٠٢٦ سراج - جميع الحقوق محفوظة |
+                        © ٢٠٢٦ إتقان - جميع الحقوق محفوظة |
                         <Link to="/privacy" className="footer__bottom-link">
                             سياسة الخصوصية
                         </Link>{" "}

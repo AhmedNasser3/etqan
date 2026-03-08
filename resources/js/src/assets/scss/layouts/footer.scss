@@ -1,7 +1,7 @@
 @use "../variables.scss" as *;
 
 .footer {
-    background: $dark-green;
+    background: rgba($dark-green, 0.7);
     position: relative;
     margin-top: 60px;
     font-family: "Cairo", sans-serif;

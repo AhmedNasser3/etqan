@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
 import { useCenterRegister } from "../hooks/useCenterRegister";
+import FAQItem from "../../DashBoard/home/NewTheme/FAQItem";
 
 const CenterRegister: React.FC = () => {
     const [countryCode, setCountryCode] = useState<string>("+966");
@@ -38,7 +39,12 @@ const CenterRegister: React.FC = () => {
             });
         }
     }, [errors.general]);
-
+    const faqQuestions = [
+        {
+            question: "ما هو (رابط مجمعك)",
+            answer: " هو الرابط الخاص بمجمعك مثال : www.etqan.com/seraj, www.etqan.com/game3",
+        },
+    ];
     return (
         <div className="auth">
             <Toaster />
@@ -74,7 +80,7 @@ const CenterRegister: React.FC = () => {
                                                                         .value,
                                                                 })
                                                             }
-                                                            placeholder="مجمع  سراج النسائي"
+                                                            placeholder="مجمع  إتقان النسائي"
                                                             className={
                                                                 errors.name
                                                                     ? "error"
@@ -298,6 +304,15 @@ const CenterRegister: React.FC = () => {
                                             </span>
                                         </a>
                                     </div>
+                                    <div style={{ margin: "24px 0" }}>
+                                        {faqQuestions.map((faq, index) => (
+                                            <FAQItem
+                                                key={index}
+                                                question={faq.question}
+                                                answer={faq.answer}
+                                            />
+                                        ))}{" "}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -306,7 +321,7 @@ const CenterRegister: React.FC = () => {
                                 <div className="auth__bgData">
                                     <h1>تسجيل المجمع</h1>
                                     <p>
-                                        بالقرأن نحيا (منصة سراج لتسهيل حفظ
+                                        بالقرأن نحيا (منصة إتقان لتسهيل حفظ
                                         القرأن)
                                     </p>
                                 </div>

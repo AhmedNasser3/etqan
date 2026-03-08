@@ -128,11 +128,12 @@
                 border: 1px solid rgba($dark-green, 0.7);
                 background: rgba($dark-green, 0.03);
                 border-radius: 20px;
-                font-size: 13px;
+                font-size: $xs-font;
+                font-weight: 600;
                 display: flex;
                 align-items: center;
                 padding: 5px 15px;
-                color: $dark-green;
+                color: rgba($dark-green, 0.7);
                 gap: 12px;
             }
         }
@@ -140,22 +141,25 @@
         .plan__daily-table {
             overflow-x: auto;
             margin-bottom: 24px;
+            border-radius: 20px !important;
 
             table {
                 width: 100%;
                 border-collapse: collapse;
-                background: white;
-                border-radius: 8px;
+                background: rgba($dark-green, 0.001);
+                border: 1px solid rgba($dark-gray, 0.1);
 
                 th,
                 td {
                     color: $dark-gray;
                     padding: 12px 8px;
                     text-align: center;
+                    font-size: $xs-font;
                     border-bottom: 1px solid rgba($light-gray, 0.2);
                 }
                 th {
-                    background: rgba($dark-green, 0.05);
+                    font-size: $xs-font;
+                    background: rgba($dark-green, 0.2);
                     font-weight: 600;
                 }
 
@@ -187,9 +191,10 @@
                 display: flex;
                 gap: 12px;
                 padding: 16px;
-                background: white;
+                background: rgba($dark-green, 0.01);
+                color: rgba($dark-green, 1);
                 border-radius: 8px;
-                border: 1px solid rgba($light-gray, 0.3);
+                border: 2px solid rgba($dark-green, 0.3);
 
                 .stat-icon {
                     font-size: 24px;
@@ -210,7 +215,15 @@
                 }
                 p {
                     margin: 0;
-                    color: $dark-gray;
+                    color: $dark-green;
+                    border-radius: 10px;
+                    padding: 2px;
+                    width: 35px;
+                    height: 35px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    background-color: rgba($dark-green, 0.08);
                     font-weight: 600;
                 }
             }
@@ -229,15 +242,18 @@
             }
             input {
                 background-color: rgba($dark-green, 0.01);
-                border: 1px dashed rgba($dark-green, 0.7);
-                padding: 5px 15px;
-                border-radius: 5px;
+                border: 1px solid rgba($dark-green, 0.7);
+                padding: 8px 15px;
+                border-radius: 10px;
+                min-width: 300px;
             }
         }
         .plan__current {
             h2 {
                 direction: rtl;
-                font-size: $s-font;
+                font-size: $l-font;
+                font-weight: 600;
+                color: rgba($dark-green, 0.7);
             }
         }
         .plan__progress-bar {

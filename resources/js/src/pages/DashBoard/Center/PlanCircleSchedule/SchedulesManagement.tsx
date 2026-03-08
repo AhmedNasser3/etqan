@@ -76,7 +76,7 @@ const SchedulesManagement: React.FC = () => {
 
     const handleCopyJitsiUrl = useCallback((url: string) => {
         navigator.clipboard.writeText(url);
-        toast.success("تم نسخ رابط الغرفة! 📋");
+        toast.success("تم نسخ رابط الغرفة! ");
     }, []);
 
     const handleCloseUpdateModal = useCallback(() => {
@@ -85,7 +85,7 @@ const SchedulesManagement: React.FC = () => {
     }, []);
 
     const handleUpdateSuccess = useCallback(() => {
-        toast.success("تم تحديث الموعد بنجاح! ✨");
+        toast.success("تم تحديث الموعد بنجاح! ");
         refetch();
         handleCloseUpdateModal();
     }, [refetch, handleCloseUpdateModal]);
@@ -95,7 +95,7 @@ const SchedulesManagement: React.FC = () => {
     }, []);
 
     const handleCreateSuccess = useCallback(() => {
-        toast.success("تم إضافة الموعد بنجاح! 🎉");
+        toast.success("تم إضافة الموعد بنجاح! ");
         refetch();
         handleCloseCreateModal();
     }, [refetch, handleCloseCreateModal]);

@@ -1,23 +1,26 @@
 import { useEffect, useState } from "react";
 import { BsPatchCheckFill } from "react-icons/bs";
 import { motion, useAnimation } from "framer-motion";
-import img1 from "../../../assets/images/Untitled-1.png";
+import img1 from "../../../../assets/images/Untitled-1.png";
 import { IoCreateOutline } from "react-icons/io5";
 import { TbEaseInOutControlPoints } from "react-icons/tb";
 import { MdOutlineManageAccounts } from "react-icons/md";
 import { PiStepsFill } from "react-icons/pi";
+import { FaMosque } from "react-icons/fa6";
 
-const Info: React.FC = () => {
+const InfoN: React.FC = () => {
     return (
-        <div className="Info">
+        <div className="Info" style={{ padding: "0 15%" }}>
             <div className="Info__container">
                 <div className="Info__title">
                     <h1>الحل الشامل لإدارة الحلقات القرآنية بتقنية حديثة</h1>
                 </div>
-                <div className="Info__content">
+                <div className="Info__content" id="Info__content">
                     <div className="Info__data">
                         <div className="Info__imgs">
-                            <img src={img1} alt="" />
+                            <span>
+                                <FaMosque />
+                            </span>
                         </div>
                         <div className="Info__text">
                             <div className="Info__textTitle">
@@ -34,24 +37,7 @@ const Info: React.FC = () => {
                                     ادير مجمعك القرآني من جوالك في دقائق يومياً
                                 </h4>
                                 <p className="dot">
-                                    ادارة بكل التفاصيل مجمعك
-                                    <i>
-                                        <TbEaseInOutControlPoints />
-                                    </i>
-                                </p>
-                                <p className="dot">
-                                    اضف موظفينك , خططك, المواعيد, المرتبات
-                                    موظفينك, تقارير شاملة للمجمع, صفحة ولي امر,
-                                    حضور ذكي ...
-                                    <i>
-                                        <MdOutlineManageAccounts />
-                                    </i>
-                                </p>
-                                <p className="dot">
-                                    خطوات سهلة وسريعة لانشاء مجمعك
-                                    <i>
-                                        <PiStepsFill />
-                                    </i>
+                                    امكانية ادارة جميع تفاصيل مجمعك
                                 </p>
                             </div>
                             <div className="Info__btn">
@@ -67,4 +53,4 @@ const Info: React.FC = () => {
     );
 };
 
-export default Info;
+export default InfoN;

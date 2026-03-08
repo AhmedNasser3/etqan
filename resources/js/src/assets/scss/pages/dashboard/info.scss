@@ -2,6 +2,7 @@
 
 .Info {
     margin: 48px 0;
+    margin-top: 128px;
     padding: 0 10%;
     &__btn {
         button {
@@ -23,16 +24,17 @@
     &__title {
         display: flex;
         justify-content: center;
+        margin: 64px 0;
         h1 {
             margin-top: 24px;
             color: $dark-gray;
-            font-size: $xxl-font;
+            font-size: $xl-font;
             font-weight: 600;
         }
     }
     &__dataText {
         h1 {
-            font-weight: 600;
+            font-weight: 900;
             font-size: $xxl-font;
             color: rgba($dark-green, 0.8);
         }
@@ -66,9 +68,24 @@
     }
     &__data {
         display: flex;
+        align-items: center;
         justify-content: space-between;
     }
     &__imgs {
+        border-radius: 10px;
+        background-color: rgba($dark-green, 0.1);
+        width: 200px;
+        height: 200px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        span {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 8rem;
+            color: rgba($dark-green, 0.7);
+        }
         img {
             width: 900px;
         }
@@ -309,4 +326,10 @@
             }
         }
     }
+}
+#Info__content {
+    background-color: rgba($dark-orange, 0.02);
+    border: 1px solid rgba($dark-orange, 1);
+    padding: 24px;
+    border-radius: 10px;
 }

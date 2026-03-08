@@ -49,7 +49,7 @@ interface PlanCardProps {
     available_schedules_count?: number;
     schedule_summary?: ScheduleSummary[];
     center: { name: string };
-    details?: any[]; //  للـ debug
+    details?: any[];
     isExpanded: boolean;
     onToggle: () => void;
     type: "available" | "my-plans";
@@ -68,7 +68,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
     available_schedules_count = 0,
     schedule_summary = [],
     center,
-    details = [], //  للـ debug
+    details = [],
     isExpanded,
     onToggle,
     type,
@@ -87,7 +87,6 @@ const PlanCard: React.FC<PlanCardProps> = ({
     const scheduleItems = safeSummary.schedule_items || [];
     const totalSchedules = safeSummary.total_schedules || 0;
 
-    //  Debug: شوف الـ details المتاحة
     console.log(
         `🔍 [PlanCard ${id}] Details:`,
         details?.map((d: any) => d.id) || [],
@@ -95,7 +94,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
 
     const handleBookSchedule = async (
         scheduleId: number,
-        planDetailsId: number, //  parameter جديد
+        planDetailsId: number,
         e: React.MouseEvent,
     ) => {
         e.stopPropagation();
@@ -181,7 +180,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                 .map(
                                     (schedule: ScheduleItem, index: number) => (
                                         <div
-                                            key={`${id}-${schedule.id}-${index}`} //  Key محكم
+                                            key={`${id}-${schedule.id}-${index}`}
                                             className="schedule-item-card"
                                         >
                                             <div className="schedule-item__mosque">
@@ -230,7 +229,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                                 onClick={(e) =>
                                                     handleBookSchedule(
                                                         schedule.id,
-                                                        1, //  هنا كان المشكلة - كان fixed 1
+                                                        1, // هنا تقدر تبدلها بالـ planDetailsId الصح
                                                         e,
                                                     )
                                                 }
@@ -262,12 +261,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                 <InformationCircleIcon className="w-16 h-16" />
                             </div>
                             <div className="empty-title">
-                                لا توجد مواعيد متاحة حالياً
-                            </div>
-                            <div className="empty-subtitle">
-                                العناصر: {scheduleItems.length}
-                                <br />
-                                إجمالي Backend: {totalSchedules}
+                                لا توجد حلقات متاحة
                             </div>
                         </div>
                     )}
@@ -297,7 +291,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         bookSchedule,
     } = useStudentPlans(type, 1);
 
-    //  handleBookSchedule محدث مع الـ planDetailsId الصحيح
     const handleBookSchedule = async (
         scheduleId: number,
         planId: number,
@@ -377,20 +370,44 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         return <div className="error-container"></div>;
     }
 
+    // هنا الشرط الأساسي: لو مفيش خطط أو مفيش ولا موعد في كل الخطط
+    const hasAnySchedules =
+        plans &&
+        plans.some(
+            (plan: any) =>
+                plan.schedule_summary &&
+                plan.schedule_summary.length > 0 &&
+                plan.schedule_summary[0]?.total_schedules > 0,
+        );
+
+    if (!plans || plans.length === 0 || !hasAnySchedules) {
+        return (
+            <div className="plan-cards-container" id="plan-cards-container">
+                <div className="plan-card-expanded__empty global-empty">
+                    <div className="empty-title">لا توجد حلقات متاحة</div>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div ref={containerRef} className="plan-cards-container">
+        <div
+            ref={containerRef}
+            className="plan-cards-container"
+            id="plan-cards-container"
+        >
             <header className="plan-cards-header">
                 <h1 className="plan-cards-title">
                     {type === "available"
-                        ? "خطط متاحة للحجز"
+                        ? "حلقات متاحة للحجز"
                         : `خططي (${plans.length})`}
                 </h1>
             </header>
 
             <div className="plans-grid">
-                {plans.map((plan) => (
+                {plans.map((plan: any) => (
                     <div
-                        key={plan.id} //  Key محكم
+                        key={plan.id}
                         data-plan-id={plan.id}
                         className="plan-wrapper"
                     >
@@ -404,7 +421,7 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
                             }
                             schedule_summary={plan.schedule_summary || []}
                             center={plan.center || { name: "غير محدد" }}
-                            details={plan.details || []} //  مرر الـ details
+                            details={plan.details || []}
                             isExpanded={localExpandedPlans.has(plan.id)}
                             onToggle={() => togglePlan(plan.id)}
                             type={type}

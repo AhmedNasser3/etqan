@@ -77,10 +77,12 @@ const CenterPage: React.FC = () => {
                         </div>
                         <div className="home__btns">
                             <button className="btn-primary">
-                                <i>▶️ ابدأ التعلم</i>
+                                <i>▶ ابدأ التعلم</i>
                             </button>
                             <button className="btn-secondary">
-                                <i>🔍 استكشف المعلمين</i>
+                                <a href="#plan-cards-container">
+                                    <i> استكشف الحلقات</i>
+                                </a>
                             </button>
                         </div>
                     </div>

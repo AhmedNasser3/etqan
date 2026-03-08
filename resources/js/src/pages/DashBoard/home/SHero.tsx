@@ -4,6 +4,8 @@ import { motion, useAnimation } from "framer-motion";
 import img1 from "../../../assets/images/gadwel.png";
 import img2 from "../../../assets/images/attendance.png";
 import img3 from "../../../assets/images/analysis.png";
+import img4 from "../../../assets/images/qurann.png";
+import QURANN from "../../../assets/images/qurann.png";
 
 const SHero: React.FC = () => {
     const [counter, setCounter] = useState(0);
@@ -59,8 +61,45 @@ const SHero: React.FC = () => {
 
     return (
         <>
-            <img src={img2} alt="" className="img-2" />
-            <img src={img3} alt="" className="img-3" />
+            <img
+                className="img__cover"
+                src="https://static.vecteezy.com/system/resources/thumbnails/038/357/397/small/islamic-frame-design-free-png.png"
+                alt=""
+            />
+            {/* <div className="home__inner" style={{ padding: "0" }}>
+                <div
+                    className=""
+                    id="img__main123"
+                    style={{ position: "absolute" }}
+                >
+                    <img
+                        className="img__main"
+                        src={QURANN}
+                        alt=""
+                        id="img__main123"
+                    />
+                    <img
+                        className="img__submain"
+                        id="img__submain222"
+                        src="https://png.pngtree.com/png-vector/20221214/ourmid/pngtree-islamic-frame-with-gradient-blue-background-and-golden-border-png-image_6523794.png"
+                        alt=""
+                    />
+                    <img
+                        className="img__submain_2"
+                        id="img__main"
+                        src="https://png.pngtree.com/png-vector/20221214/ourmid/pngtree-islamic-frame-with-gradient-blue-background-and-golden-border-png-image_6523794.png"
+                        alt=""
+                    />
+                    <img
+                        className="img__submain_3"
+                        id="img__main"
+                        src="https://png.pngtree.com/png-vector/20221214/ourmid/pngtree-islamic-frame-with-gradient-blue-background-and-golden-border-png-image_6523794.png"
+                        alt=""
+                    />
+                </div>
+            </div> */}
+            <img src={img4} alt="" className="img-2" />
+            <img src={img2} alt="" className="img-3" />
 
             <motion.section
                 className="SHero"
@@ -78,7 +117,7 @@ const SHero: React.FC = () => {
                             {/* الصورة الكبيرة */}
                             <motion.img
                                 src={img1}
-                                alt="سراج - منصة تعليم ذكية"
+                                alt="إتقان - منصة تعليم ذكية"
                                 className="img__main"
                                 whileHover={{
                                     scale: 1.05,
@@ -161,7 +200,7 @@ const SHero: React.FC = () => {
 
                                 <div className="SHero__Title">
                                     <motion.h1 variants={itemVariants}>
-                                        سراج ... تعليم ذكي وسهل
+                                        إتقان ... تعليم ذكي وسهل
                                     </motion.h1>
                                 </div>
 

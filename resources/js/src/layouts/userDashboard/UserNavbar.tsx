@@ -11,6 +11,8 @@ import { MdCallMade } from "react-icons/md";
 import { FaCircleQuestion } from "react-icons/fa6";
 import SettingModel from "../models/SettingModel";
 import { useAuthUser } from "../hooks/useAuthUser";
+import Logo from "../../assets/images/logo.png";
+import { FaSignOutAlt } from "react-icons/fa";
 
 const UserNavbar: React.FC = () => {
     const [isRotated, setIsRotated] = useState(false);
@@ -135,9 +137,15 @@ const UserNavbar: React.FC = () => {
                                             جدول
                                         </li>
                                     </a>
-                                    <button onClick={handleLogout}>
-                                        <li>تسجيل الخروج</li>
-                                    </button>
+                                    <a href="#">
+                                        <li>
+                                            <IoSettings />
+
+                                            <button onClick={handleLogout}>
+                                                تسجيل الخروج
+                                            </button>
+                                        </li>
+                                    </a>
                                 </ul>
                             </h4>
                         </div>
@@ -161,10 +169,7 @@ const UserNavbar: React.FC = () => {
                 </div>
 
                 <div className="navbar__user">
-                    <img
-                        src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
-                        alt="لوجو"
-                    />
+                    <img src={Logo} alt="لوجو" />
                 </div>
             </div>
         </div>

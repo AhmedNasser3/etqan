@@ -467,7 +467,7 @@ const TeacherRegister: React.FC = () => {
                                 <div className="auth__bgData">
                                     <h1>تسجيل معلم</h1>
                                     <p>
-                                        بالقرآن نحيا (منصة سراج لتسهيل حفظ
+                                        بالقرآن نحيا (منصة إتقان لتسهيل حفظ
                                         القرآن)
                                     </p>
                                 </div>

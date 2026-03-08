@@ -7,6 +7,7 @@
         align-items: center;
         gap: 12px;
         flex-wrap: wrap;
+        justify-content: center;
     }
     &__container {
         direction: rtl;
@@ -21,13 +22,16 @@
         border-top-left-radius: 10px;
         padding: 24px;
         height: 200px;
-        background-color: rgba($light-gray, 0.1);
+        background-color: rgba($dark-green, 0.02);
         border-left: 6px solid rgba($dark-green, 0.7);
-        border-left: 6px solid rgba($dark-green, 0.7);
+        border-right: 1px solid rgba($dark-green, 0.7);
+        border-top: 1px solid rgba($dark-green, 0.7);
         display: flex;
         gap: 24px;
     }
     &__img {
+        background-color: rgba($dark-green, 0.08);
+        padding: 24px;
         width: 150px;
         height: 125px;
         border-radius: 10px;
@@ -42,8 +46,15 @@
     }
 
     &__title {
-        color: $dark-gray;
-        font-size: $l-font;
+        direction: rtl;
+        h2 {
+            display: flex;
+            justify-content: start;
+            direction: rtl;
+            color: $dark-green;
+            font-size: $l-font;
+            font-weight: 600;
+        }
     }
     &__description {
         max-width: 600px;
@@ -62,11 +73,11 @@
         flex-wrap: wrap;
         gap: 12px;
     }
-    &__footerBoxs {
+    .complexes__footerBoxs {
         width: 142px;
         min-width: 142px;
-        border: 1px dashed rgba($dark-green, 0.7);
         border-radius: 6px;
+        background: #16a1160a;
     }
     &__footerTitle {
         padding: 5px 6px;
@@ -85,7 +96,8 @@
     &__footerDescription {
         padding: 6px;
         p {
-            color: rgba($light-gray, 1);
+            font-weight: 500;
+            color: rgba($dark-green, 1);
         }
     }
     &__footerBtn {
@@ -100,6 +112,8 @@
             margin-top: 24px;
             cursor: pointer;
             transition: all 0.2s ease;
+            font-weight: 600;
+            font-size: $s-font;
             &:hover {
                 background-color: rgba($dark-green, 1);
             }

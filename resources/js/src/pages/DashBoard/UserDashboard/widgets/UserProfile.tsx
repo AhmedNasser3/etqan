@@ -84,7 +84,6 @@ const UserProfile: React.FC = () => {
             {showGuardianChildren && <GuardianChildrenPage />}
 
             <PlanCards type="my-plans" />
-            {/* ✅ خطط متاحة للحجز */}
             <PlanCards type="available" />
         </div>
     );

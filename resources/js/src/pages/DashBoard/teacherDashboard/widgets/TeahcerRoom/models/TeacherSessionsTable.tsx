@@ -197,7 +197,7 @@ const TeacherSessionsTable: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
+            <div className="userProfile__plan">
                 <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
                     <div className="navbar">
@@ -217,7 +217,7 @@ const TeacherSessionsTable: React.FC = () => {
     return (
         <>
             <Toaster position="top-center" />
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
+            <div className="userProfile__plan" style={{ padding: "0" }}>
                 {/* Stats Cards */}
                 <div className="plan__stats">
                     <div className="stat-card">

@@ -8,6 +8,8 @@ import { useLocation } from "react-router-dom";
 import EditAccountPage from "../pages/DashBoard/AccountEdit/EditAccountPage";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useState, useCallback } from "react";
+import Logo from "../assets/images/logo.png";
+import { FaSignOutAlt } from "react-icons/fa";
 
 const Navbar: React.FC = () => {
     const [isRotated, setIsRotated] = useState(false);
@@ -183,20 +185,7 @@ const Navbar: React.FC = () => {
         return "/login";
     };
 
-    if (loading) {
-        return (
-            <div className="navbar">
-                <div className="navbar__inner">
-                    <div className="navbar__loading">
-                        <div className="loading-spinner">
-                            <div className="spinner-circle"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
+    // دايماً نعرض الـ navbar حتى لو loading، بس مع placeholder للـ user
     return (
         <>
             {showSettingsModal && user && (
@@ -212,10 +201,13 @@ const Navbar: React.FC = () => {
             >
                 <div className="navbar__inner">
                     <div className="navbar__container">
-                        {user ? (
+                        {user || loading ? (
                             <div className="navbar__profileName">
                                 <div className="navbar__profile">
-                                    <span>{user?.name?.charAt(0) || "A"}</span>
+                                    <span>
+                                        {user?.name?.charAt(0) ||
+                                            (loading ? "..." : "A")}
+                                    </span>
                                 </div>
                                 <h4
                                     className="navbar__link"
@@ -229,41 +221,59 @@ const Navbar: React.FC = () => {
                                             className={`navbar__arrow ${dropdowns.profile ? "flipped" : ""}`}
                                         />{" "}
                                     </i>
-                                    {user?.name || "احمد ناصر"}
+                                    {user?.name ||
+                                        (loading
+                                            ? "جاري التحميل..."
+                                            : "احمد ناصر")}
                                     <ul
                                         className={`navbar__dropdown ${dropdowns.profile ? "dropped" : ""}`}
                                         id="navbar__profileDropDown"
                                     >
-                                        {/* عرض الروابط حسب الـ role */}
-                                        {roleLinks.map((link, index) => (
-                                            <a key={index} href={link.href}>
-                                                <li>
-                                                    {link.icon}
-                                                    {link.label}
-                                                </li>
-                                            </a>
-                                        ))}
+                                        {/* عرض placeholder أثناء الـ loading */}
+                                        {loading ? (
+                                            <li>جاري تحميل البيانات...</li>
+                                        ) : (
+                                            <>
+                                                {/* عرض الروابط حسب الـ role */}
+                                                {roleLinks.map(
+                                                    (link, index) => (
+                                                        <a
+                                                            key={index}
+                                                            href={link.href}
+                                                        >
+                                                            <li>
+                                                                {link.icon}
+                                                                {link.label}
+                                                            </li>
+                                                        </a>
+                                                    ),
+                                                )}
 
-                                        {/* الإعدادات */}
-                                        <a href="#">
-                                            <li
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleOpenSettings();
-                                                    toggleDropdown("profile");
-                                                }}
-                                            >
-                                                <IoSettings />
-                                                الإعدادات
-                                            </li>
-                                        </a>
+                                                {/* الإعدادات */}
+                                                <a href="#">
+                                                    <li
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleOpenSettings();
+                                                            toggleDropdown(
+                                                                "profile",
+                                                            );
+                                                        }}
+                                                    >
+                                                        <IoSettings />
+                                                        الإعدادات
+                                                    </li>
+                                                </a>
 
-                                        {/* تسجيل الخروج */}
-                                        <a href="#">
-                                            <li onClick={handleLogout}>
-                                                تسجيل الخروج
-                                            </li>
-                                        </a>
+                                                {/* تسجيل الخروج */}
+                                                <a href="#">
+                                                    <li onClick={handleLogout}>
+                                                        <FaSignOutAlt />
+                                                        تسجيل الخروج
+                                                    </li>
+                                                </a>
+                                            </>
+                                        )}
                                     </ul>
                                 </h4>
                             </div>
@@ -312,10 +322,7 @@ const Navbar: React.FC = () => {
                     </div>
 
                     <div className="navbar__user">
-                        <img
-                            src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
-                            alt="لوجو"
-                        />
+                        <img src={Logo} alt="لوجو" />
                     </div>
                 </div>
             </div>

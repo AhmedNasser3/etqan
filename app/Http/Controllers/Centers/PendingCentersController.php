@@ -20,7 +20,7 @@ class PendingCentersController extends Controller
             $centers = DB::table('centers as c')
                 ->leftJoin('users as u', function($join) {
                     $join->on('u.center_id', '=', 'c.id')
-                         ->where('u.role_id', 1); // ✅ صاحب المجمع role_id = 1
+                         ->where('u.role_id', 1); //  صاحب المجمع role_id = 1
                 })
                 ->select(
                     'c.id',
@@ -38,7 +38,7 @@ class PendingCentersController extends Controller
                     'u.status as user_status'
                 )
                 ->where(function($query) {
-                    // ✅ يوزر معطل/pending أو مافيش يوزر
+                    //  يوزر معطل/pending أو مافيش يوزر
                     $query->whereIn('u.status', ['inactive', 'pending'])
                           ->orWhereNull('u.id');
                 })

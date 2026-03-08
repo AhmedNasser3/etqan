@@ -5,6 +5,11 @@
 .img-3 {
     display: none;
 }
+#img__main123 {
+    width: 280px;
+    top: 120px;
+    right: 30%;
+}
 
 .SHero {
     background-attachment: fixed;
@@ -90,7 +95,7 @@
                 &.small-img-2 {
                     width: 450px;
                     bottom: -40px;
-                    left: 40%;
+                    left: 30%;
                     animation-delay: -2.5s;
                     transform: translate(-20px, 15px) rotate(-2.5deg);
                 }
@@ -115,11 +120,11 @@
         gap: 1rem;
         font-size: $s-font;
         font-weight: 900;
-        color: $light;
-        background: rgba($dark-green, 0.7);
+        color: $dark-orange;
+        background: rgba($dark-orange, 0.08);
         padding: 12px 24px;
         border-radius: 50px;
-        border: 4px solid rgba($light, 1);
+        border: 2px solid rgba($orange, 1);
 
         position: relative;
         overflow: hidden;
@@ -151,8 +156,10 @@
 
     .SHero__Title {
         margin: clamp(1rem, 3vw, 2rem) 0;
+        width: 700px;
 
         h1 {
+            width: 700px;
             font-size: clamp($xl-font, 6vw, $xxxl-font);
             font-weight: 900;
             color: rgba($dark-green, 0.7);
@@ -204,8 +211,9 @@
             min-height: 56px;
 
             &:first-child {
-                background: rgba($dark-green, 0.7);
-                color: $light;
+                background: rgba($orange, 0.08);
+                color: $dark-orange;
+                border: 1px solid $orange;
 
                 &::before {
                     content: "";
@@ -519,44 +527,57 @@
             will-change: transform;
         }
     }
-    .img-2 {
-        display: block;
+    #img__main123 {
+        width: 180px;
+        top: 85px;
+        right: 30%;
+        display: none;
     }
-    .img-2 {
-        border-radius: 10px;
-        right: 10px;
-        top: 10%;
-        left: 35%;
-        position: absolute !important;
-        width: 120px;
-        transform: rotate(10deg);
-
-        /* الحل: خليها خارج تدفق الـ layout */
-        transform: translateZ(0); /* تفعيل hardware acceleration */
-
-        /* تأكد إنها مش بتأثر على الـ scroll أو الـ layout */
-        contain: layout style paint;
-
-        /* أو استخدم هذا البديل الأقوى */
-        isolation: isolate;
+    .SHero .SHero__Title {
+        width: 500px;
     }
-    .img-3 {
-        border-radius: 10px;
-        right: 10px;
-        bottom: -60px;
-        z-index: 999999999999;
-        position: absolute !important;
-        width: 150px;
-        transform: rotate(10deg);
-
-        /* الحل: خليها خارج تدفق الـ layout */
-        transform: translateZ(0); /* تفعيل hardware acceleration */
-
-        /* تأكد إنها مش بتأثر على الـ scroll أو الـ layout */
-        contain: layout style paint;
-
-        /* أو استخدم هذا البديل الأقوى */
-        isolation: isolate;
-        display: block;
+    .SHero .SHero__Title h1 {
+        width: 100%;
+    }
+    .SHero .SHero__Title {
+        margin: clamp(1rem, 3vw, 2rem) 0;
+        width: 240px;
+    }
+    .SHero .SHero__container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(2rem, 5vw, 4rem);
+        align-items: center;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+        margin: 24px 0;
+    }
+    .img__cover {
+        position: absolute;
+        top: 43px;
+        left: -34px;
+    }
+    .SHero {
+        align-items: start;
+        min-height: 90vh;
+    }
+    .SHero .SHero__sec2 {
+        margin-top: 64px;
+        direction: rtl;
+    }
+    .SHero .SHero__imgs img.img__main {
+        top: 100px;
+        width: 165%;
+        max-width: none;
+        height: auto;
+        border: 1px solid rgba(19, 19, 19, 0.3);
+        border-radius: clamp(12px, 2vw, 20px);
+        transform: translateX(-400px) !important;
+        transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        animation: imgFloat 7s ease-in-out infinite;
+        top: 0;
+        bottom: 41px;
+        margin: 55px 0 0 0;
     }
 }

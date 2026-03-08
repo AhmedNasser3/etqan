@@ -8,6 +8,8 @@ import { useAuthUser } from "../hooks/useAuthUser";
 import { useLocation } from "react-router-dom";
 import EditAccountPage from "../../pages/DashBoard/AccountEdit/EditAccountPage";
 import { useState, useCallback, useEffect } from "react";
+import Logo from "../../assets/images/logo.png";
+import { FaSignOutAlt } from "react-icons/fa";
 
 const PublicNavbar: React.FC = () => {
     const [isRotated, setIsRotated] = useState(false);
@@ -202,8 +204,12 @@ const PublicNavbar: React.FC = () => {
 
                                         {/*  تسجيل الخروج */}
                                         <a href="#">
-                                            <li onClick={handleLogout}>
-                                                تسجيل الخروج
+                                            <li>
+                                                <IoSettings />
+
+                                                <button onClick={handleLogout}>
+                                                    تسجيل الخروج
+                                                </button>
                                             </li>
                                         </a>
                                     </ul>
@@ -244,10 +250,7 @@ const PublicNavbar: React.FC = () => {
                     </div>
 
                     <div className="navbar__user">
-                        <img
-                            src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
-                            alt="لوجو"
-                        />
+                        <img src={Logo} alt="لوجو" />
                     </div>
                 </div>
             </div>

@@ -12,6 +12,8 @@ import SettingModel from "../models/SettingModel";
 import EditAccountPage from "@/src/pages/DashBoard/AccountEdit/EditAccountPage";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useState, useCallback } from "react";
+import Logo from "../../assets/images/logo.png";
+import { FaSignOutAlt } from "react-icons/fa";
 
 const TeacherNavbar: React.FC = () => {
     const [isRotated, setIsRotated] = useState(false);
@@ -198,9 +200,12 @@ const TeacherNavbar: React.FC = () => {
                                         </a>
 
                                         <a href="#">
-                                            <li onClick={handleLogout}>
+                                            <li>
                                                 <IoSettings />
-                                                تسجيل الخروج
+
+                                                <button onClick={handleLogout}>
+                                                    تسجيل الخروج
+                                                </button>
                                             </li>
                                         </a>
                                     </ul>
@@ -226,10 +231,7 @@ const TeacherNavbar: React.FC = () => {
                     </div>
 
                     <div className="navbar__user">
-                        <img
-                            src="https://quranlives.com/wp-content/uploads/2023/12/logonew3.png"
-                            alt="لوجو"
-                        />
+                        <img src={Logo} alt="لوجو" />
                     </div>
                 </div>
             </div>

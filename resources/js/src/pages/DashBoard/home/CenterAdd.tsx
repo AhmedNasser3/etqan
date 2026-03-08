@@ -44,7 +44,7 @@ const CenterAdd: React.FC = () => {
                                         <div className="card-icon">
                                             <PiBookOpenDuotone />
                                         </div>
-                                        <h3>ما هي سراج</h3>
+                                        <h3>ما هي إتقان</h3>
                                         <p>
                                             منصة متكاملة لإنشاء مجمعات قرآنية
                                             مستقلة - كل مجمع له دومين خاص، تصميم
@@ -64,7 +64,7 @@ const CenterAdd: React.FC = () => {
                                         <div className="card-icon">
                                             <PiChalkboardTeacherDuotone />
                                         </div>
-                                        <h3>لماذا سراج</h3>
+                                        <h3>لماذا إتقان</h3>
                                         <p>
                                             أقوى منصة لتعليم القرآن عالمياً تدير
                                             آلاف المجمعات بتقنية Multi-Tenant

@@ -28,8 +28,8 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
         loadingData,
         user,
         currentSchedule,
-        regenerateJitsiRoom, // ✅ جديد
-        jitsiRoomName, // ✅ جديد
+        regenerateJitsiRoom, //  جديد
+        jitsiRoomName, //  جديد
     } = useScheduleFormUpdate({ scheduleId });
 
     // 🔍 Debug Console مع Jitsi
@@ -112,8 +112,8 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
             }
 
             const result = await response.json();
-            console.log("✅ [UPDATE SUCCESS] Response مع Jitsi:", result);
-            toast.success("✅ تم تحديث الموعد بنجاح!");
+            console.log(" [UPDATE SUCCESS] Response مع Jitsi:", result);
+            toast.success(" تم تحديث الموعد بنجاح!");
             onSuccess();
         } catch (error: any) {
             console.error("💥 [UPDATE FAILED] Error:", error);
@@ -159,12 +159,12 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                     يرجى تعديل بيانات الموعد حسب الحاجة
                                     {loadingData && (
                                         <span className="block text-sm text-blue-600 mt-1">
-                                            🔄 جاري تحميل بيانات الموعد...
+                                            جاري تحميل بيانات الموعد...
                                         </span>
                                     )}
                                     {currentSchedule && (
                                         <span className="block text-sm text-green-600 mt-1">
-                                            📋 الموعد الحالي:{" "}
+                                            الموعد الحالي:{" "}
                                             {currentSchedule.plan?.plan_name ||
                                                 "غير محدد"}
                                         </span>
@@ -176,7 +176,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                     )}
                                     {jitsiRoomName && (
                                         <span className="block text-sm text-purple-600 mt-1">
-                                            🎥 غرفة Jitsi الحالية:{" "}
+                                            غرفة Jitsi الحالية:{" "}
                                             <strong>{jitsiRoomName}</strong>
                                         </span>
                                     )}
@@ -185,7 +185,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                         </div>
 
                         <div className="ParentModel__container">
-                            {/* ✅ 1. الخطة */}
+                            {/*  1. الخطة */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>الخطة *</label>
@@ -234,7 +234,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ✅ 2. الحلقة */}
+                            {/*  2. الحلقة */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>الحلقة *</label>
@@ -280,7 +280,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ✅ 3. المدرس (اختياري) */}
+                            {/*  3. المدرس (اختياري) */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>المدرس (اختياري)</label>
@@ -308,7 +308,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ✅ 4. تاريخ الموعد */}
+                            {/*  4. تاريخ الموعد */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>تاريخ الموعد *</label>
@@ -342,7 +342,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ✅ 5. وقت البداية والنهاية */}
+                            {/*  5. وقت البداية والنهاية */}
                             <div
                                 className="inputs__verifyOTPBirth"
                                 style={{
@@ -403,7 +403,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ✅ 6. العدد الأقصى للطلاب */}
+                            {/*  6. العدد الأقصى للطلاب */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>العدد الأقصى للطلاب (اختياري)</label>
@@ -425,7 +425,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ✅ 7. الملاحظات */}
+                            {/*  7. الملاحظات */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>ملاحظات (اختياري)</label>
@@ -445,7 +445,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* 🔥 8. خانة Jitsi Room - الجديدة ✅ */}
+                            {/* 🔥 8. خانة Jitsi Room - الجديدة  */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>غرفة Jitsi Meet</label>
@@ -500,7 +500,7 @@ const UpdateSchedulePage: React.FC<UpdateSchedulePageProps> = ({
                                 </div>
                             </div>
 
-                            {/* ✅ 9. زر الإرسال */}
+                            {/*  9. زر الإرسال */}
                             <div
                                 className="inputs__submitBtn"
                                 id="ParentModel__btn"

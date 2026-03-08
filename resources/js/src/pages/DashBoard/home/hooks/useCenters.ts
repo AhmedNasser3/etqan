@@ -55,7 +55,7 @@ const useCenters = () => {
                 { label: "الطلاب", value: "63", icon: null },
                 { label: "المعلمين", value: "4", icon: null },
                 { label: "الخطط", value: "19", icon: null },
-                { label: "الكتب", value: "1,200", icon: null },
+                { label: "حلقات", value: "1,200", icon: null },
             ],
         },
         {
@@ -123,7 +123,7 @@ const useCenters = () => {
                             { label: "الطلاب", value: "63", icon: null },
                             { label: "المعلمين", value: "4", icon: null },
                             { label: "الخطط", value: "19", icon: null },
-                            { label: "الكتب", value: "1,200", icon: null },
+                            { label: "حلقات", value: "1,200", icon: null },
                         ],
                     }),
                 );

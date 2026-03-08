@@ -41,7 +41,7 @@ class AttendanceDay extends Model
     ];
 
     /**
-     * ✅ CENTER RELATIONSHIP - الحل الرئيسي للـ 500 Error!
+     *  CENTER RELATIONSHIP - الحل الرئيسي للـ 500 Error!
      */
     public function center(): BelongsTo
     {
@@ -236,7 +236,7 @@ class AttendanceDay extends Model
             'teacher_id' => (int) $this->teacher_id,
             'teacher_name' => $this->teacher?->user?->name ?? 'غير معروف',
             'circle_name' => $this->circle?->name ?? '-',
-            'center_name' => $this->center?->name ?? '-', // ✅ center name
+            'center_name' => $this->center?->name ?? '-', //  center name
             'status' => $this->status ?? 'absent',
             'status_label' => $this->status_label,
             'status_color' => $this->status_color,

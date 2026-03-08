@@ -196,7 +196,7 @@ const FeaturedPlansCards: React.FC<FeaturedPlansCardsProps> = ({
             <header className="plan-cards-header">
                 <h1 className="plan-cards-title">
                     {type === "available"
-                        ? "خطط متاحة للحجز"
+                        ? "حلقات متاحة للحجز"
                         : `خططي (${dummyPlans.length})`}
                 </h1>
                 <div className="plan-cards-center">

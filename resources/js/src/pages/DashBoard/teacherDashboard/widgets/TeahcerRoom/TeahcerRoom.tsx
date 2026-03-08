@@ -1,4 +1,4 @@
-// TeacherRoom.tsx - الكامل مع Screen Recorder باستخدام react-media-recorder
+// TeacherRoom.tsx - الكامل مع Screen Recorder + زر المصحف
 import React, { useState } from "react";
 import { useTeacherRoom } from "./hooks/useTeacherRoom";
 import { useSearchParams } from "react-router-dom";
@@ -10,6 +10,7 @@ const TeacherRoom: React.FC = () => {
     const scheduleId =
         Number(searchParams.get("schedule")) || Number(searchParams.get("id"));
     const [showRecorder, setShowRecorder] = useState(false);
+    const [showQuran, setShowQuran] = useState(false);
 
     const { roomUrl, loadingRoom, error, isReady } = useTeacherRoom(scheduleId);
 
@@ -123,16 +124,18 @@ const TeacherRoom: React.FC = () => {
                                 }
                             />
 
-                            {/* زر فتح Screen Recorder */}
+                            {/* أزرار التحكم (Screen Recorder + المصحف) */}
                             <div
                                 style={{
                                     position: "relative",
                                     marginTop: "-60px",
                                     display: "flex",
                                     justifyContent: "center",
+                                    gap: "10px",
                                     zIndex: 10,
                                 }}
                             >
+                                {/* زر تسجيل الشاشة */}
                                 <button
                                     onClick={() =>
                                         setShowRecorder(!showRecorder)
@@ -149,6 +152,23 @@ const TeacherRoom: React.FC = () => {
                                     }}
                                 >
                                     📹 {showRecorder ? "إخفاء" : "تسجيل الشاشة"}
+                                </button>
+
+                                {/* زر المصحف الجديد */}
+                                <button
+                                    onClick={() => setShowQuran(!showQuran)}
+                                    className="btn btn-secondary"
+                                    style={{
+                                        padding: "8px 16px",
+                                        fontSize: "14px",
+                                        borderRadius: "20px",
+                                        background: "#17a2b8",
+                                        color: "white",
+                                        border: "none",
+                                        boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                                    }}
+                                >
+                                    📖 {showQuran ? "إخفاء" : "المصحف"}
                                 </button>
                             </div>
                         </>
@@ -250,6 +270,107 @@ const TeacherRoom: React.FC = () => {
                                 </div>
                             )}
                         />
+                    </div>
+                )}
+
+                {/* المصحف الكامل */}
+                {isReady && showQuran && (
+                    <div
+                        style={{
+                            padding: "1rem",
+                            background: "#fff8e1",
+                            borderRadius: "8px",
+                            margin: "1rem 0",
+                            textAlign: "center",
+                            border: "2px solid #ffc107",
+                        }}
+                    >
+                        <div
+                            style={{
+                                marginBottom: "1rem",
+                                fontSize: "18px",
+                                fontWeight: "bold",
+                            }}
+                        >
+                            📖 المصحف الشريف
+                            <div
+                                style={{
+                                    fontSize: "14px",
+                                    color: "#666",
+                                    marginTop: "5px",
+                                }}
+                            >
+                                رواية حفص عن عاصم • المدني
+                            </div>
+                        </div>
+
+                        {/* Open Quran View - المكتبة الموصى بها */}
+                        <div
+                            style={{
+                                height: "500px",
+                                background: "#f8f9fa",
+                                borderRadius: "8px",
+                                overflow: "hidden",
+                                position: "relative",
+                                fontFamily: "'Amiri Quran', serif",
+                                direction: "rtl",
+                            }}
+                            dir="rtl"
+                        >
+                            {/* مثال عرض الصفحة الأولى - استبدل بـ OpenQuranView */}
+                            <iframe
+                                src="https://quran.com/1?translations=false"
+                                style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    border: "none",
+                                    borderRadius: "8px",
+                                }}
+                                title="المصحف الكامل"
+                            />
+                            {/* بديل: يمكنك استخدام react-quran هنا */}
+                            {/* <OpenQuranView page={1} mushafLayout="hafs-v2" /> */}
+                        </div>
+
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "10px",
+                                justifyContent: "center",
+                                marginTop: "1rem",
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <button
+                                className="btn btn-info"
+                                style={{
+                                    padding: "8px 16px",
+                                    borderRadius: "20px",
+                                    border: "none",
+                                }}
+                                onClick={() =>
+                                    window.open("https://quran.com/", "_blank")
+                                }
+                            >
+                                🔗 المصحف الكامل
+                            </button>
+                            <button
+                                className="btn btn-warning"
+                                style={{
+                                    padding: "8px 16px",
+                                    borderRadius: "20px",
+                                    border: "none",
+                                }}
+                                onClick={() =>
+                                    window.open(
+                                        "https://quranicaudio.com/",
+                                        "_blank",
+                                    )
+                                }
+                            >
+                                🎵 التلاوة الصوتية
+                            </button>
+                        </div>
                     </div>
                 )}
 

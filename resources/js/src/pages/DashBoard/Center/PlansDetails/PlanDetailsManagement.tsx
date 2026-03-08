@@ -553,7 +553,7 @@ const PlanDetailsManagement: React.FC = () => {
                         </div>
 
                         <div className="plan__current flex items-center gap-3">
-                            <h2>تفاصيل الخطة: {planName}</h2>
+                            <h2>تفاصيل الخطة</h2>
                             <div
                                 className="flex gap-2"
                                 style={{ display: "flex" }}
@@ -627,16 +627,20 @@ const PlanDetailsManagement: React.FC = () => {
                                     <span>
                                         {uploading
                                             ? "جاري الرفع..."
-                                            : "رفع Excel"}
+                                            : " Excel رفع "}
                                     </span>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept=".xlsx,.xls"
-                                        onChange={handleFileUpload}
-                                        className="hidden"
-                                        disabled={uploading}
-                                    />
+                                    <div className="custom-file-input">
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".xlsx,.xls"
+                                            onChange={handleFileUpload}
+                                            disabled={uploading}
+                                        />
+                                        <span className="button-text">
+                                            {uploading ? "جاري الرفع..." : ""}
+                                        </span>
+                                    </div>
                                 </label>
                                 <button
                                     onClick={exportToExcel}

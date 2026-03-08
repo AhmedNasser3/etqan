@@ -32,7 +32,7 @@ class TeacherCustomSalary extends Model
         'valid_until' => 'date',
     ];
 
-    // ✅ العلاقات
+    //  العلاقات
     public function teacher()
     {
         return $this->belongsTo(Teacher::class);
@@ -43,13 +43,13 @@ class TeacherCustomSalary extends Model
         return $this->belongsTo(User::class);
     }
 
-    // ✅ Scope للـ active salaries
+    //  Scope للـ active salaries
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    // ✅ الراتب الحالي (valid الآن)
+    //  الراتب الحالي (valid الآن)
     public function scopeCurrent($query)
     {
         return $query->where('is_active', true)

@@ -229,7 +229,7 @@ const CenterDashboard: React.FC = () => {
                                 >
                                     0
                                 </div>
-                                <div className="stat-label">المعلمين 👨‍🏫</div>
+                                <div className="stat-label">المعلمين </div>
                             </div>
 
                             {/* المشرفين */}
@@ -240,7 +240,7 @@ const CenterDashboard: React.FC = () => {
                                 >
                                     0
                                 </div>
-                                <div className="stat-label">المشرفين 👨‍💼</div>
+                                <div className="stat-label">المشرفين </div>
                             </div>
 
                             {/* المحفزين */}
@@ -251,7 +251,7 @@ const CenterDashboard: React.FC = () => {
                                 >
                                     0
                                 </div>
-                                <div className="stat-label">المحفزين 💡</div>
+                                <div className="stat-label">المحفزين </div>
                             </div>
 
                             {/* شؤون الطلاب */}
@@ -262,7 +262,7 @@ const CenterDashboard: React.FC = () => {
                                 >
                                     0
                                 </div>
-                                <div className="stat-label">شؤون الطلاب 📚</div>
+                                <div className="stat-label">شؤون الطلاب </div>
                             </div>
 
                             {/* الإدارة المالية */}
@@ -274,7 +274,7 @@ const CenterDashboard: React.FC = () => {
                                     0
                                 </div>
                                 <div className="stat-label">
-                                    الإدارة المالية 💰
+                                    الإدارة المالية
                                 </div>
                             </div>
                         </div>
