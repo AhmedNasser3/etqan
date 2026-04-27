@@ -1,4 +1,4 @@
-// hooks/useStudentAffairsUpdate.ts - ✅ مُصحح كامل
+// hooks/useStudentAffairsUpdate.ts -  مُصحح كامل
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -82,7 +82,7 @@ export const useStudentAffairsUpdate = (studentId?: number) => {
         }
     }, []);
 
-    // ✅ تحميل بيانات الطالب - مُصحح للـ Backend الجديد
+    //  تحميل بيانات الطالب - مُصحح للـ Backend الجديد
     const loadStudentData = useCallback(async () => {
         if (!studentId) return;
 
@@ -102,9 +102,9 @@ export const useStudentAffairsUpdate = (studentId?: number) => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("✅ بيانات الطالب:", data);
+                console.log(" بيانات الطالب:", data);
 
-                // ✅ مطابقة مع استجابة Backend الجديد
+                //  مطابقة مع استجابة Backend الجديد
                 if (data.success && data.data) {
                     const student = data.data;
                     setStudentData({
@@ -190,7 +190,7 @@ export const useStudentAffairsUpdate = (studentId?: number) => {
         return Object.keys(newErrors).length === 0;
     }, [formData]);
 
-    // ✅ إرسال النموذج - مُصحح للـ Backend
+    //  إرسال النموذج - مُصحح للـ Backend
     const submitForm = useCallback(async () => {
         if (!validateForm() || !studentId) return false;
 

@@ -1,9 +1,7 @@
-// CreateSchedulePage.tsx
-import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
-import { FiX } from "react-icons/fi";
-import { useAuthUser } from "../../../../../layouts/hooks/useAuthUser";
+// CreateSchedulePage.tsx - مصحح كامل بالتصميم الجديد + إضافة الحقول المفقودة
+import { useToast } from "../../../../../../contexts/ToastContext";
 import { useScheduleFormCreate } from "../hooks/useScheduleFormCreate";
+import { useEffect } from "react";
 
 interface CreateSchedulePageProps {
     onClose: () => void;
@@ -19,38 +17,133 @@ const CreateSchedulePage: React.FC<CreateSchedulePageProps> = ({
         errors,
         isSubmitting,
         handleInputChange,
-        submitForm,
-        plansData,
         circlesData,
-        teachersData,
-        loadingData,
-        user,
+        plansData, // ✅ إضافة plansData
+        teachersData, // ✅ إضافة teachersData
     } = useScheduleFormCreate();
 
-    // 🔍 Debug Console - تشوف كل حاجة
+    const hasCircles = circlesData.length > 0;
+    const hasPlans = plansData.length > 0;
+    const hasTeachers = teachersData.length > 0;
+    const isDisabled = isSubmitting || !hasCircles || !hasPlans || !hasTeachers;
+
+    const { notifySuccess, notifyError } = useToast();
+
+    // 🔍 Debug Console
     useEffect(() => {
         console.log("📊 PAGE DEBUG:", {
-            user: user?.center_id,
-            plans: plansData.length,
             circles: circlesData.length,
+            plans: plansData.length,
             teachers: teachersData.length,
-            loading: loadingData,
             formData,
         });
-    }, [user, plansData, circlesData, teachersData, loadingData, formData]);
+    }, [circlesData, plansData, teachersData, formData]);
 
-    const handleSubmit = async (formDataSubmit: FormData) => {
+    const ICO = {
+        x: (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+            >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        ),
+    };
+
+    function FG({
+        label,
+        children,
+    }: {
+        label: string;
+        children: React.ReactNode;
+    }) {
+        return (
+            <div style={{ marginBottom: 13 }}>
+                <label
+                    style={{
+                        display: "block",
+                        fontSize: "10.5px",
+                        fontWeight: 700,
+                        color: "var(--n700)",
+                        marginBottom: 4,
+                    }}
+                >
+                    {label}
+                </label>
+                {children}
+            </div>
+        );
+    }
+
+    const addScheduleFn = async () => {
+        // ✅ جيب الـ CSRF token
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content");
+
+        if (!csrfToken) {
+            notifyError("فشل في جلب رمز الحماية");
+            return;
+        }
+
+        const formDataSubmit = new FormData();
+
+        // ✅ الحقول المطلوبة من الـ Backend error
+        formDataSubmit.append(
+            "plan_id",
+            (document.getElementById("scPlan") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "schedule_date",
+            (document.getElementById("scDate") as HTMLInputElement)?.value ||
+                "",
+        );
+
+        // ✅ باقي الحقول المهمة
+        formDataSubmit.append(
+            "circle_id",
+            (document.getElementById("scCircle") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "teacher_id",
+            (document.getElementById("scTeacher") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "start_time",
+            (document.getElementById("scStart") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "end_time",
+            (document.getElementById("scEnd") as HTMLInputElement)?.value || "",
+        );
+        formDataSubmit.append(
+            "days",
+            (document.getElementById("scDays") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "max_students",
+            (document.getElementById("scCap") as HTMLInputElement)?.value || "",
+        );
+        formDataSubmit.append(
+            "jitsi_room_name",
+            (document.getElementById("scJitsi") as HTMLInputElement)?.value ||
+                "",
+        );
+
         console.log(
-            "🚀 [PAGE SUBMIT] FormData:",
+            "🚀 [SUBMIT] FormData:",
             Object.fromEntries(formDataSubmit),
         );
 
         try {
-            const csrfToken =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute("content") || "";
-
             const response = await fetch("/api/v1/plans/schedules", {
                 method: "POST",
                 credentials: "include",
@@ -71,395 +164,247 @@ const CreateSchedulePage: React.FC<CreateSchedulePageProps> = ({
                 try {
                     const errorData = JSON.parse(errorText);
                     if (errorData.errors) {
-                        // Laravel validation errors
                         const errorMessages = Object.values(
                             errorData.errors,
                         ).flat();
-                        toast.error(errorMessages[0] || "خطأ في البيانات");
+                        notifyError(errorMessages[0] || "خطأ في البيانات");
                         return;
                     }
-                    if (errorData.message) {
-                        toast.error(errorData.message);
-                        return;
-                    }
+                    notifyError(errorData.message || "حدث خطأ");
+                    return;
                 } catch (e) {
-                    // Non-JSON error
-                    toast.error(
-                        `خطأ ${response.status}: ${errorText.slice(0, 100)}`,
-                    );
+                    notifyError(`خطأ ${response.status}`);
                     return;
                 }
-                throw new Error(`HTTP ${response.status}`);
             }
 
             const result = await response.json();
-            console.log("✅ [SUBMIT SUCCESS] Response:", result);
-            toast.success("✅ تم إضافة الموعد بنجاح!");
+            console.log("✅ [SUBMIT SUCCESS]:", result);
             onSuccess();
         } catch (error: any) {
-            console.error("💥 [SUBMIT FAILED] Error:", error);
-            toast.error(error.message || "حدث خطأ غير متوقع");
+            console.error("💥 [SUBMIT FAILED]:", error);
+            notifyError(error.message || "حدث خطأ غير متوقع");
         }
     };
 
-    const isCenterOwner = user?.role?.id === 1;
-    const showSingleCenter = plansData.length === 1 && isCenterOwner;
-    const currentPlan = plansData.find(
-        (p) => p.id.toString() === formData.plan_id,
-    );
-
-    // 🔍 Loading states
-    const hasPlans = plansData.length > 0;
-    const hasCircles = circlesData.length > 0;
-    const hasTeachers = teachersData.length > 0;
-
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={onClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        <div className="ParentModel__header">
+        <>
+            <div className="ov on">
+                <div className="modal">
+                    <div className="mh">
+                        <span className="mh-t">إضافة موعد جديد</span>
+                        <button className="mx" onClick={onClose}>
+                            <span
+                                style={{
+                                    width: 12,
+                                    height: 12,
+                                    display: "inline-flex",
+                                }}
+                            >
+                                {ICO.x}
+                            </span>
+                        </button>
+                    </div>
+
+                    <div className="mb">
+                        {/* الخطة */}
+                        <FG label="الخطة *">
+                            <select
+                                id="scPlan"
+                                name="plan_id"
+                                className="fi2"
+                                required
+                                disabled={isSubmitting}
+                            >
+                                <option value="">اختر الخطة</option>
+                                {plansData.map((plan: any) => (
+                                    <option key={plan.id} value={plan.id}>
+                                        {plan.plan_name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.plan_id && (
+                                <p className="text-red-600 text-xs mt-1">
+                                    {errors.plan_id}
+                                </p>
+                            )}
+                        </FG>
+
+                        {/* التاريخ */}
+                        <FG label="التاريخ *">
+                            <input
+                                id="scDate"
+                                name="schedule_date"
+                                type="date"
+                                className="fi2"
+                                required
+                                disabled={isSubmitting}
+                            />
+                            {errors.schedule_date && (
+                                <p className="text-red-600 text-xs mt-1">
+                                    {errors.schedule_date}
+                                </p>
+                            )}
+                        </FG>
+
+                        {/* الحلقة */}
+                        <FG label="الحلقة *">
+                            <select
+                                id="scCircle"
+                                name="circle_id"
+                                className="fi2"
+                                required
+                                disabled={isSubmitting}
+                            >
+                                <option value="">اختر الحلقة</option>
+                                {circlesData.map((circle: any) => (
+                                    <option key={circle.id} value={circle.id}>
+                                        {circle.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.circle_id && (
+                                <p className="text-red-600 text-xs mt-1">
+                                    {errors.circle_id}
+                                </p>
+                            )}
+                        </FG>
+
+                        {/* المدرس */}
+                        <FG label="المدرس *">
+                            <select
+                                id="scTeacher"
+                                name="teacher_id"
+                                className="fi2"
+                                required
+                                disabled={isSubmitting}
+                            >
+                                <option value="">اختر المدرس</option>
+                                {teachersData.map((teacher: any) => (
+                                    <option key={teacher.id} value={teacher.id}>
+                                        {teacher.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.teacher_id && (
+                                <p className="text-red-600 text-xs mt-1">
+                                    {errors.teacher_id}
+                                </p>
+                            )}
+                        </FG>
+
+                        {/* الوقت */}
+                        <div
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr 1fr",
+                                gap: 11,
+                            }}
+                        >
+                            <FG label="وقت البداية *">
+                                <input
+                                    id="scStart"
+                                    name="start_time"
+                                    type="time"
+                                    className="fi2"
+                                    required
+                                    disabled={isSubmitting}
+                                />
+                                {errors.start_time && (
+                                    <p className="text-red-600 text-xs mt-1">
+                                        {errors.start_time}
+                                    </p>
+                                )}
+                            </FG>
+                            <FG label="وقت النهاية *">
+                                <input
+                                    id="scEnd"
+                                    name="end_time"
+                                    type="time"
+                                    className="fi2"
+                                    required
+                                    disabled={isSubmitting}
+                                />
+                                {errors.end_time && (
+                                    <p className="text-red-600 text-xs mt-1">
+                                        {errors.end_time}
+                                    </p>
+                                )}
+                            </FG>
+                        </div>
+
+                        {/* الأيام */}
+                        <FG label="الأيام *">
+                            <input
+                                id="scDays"
+                                name="days"
+                                placeholder="يومي، إثنين/خميس، أحد/ثلاثاء/خميس"
+                                className="fi2"
+                                required
+                                disabled={isSubmitting}
+                            />
+                            {errors.days && (
+                                <p className="text-red-600 text-xs mt-1">
+                                    {errors.days}
+                                </p>
+                            )}
+                        </FG>
+
+                        {/* السعة */}
+                        <FG label="السعة القصوى">
+                            <input
+                                id="scCap"
+                                name="max_students"
+                                type="number"
+                                min={1}
+                                placeholder="10"
+                                className="fi2"
+                                disabled={isSubmitting}
+                            />
+                        </FG>
+
+                        {/* Jitsi */}
+                        <FG label="اسم غرفة Jitsi">
+                            <input
+                                id="scJitsi"
+                                name="jitsi_room_name"
+                                placeholder="room-123"
+                                className="fi2"
+                                disabled={isSubmitting}
+                            />
+                        </FG>
+                    </div>
+
+                    <div className="mf">
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "12px",
+                                justifyContent: "flex-end",
+                                marginTop: "20px",
+                            }}
+                        >
                             <button
-                                className="ParentModel__close"
+                                className="btn bs"
                                 onClick={onClose}
                                 disabled={isSubmitting}
                             >
-                                <FiX size={24} />
+                                إلغاء
                             </button>
-                        </div>
-
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>موعد حلقة جديد</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>إضافة موعد حلقة جديد</h1>
-                                <p>
-                                    يرجى إدخال بيانات الموعد بشكل صحيح
-                                    {loadingData && (
-                                        <span className="block text-sm text-blue-600 mt-1">
-                                            🔄 جاري تحميل البيانات...
-                                        </span>
-                                    )}
-                                    {showSingleCenter && (
-                                        <span className="block text-sm text-green-600 mt-1">
-                                            ✅ خطتك:{" "}
-                                            {plansData[0]?.plan_name ||
-                                                plansData[0]?.name}
-                                        </span>
-                                    )}
-                                    {!loadingData && !hasPlans && (
-                                        <span className="block text-sm text-orange-600 mt-1">
-                                            ⚠️ لا توجد خطط متاحة لمركزك
-                                        </span>
-                                    )}
-                                    {!loadingData &&
-                                        hasPlans &&
-                                        !hasCircles && (
-                                            <span className="block text-sm text-orange-600 mt-1">
-                                                ⚠️ لا توجد حلقات متاحة
-                                            </span>
-                                        )}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="ParentModel__container">
-                            {/* خطة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الخطة *</label>
-                                    <select
-                                        required
-                                        name="plan_id"
-                                        value={formData.plan_id}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.plan_id ||
-                                            loadingData ||
-                                            !hasPlans
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            showSingleCenter
-                                        }
-                                    >
-                                        <option value="">
-                                            {loadingData
-                                                ? "⏳ جاري التحميل..."
-                                                : !hasPlans
-                                                  ? "🚫 لا توجد خطط"
-                                                  : showSingleCenter
-                                                    ? plansData[0].plan_name ||
-                                                      plansData[0].name
-                                                    : "اختر الخطة"}
-                                        </option>
-                                        {plansData.map((plan) => (
-                                            <option
-                                                key={plan.id}
-                                                value={plan.id}
-                                            >
-                                                {plan.plan_name || plan.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {errors.plan_id && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.plan_id}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* حلقة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الحلقة *</label>
-                                    <select
-                                        required
-                                        name="circle_id"
-                                        value={formData.circle_id}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.circle_id ||
-                                            loadingData ||
-                                            !hasCircles
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            !hasPlans
-                                        }
-                                    >
-                                        <option value="">
-                                            {loadingData
-                                                ? "⏳ جاري التحميل..."
-                                                : !hasCircles
-                                                  ? "🚫 لا توجد حلقات"
-                                                  : "اختر الحلقة"}
-                                        </option>
-                                        {circlesData.map((circle) => (
-                                            <option
-                                                key={circle.id}
-                                                value={circle.id}
-                                            >
-                                                {circle.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {errors.circle_id && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.circle_id}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* مدرس */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>المدرس (اختياري)</label>
-                                    <select
-                                        name="teacher_id"
-                                        value={formData.teacher_id}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            !hasPlans
-                                        }
-                                    >
-                                        <option value="">بدون مدرس</option>
-                                        {teachersData.map((teacher) => (
-                                            <option
-                                                key={teacher.id}
-                                                value={teacher.id}
-                                            >
-                                                {teacher.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* تاريخ */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>تاريخ الموعد *</label>
-                                    <input
-                                        required
-                                        type="date"
-                                        name="schedule_date"
-                                        value={formData.schedule_date}
-                                        onChange={handleInputChange}
-                                        min={
-                                            new Date()
-                                                .toISOString()
-                                                .split("T")[0]
-                                        }
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.schedule_date
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            !hasPlans
-                                        }
-                                    />
-                                    {errors.schedule_date && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.schedule_date}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* وقت البداية والنهاية */}
-                            <div
-                                className="inputs__verifyOTPBirth"
-                                style={{
-                                    display: "grid",
-                                    gridTemplateColumns: "1fr 1fr",
-                                    gap: "1rem",
-                                }}
+                            <button
+                                className="btn bp"
+                                onClick={addScheduleFn}
+                                disabled={isDisabled}
                             >
-                                <div className="inputs__email">
-                                    <label>وقت البداية *</label>
-                                    <input
-                                        required
-                                        type="time"
-                                        name="start_time"
-                                        value={formData.start_time}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.start_time
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            !hasPlans
-                                        }
-                                    />
-                                    {errors.start_time && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.start_time}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="inputs__email">
-                                    <label>وقت النهاية *</label>
-                                    <input
-                                        required
-                                        type="time"
-                                        name="end_time"
-                                        value={formData.end_time}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.end_time
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            !hasPlans
-                                        }
-                                    />
-                                    {errors.end_time && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.end_time}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* عدد الطلاب */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>العدد الأقصى للطلاب (اختياري)</label>
-                                    <input
-                                        type="number"
-                                        name="max_students"
-                                        value={formData.max_students}
-                                        onChange={handleInputChange}
-                                        min="1"
-                                        max="50"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="اتركه فارغ لعدد غير محدود"
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            !hasPlans
-                                        }
-                                    />
-                                </div>
-                            </div>
-
-                            {/* ملاحظات */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>ملاحظات (اختياري)</label>
-                                    <textarea
-                                        name="notes"
-                                        value={formData.notes || ""}
-                                        onChange={handleInputChange}
-                                        rows={3}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="مثال: موعد مكثف - 10 طلاب كحد أقصى"
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            !hasPlans
-                                        }
-                                    />
-                                </div>
-                            </div>
-
-                            {/* زر الإرسال */}
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => submitForm(handleSubmit)}
-                                    disabled={
-                                        isSubmitting ||
-                                        loadingData ||
-                                        !hasPlans ||
-                                        !formData.plan_id ||
-                                        !formData.circle_id
-                                    }
-                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                                            جاري الإضافة...
-                                        </>
-                                    ) : (
-                                        <>إضافة الموعد الجديد</>
-                                    )}
-                                </button>
-                            </div>
+                                {isSubmitting
+                                    ? "جاري الإضافة..."
+                                    : "إضافة الموعد"}
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

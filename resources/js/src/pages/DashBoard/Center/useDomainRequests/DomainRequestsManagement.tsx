@@ -16,7 +16,7 @@ const DomainRequestsManagement: React.FC = () => {
     const [selectedRequest, setSelectedRequest] =
         useState<DomainRequest | null>(null);
 
-    // ✅ Auto refetch عند تحميل الصفحة
+    //  Auto refetch عند تحميل الصفحة
     useEffect(() => {
         refetch();
     }, [refetch]);
@@ -33,7 +33,7 @@ const DomainRequestsManagement: React.FC = () => {
 
             try {
                 await deleteRequest(request.id);
-                toast.success("تم إلغاء الطلب بنجاح ✅");
+                toast.success("تم إلغاء الطلب بنجاح ");
                 await refetch();
             } catch (error: any) {
                 toast.error(error.message || "فشل في إلغاء الطلب");
@@ -68,7 +68,7 @@ const DomainRequestsManagement: React.FC = () => {
         handleCloseUpdateModal();
     }, [refetch, handleCloseUpdateModal]);
 
-    // ✅ Search محسن مع debounce effect
+    //  Search محسن مع debounce effect
     const filteredRequests = useMemo(
         () =>
             requests.filter(
@@ -85,7 +85,7 @@ const DomainRequestsManagement: React.FC = () => {
         [requests, search],
     );
 
-    // ✅ Stats محسنة
+    //  Stats محسنة
     const stats = useMemo(
         () => ({
             total: requests.length,
@@ -96,7 +96,7 @@ const DomainRequestsManagement: React.FC = () => {
         [requests],
     );
 
-    // ✅ Loading state محسن
+    //  Loading state محسن
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px] p-8">
@@ -116,7 +116,7 @@ const DomainRequestsManagement: React.FC = () => {
         );
     }
 
-    // ✅ Error state محسن
+    //  Error state محسن
     if (error) {
         return (
             <div className="flex items-center justify-center min-h-[400px] p-8">

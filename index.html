@@ -1,0 +1,3449 @@
+html
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>منصة نور العلم - لوحة الإدارة</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Tajawal:wght@300;400;500;700;900&display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --gold: #c9a84c;
+                --gold-light: #e8c97a;
+                --gold-dark: #8b6914;
+                --emerald: #1a5c3a;
+                --emerald-light: #2e7d52;
+                --emerald-mid: #4caf80;
+                --emerald-pale: #e8f5ee;
+                --cream: #fffdf7;
+                --white: #ffffff;
+                --text-dark: #1a1a1a;
+                --text-mid: #4a4a4a;
+                --text-light: #888;
+                --border: #e8e0cc;
+                --shadow-gold: rgba(201, 168, 76, 0.15);
+                --shadow-emerald: rgba(26, 92, 58, 0.1);
+                --red: #e53935;
+                --blue: #1565c0;
+                --orange: #f57c00;
+                --sidebar-w: 280px;
+                --radius: 16px;
+                --radius-sm: 10px;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+
+            body {
+                font-family: "Tajawal", sans-serif;
+                background: var(--cream);
+                color: var(--text-dark);
+                min-height: 100vh;
+                overflow-x: hidden;
+            }
+
+            /* ===== ORNAMENTAL BACKGROUND ===== */
+            body::before {
+                content: "";
+                position: fixed;
+                inset: 0;
+                background-image:
+                    radial-gradient(
+                        ellipse 900px 600px at 80% 10%,
+                        rgba(201, 168, 76, 0.06) 0%,
+                        transparent 70%
+                    ),
+                    radial-gradient(
+                        ellipse 600px 400px at 10% 80%,
+                        rgba(26, 92, 58, 0.05) 0%,
+                        transparent 70%
+                    );
+                pointer-events: none;
+                z-index: 0;
+            }
+
+            body::after {
+                content: "";
+                position: fixed;
+                inset: 0;
+                background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C9A84C' fill-opacity='0.03'%3E%3Cpath d='M40 0L50 10L60 0L70 10L80 0L80 10L70 20L80 30L70 40L80 50L70 60L80 70L80 80L70 70L60 80L50 70L40 80L30 70L20 80L10 70L0 80L0 70L10 60L0 50L10 40L0 30L10 20L0 10L0 0L10 10L20 0L30 10Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+                pointer-events: none;
+                z-index: 0;
+            }
+
+            /* ===== LAYOUT ===== */
+            .layout {
+                display: flex;
+                min-height: 100vh;
+                position: relative;
+                z-index: 1;
+            }
+
+            /* ===== SIDEBAR ===== */
+            .sidebar {
+                width: var(--sidebar-w);
+                background: linear-gradient(
+                    180deg,
+                    #0d3d22 0%,
+                    #1a5c3a 40%,
+                    #0d3d22 100%
+                );
+                min-height: 100vh;
+                position: fixed;
+                right: 0;
+                top: 0;
+                z-index: 100;
+                display: flex;
+                flex-direction: column;
+                box-shadow: -4px 0 30px rgba(0, 0, 0, 0.2);
+                overflow: hidden;
+            }
+
+            .sidebar::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23C9A84C' fill-opacity='0.07'%3E%3Cpolygon points='30,0 35,10 45,10 37,17 40,28 30,22 20,28 23,17 15,10 25,10'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+                pointer-events: none;
+            }
+
+            .sidebar-logo {
+                padding: 28px 24px 20px;
+                text-align: center;
+                position: relative;
+                border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+            }
+
+            .logo-ornament {
+                width: 60px;
+                height: 60px;
+                margin: 0 auto 12px;
+                position: relative;
+            }
+
+            .logo-ornament svg {
+                width: 100%;
+                height: 100%;
+            }
+
+            .logo-title {
+                font-family: "Amiri", serif;
+                font-size: 22px;
+                color: var(--gold-light);
+                font-weight: 700;
+                line-height: 1.3;
+                letter-spacing: 0.5px;
+            }
+
+            .logo-sub {
+                font-size: 11px;
+                color: rgba(201, 168, 76, 0.6);
+                margin-top: 4px;
+                letter-spacing: 1px;
+            }
+
+            .sidebar-nav {
+                flex: 1;
+                padding: 20px 0;
+                overflow-y: auto;
+            }
+
+            .nav-section-label {
+                font-size: 10px;
+                color: rgba(201, 168, 76, 0.5);
+                letter-spacing: 2px;
+                padding: 12px 24px 6px;
+                text-transform: uppercase;
+            }
+
+            .nav-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 24px;
+                color: rgba(255, 255, 255, 0.7);
+                cursor: pointer;
+                transition: all 0.25s;
+                position: relative;
+                font-size: 14px;
+                font-weight: 500;
+                border-right: 3px solid transparent;
+            }
+
+            .nav-item:hover,
+            .nav-item.active {
+                background: rgba(201, 168, 76, 0.1);
+                color: var(--gold-light);
+                border-right-color: var(--gold);
+            }
+
+            .nav-item.active::before {
+                content: "";
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: 3px;
+                background: linear-gradient(
+                    180deg,
+                    var(--gold-light),
+                    var(--gold)
+                );
+                border-radius: 3px 0 0 3px;
+            }
+
+            .nav-item i {
+                width: 20px;
+                text-align: center;
+                font-size: 15px;
+            }
+            .nav-badge {
+                margin-right: auto;
+                background: var(--gold);
+                color: #fff;
+                font-size: 10px;
+                padding: 2px 7px;
+                border-radius: 10px;
+                font-weight: 700;
+            }
+
+            .sidebar-footer {
+                padding: 16px 24px;
+                border-top: 1px solid rgba(201, 168, 76, 0.15);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .admin-avatar-sm {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                background: linear-gradient(
+                    135deg,
+                    var(--gold),
+                    var(--gold-dark)
+                );
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                color: #fff;
+            }
+            .admin-name-sm {
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.85);
+                font-weight: 600;
+            }
+            .admin-role-sm {
+                font-size: 11px;
+                color: rgba(201, 168, 76, 0.6);
+            }
+
+            /* ===== MAIN ===== */
+            .main {
+                margin-right: var(--sidebar-w);
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+            }
+
+            /* ===== TOPBAR ===== */
+            .topbar {
+                background: var(--white);
+                border-bottom: 1px solid var(--border);
+                padding: 0 32px;
+                height: 70px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                box-shadow: 0 2px 20px rgba(0, 0, 0, 0.04);
+            }
+
+            .topbar-left {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+
+            .page-title {
+                font-family: "Amiri", serif;
+                font-size: 24px;
+                color: var(--emerald);
+                font-weight: 700;
+            }
+            .page-breadcrumb {
+                font-size: 12px;
+                color: var(--text-light);
+            }
+
+            .topbar-right {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+
+            .search-global {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: var(--cream);
+                border: 1px solid var(--border);
+                border-radius: 25px;
+                padding: 8px 18px;
+                min-width: 220px;
+                transition: all 0.2s;
+            }
+            .search-global:focus-within {
+                border-color: var(--gold);
+                box-shadow: 0 0 0 3px var(--shadow-gold);
+            }
+            .search-global i {
+                color: var(--text-light);
+                font-size: 14px;
+            }
+            .search-global input {
+                border: none;
+                background: transparent;
+                outline: none;
+                font-family: "Tajawal", sans-serif;
+                font-size: 13px;
+                color: var(--text-dark);
+                width: 100%;
+            }
+
+            .topbar-btn {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                border: none;
+                cursor: pointer;
+                background: var(--cream);
+                border: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 15px;
+                color: var(--text-mid);
+                position: relative;
+                transition: all 0.2s;
+            }
+            .topbar-btn:hover {
+                background: var(--emerald-pale);
+                color: var(--emerald);
+            }
+            .notif-dot {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--red);
+                border: 2px solid var(--white);
+            }
+
+            /* ===== CONTENT ===== */
+            .content {
+                padding: 32px;
+                flex: 1;
+            }
+
+            /* ===== STATS CARDS ===== */
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+                margin-bottom: 32px;
+            }
+
+            .stat-card {
+                background: var(--white);
+                border-radius: var(--radius);
+                padding: 24px;
+                border: 1px solid var(--border);
+                position: relative;
+                overflow: hidden;
+                transition:
+                    transform 0.2s,
+                    box-shadow 0.2s;
+                animation: fadeUp 0.5s ease both;
+            }
+
+            .stat-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+            }
+
+            @keyframes fadeUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .stat-card:nth-child(1) {
+                animation-delay: 0.05s;
+            }
+            .stat-card:nth-child(2) {
+                animation-delay: 0.1s;
+            }
+            .stat-card:nth-child(3) {
+                animation-delay: 0.15s;
+            }
+            .stat-card:nth-child(4) {
+                animation-delay: 0.2s;
+            }
+
+            .stat-card::before {
+                content: "";
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                width: 80px;
+                height: 80px;
+                border-radius: 50% 0 0 0;
+                opacity: 0.08;
+            }
+            .stat-card.gold::before {
+                background: var(--gold);
+            }
+            .stat-card.green::before {
+                background: var(--emerald);
+            }
+            .stat-card.blue::before {
+                background: var(--blue);
+            }
+            .stat-card.orange::before {
+                background: var(--orange);
+            }
+
+            .stat-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                margin-bottom: 16px;
+            }
+            .stat-card.gold .stat-icon {
+                background: rgba(201, 168, 76, 0.12);
+                color: var(--gold-dark);
+            }
+            .stat-card.green .stat-icon {
+                background: rgba(26, 92, 58, 0.1);
+                color: var(--emerald);
+            }
+            .stat-card.blue .stat-icon {
+                background: rgba(21, 101, 192, 0.1);
+                color: var(--blue);
+            }
+            .stat-card.orange .stat-icon {
+                background: rgba(245, 124, 0, 0.1);
+                color: var(--orange);
+            }
+
+            .stat-value {
+                font-size: 32px;
+                font-weight: 900;
+                color: var(--text-dark);
+                line-height: 1;
+                margin-bottom: 6px;
+            }
+            .stat-label {
+                font-size: 13px;
+                color: var(--text-light);
+                font-weight: 500;
+            }
+            .stat-change {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 11px;
+                font-weight: 700;
+                margin-top: 10px;
+                padding: 3px 8px;
+                border-radius: 20px;
+            }
+            .stat-change.up {
+                background: rgba(46, 125, 50, 0.1);
+                color: #2e7d32;
+            }
+            .stat-change.down {
+                background: rgba(229, 57, 53, 0.1);
+                color: var(--red);
+            }
+
+            /* ===== SECTION HEADER ===== */
+            .section-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 20px;
+            }
+            .section-title {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-family: "Amiri", serif;
+                font-size: 20px;
+                font-weight: 700;
+                color: var(--emerald);
+            }
+            .section-title::before {
+                content: "";
+                display: block;
+                width: 4px;
+                height: 24px;
+                background: linear-gradient(
+                    180deg,
+                    var(--gold),
+                    var(--gold-dark)
+                );
+                border-radius: 2px;
+            }
+
+            /* ===== FILTERS BAR ===== */
+            .filters-bar {
+                background: var(--white);
+                border-radius: var(--radius);
+                padding: 16px 24px;
+                border: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+                animation: fadeUp 0.4s ease both;
+            }
+
+            .filter-group {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .filter-label {
+                font-size: 12px;
+                color: var(--text-light);
+                white-space: nowrap;
+            }
+
+            .filter-select {
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 7px 12px;
+                font-family: "Tajawal", sans-serif;
+                font-size: 13px;
+                color: var(--text-dark);
+                background: var(--cream);
+                outline: none;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .filter-select:focus {
+                border-color: var(--gold);
+                box-shadow: 0 0 0 3px var(--shadow-gold);
+            }
+
+            .filter-search {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 7px 12px;
+                background: var(--cream);
+                transition: all 0.2s;
+                flex: 1;
+                min-width: 180px;
+            }
+            .filter-search:focus-within {
+                border-color: var(--gold);
+                box-shadow: 0 0 0 3px var(--shadow-gold);
+            }
+            .filter-search i {
+                color: var(--text-light);
+                font-size: 13px;
+            }
+            .filter-search input {
+                border: none;
+                background: transparent;
+                outline: none;
+                font-family: "Tajawal", sans-serif;
+                font-size: 13px;
+                width: 100%;
+            }
+
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                border-radius: 8px;
+                font-family: "Tajawal", sans-serif;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
+                transition: all 0.2s;
+                white-space: nowrap;
+            }
+            .btn-primary {
+                background: linear-gradient(
+                    135deg,
+                    var(--emerald-light),
+                    var(--emerald)
+                );
+                color: #fff;
+            }
+            .btn-primary:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px var(--shadow-emerald);
+            }
+            .btn-gold {
+                background: linear-gradient(
+                    135deg,
+                    var(--gold-light),
+                    var(--gold)
+                );
+                color: #fff;
+            }
+            .btn-gold:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px var(--shadow-gold);
+            }
+            .btn-outline {
+                background: transparent;
+                border: 1px solid var(--border);
+                color: var(--text-mid);
+            }
+            .btn-outline:hover {
+                border-color: var(--gold);
+                color: var(--gold-dark);
+            }
+            .btn-sm {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            .btn-icon {
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                justify-content: center;
+            }
+
+            /* ===== TABLE ===== */
+            .table-container {
+                background: var(--white);
+                border-radius: var(--radius);
+                border: 1px solid var(--border);
+                overflow: hidden;
+                animation: fadeUp 0.5s ease both;
+                animation-delay: 0.1s;
+            }
+
+            .table-header-bar {
+                padding: 18px 24px;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: linear-gradient(
+                    135deg,
+                    #fffdf7 0%,
+                    rgba(201, 168, 76, 0.04) 100%
+                );
+            }
+
+            .table-title {
+                font-weight: 700;
+                font-size: 15px;
+                color: var(--text-dark);
+            }
+            .table-count {
+                font-size: 12px;
+                color: var(--text-light);
+                margin-top: 2px;
+            }
+            .table-actions {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            thead th {
+                padding: 12px 16px;
+                text-align: right;
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--text-light);
+                background: #fafaf8;
+                border-bottom: 1px solid var(--border);
+                letter-spacing: 0.5px;
+                white-space: nowrap;
+                cursor: pointer;
+                user-select: none;
+                position: relative;
+            }
+            thead th:hover {
+                color: var(--emerald);
+            }
+            thead th .sort-icon {
+                margin-right: 4px;
+                opacity: 0.4;
+                font-size: 10px;
+            }
+            thead th.sorted .sort-icon {
+                opacity: 1;
+                color: var(--gold);
+            }
+
+            tbody tr {
+                border-bottom: 1px solid rgba(232, 224, 204, 0.4);
+                transition: background 0.15s;
+            }
+            tbody tr:last-child {
+                border-bottom: none;
+            }
+            tbody tr:hover {
+                background: rgba(201, 168, 76, 0.04);
+            }
+
+            td {
+                padding: 14px 16px;
+                vertical-align: middle;
+            }
+            td.td-right {
+                text-align: right;
+            }
+
+            /* ===== EMPLOYEE ROW ===== */
+            .emp-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .emp-avatar {
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                position: relative;
+                flex-shrink: 0;
+                border: 2px solid var(--border);
+                overflow: hidden;
+                background: linear-gradient(135deg, var(--emerald-pale), white);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .emp-avatar svg {
+                width: 36px;
+                height: 36px;
+            }
+
+            .emp-status-dot {
+                position: absolute;
+                bottom: 1px;
+                right: 1px;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                border: 2px solid white;
+            }
+            .emp-status-dot.online {
+                background: #4caf50;
+            }
+            .emp-status-dot.offline {
+                background: #9e9e9e;
+            }
+            .emp-status-dot.away {
+                background: #ff9800;
+            }
+
+            .emp-name {
+                font-weight: 700;
+                font-size: 14px;
+                color: var(--text-dark);
+                margin-bottom: 2px;
+            }
+            .emp-id {
+                font-size: 11px;
+                color: var(--text-light);
+            }
+
+            .mosque-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                background: rgba(26, 92, 58, 0.08);
+                color: var(--emerald);
+                border: 1px solid rgba(26, 92, 58, 0.15);
+                border-radius: 6px;
+                padding: 3px 8px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            .mosque-tag.none {
+                background: rgba(158, 158, 158, 0.08);
+                color: #888;
+                border-color: rgba(158, 158, 158, 0.2);
+            }
+
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                border-radius: 6px;
+                padding: 3px 10px;
+                font-size: 11px;
+                font-weight: 700;
+            }
+            .badge-online {
+                background: rgba(76, 175, 80, 0.12);
+                color: #2e7d32;
+            }
+            .badge-offline {
+                background: rgba(158, 158, 158, 0.12);
+                color: #616161;
+            }
+            .badge-away {
+                background: rgba(255, 152, 0, 0.12);
+                color: #e65100;
+            }
+
+            .salary-value {
+                font-weight: 700;
+                color: var(--text-dark);
+                font-size: 14px;
+            }
+            .salary-deduct {
+                font-size: 11px;
+                color: var(--red);
+                font-weight: 600;
+            }
+            .salary-net {
+                font-size: 12px;
+                color: var(--emerald);
+                font-weight: 700;
+            }
+
+            .hours-bar-wrap {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-width: 100px;
+            }
+            .hours-bar {
+                flex: 1;
+                height: 6px;
+                border-radius: 3px;
+                background: rgba(0, 0, 0, 0.06);
+                overflow: hidden;
+            }
+            .hours-bar-fill {
+                height: 100%;
+                border-radius: 3px;
+                transition: width 1s ease;
+            }
+            .hours-val {
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--text-mid);
+                white-space: nowrap;
+            }
+
+            .circles-mini {
+                display: flex;
+                gap: 3px;
+                flex-wrap: wrap;
+                max-width: 130px;
+            }
+            .circle-day {
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 9px;
+                font-weight: 700;
+            }
+            .circle-day.present {
+                background: rgba(26, 92, 58, 0.1);
+                color: var(--emerald);
+                border: 1px solid rgba(26, 92, 58, 0.2);
+            }
+            .circle-day.absent {
+                background: rgba(229, 57, 53, 0.08);
+                color: var(--red);
+                border: 1px solid rgba(229, 57, 53, 0.15);
+            }
+            .circle-day.holiday {
+                background: rgba(201, 168, 76, 0.1);
+                color: var(--gold-dark);
+                border: 1px solid rgba(201, 168, 76, 0.2);
+            }
+
+            .time-range {
+                font-size: 12px;
+                color: var(--text-mid);
+                white-space: nowrap;
+            }
+            .time-range strong {
+                color: var(--text-dark);
+                font-weight: 700;
+            }
+
+            .action-btns {
+                display: flex;
+                gap: 6px;
+                align-items: center;
+            }
+
+            /* ===== CIRCLES COUNT ===== */
+            .circles-count {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .circ-num {
+                font-size: 18px;
+                font-weight: 900;
+                color: var(--emerald);
+                line-height: 1;
+            }
+            .circ-sub {
+                font-size: 10px;
+                color: var(--text-light);
+            }
+
+            /* ===== EXPAND ROW ===== */
+            .expand-row {
+                background: #fafaf8;
+            }
+            .expand-row td {
+                padding: 0;
+            }
+            .expand-inner {
+                padding: 20px 24px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+
+            .expand-panel {
+                background: var(--white);
+                border-radius: 12px;
+                border: 1px solid var(--border);
+                overflow: hidden;
+            }
+            .expand-panel-title {
+                padding: 10px 16px;
+                background: linear-gradient(
+                    135deg,
+                    rgba(26, 92, 58, 0.06),
+                    rgba(201, 168, 76, 0.04)
+                );
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--emerald);
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .expand-panel-body {
+                padding: 12px 16px;
+            }
+
+            .circle-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .circle-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 8px 12px;
+                background: var(--cream);
+                border-radius: 8px;
+                border: 1px solid var(--border);
+            }
+            .circle-item-name {
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--text-dark);
+            }
+            .circle-item-students {
+                font-size: 11px;
+                color: var(--text-light);
+            }
+            .circle-item-time {
+                font-size: 11px;
+                color: var(--emerald);
+                font-weight: 600;
+            }
+
+            .plan-list {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .plan-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 6px 0;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            }
+            .plan-item:last-child {
+                border-bottom: none;
+            }
+            .plan-day {
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                background: rgba(201, 168, 76, 0.1);
+                color: var(--gold-dark);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 11px;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+            .plan-detail {
+                flex: 1;
+            }
+            .plan-detail-title {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--text-dark);
+            }
+            .plan-detail-time {
+                font-size: 11px;
+                color: var(--text-light);
+            }
+            .plan-hours-badge {
+                background: rgba(26, 92, 58, 0.1);
+                color: var(--emerald);
+                border-radius: 6px;
+                padding: 2px 8px;
+                font-size: 11px;
+                font-weight: 700;
+            }
+
+            /* ===== PAGINATION ===== */
+            .pagination-bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px 24px;
+                border-top: 1px solid var(--border);
+                background: #fafaf8;
+            }
+            .page-info {
+                font-size: 12px;
+                color: var(--text-light);
+            }
+            .page-btns {
+                display: flex;
+                gap: 4px;
+            }
+            .page-btn {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                background: var(--white);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                color: var(--text-mid);
+                transition: all 0.15s;
+                font-family: "Tajawal", sans-serif;
+            }
+            .page-btn:hover {
+                border-color: var(--gold);
+                color: var(--gold-dark);
+            }
+            .page-btn.active {
+                background: var(--emerald);
+                color: var(--white);
+                border-color: var(--emerald);
+            }
+            .page-btn:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+
+            /* ===== QUICK STATS ROW ===== */
+            .quick-stats {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 20px;
+                margin-bottom: 32px;
+            }
+
+            .quick-card {
+                background: var(--white);
+                border-radius: var(--radius);
+                border: 1px solid var(--border);
+                padding: 20px;
+                animation: fadeUp 0.5s ease both;
+            }
+            .quick-card:nth-child(1) {
+                animation-delay: 0.25s;
+            }
+            .quick-card:nth-child(2) {
+                animation-delay: 0.3s;
+            }
+            .quick-card:nth-child(3) {
+                animation-delay: 0.35s;
+            }
+
+            .quick-card-title {
+                font-size: 13px;
+                font-weight: 700;
+                color: var(--text-mid);
+                margin-bottom: 14px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .quick-card-title i {
+                color: var(--gold);
+            }
+
+            .mini-stat-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .mini-stat-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+            }
+            .mini-stat-label {
+                font-size: 12px;
+                color: var(--text-light);
+                flex: 1;
+            }
+            .mini-stat-bar {
+                flex: 2;
+                height: 5px;
+                background: #f0ede5;
+                border-radius: 3px;
+                overflow: hidden;
+            }
+            .mini-stat-fill {
+                height: 100%;
+                border-radius: 3px;
+            }
+            .mini-stat-val {
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--text-dark);
+                min-width: 30px;
+                text-align: left;
+            }
+
+            .attendance-ring {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+            .ring-svg {
+                flex-shrink: 0;
+            }
+            .ring-legend {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .ring-legend-item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 12px;
+                color: var(--text-mid);
+            }
+            .ring-dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+            }
+
+            /* ===== ORNAMENTAL DIVIDER ===== */
+            .ornament-divider {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin: 32px 0 24px;
+            }
+            .ornament-divider-line {
+                flex: 1;
+                height: 1px;
+                background: linear-gradient(
+                    90deg,
+                    transparent,
+                    var(--border),
+                    transparent
+                );
+            }
+            .ornament-divider-icon {
+                color: var(--gold);
+                font-size: 18px;
+                opacity: 0.6;
+            }
+
+            /* ===== TOOLTIP ===== */
+            [data-tooltip] {
+                position: relative;
+                cursor: help;
+            }
+            [data-tooltip]::after {
+                content: attr(data-tooltip);
+                position: absolute;
+                bottom: calc(100%+6px);
+                right: 50%;
+                transform: translateX(50%);
+                background: rgba(26, 30, 26, 0.9);
+                color: #fff;
+                font-size: 11px;
+                padding: 4px 10px;
+                border-radius: 6px;
+                white-space: nowrap;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s;
+                z-index: 999;
+            }
+            [data-tooltip]:hover::after {
+                opacity: 1;
+            }
+
+            /* ===== MODAL ===== */
+            .modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.45);
+                backdrop-filter: blur(4px);
+                z-index: 1000;
+                display: none;
+                align-items: center;
+                justify-content: center;
+            }
+            .modal-overlay.open {
+                display: flex;
+            }
+            .modal {
+                background: var(--white);
+                border-radius: 20px;
+                width: 560px;
+                max-width: 90vw;
+                max-height: 85vh;
+                overflow-y: auto;
+                animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            @keyframes modalIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.9) translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+            .modal-header {
+                padding: 24px 28px 16px;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .modal-title {
+                font-family: "Amiri", serif;
+                font-size: 20px;
+                font-weight: 700;
+                color: var(--emerald);
+            }
+            .modal-close {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                border: none;
+                background: var(--cream);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--text-mid);
+                font-size: 14px;
+            }
+            .modal-body {
+                padding: 24px 28px;
+            }
+            .modal-footer {
+                padding: 16px 28px;
+                border-top: 1px solid var(--border);
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+            }
+
+            .form-row {
+                margin-bottom: 16px;
+            }
+            .form-label {
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--text-mid);
+                margin-bottom: 6px;
+                display: block;
+            }
+            .form-input {
+                width: 100%;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 10px 14px;
+                font-family: "Tajawal", sans-serif;
+                font-size: 13px;
+                outline: none;
+                transition: all 0.2s;
+                background: var(--cream);
+            }
+            .form-input:focus {
+                border-color: var(--gold);
+                box-shadow: 0 0 0 3px var(--shadow-gold);
+            }
+            .form-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+            }
+
+            /* ===== SCROLLBAR ===== */
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: rgba(201, 168, 76, 0.3);
+                border-radius: 3px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: rgba(201, 168, 76, 0.5);
+            }
+
+            /* ===== ANIMATIONS ===== */
+            .pulse {
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.5;
+                }
+            }
+
+            .glow-gold {
+                box-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+            }
+
+            /* TABS */
+            .tabs {
+                display: flex;
+                gap: 0;
+                background: var(--cream);
+                border-radius: 10px;
+                padding: 4px;
+                border: 1px solid var(--border);
+            }
+            .tab {
+                padding: 7px 16px;
+                border-radius: 7px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                color: var(--text-light);
+                white-space: nowrap;
+            }
+            .tab.active {
+                background: var(--white);
+                color: var(--emerald);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            }
+
+            /* ===== NOTIFICATION TOAST ===== */
+            .toast {
+                position: fixed;
+                bottom: 24px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--emerald);
+                color: #fff;
+                padding: 12px 24px;
+                border-radius: 10px;
+                font-size: 13px;
+                font-weight: 600;
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+                z-index: 9999;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .toast.show {
+                opacity: 1;
+            }
+
+            /* RESPONSIVE */
+            @media (max-width: 1200px) {
+                .stats-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                .quick-stats {
+                    grid-template-columns: 1fr 1fr;
+                }
+            }
+            @media (max-width: 900px) {
+                .sidebar {
+                    display: none;
+                }
+                .main {
+                    margin-right: 0;
+                }
+                .stats-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                .quick-stats {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="layout">
+            <!-- ===== SIDEBAR ===== -->
+            <aside class="sidebar">
+                <div class="sidebar-logo">
+                    <div class="logo-ornament">
+                        <svg
+                            viewBox="0 0 60 60"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <circle
+                                cx="30"
+                                cy="30"
+                                r="28"
+                                stroke="#C9A84C"
+                                stroke-width="1.5"
+                                stroke-dasharray="4 3"
+                            />
+                            <circle
+                                cx="30"
+                                cy="30"
+                                r="20"
+                                stroke="#C9A84C"
+                                stroke-width="1"
+                                opacity="0.5"
+                            />
+                            <!-- Star of Islamic art -->
+                            <path
+                                d="M30 8 L32 22 L30 24 L28 22Z"
+                                fill="#C9A84C"
+                                opacity="0.9"
+                            />
+                            <path
+                                d="M30 52 L32 38 L30 36 L28 38Z"
+                                fill="#C9A84C"
+                                opacity="0.9"
+                            />
+                            <path
+                                d="M8 30 L22 28 L24 30 L22 32Z"
+                                fill="#C9A84C"
+                                opacity="0.9"
+                            />
+                            <path
+                                d="M52 30 L38 28 L36 30 L38 32Z"
+                                fill="#C9A84C"
+                                opacity="0.9"
+                            />
+                            <path
+                                d="M14 14 L24 24 L22 26 L20 24Z"
+                                fill="#C9A84C"
+                                opacity="0.6"
+                            />
+                            <path
+                                d="M46 46 L36 36 L38 34 L40 36Z"
+                                fill="#C9A84C"
+                                opacity="0.6"
+                            />
+                            <path
+                                d="M14 46 L24 36 L26 38 L24 40Z"
+                                fill="#C9A84C"
+                                opacity="0.6"
+                            />
+                            <path
+                                d="M46 14 L36 24 L34 22 L36 20Z"
+                                fill="#C9A84C"
+                                opacity="0.6"
+                            />
+                            <circle
+                                cx="30"
+                                cy="30"
+                                r="6"
+                                fill="#C9A84C"
+                                opacity="0.9"
+                            />
+                            <circle cx="30" cy="30" r="3" fill="#0D3D22" />
+                        </svg>
+                    </div>
+                    <div class="logo-title">نور العلم</div>
+                    <div class="logo-sub">NOOR AL-ILM PLATFORM</div>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <div class="nav-section-label">القائمة الرئيسية</div>
+                    <div class="nav-item active" onclick="setActive(this)">
+                        <i class="fa-solid fa-grid-2"></i>
+                        <span>لوحة التحكم</span>
+                    </div>
+                    <div class="nav-item" onclick="setActive(this)">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                        <span>الموظفون والمعلمون</span>
+                        <span class="nav-badge">24</span>
+                    </div>
+                    <div class="nav-item" onclick="setActive(this)">
+                        <i class="fa-solid fa-mosque"></i>
+                        <span>المساجد</span>
+                    </div>
+                    <div class="nav-item" onclick="setActive(this)">
+                        <i class="fa-solid fa-users-rectangle"></i>
+                        <span>الحلقات القرآنية</span>
+                        <span class="nav-badge">12</span>
+                    </div>
+                    <div class="nav-item" onclick="setActive(this)">
+                        <i class="fa-solid fa-user-graduate"></i>
+                        <span>الطلاب</span>
+                    </div>
+                    <div class="nav-item" onclick="setActive(this)">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        <span>الجداول والمواعيد</span>
+                    </div>
+
+                    <div class="nav-section-label" style="margin-top: 8px">
+                        المالية
+                    </div>
+                    <div class="nav-item" onclick="setActive(this)">
+                        <i class="fa-solid fa-money-bill-trend-up"></i>
+                        <span>الرواتب والمستحقات</span>
+                    </div>
+                    <div class="nav-item" onclick="setActive(this)">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <span>الخصومات والعقوبات</span>
+                    </div>
+
+                    <div class="nav-section-label" style="margin-top: 8px">
+                        التقارير
+                    </div>
+                    <div class="nav-item" onclick="setActive(this)">
+                        <i class="fa-solid fa-chart-column"></i>
+                        <span>تقارير الحضور</span>
+                    </div>
+                    <div class="nav-item" onclick="setActive(this)">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>التقارير الإحصائية</span>
+                    </div>
+                    <div class="nav-item" onclick="setActive(this)">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>الإعدادات</span>
+                    </div>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="admin-avatar-sm">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <div class="admin-name-sm">مدير النظام</div>
+                        <div class="admin-role-sm">Super Admin</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- ===== MAIN ===== -->
+            <div class="main">
+                <!-- TOPBAR -->
+                <header class="topbar">
+                    <div class="topbar-left">
+                        <div>
+                            <div class="page-title">لوحة التحكم</div>
+                            <div class="page-breadcrumb">
+                                الرئيسية / إدارة الموظفين
+                            </div>
+                        </div>
+                    </div>
+                    <div class="topbar-right">
+                        <div class="search-global">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input
+                                type="text"
+                                placeholder="بحث سريع..."
+                                id="topSearch"
+                            />
+                        </div>
+                        <button class="topbar-btn" data-tooltip="الإشعارات">
+                            <i class="fa-solid fa-bell"></i>
+                            <span class="notif-dot"></span>
+                        </button>
+                        <button class="topbar-btn" data-tooltip="الرسائل">
+                            <i class="fa-solid fa-envelope"></i>
+                        </button>
+                        <button class="topbar-btn" data-tooltip="تصدير">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- CONTENT -->
+                <div class="content">
+                    <!-- STATS CARDS -->
+                    <div class="stats-grid">
+                        <div class="stat-card gold">
+                            <div class="stat-icon">
+                                <i class="fa-solid fa-chalkboard-user"></i>
+                            </div>
+                            <div class="stat-value">24</div>
+                            <div class="stat-label">إجمالي المعلمين</div>
+                            <span class="stat-change up"
+                                ><i class="fa-solid fa-arrow-trend-up"></i> +3
+                                هذا الشهر</span
+                            >
+                        </div>
+                        <div class="stat-card green">
+                            <div class="stat-icon">
+                                <i class="fa-solid fa-users-rectangle"></i>
+                            </div>
+                            <div class="stat-value">48</div>
+                            <div class="stat-label">حلقات نشطة</div>
+                            <span class="stat-change up"
+                                ><i class="fa-solid fa-arrow-trend-up"></i> +6
+                                حلقات</span
+                            >
+                        </div>
+                        <div class="stat-card blue">
+                            <div class="stat-icon">
+                                <i class="fa-solid fa-user-graduate"></i>
+                            </div>
+                            <div class="stat-value">847</div>
+                            <div class="stat-label">إجمالي الطلاب</div>
+                            <span class="stat-change up"
+                                ><i class="fa-solid fa-arrow-trend-up"></i> +42
+                                طالب</span
+                            >
+                        </div>
+                        <div class="stat-card orange">
+                            <div class="stat-icon">
+                                <i class="fa-solid fa-mosque"></i>
+                            </div>
+                            <div class="stat-value">7</div>
+                            <div class="stat-label">مساجد مسجلة</div>
+                            <span class="stat-change down"
+                                ><i class="fa-solid fa-minus"></i> لا
+                                تغيير</span
+                            >
+                        </div>
+                    </div>
+
+                    <!-- QUICK STATS ROW -->
+                    <div class="quick-stats">
+                        <!-- Attendance Summary -->
+                        <div class="quick-card">
+                            <div class="quick-card-title">
+                                <i class="fa-solid fa-calendar-check"></i> ملخص
+                                حضور اليوم
+                            </div>
+                            <div class="attendance-ring">
+                                <svg
+                                    class="ring-svg"
+                                    width="80"
+                                    height="80"
+                                    viewBox="0 0 80 80"
+                                >
+                                    <circle
+                                        cx="40"
+                                        cy="40"
+                                        r="32"
+                                        fill="none"
+                                        stroke="#F0EDE5"
+                                        stroke-width="10"
+                                    />
+                                    <circle
+                                        cx="40"
+                                        cy="40"
+                                        r="32"
+                                        fill="none"
+                                        stroke="#1A5C3A"
+                                        stroke-width="10"
+                                        stroke-dasharray="151"
+                                        stroke-dashoffset="30"
+                                        stroke-linecap="round"
+                                        transform="rotate(-90 40 40)"
+                                    />
+                                    <circle
+                                        cx="40"
+                                        cy="40"
+                                        r="32"
+                                        fill="none"
+                                        stroke="#C9A84C"
+                                        stroke-width="10"
+                                        stroke-dasharray="30"
+                                        stroke-dashoffset="-121"
+                                        stroke-linecap="round"
+                                        transform="rotate(-90 40 40)"
+                                    />
+                                    <text
+                                        x="40"
+                                        y="44"
+                                        text-anchor="middle"
+                                        font-size="14"
+                                        font-weight="900"
+                                        fill="#1A5C3A"
+                                        font-family="Tajawal"
+                                    >
+                                        79%
+                                    </text>
+                                </svg>
+                                <div class="ring-legend">
+                                    <div class="ring-legend-item">
+                                        <span
+                                            class="ring-dot"
+                                            style="background: var(--emerald)"
+                                        ></span>
+                                        حاضر (19)
+                                    </div>
+                                    <div class="ring-legend-item">
+                                        <span
+                                            class="ring-dot"
+                                            style="background: var(--gold)"
+                                        ></span>
+                                        متأخر (3)
+                                    </div>
+                                    <div class="ring-legend-item">
+                                        <span
+                                            class="ring-dot"
+                                            style="
+                                                background: #f0ede5;
+                                                border: 1px solid #ccc;
+                                            "
+                                        ></span>
+                                        غائب (2)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Salary Overview -->
+                        <div class="quick-card">
+                            <div class="quick-card-title">
+                                <i class="fa-solid fa-money-bill-wave"></i> ملخص
+                                الرواتب - أبريل
+                            </div>
+                            <div class="mini-stat-list">
+                                <div class="mini-stat-row">
+                                    <div class="mini-stat-label">
+                                        الرواتب الأساسية
+                                    </div>
+                                    <div class="mini-stat-bar">
+                                        <div
+                                            class="mini-stat-fill"
+                                            style="
+                                                width: 100%;
+                                                background: var(--emerald);
+                                            "
+                                        ></div>
+                                    </div>
+                                    <div class="mini-stat-val">48,200 ج</div>
+                                </div>
+                                <div class="mini-stat-row">
+                                    <div class="mini-stat-label">الخصومات</div>
+                                    <div class="mini-stat-bar">
+                                        <div
+                                            class="mini-stat-fill"
+                                            style="
+                                                width: 15%;
+                                                background: var(--red);
+                                            "
+                                        ></div>
+                                    </div>
+                                    <div class="mini-stat-val">7,350 ج</div>
+                                </div>
+                                <div class="mini-stat-row">
+                                    <div class="mini-stat-label">
+                                        صافي المستحق
+                                    </div>
+                                    <div class="mini-stat-bar">
+                                        <div
+                                            class="mini-stat-fill"
+                                            style="
+                                                width: 85%;
+                                                background: var(--gold);
+                                            "
+                                        ></div>
+                                    </div>
+                                    <div class="mini-stat-val">40,850 ج</div>
+                                </div>
+                                <div class="mini-stat-row">
+                                    <div class="mini-stat-label">تم الصرف</div>
+                                    <div class="mini-stat-bar">
+                                        <div
+                                            class="mini-stat-fill"
+                                            style="width: 0%; background: #ccc"
+                                        ></div>
+                                    </div>
+                                    <div
+                                        class="mini-stat-val"
+                                        style="color: var(--red)"
+                                    >
+                                        0 ج
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Online Status -->
+                        <div class="quick-card">
+                            <div class="quick-card-title">
+                                <i class="fa-solid fa-signal"></i> الحالة
+                                الفورية للمعلمين
+                            </div>
+                            <div class="mini-stat-list">
+                                <div class="mini-stat-row">
+                                    <div
+                                        class="ring-dot"
+                                        style="
+                                            background: #4caf50;
+                                            width: 12px;
+                                            height: 12px;
+                                            border-radius: 50%;
+                                            flex-shrink: 0;
+                                        "
+                                    ></div>
+                                    <div class="mini-stat-label">
+                                        أونلاين الآن
+                                    </div>
+                                    <div class="mini-stat-bar">
+                                        <div
+                                            class="mini-stat-fill"
+                                            style="
+                                                width: 63%;
+                                                background: #4caf50;
+                                            "
+                                        ></div>
+                                    </div>
+                                    <div class="mini-stat-val">15</div>
+                                </div>
+                                <div class="mini-stat-row">
+                                    <div
+                                        class="ring-dot"
+                                        style="
+                                            background: #ff9800;
+                                            width: 12px;
+                                            height: 12px;
+                                            border-radius: 50%;
+                                            flex-shrink: 0;
+                                        "
+                                    ></div>
+                                    <div class="mini-stat-label">متأخر</div>
+                                    <div class="mini-stat-bar">
+                                        <div
+                                            class="mini-stat-fill"
+                                            style="
+                                                width: 12%;
+                                                background: #ff9800;
+                                            "
+                                        ></div>
+                                    </div>
+                                    <div class="mini-stat-val">3</div>
+                                </div>
+                                <div class="mini-stat-row">
+                                    <div
+                                        class="ring-dot"
+                                        style="
+                                            background: #9e9e9e;
+                                            width: 12px;
+                                            height: 12px;
+                                            border-radius: 50%;
+                                            flex-shrink: 0;
+                                        "
+                                    ></div>
+                                    <div class="mini-stat-label">أوفلاين</div>
+                                    <div class="mini-stat-bar">
+                                        <div
+                                            class="mini-stat-fill"
+                                            style="
+                                                width: 25%;
+                                                background: #9e9e9e;
+                                            "
+                                        ></div>
+                                    </div>
+                                    <div class="mini-stat-val">6</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== EMPLOYEES TABLE ===== -->
+                    <div class="section-header">
+                        <div class="section-title">جدول الموظفين والمعلمين</div>
+                        <div
+                            style="display: flex; gap: 8px; align-items: center"
+                        >
+                            <div class="tabs">
+                                <div
+                                    class="tab active"
+                                    onclick="filterTab(this, 'all')"
+                                >
+                                    الكل (24)
+                                </div>
+                                <div
+                                    class="tab"
+                                    onclick="filterTab(this, 'online')"
+                                >
+                                    أونلاين (15)
+                                </div>
+                                <div
+                                    class="tab"
+                                    onclick="filterTab(this, 'mosque')"
+                                >
+                                    مسجد (18)
+                                </div>
+                                <div
+                                    class="tab"
+                                    onclick="filterTab(this, 'free')"
+                                >
+                                    بلا مسجد (6)
+                                </div>
+                            </div>
+                            <button
+                                class="btn btn-gold"
+                                onclick="openAddModal()"
+                            >
+                                <i class="fa-solid fa-plus"></i> إضافة معلم
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- FILTERS -->
+                    <div class="filters-bar">
+                        <div class="filter-search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input
+                                type="text"
+                                placeholder="ابحث باسم المعلم أو رقم الهاتف..."
+                                id="tableSearch"
+                                oninput="applyFilters()"
+                            />
+                        </div>
+                        <div class="filter-group">
+                            <span class="filter-label"
+                                ><i class="fa-solid fa-mosque"></i> المسجد</span
+                            >
+                            <select
+                                class="filter-select"
+                                id="filterMosque"
+                                onchange="applyFilters()"
+                            >
+                                <option value="">كل المساجد</option>
+                                <option>مسجد النور</option>
+                                <option>مسجد الفتح</option>
+                                <option>مسجد الرحمة</option>
+                                <option>بلا مسجد</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <span class="filter-label"
+                                ><i class="fa-solid fa-signal"></i> الحالة</span
+                            >
+                            <select
+                                class="filter-select"
+                                id="filterStatus"
+                                onchange="applyFilters()"
+                            >
+                                <option value="">كل الحالات</option>
+                                <option value="online">أونلاين</option>
+                                <option value="offline">أوفلاين</option>
+                                <option value="away">متأخر</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <span class="filter-label"
+                                ><i class="fa-solid fa-sort"></i> ترتيب
+                                حسب</span
+                            >
+                            <select
+                                class="filter-select"
+                                id="filterSort"
+                                onchange="applyFilters()"
+                            >
+                                <option value="name">الاسم</option>
+                                <option value="hours">ساعات الحضور</option>
+                                <option value="salary">الراتب</option>
+                                <option value="circles">عدد الحلقات</option>
+                            </select>
+                        </div>
+                        <button
+                            class="btn btn-outline btn-sm"
+                            onclick="resetFilters()"
+                        >
+                            <i class="fa-solid fa-rotate"></i> إعادة تعيين
+                        </button>
+                        <button
+                            class="btn btn-outline btn-sm"
+                            onclick="exportTable()"
+                        >
+                            <i class="fa-solid fa-file-excel"></i> تصدير
+                        </button>
+                    </div>
+
+                    <!-- TABLE -->
+                    <div class="table-container">
+                        <div class="table-header-bar">
+                            <div>
+                                <div class="table-title">
+                                    قائمة المعلمين التفصيلية
+                                </div>
+                                <div class="table-count" id="tableCount">
+                                    عرض 24 معلم
+                                </div>
+                            </div>
+                            <div class="table-actions">
+                                <button class="btn btn-outline btn-sm">
+                                    <i class="fa-solid fa-columns"></i> الأعمدة
+                                </button>
+                                <button
+                                    class="btn btn-outline btn-sm"
+                                    onclick="refreshTable()"
+                                >
+                                    <i class="fa-solid fa-arrows-rotate"></i>
+                                    تحديث
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="overflow-x: auto">
+                            <table id="mainTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px"></th>
+                                        <th onclick="sortTable('name')">
+                                            <i
+                                                class="fa-solid fa-sort sort-icon"
+                                            ></i>
+                                            المعلم
+                                        </th>
+                                        <th onclick="sortTable('mosque')">
+                                            <i
+                                                class="fa-solid fa-sort sort-icon"
+                                            ></i>
+                                            المسجد
+                                        </th>
+                                        <th onclick="sortTable('status')">
+                                            <i
+                                                class="fa-solid fa-sort sort-icon"
+                                            ></i>
+                                            الحالة
+                                        </th>
+                                        <th onclick="sortTable('circles')">
+                                            <i
+                                                class="fa-solid fa-sort sort-icon"
+                                            ></i>
+                                            الحلقات
+                                        </th>
+                                        <th onclick="sortTable('attendance')">
+                                            <i
+                                                class="fa-solid fa-sort sort-icon"
+                                            ></i>
+                                            أيام الحضور
+                                        </th>
+                                        <th onclick="sortTable('time')">
+                                            <i
+                                                class="fa-solid fa-sort sort-icon"
+                                            ></i>
+                                            وقت الحضور
+                                        </th>
+                                        <th onclick="sortTable('hours')">
+                                            <i
+                                                class="fa-solid fa-sort sort-icon"
+                                            ></i>
+                                            الساعات
+                                        </th>
+                                        <th onclick="sortTable('salary')">
+                                            <i
+                                                class="fa-solid fa-sort sort-icon"
+                                            ></i>
+                                            الراتب / الخصم
+                                        </th>
+                                        <th style="width: 100px">إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="pagination-bar">
+                            <div class="page-info" id="pageInfo">
+                                عرض 1-8 من 24 نتيجة
+                            </div>
+                            <div
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 12px;
+                                "
+                            >
+                                <select
+                                    class="filter-select"
+                                    id="perPageSelect"
+                                    onchange="changePerPage()"
+                                    style="padding: 5px 10px; font-size: 12px"
+                                >
+                                    <option value="8">8 في الصفحة</option>
+                                    <option value="12">12 في الصفحة</option>
+                                    <option value="24">الكل</option>
+                                </select>
+                                <div class="page-btns" id="pageBtns"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /content -->
+            </div>
+            <!-- /main -->
+        </div>
+        <!-- /layout -->
+
+        <!-- ===== ADD/EDIT MODAL ===== -->
+        <div class="modal-overlay" id="addModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i
+                            class="fa-solid fa-user-plus"
+                            style="color: var(--gold); margin-left: 8px"
+                        ></i>
+                        إضافة معلم جديد
+                    </div>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('addModal')"
+                    >
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-row">
+                            <label class="form-label">الاسم الكامل *</label>
+                            <input
+                                class="form-input"
+                                placeholder="الشيخ / المعلم..."
+                                type="text"
+                            />
+                        </div>
+                        <div class="form-row">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input
+                                class="form-input"
+                                placeholder="01xxxxxxxxx"
+                                type="text"
+                            />
+                        </div>
+                        <div class="form-row">
+                            <label class="form-label">المسجد التابع له</label>
+                            <select class="form-input">
+                                <option value="">بلا مسجد</option>
+                                <option>مسجد النور</option>
+                                <option>مسجد الفتح</option>
+                                <option>مسجد الرحمة</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label class="form-label">الراتب الأساسي</label>
+                            <input
+                                class="form-input"
+                                placeholder="2000"
+                                type="number"
+                            />
+                        </div>
+                        <div class="form-row">
+                            <label class="form-label">وقت بداية الحضور</label>
+                            <input
+                                class="form-input"
+                                type="time"
+                                value="08:00"
+                            />
+                        </div>
+                        <div class="form-row">
+                            <label class="form-label">وقت نهاية الحضور</label>
+                            <input
+                                class="form-input"
+                                type="time"
+                                value="12:00"
+                            />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">أيام العمل</label>
+                        <div
+                            style="
+                                display: flex;
+                                gap: 8px;
+                                flex-wrap: wrap;
+                                margin-top: 4px;
+                            "
+                        >
+                            <label
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 5px;
+                                    font-size: 13px;
+                                    cursor: pointer;
+                                "
+                            >
+                                <input type="checkbox" checked /> السبت
+                            </label>
+                            <label
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 5px;
+                                    font-size: 13px;
+                                    cursor: pointer;
+                                "
+                            >
+                                <input type="checkbox" checked /> الأحد
+                            </label>
+                            <label
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 5px;
+                                    font-size: 13px;
+                                    cursor: pointer;
+                                "
+                            >
+                                <input type="checkbox" checked /> الاثنين
+                            </label>
+                            <label
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 5px;
+                                    font-size: 13px;
+                                    cursor: pointer;
+                                "
+                            >
+                                <input type="checkbox" checked /> الثلاثاء
+                            </label>
+                            <label
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 5px;
+                                    font-size: 13px;
+                                    cursor: pointer;
+                                "
+                            >
+                                <input type="checkbox" checked /> الأربعاء
+                            </label>
+                            <label
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 5px;
+                                    font-size: 13px;
+                                    cursor: pointer;
+                                "
+                            >
+                                <input type="checkbox" /> الخميس
+                            </label>
+                            <label
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 5px;
+                                    font-size: 13px;
+                                    cursor: pointer;
+                                "
+                            >
+                                <input type="checkbox" /> الجمعة
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        class="btn btn-outline"
+                        onclick="closeModal('addModal')"
+                    >
+                        إلغاء
+                    </button>
+                    <button
+                        class="btn btn-primary"
+                        onclick="
+                            showToast('تم حفظ بيانات المعلم بنجاح ✓');
+                            closeModal('addModal');
+                        "
+                    >
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOAST -->
+        <div class="toast" id="toast">
+            <i class="fa-solid fa-circle-check"></i> <span id="toastMsg"></span>
+        </div>
+
+        <script>
+            // ===== DATA =====
+            const EMPLOYEES = [
+                {
+                    id: "EMP001",
+                    name: "الشيخ محمد أحمد عبد الله",
+                    status: "online",
+                    mosque: "مسجد النور",
+                    mosqueColor: "green",
+                    circles: 3,
+                    students: 67,
+                    salary: 3200,
+                    deduction: 320,
+                    net: 2880,
+                    presentDays: ["س", "أ", "ث", "أر", "خ"],
+                    absentDays: ["ج"],
+                    holidayDays: ["ج"],
+                    timeIn: "07:55",
+                    timeOut: "01:10",
+                    hours: 18,
+                    maxHours: 24,
+                    plans: [
+                        {
+                            day: "السبت",
+                            title: "حلقة الفجر - تحفيظ",
+                            time: "07:00 - 09:00",
+                            hours: "2",
+                        },
+                        {
+                            day: "الاثنين",
+                            title: "حلقة المساء - تجويد",
+                            time: "16:00 - 18:00",
+                            hours: "2",
+                        },
+                        {
+                            day: "الأربعاء",
+                            title: "حلقة النساء",
+                            time: "10:00 - 12:00",
+                            hours: "2",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة الصبح - حفظ",
+                            students: 24,
+                            time: "07:00-09:00",
+                        },
+                        {
+                            name: "حلقة العصر - تجويد",
+                            students: 18,
+                            time: "16:00-18:00",
+                        },
+                        {
+                            name: "حلقة النساء",
+                            students: 25,
+                            time: "10:00-12:00",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP002",
+                    name: "الشيخ عبد الرحمن السيد",
+                    status: "online",
+                    mosque: "مسجد الفتح",
+                    mosqueColor: "green",
+                    circles: 2,
+                    students: 45,
+                    salary: 2800,
+                    deduction: 0,
+                    net: 2800,
+                    presentDays: ["س", "أ", "ث", "أر"],
+                    absentDays: [],
+                    holidayDays: ["خ", "ج"],
+                    timeIn: "08:00",
+                    timeOut: "12:00",
+                    hours: 16,
+                    maxHours: 20,
+                    plans: [
+                        {
+                            day: "الأحد",
+                            title: "حلقة التحفيظ",
+                            time: "08:00 - 10:30",
+                            hours: "2.5",
+                        },
+                        {
+                            day: "الثلاثاء",
+                            title: "حلقة التجويد المتقدم",
+                            time: "09:00 - 11:00",
+                            hours: "2",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة التحفيظ الكبرى",
+                            students: 28,
+                            time: "08:00-10:30",
+                        },
+                        {
+                            name: "حلقة التجويد",
+                            students: 17,
+                            time: "09:00-11:00",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP003",
+                    name: "الشيخة فاطمة محمود",
+                    status: "away",
+                    mosque: "مسجد الرحمة",
+                    mosqueColor: "green",
+                    circles: 2,
+                    students: 38,
+                    salary: 2400,
+                    deduction: 480,
+                    net: 1920,
+                    presentDays: ["س", "أ"],
+                    absentDays: ["ث", "أر"],
+                    holidayDays: ["خ", "ج"],
+                    timeIn: "09:10",
+                    timeOut: "11:30",
+                    hours: 8,
+                    maxHours: 16,
+                    plans: [
+                        {
+                            day: "السبت",
+                            title: "حلقة النساء - تحفيظ",
+                            time: "09:00 - 11:00",
+                            hours: "2",
+                        },
+                        {
+                            day: "الأحد",
+                            title: "حلقة البنات",
+                            time: "09:00 - 11:00",
+                            hours: "2",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة النساء الكبرى",
+                            students: 22,
+                            time: "09:00-11:00",
+                        },
+                        {
+                            name: "حلقة البنات",
+                            students: 16,
+                            time: "09:00-11:00",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP004",
+                    name: "الشيخ أحمد حسن النجار",
+                    status: "offline",
+                    mosque: "",
+                    mosqueColor: "none",
+                    circles: 1,
+                    students: 20,
+                    salary: 1800,
+                    deduction: 900,
+                    net: 900,
+                    presentDays: ["س"],
+                    absentDays: ["أ", "ث", "أر", "خ"],
+                    holidayDays: ["ج"],
+                    timeIn: "--",
+                    timeOut: "--",
+                    hours: 4,
+                    maxHours: 20,
+                    plans: [
+                        {
+                            day: "السبت",
+                            title: "حلقة المبتدئين",
+                            time: "10:00 - 12:00",
+                            hours: "2",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة المبتدئين",
+                            students: 20,
+                            time: "10:00-12:00",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP005",
+                    name: "الشيخ عمر عبد العزيز",
+                    status: "online",
+                    mosque: "مسجد النور",
+                    mosqueColor: "green",
+                    circles: 4,
+                    students: 88,
+                    salary: 4000,
+                    deduction: 200,
+                    net: 3800,
+                    presentDays: ["س", "أ", "ث", "أر", "خ"],
+                    absentDays: [],
+                    holidayDays: ["ج"],
+                    timeIn: "07:30",
+                    timeOut: "01:30",
+                    hours: 22,
+                    maxHours: 24,
+                    plans: [
+                        {
+                            day: "السبت",
+                            title: "حلقة التحفيظ المتقدم",
+                            time: "07:30 - 10:00",
+                            hours: "2.5",
+                        },
+                        {
+                            day: "الأحد",
+                            title: "حلقة قراءات",
+                            time: "08:00 - 10:30",
+                            hours: "2.5",
+                        },
+                        {
+                            day: "الثلاثاء",
+                            title: "حلقة التجويد",
+                            time: "07:30 - 09:30",
+                            hours: "2",
+                        },
+                        {
+                            day: "الأربعاء",
+                            title: "مجلس تفسير",
+                            time: "09:00 - 11:00",
+                            hours: "2",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة التحفيظ المتقدم",
+                            students: 25,
+                            time: "07:30-10:00",
+                        },
+                        {
+                            name: "حلقة القراءات السبع",
+                            students: 18,
+                            time: "08:00-10:30",
+                        },
+                        {
+                            name: "حلقة التجويد",
+                            students: 22,
+                            time: "07:30-09:30",
+                        },
+                        {
+                            name: "مجلس التفسير",
+                            students: 23,
+                            time: "09:00-11:00",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP006",
+                    name: "الشيخة آمنة إبراهيم",
+                    status: "online",
+                    mosque: "مسجد الفتح",
+                    mosqueColor: "green",
+                    circles: 2,
+                    students: 44,
+                    salary: 2600,
+                    deduction: 0,
+                    net: 2600,
+                    presentDays: ["س", "أ", "ث", "أر", "خ"],
+                    absentDays: [],
+                    holidayDays: ["ج"],
+                    timeIn: "08:05",
+                    timeOut: "12:05",
+                    hours: 20,
+                    maxHours: 20,
+                    plans: [
+                        {
+                            day: "السبت",
+                            title: "حلقة بنات النور",
+                            time: "08:00 - 10:00",
+                            hours: "2",
+                        },
+                        {
+                            day: "الثلاثاء",
+                            title: "حلقة التحفيظ النسائي",
+                            time: "09:00 - 11:30",
+                            hours: "2.5",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة بنات النور",
+                            students: 24,
+                            time: "08:00-10:00",
+                        },
+                        {
+                            name: "حلقة التحفيظ النسائي",
+                            students: 20,
+                            time: "09:00-11:30",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP007",
+                    name: "الشيخ يوسف رشاد حافظ",
+                    status: "offline",
+                    mosque: "",
+                    mosqueColor: "none",
+                    circles: 1,
+                    students: 15,
+                    salary: 1500,
+                    deduction: 300,
+                    net: 1200,
+                    presentDays: ["أ", "أر"],
+                    absentDays: ["س", "ث", "خ"],
+                    holidayDays: ["ج"],
+                    timeIn: "10:00",
+                    timeOut: "12:00",
+                    hours: 6,
+                    maxHours: 16,
+                    plans: [
+                        {
+                            day: "الأحد",
+                            title: "حلقة أونلاين",
+                            time: "10:00 - 12:00",
+                            hours: "2",
+                        },
+                        {
+                            day: "الأربعاء",
+                            title: "حلقة أونلاين",
+                            time: "10:00 - 12:00",
+                            hours: "2",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة أونلاين للمبتدئين",
+                            students: 15,
+                            time: "10:00-12:00",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP008",
+                    name: "الشيخ إبراهيم سعد الدين",
+                    status: "online",
+                    mosque: "مسجد الرحمة",
+                    mosqueColor: "green",
+                    circles: 3,
+                    students: 58,
+                    salary: 3500,
+                    deduction: 175,
+                    net: 3325,
+                    presentDays: ["س", "أ", "ث", "أر", "خ"],
+                    absentDays: [],
+                    holidayDays: ["ج"],
+                    timeIn: "07:45",
+                    timeOut: "01:15",
+                    hours: 20,
+                    maxHours: 24,
+                    plans: [
+                        {
+                            day: "السبت",
+                            title: "حلقة السيرة",
+                            time: "07:45 - 09:45",
+                            hours: "2",
+                        },
+                        {
+                            day: "الثلاثاء",
+                            title: "حلقة الأطفال",
+                            time: "09:00 - 11:00",
+                            hours: "2",
+                        },
+                        {
+                            day: "الخميس",
+                            title: "حلقة شباب",
+                            time: "08:00 - 10:30",
+                            hours: "2.5",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة السيرة النبوية",
+                            students: 20,
+                            time: "07:45-09:45",
+                        },
+                        {
+                            name: "حلقة الأطفال المتقدم",
+                            students: 18,
+                            time: "09:00-11:00",
+                        },
+                        {
+                            name: "حلقة الشباب",
+                            students: 20,
+                            time: "08:00-10:30",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP009",
+                    name: "الشيخة مريم حسين طاهر",
+                    status: "away",
+                    mosque: "مسجد النور",
+                    mosqueColor: "green",
+                    circles: 2,
+                    students: 36,
+                    salary: 2200,
+                    deduction: 660,
+                    net: 1540,
+                    presentDays: ["س", "أ", "أر"],
+                    absentDays: ["ث", "خ"],
+                    holidayDays: ["ج"],
+                    timeIn: "09:25",
+                    timeOut: "11:45",
+                    hours: 10,
+                    maxHours: 16,
+                    plans: [
+                        {
+                            day: "السبت",
+                            title: "حلقة النساء الصباحي",
+                            time: "09:00 - 11:00",
+                            hours: "2",
+                        },
+                        {
+                            day: "الأحد",
+                            title: "تحفيظ النساء",
+                            time: "09:00 - 11:30",
+                            hours: "2.5",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة النساء الصباحي",
+                            students: 20,
+                            time: "09:00-11:00",
+                        },
+                        {
+                            name: "تحفيظ النساء",
+                            students: 16,
+                            time: "09:00-11:30",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP010",
+                    name: "الشيخ صالح محمد قاسم",
+                    status: "online",
+                    mosque: "مسجد الفتح",
+                    mosqueColor: "green",
+                    circles: 2,
+                    students: 42,
+                    salary: 2900,
+                    deduction: 0,
+                    net: 2900,
+                    presentDays: ["س", "أ", "ث", "أر", "خ"],
+                    absentDays: [],
+                    holidayDays: ["ج"],
+                    timeIn: "08:00",
+                    timeOut: "12:00",
+                    hours: 20,
+                    maxHours: 20,
+                    plans: [
+                        {
+                            day: "السبت",
+                            title: "حلقة التلاوة",
+                            time: "08:00 - 10:00",
+                            hours: "2",
+                        },
+                        {
+                            day: "الثلاثاء",
+                            title: "حلقة الأحكام",
+                            time: "09:00 - 11:00",
+                            hours: "2",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة التلاوة المجودة",
+                            students: 24,
+                            time: "08:00-10:00",
+                        },
+                        {
+                            name: "حلقة أحكام التجويد",
+                            students: 18,
+                            time: "09:00-11:00",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP011",
+                    name: "الشيخ خالد عطية محمود",
+                    status: "online",
+                    mosque: "",
+                    mosqueColor: "none",
+                    circles: 1,
+                    students: 18,
+                    salary: 1600,
+                    deduction: 0,
+                    net: 1600,
+                    presentDays: ["أ", "ث", "أر"],
+                    absentDays: ["س", "خ"],
+                    holidayDays: ["ج"],
+                    timeIn: "10:00",
+                    timeOut: "12:00",
+                    hours: 12,
+                    maxHours: 16,
+                    plans: [
+                        {
+                            day: "الاثنين",
+                            title: "حلقة التحفيظ الأونلاين",
+                            time: "10:00 - 12:00",
+                            hours: "2",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة التحفيظ الأونلاين",
+                            students: 18,
+                            time: "10:00-12:00",
+                        },
+                    ],
+                },
+                {
+                    id: "EMP012",
+                    name: "الشيخ طارق فوزي البكري",
+                    status: "offline",
+                    mosque: "مسجد الرحمة",
+                    mosqueColor: "green",
+                    circles: 3,
+                    students: 54,
+                    salary: 3100,
+                    deduction: 620,
+                    net: 2480,
+                    presentDays: ["س", "ث"],
+                    absentDays: ["أ", "أر", "خ"],
+                    holidayDays: ["ج"],
+                    timeIn: "--",
+                    timeOut: "--",
+                    hours: 8,
+                    maxHours: 24,
+                    plans: [
+                        {
+                            day: "السبت",
+                            title: "حلقة المتقدمين",
+                            time: "09:00 - 11:00",
+                            hours: "2",
+                        },
+                        {
+                            day: "الثلاثاء",
+                            title: "حلقة الأطفال",
+                            time: "10:00 - 12:00",
+                            hours: "2",
+                        },
+                        {
+                            day: "الخميس",
+                            title: "مجلس علمي",
+                            time: "09:00 - 11:30",
+                            hours: "2.5",
+                        },
+                    ],
+                    circleList: [
+                        {
+                            name: "حلقة المتقدمين",
+                            students: 20,
+                            time: "09:00-11:00",
+                        },
+                        {
+                            name: "حلقة الأطفال",
+                            students: 18,
+                            time: "10:00-12:00",
+                        },
+                        {
+                            name: "مجلس علمي",
+                            students: 16,
+                            time: "09:00-11:30",
+                        },
+                    ],
+                },
+            ];
+
+            // Sheikh SVG illustrations - varied looks
+            function sheikhSVG(idx) {
+                const skins = [
+                    "#F5D3A8",
+                    "#E8B97A",
+                    "#D4915A",
+                    "#F0C894",
+                    "#E8A86A",
+                    "#C8784A",
+                ];
+                const robes = [
+                    ["#FFFFFF", "#F5F5F5"],
+                    ["#1A5C3A", "#2E7D52"],
+                    ["#C9A84C", "#8B6914"],
+                    ["#37474F", "#263238"],
+                    ["#1565C0", "#0D47A1"],
+                    ["#4A148C", "#38006b"],
+                ];
+                const skin = skins[idx % skins.length];
+                const [robe1, robe2] = robes[idx % robes.length];
+                const hasBeard = idx % 3 !== 0;
+                const hasGlasses = idx % 5 === 2;
+                const hatColor = idx % 2 === 0 ? "#FFFFFF" : "#1A5C3A";
+                return `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background circle -->
+    <circle cx="40" cy="40" r="38" fill="url(#bg${idx})"/>
+    <defs>
+      <radialGradient id="bg${idx}" cx="50%" cy="40%" r="50%">
+        <stop offset="0%" stop-color="#EBF5EF"/>
+        <stop offset="100%" stop-color="#D4EBD9"/>
+      </radialGradient>
+    </defs>
+    <!-- Robe/Body -->
+    <path d="M15 80 C15 58 25 52 40 52 C55 52 65 58 65 80Z" fill="${robe1}"/>
+    <path d="M30 52 L40 62 L50 52Z" fill="${robe2}" opacity="0.4"/>
+    <!-- Neck -->
+    <rect x="35" y="44" width="10" height="10" rx="3" fill="${skin}"/>
+    <!-- Head -->
+    <ellipse cx="40" cy="34" rx="14" ry="15" fill="${skin}"/>
+    <!-- Kufi/Hat -->
+    <ellipse cx="40" cy="21" rx="12" ry="5" fill="${hatColor}" opacity="0.95"/>
+    <rect x="28" y="18" width="24" height="7" rx="3" fill="${hatColor}" opacity="0.9"/>
+    ${hasBeard ? `<path d="M28 40 Q40 50 52 40 Q48 48 40 50 Q32 48 28 40Z" fill="#3D2314" opacity="0.7"/>` : ""}
+    <!-- Eyes -->
+    <circle cx="35" cy="35" r="2.5" fill="#2C1810"/>
+    <circle cx="45" cy="35" r="2.5" fill="#2C1810"/>
+    <circle cx="36" cy="34" r="0.8" fill="white"/>
+    <circle cx="46" cy="34" r="0.8" fill="white"/>
+    ${hasGlasses ? `<path d="M31 35 Q33 33 36 35 Q38 33 41 35" stroke="#666" stroke-width="1.2" fill="none"/><path d="M41 35 Q43 33 46 35 Q48 33 50 35" stroke="#666" stroke-width="1.2" fill="none"/><line x1="38.5" y1="35" x2="41" y2="35" stroke="#666" stroke-width="1"/>` : ""}
+    <!-- Smile -->
+    <path d="M36 40 Q40 43 44 40" stroke="#B87040" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <!-- Ornament on robe -->
+    <circle cx="40" cy="58" r="3" fill="${robe2}" opacity="0.5"/>
+  </svg>`;
+            }
+
+            // ===== STATE =====
+            let currentPage = 1;
+            let perPage = 8;
+            let sortKey = "";
+            let sortDir = 1;
+            let filteredData = [...EMPLOYEES];
+            let activeTab = "all";
+            let expandedRows = new Set();
+
+            // ===== RENDER =====
+            function renderTable() {
+                const tbody = document.getElementById("tableBody");
+                const start = (currentPage - 1) * perPage;
+                const pageData = filteredData.slice(start, start + perPage);
+
+                tbody.innerHTML = "";
+                pageData.forEach((emp, i) => {
+                    const globalIdx = EMPLOYEES.indexOf(emp);
+                    const hoursPercent = Math.round(
+                        (emp.hours / emp.maxHours) * 100,
+                    );
+                    const hColor =
+                        hoursPercent >= 80
+                            ? "var(--emerald)"
+                            : hoursPercent >= 50
+                              ? "var(--gold)"
+                              : "var(--red)";
+                    const statusLabel = {
+                        online: "أونلاين",
+                        offline: "أوفلاين",
+                        away: "متأخر",
+                    }[emp.status];
+                    const statusClass = {
+                        online: "badge-online",
+                        offline: "badge-offline",
+                        away: "badge-away",
+                    }[emp.status];
+                    const statusIcon = {
+                        online: "fa-circle",
+                        offline: "fa-circle-xmark",
+                        away: "fa-clock",
+                    }[emp.status];
+                    const dotClass = emp.status;
+
+                    const days = ["س", "أ", "ث", "أر", "خ"];
+                    const daysHTML = days
+                        .map((d) => {
+                            const cls = emp.presentDays.includes(d)
+                                ? "present"
+                                : emp.holidayDays.includes(d)
+                                  ? "holiday"
+                                  : "absent";
+                            return `<div class="circle-day ${cls}" data-tooltip="${d === "س" ? "السبت" : d === "أ" ? "الأحد" : d === "ث" ? "الثلاثاء" : d === "أر" ? "الأربعاء" : "الخميس"}">${d}</div>`;
+                        })
+                        .join("");
+
+                    const isExpanded = expandedRows.has(emp.id);
+
+                    const row = document.createElement("tr");
+                    row.id = `row-${emp.id}`;
+                    row.innerHTML = `
+      <td>
+        <button onclick="toggleExpand('${emp.id}')" class="btn btn-icon btn-outline" style="font-size:11px;" title="تفاصيل">
+          <i class="fa-solid fa-chevron-${isExpanded ? "up" : "down"}"></i>
+        </button>
+      </td>
+      <td>
+        <div class="emp-info">
+          <div class="emp-avatar">
+            ${sheikhSVG(globalIdx)}
+            <div class="emp-status-dot ${dotClass}"></div>
+          </div>
+          <div>
+            <div class="emp-name">${emp.name}</div>
+            <div class="emp-id">${emp.id} · ${emp.students} طالب</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        ${
+            emp.mosque
+                ? `<div class="mosque-tag"><i class="fa-solid fa-mosque" style="font-size:10px;"></i>${emp.mosque}</div>`
+                : `<div class="mosque-tag none"><i class="fa-solid fa-minus" style="font-size:10px;"></i>بلا مسجد</div>`
+        }
+      </td>
+      <td>
+        <span class="badge ${statusClass}">
+          <i class="fa-solid ${statusIcon}" style="font-size:8px;"></i>${statusLabel}
+        </span>
+      </td>
+      <td>
+        <div class="circles-count">
+          <div class="circ-num">${emp.circles}</div>
+          <div class="circ-sub">حلقة</div>
+        </div>
+      </td>
+      <td>
+        <div class="circles-mini">${daysHTML}</div>
+        <div style="font-size:10px;color:var(--text-light);margin-top:4px;">${emp.presentDays.length}/5 يوم</div>
+      </td>
+      <td>
+        <div class="time-range">
+          <i class="fa-regular fa-clock" style="color:var(--gold);font-size:11px;"></i>
+          <strong>${emp.timeIn}</strong> — <strong>${emp.timeOut}</strong>
+        </div>
+      </td>
+      <td>
+        <div class="hours-bar-wrap">
+          <div class="hours-bar">
+            <div class="hours-bar-fill" style="width:${hoursPercent}%;background:${hColor}"></div>
+          </div>
+          <div class="hours-val" style="color:${hColor}">${emp.hours}س</div>
+        </div>
+        <div style="font-size:10px;color:var(--text-light);">من ${emp.maxHours} ساعة</div>
+      </td>
+      <td>
+        <div class="salary-value">${emp.salary.toLocaleString()} ج</div>
+        ${emp.deduction > 0 ? `<div class="salary-deduct">— ${emp.deduction.toLocaleString()} ج خصم</div>` : ""}
+        <div class="salary-net">${emp.net.toLocaleString()} ج صافي</div>
+      </td>
+      <td>
+        <div class="action-btns">
+          <button class="btn btn-icon btn-outline" onclick="showToast('جاري عرض ملف ${emp.name}')" title="عرض"><i class="fa-solid fa-eye" style="font-size:12px;color:var(--emerald)"></i></button>
+          <button class="btn btn-icon btn-outline" onclick="showToast('جاري تعديل بيانات ${emp.name}')" title="تعديل"><i class="fa-solid fa-pen" style="font-size:12px;color:var(--gold-dark)"></i></button>
+          <button class="btn btn-icon btn-outline" onclick="confirmDelete('${emp.id}')" title="حذف"><i class="fa-solid fa-trash" style="font-size:12px;color:var(--red)"></i></button>
+        </div>
+      </td>
+    `;
+                    tbody.appendChild(row);
+
+                    // Expanded row
+                    if (isExpanded) {
+                        const expRow = document.createElement("tr");
+                        expRow.className = "expand-row";
+                        expRow.innerHTML = `
+        <td colspan="10">
+          <div class="expand-inner">
+            <div class="expand-panel">
+              <div class="expand-panel-title"><i class="fa-solid fa-users-rectangle"></i> الحلقات القرآنية (${emp.circles})</div>
+              <div class="expand-panel-body">
+                <div class="circle-list">
+                  ${emp.circleList
+                      .map(
+                          (c) => `
+                    <div class="circle-item">
+                      <div>
+                        <div class="circle-item-name">${c.name}</div>
+                        <div class="circle-item-students"><i class="fa-solid fa-users" style="font-size:10px;"></i> ${c.students} طالب</div>
+                      </div>
+                      <div class="circle-item-time"><i class="fa-regular fa-clock" style="font-size:10px;"></i> ${c.time}</div>
+                    </div>
+                  `,
+                      )
+                      .join("")}
+                </div>
+              </div>
+            </div>
+            <div class="expand-panel">
+              <div class="expand-panel-title"><i class="fa-solid fa-calendar-days"></i> الخطة الأسبوعية</div>
+              <div class="expand-panel-body">
+                <div class="plan-list">
+                  ${emp.plans
+                      .map(
+                          (p) => `
+                    <div class="plan-item">
+                      <div class="plan-day">${p.day.substring(0, 2)}</div>
+                      <div class="plan-detail">
+                        <div class="plan-detail-title">${p.title}</div>
+                        <div class="plan-detail-time"><i class="fa-regular fa-clock" style="font-size:10px;"></i> ${p.time}</div>
+                      </div>
+                      <div class="plan-hours-badge">${p.hours} س</div>
+                    </div>
+                  `,
+                      )
+                      .join("")}
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+      `;
+                        tbody.appendChild(expRow);
+                    }
+                });
+
+                updatePagination();
+            }
+
+            function updatePagination() {
+                const total = filteredData.length;
+                const totalPages = Math.ceil(total / perPage);
+                const start = (currentPage - 1) * perPage + 1;
+                const end = Math.min(currentPage * perPage, total);
+
+                document.getElementById("pageInfo").textContent =
+                    `عرض ${start}-${end} من ${total} نتيجة`;
+                document.getElementById("tableCount").textContent =
+                    `عرض ${total} معلم`;
+
+                const pageBtns = document.getElementById("pageBtns");
+                pageBtns.innerHTML = "";
+
+                // Prev
+                const prev = document.createElement("button");
+                prev.className = "page-btn";
+                prev.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+                prev.disabled = currentPage === 1;
+                prev.onclick = () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderTable();
+                    }
+                };
+                pageBtns.appendChild(prev);
+
+                // Page numbers
+                let pages = [];
+                if (totalPages <= 7) {
+                    pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+                } else {
+                    if (currentPage <= 4)
+                        pages = [1, 2, 3, 4, 5, "...", totalPages];
+                    else if (currentPage >= totalPages - 3)
+                        pages = [
+                            1,
+                            "...",
+                            totalPages - 4,
+                            totalPages - 3,
+                            totalPages - 2,
+                            totalPages - 1,
+                            totalPages,
+                        ];
+                    else
+                        pages = [
+                            1,
+                            "...",
+                            currentPage - 1,
+                            currentPage,
+                            currentPage + 1,
+                            "...",
+                            totalPages,
+                        ];
+                }
+
+                pages.forEach((p) => {
+                    const btn = document.createElement("button");
+                    btn.className =
+                        "page-btn" + (p === currentPage ? " active" : "");
+                    btn.textContent = p === "..." ? "..." : p;
+                    if (p !== "...")
+                        btn.onclick = () => {
+                            currentPage = p;
+                            renderTable();
+                        };
+                    else btn.style.pointerEvents = "none";
+                    pageBtns.appendChild(btn);
+                });
+
+                // Next
+                const next = document.createElement("button");
+                next.className = "page-btn";
+                next.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
+                next.disabled = currentPage === totalPages || totalPages === 0;
+                next.onclick = () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderTable();
+                    }
+                };
+                pageBtns.appendChild(next);
+            }
+
+            // ===== FILTERS =====
+            function applyFilters() {
+                const search = document
+                    .getElementById("tableSearch")
+                    .value.toLowerCase()
+                    .trim();
+                const mosque = document.getElementById("filterMosque").value;
+                const status = document.getElementById("filterStatus").value;
+
+                filteredData = EMPLOYEES.filter((emp) => {
+                    const matchSearch =
+                        !search ||
+                        emp.name.toLowerCase().includes(search) ||
+                        emp.id.toLowerCase().includes(search);
+                    const matchMosque =
+                        !mosque ||
+                        (mosque === "بلا مسجد"
+                            ? !emp.mosque
+                            : emp.mosque === mosque);
+                    const matchStatus = !status || emp.status === status;
+                    const matchTab =
+                        activeTab === "all"
+                            ? true
+                            : activeTab === "online"
+                              ? emp.status === "online"
+                              : activeTab === "mosque"
+                                ? !!emp.mosque
+                                : activeTab === "free"
+                                  ? !emp.mosque
+                                  : true;
+                    return (
+                        matchSearch && matchMosque && matchStatus && matchTab
+                    );
+                });
+
+                applySort();
+                currentPage = 1;
+                renderTable();
+            }
+
+            function applySort() {
+                const key = document.getElementById("filterSort").value;
+                filteredData.sort((a, b) => {
+                    if (key === "name")
+                        return a.name.localeCompare(b.name, "ar") * sortDir;
+                    if (key === "hours") return (b.hours - a.hours) * sortDir;
+                    if (key === "salary")
+                        return (b.salary - a.salary) * sortDir;
+                    if (key === "circles")
+                        return (b.circles - a.circles) * sortDir;
+                    return 0;
+                });
+            }
+
+            function sortTable(key) {
+                sortDir = sortKey === key ? sortDir * -1 : -1;
+                sortKey = key;
+                const mapping = {
+                    name: "name",
+                    mosque: "mosque",
+                    status: "status",
+                    circles: "circles",
+                    hours: "hours",
+                    salary: "salary",
+                };
+                document.getElementById("filterSort").value =
+                    mapping[key] || "name";
+                applyFilters();
+            }
+
+            function filterTab(el, tab) {
+                document
+                    .querySelectorAll(".tab")
+                    .forEach((t) => t.classList.remove("active"));
+                el.classList.add("active");
+                activeTab = tab;
+                currentPage = 1;
+                applyFilters();
+            }
+
+            function resetFilters() {
+                document.getElementById("tableSearch").value = "";
+                document.getElementById("filterMosque").value = "";
+                document.getElementById("filterStatus").value = "";
+                document.getElementById("filterSort").value = "name";
+                activeTab = "all";
+                document
+                    .querySelectorAll(".tab")
+                    .forEach((t, i) => t.classList.toggle("active", i === 0));
+                filteredData = [...EMPLOYEES];
+                currentPage = 1;
+                renderTable();
+                showToast("تم إعادة تعيين الفلاتر");
+            }
+
+            function changePerPage() {
+                perPage =
+                    parseInt(document.getElementById("perPageSelect").value) ||
+                    EMPLOYEES.length;
+                currentPage = 1;
+                renderTable();
+            }
+
+            // ===== EXPAND =====
+            function toggleExpand(id) {
+                if (expandedRows.has(id)) expandedRows.delete(id);
+                else expandedRows.add(id);
+                renderTable();
+            }
+
+            // ===== MODAL =====
+            function openAddModal() {
+                document.getElementById("addModal").classList.add("open");
+            }
+            function closeModal(id) {
+                document.getElementById(id).classList.remove("open");
+            }
+
+            // ===== TOAST =====
+            function showToast(msg) {
+                const t = document.getElementById("toast");
+                document.getElementById("toastMsg").textContent = msg;
+                t.classList.add("show");
+                setTimeout(() => t.classList.remove("show"), 3000);
+            }
+
+            // ===== CONFIRM DELETE =====
+            function confirmDelete(id) {
+                if (confirm("هل أنت متأكد من حذف هذا المعلم؟")) {
+                    const idx = filteredData.findIndex((e) => e.id === id);
+                    if (idx > -1) filteredData.splice(idx, 1);
+                    renderTable();
+                    showToast("تم حذف المعلم بنجاح");
+                }
+            }
+
+            // ===== NAV =====
+            function setActive(el) {
+                document
+                    .querySelectorAll(".nav-item")
+                    .forEach((n) => n.classList.remove("active"));
+                el.classList.add("active");
+            }
+
+            // ===== REFRESH =====
+            function refreshTable() {
+                showToast("جاري تحديث البيانات...");
+                setTimeout(() => {
+                    renderTable();
+                    showToast("تم تحديث البيانات بنجاح ✓");
+                }, 800);
+            }
+
+            // ===== EXPORT =====
+            function exportTable() {
+                showToast("جاري تصدير البيانات...");
+                setTimeout(() => showToast("تم تصدير الجدول بنجاح ✓"), 1200);
+            }
+
+            // ===== TOP SEARCH =====
+            document
+                .getElementById("topSearch")
+                .addEventListener("input", function () {
+                    document.getElementById("tableSearch").value = this.value;
+                    applyFilters();
+                });
+
+            // ===== CLOSE MODAL ON OVERLAY =====
+            document
+                .getElementById("addModal")
+                .addEventListener("click", function (e) {
+                    if (e.target === this) closeModal("addModal");
+                });
+
+            // ===== INIT =====
+            filteredData = [...EMPLOYEES];
+            renderTable();
+
+            // Animate bars on load
+            setTimeout(() => {
+                document.querySelectorAll(".hours-bar-fill").forEach((b) => {
+                    const w = b.style.width;
+                    b.style.width = "0";
+                    setTimeout(() => (b.style.width = w), 50);
+                });
+            }, 100);
+        </script>
+    </body>
+</html>

@@ -1,4 +1,4 @@
-// hooks/usePendingStudents.ts - ✅ مع CSRF كامل للـ routes الموجودة
+// hooks/usePendingStudents.ts -  مع CSRF كامل للـ routes الموجودة
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation } from "react-router-dom";
 
@@ -35,9 +35,9 @@ interface ApiResponse<T> {
     message?: string;
 }
 
-// ✅ apiCall مع CSRF للـ web middleware routes
+//  apiCall مع CSRF للـ web middleware routes
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    // ✅ CSRF Token من meta tag أو cookie (للـ web middleware)
+    //  CSRF Token من meta tag أو cookie (للـ web middleware)
     const csrfToken =
         document
             .querySelector('meta[name="csrf-token"]')
@@ -49,12 +49,12 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
         headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            "X-Requested-With": "XMLHttpRequest", // ✅ مطلوب للـ web session
-            ...(csrfToken && { "X-CSRF-TOKEN": csrfToken }), // ✅ CSRF Token
-            ...(token && { Authorization: `Bearer ${token}` }), // ✅ Token احتياطي
+            "X-Requested-With": "XMLHttpRequest", //  مطلوب للـ web session
+            ...(csrfToken && { "X-CSRF-TOKEN": csrfToken }), //  CSRF Token
+            ...(token && { Authorization: `Bearer ${token}` }), //  Token احتياطي
             ...options.headers,
         },
-        credentials: "include", // ✅ Session cookies للـ web auth
+        credentials: "include", //  Session cookies للـ web auth
         ...options,
     };
 
@@ -75,7 +75,7 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     return response.json() as Promise<ApiResponse<any>>;
 };
 
-// ✅ تهيئة الـ Session للـ web routes
+//  تهيئة الـ Session للـ web routes
 const initializeWebSession = async () => {
     try {
         // 1. جلب CSRF Cookie (لازم للـ web middleware)
@@ -100,11 +100,11 @@ export function usePendingStudents() {
             setLoading(true);
             setError(null);
 
-            // ✅ تهيئة الـ session مرة واحدة
+            //  تهيئة الـ session مرة واحدة
             await initializeWebSession();
 
-            // ✅ الـ endpoint بالظبط زي الـ routes: /api/v1/centers/pending-students
-            // ✅ API_BASE = "/api/v1/centers" + endpoint = "/pending-students"
+            //  الـ endpoint بالظبط زي الـ routes: /api/v1/centers/pending-students
+            //  API_BASE = "/api/v1/centers" + endpoint = "/pending-students"
             const response = await apiCall("/pending-students");
 
             if (response.success) {
@@ -152,7 +152,7 @@ export function usePendingStudent(id: number) {
             setLoading(true);
             setError(null);
 
-            // ✅ /api/v1/centers/pending-students/{id}
+            //  /api/v1/centers/pending-students/{id}
             const response = await apiCall(`/pending-students/${id}`);
             setStudent(response.data || null);
         } catch (err) {
@@ -178,7 +178,7 @@ export function useConfirmStudent() {
     const confirmStudent = useCallback(async (id: number) => {
         setLoading(true);
         try {
-            // ✅ /api/v1/centers/pending-students/{id}/confirm
+            //  /api/v1/centers/pending-students/{id}/confirm
             const response = await apiCall(`/pending-students/${id}/confirm`, {
                 method: "POST",
             });
@@ -200,7 +200,7 @@ export function useRejectStudent() {
     const rejectStudent = useCallback(async (id: number) => {
         setLoading(true);
         try {
-            // ✅ /api/v1/centers/pending-students/{id}
+            //  /api/v1/centers/pending-students/{id}
             const response = await apiCall(`/pending-students/${id}`, {
                 method: "DELETE",
             });
@@ -227,7 +227,7 @@ export function useLinkGuardian(studentId?: number) {
 
             setLoading(true);
             try {
-                // ✅ /api/v1/centers/students/{id}/link-guardian
+                //  /api/v1/centers/students/{id}/link-guardian
                 const response = await apiCall(
                     `/students/${studentId}/link-guardian`,
                     {

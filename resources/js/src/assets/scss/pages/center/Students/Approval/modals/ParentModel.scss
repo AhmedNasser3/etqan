@@ -100,6 +100,12 @@
         .inputs__verifyOTPBirth {
             width: 100%;
             padding: 24px;
+            textarea {
+                padding: 12px;
+                border-radius: 10px;
+                border: 1px solid rgba($dark-green, 0.1);
+                direction: rtl;
+            }
         }
     }
 }

@@ -1,122 +1,308 @@
-// Medals.tsx - مُصحح مع الأوسمة الجديدة فقط حسب عدد الحصص
+// Medals.tsx - ديزاين بأسلوب BadgesFullPage
 import { FaMedal } from "react-icons/fa";
 import { ReactNode, useState } from "react";
 import { useStudentProgress } from "../userProgress/hooks/useStudentProgress";
 
+// ✅ Helper Components من BadgesFullPage
+const PBar = ({
+    pct,
+    h = 6,
+    color = "var(--g500)",
+}: {
+    pct: number;
+    h?: number;
+    color?: string;
+}) => (
+    <div
+        style={{
+            height: h,
+            background: "var(--n100)",
+            borderRadius: 100,
+            overflow: "hidden",
+        }}
+    >
+        <div
+            style={{
+                height: "100%",
+                width: `${Math.min(pct, 100)}%`,
+                background: color,
+                borderRadius: 100,
+                transition: "width .6s ease",
+            }}
+        />
+    </div>
+);
+
+const WG = ({ children }: { children: React.ReactNode }) => (
+    <div className="widget">{children}</div>
+);
+
+const WH = ({ t, right }: { t: string; right?: React.ReactNode }) => (
+    <div className="wh">
+        <span className="wh-t">{t}</span>
+        {right}
+    </div>
+);
+
+const Empty = ({ icon, title }: { icon: string; title: string }) => (
+    <div
+        style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "40px 20px",
+            color: "var(--n400)",
+        }}
+    >
+        <span style={{ fontSize: 48, marginBottom: 12 }}>{icon}</span>
+        <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
+    </div>
+);
+
+const Chip = ({
+    children,
+    bg = "var(--g100)",
+    col = "var(--g700)",
+}: {
+    children: React.ReactNode;
+    bg?: string;
+    col?: string;
+}) => (
+    <div
+        style={{
+            background: bg,
+            color: col,
+            padding: "4px 8px",
+            borderRadius: 20,
+            fontSize: 11,
+            fontWeight: 700,
+        }}
+    >
+        {children}
+    </div>
+);
+
 interface MedalProps {
+    id: string;
     icon: ReactNode;
-    title: string;
-    tooltip: string;
+    name: string;
+    desc: string;
+    color: string;
+    earned: boolean;
+    earnedDate?: string;
 }
 
 const Medals: React.FC = () => {
-    // ✅ استخدام useStudentProgress hook
     const { data, loading } = useStudentProgress();
     const totalLessons = data?.lessons?.length || 0;
 
-    // ✅ الأوسمة الجديدة فقط حسب عدد الحصص (بدون الأوسمة القديمة)
+    // ✅ الأوسمة حسب عدد الحصص
     const getMedals = (): MedalProps[] => {
-        const medals: MedalProps[] = [];
-
-        if (totalLessons >= 1) {
-            medals.push({
-                icon: <FaMedal className="text-gray-400 text-lg" />,
-                title: "إكمال 1 حصة",
-                tooltip: `مبروك! أكملت ${totalLessons} حصة${totalLessons > 1 ? "s" : ""}`,
-            });
-        }
-        if (totalLessons >= 10) {
-            medals.push({
-                icon: <FaMedal className="text-blue-500 text-lg" />,
-                title: "إكمال 10 حصص",
-                tooltip: `مبروك! أكملت ${totalLessons} حصة${totalLessons > 1 ? "s" : ""}`,
-            });
-        }
-        if (totalLessons >= 50) {
-            medals.push({
-                icon: <FaMedal className="text-green-500 text-xl" />,
-                title: "إكمال 50 حصة",
-                tooltip: `مبروك! أكملت ${totalLessons} حصة${totalLessons > 1 ? "s" : ""}`,
-            });
-        }
-        if (totalLessons >= 100) {
-            medals.push({
-                icon: <FaMedal className="text-purple-500 text-xl" />,
-                title: "إكمال 100 حصة",
-                tooltip: `مبروك! أكملت ${totalLessons} حصة${totalLessons > 1 ? "s" : ""}`,
-            });
-        }
-        if (totalLessons >= 300) {
-            medals.push({
-                icon: <FaMedal className="text-yellow-400 text-2xl" />,
-                title: "إكمال 300 حصة - البطل",
-                tooltip: `مبروك! أكملت ${totalLessons} حصص - أنت البطل الأعلى!`,
-            });
-        }
-
+        const medals: MedalProps[] = [
+            {
+                id: "1",
+                icon: "🥉",
+                name: "أول خطوة",
+                desc: "إكمال الحصة الأولى",
+                color: "#10b981",
+                earned: totalLessons >= 1,
+                earnedDate: totalLessons >= 1 ? "اليوم" : undefined,
+            },
+            {
+                id: "10",
+                icon: "🥈",
+                name: "الثبات",
+                desc: "إكمال 10 حصص",
+                color: "#3b82f6",
+                earned: totalLessons >= 10,
+                earnedDate: totalLessons >= 10 ? "أسبوعين" : undefined,
+            },
+            {
+                id: "50",
+                icon: "🥇",
+                name: "المثابرة",
+                desc: "إكمال 50 حصة",
+                color: "#f59e0b",
+                earned: totalLessons >= 50,
+                earnedDate: totalLessons >= 50 ? "شهر" : undefined,
+            },
+            {
+                id: "100",
+                icon: "🏆",
+                name: "النجم",
+                desc: "إكمال 100 حصة",
+                color: "#8b5cf6",
+                earned: totalLessons >= 100,
+                earnedDate: totalLessons >= 100 ? "3 شهور" : undefined,
+            },
+            {
+                id: "300",
+                icon: "👑",
+                name: "البطل الأعلى",
+                desc: "إكمال 300 حصة",
+                color: "#ef4444",
+                earned: totalLessons >= 300,
+                earnedDate: totalLessons >= 300 ? "سنة" : undefined,
+            },
+        ];
         return medals;
     };
 
     const medals = getMedals();
+    const earnedCount = medals.filter((m) => m.earned).length;
 
     if (loading) {
         return (
-            <div className="userProfile__medal">
-                <div className="userProfile__medalContainer">
-                    <div className="userProfile__medalContent loading">
-                        <div className="userProfile__medalTitle">
-                            <div className="loading-skeleton"></div>
+            <div className="page-body">
+                <WG>
+                    <WH t="الأوسمة" />
+                    <div className="wb">
+                        <div className="ld text-center py-4">
+                            جاري تحميل الأوسمة...
                         </div>
                     </div>
-                </div>
+                </WG>
             </div>
         );
     }
 
     return (
-        <div className="userProfile__medal">
-            <div className="userProfile__medalContainer">
-                {medals.length > 0 ? (
-                    medals.map((medal, index) => (
-                        <MedalItem
-                            key={index}
-                            icon={medal.icon}
-                            title={medal.title}
-                            tooltip={medal.tooltip}
-                        />
-                    ))
-                ) : (
-                    <div className="userProfile__medalContent empty">
-                        <div className="userProfile__medalTitle">
-                            <FaMedal className="text-gray-300 text-lg" />
-                        </div>
-                        <div className="tooltip">
-                            أكمل أول حصة لتحصل على وسام!
+        <div className="page-body">
+            {/* ✅ رسالة التشجيع للحصة الأولى */}
+            {earnedCount === 0 && (
+                <div className="mb-4">
+                    <div
+                        style={{
+                            background:
+                                "linear-gradient(135deg,#fefce8,#fef9c3)",
+                            border: "1px solid #fcd34d",
+                            borderRadius: 14,
+                            padding: "14px 18px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 14,
+                        }}
+                    >
+                        <span style={{ fontSize: 28 }}>🏅</span>
+                        <div>
+                            <div
+                                style={{
+                                    fontWeight: 800,
+                                    fontSize: 13,
+                                    color: "#92400e",
+                                }}
+                            >
+                                أكمل أول حصة لتحصل على وسام!
+                            </div>
+                            <div
+                                style={{
+                                    fontSize: 11,
+                                    color: "#b45309",
+                                    marginTop: 2,
+                                }}
+                            >
+                                تقدّمك يُسعدنا — استمر!
+                            </div>
                         </div>
                     </div>
-                )}
-            </div>
-        </div>
-    );
-};
+                </div>
+            )}
 
-const MedalItem: React.FC<{
-    icon: ReactNode;
-    title: string;
-    tooltip: string;
-}> = ({ icon, title, tooltip }) => {
-    const [showTooltip, setShowTooltip] = useState(false);
+            <WG>
+                <WH
+                    t="أوسمتي"
+                    right={
+                        <Chip bg="var(--g100)" col="var(--g700)">
+                            {earnedCount}/{medals.length}
+                        </Chip>
+                    }
+                />
+                <div className="wb">
+                    <PBar
+                        pct={(earnedCount / medals.length) * 100}
+                        h={8}
+                        color="linear-gradient(90deg,var(--g300),var(--g500))"
+                    />
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: "var(--n400)",
+                            marginTop: 6,
+                            marginBottom: 16,
+                        }}
+                    >
+                        {earnedCount} من {medals.length} وسام مكتسب
+                    </div>
 
-    return (
-        <div
-            className="userProfile__medalContent"
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-        >
-            <div className="userProfile__medalTitle">
-                <i>{icon}</i>
-            </div>
-            {showTooltip && <div className="tooltip">{tooltip}</div>}
+                    <div className="badges-full-grid">
+                        {medals.map((medal) => (
+                            <div
+                                key={medal.id}
+                                className={`bfc${medal.earned ? " earned" : ""}`}
+                            >
+                                <div
+                                    className="bfc-ico"
+                                    style={{
+                                        background: medal.earned
+                                            ? medal.color
+                                            : "var(--n100)",
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            fontSize: 36,
+                                            filter: medal.earned
+                                                ? "none"
+                                                : "grayscale(1) opacity(.3)",
+                                        }}
+                                    >
+                                        {medal.icon}
+                                    </span>
+                                    {medal.earned && (
+                                        <div className="bfc-ck">✅</div>
+                                    )}
+                                    {!medal.earned && (
+                                        <div className="bfc-lock">🔒</div>
+                                    )}
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 12,
+                                        fontWeight: 800,
+                                        color: medal.earned
+                                            ? "var(--n900)"
+                                            : "var(--n400)",
+                                    }}
+                                >
+                                    {medal.name}
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 11,
+                                        color: "var(--n400)",
+                                        lineHeight: 1.4,
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    {medal.desc}
+                                </div>
+                                {medal.earned && medal.earnedDate && (
+                                    <div
+                                        style={{
+                                            fontSize: 10,
+                                            color: "var(--g600)",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ✓ {medal.earnedDate}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </WG>
         </div>
     );
 };

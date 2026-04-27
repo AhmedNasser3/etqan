@@ -1,4 +1,4 @@
-// models/TeachersAffairsUpdatePlatform.tsx
+// models/TeachersAffairsUpdatePlatform.tsx - نفس تصميم StudentAffairsUpdatePlatform & UpdateSalaryRuleModal
 import { useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
@@ -25,288 +25,301 @@ const TeachersAffairsUpdatePlatform: React.FC<
         loadTeacherData,
     } = useTeachersAffairsUpdatePlatform(teacherId);
 
-    // ✅ تحميل البيانات تلقائياً عند تغيير teacherId
+    // تحميل البيانات تلقائياً عند تغيير teacherId
     useEffect(() => {
         if (teacherId > 0) {
             loadTeacherData();
         }
     }, [teacherId, loadTeacherData]);
 
-    // ✅ حفظ البيانات
+    // حفظ البيانات
     const handleSave = async () => {
         const success = await submitForm();
         if (success) {
+            toast.success("تم حفظ التغييرات بنجاح!");
             onSuccess();
         }
     };
 
-    // ✅ إغلاق المودال مع تأكيد
+    // إغلاق المودال
     const handleClose = () => {
         if (isSubmitting) return;
         onClose();
     };
 
-    // Loading State
-    if (loadingData) {
-        return (
-            <div className="ParentModel">
-                <div className="ParentModel__overlay">
-                    <div className="ParentModel__content">
-                        <div className="ParentModel__inner">
-                            <div className="flex justify-center items-center h-64">
-                                <div className="navbar">
-                                    <div className="navbar__inner">
-                                        <div className="navbar__loading">
-                                            <div className="loading-spinner">
-                                                <div className="spinner-circle"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // Error State
-    if (fetchError || (!teacherData && !loadingData)) {
-        return (
-            <div className="ParentModel">
-                <div className="ParentModel__overlay">
-                    <div className="ParentModel__content">
-                        <div className="ParentModel__inner">
-                            <div className="text-center p-8 space-y-4">
-                                <div className="text-4xl text-red-500">❌</div>
-                                <h3 className="text-xl font-semibold text-gray-800">
-                                    خطأ في تحميل بيانات المعلم
-                                </h3>
-                                <p className="text-gray-600">
-                                    {fetchError?.toString() ||
-                                        "المعلم غير موجود"}
-                                </p>
-                                <button
-                                    onClick={handleClose}
-                                    className="px-6 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-all"
-                                >
-                                    إغلاق
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     // Main Form
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={handleClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        {/* Header */}
-                        <div className="ParentModel__header">
-                            <button
-                                className="ParentModel__close"
-                                onClick={handleClose}
-                                disabled={isSubmitting}
-                                title="إغلاق"
+        <>
+            <div className="ov on">
+                <div className="modal">
+                    <div className="mh">
+                        <span className="mh-t">تعديل بيانات المعلم</span>
+                        <button
+                            className="mx"
+                            onClick={handleClose}
+                            disabled={isSubmitting}
+                        >
+                            <span
+                                style={{
+                                    width: 12,
+                                    height: 12,
+                                    display: "inline-flex",
+                                }}
                             >
-                                <FiX size={24} />
-                            </button>
-                        </div>
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                >
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
 
-                        {/* Title & Teacher Info */}
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>تعديل بيانات المعلم - المنصة الكاملة</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>تعديل بيانات المعلم</h1>
-                                <div className="space-y-1 mt-2">
-                                    <p className="text-sm text-gray-700">
-                                        البيانات الحالية محملة في الحقول أدناه
-                                    </p>
-                                    <span className="block text-sm text-green-600 font-medium">
-                                        {teacherData?.name || formData.role}-{" "}
-                                        {teacherData?.teacher_id || teacherId}
-                                    </span>
-                                    {teacherData?.center_name && (
-                                        <span className="block text-sm text-indigo-600 font-medium">
-                                            📍 {teacherData.center_name}
-                                        </span>
-                                    )}
-                                    {teacherData?.center_id &&
-                                        !teacherData.center_name && (
-                                            <span className="block text-sm text-indigo-500">
-                                                🆔 مجمع: {teacherData.center_id}
-                                            </span>
-                                        )}
-                                    {teacherData?.role && (
-                                        <span className="block text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
-                                            👨‍🏫 {teacherData.role}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Form Container */}
-                        <div className="ParentModel__container">
-                            {/* الوظيفة - مطلوب */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label className="required">
-                                        الوظيفة *
-                                    </label>
-                                    <select
-                                        name="role"
-                                        value={formData.role}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.role
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={isSubmitting || loadingData}
-                                    >
-                                        <option value="">اختر الوظيفة</option>
-                                        <option value="مدير">مدير</option>
-                                        <option value="معلم">معلم</option>
-                                        <option value="مشرف">مشرف</option>
-                                        <option value="منسق">منسق</option>
-                                        <option value="إداري">إداري</option>
-                                    </select>
-                                    {errors.role && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.role}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* معلومات إضافية - قراءة فقط */}
-                            {teacherData && (
-                                <>
-                                    <div className="inputs__verifyOTPBirth">
-                                        <div className="inputs__email">
-                                            <label>رقم الهاتف</label>
-                                            <input
-                                                type="text"
-                                                value={teacherData.phone || ""}
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="inputs__verifyOTPBirth">
-                                        <div className="inputs__email">
-                                            <label>البريد الإلكتروني</label>
-                                            <input
-                                                type="email"
-                                                value={teacherData.email || ""}
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="inputs__verifyOTPBirth">
-                                        <div className="inputs__email">
-                                            <label>حالة الحضور</label>
-                                            <input
-                                                type="text"
-                                                value={
-                                                    teacherData.attendanceRate ||
-                                                    ""
-                                                }
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-green-50 text-green-800 font-medium"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="inputs__verifyOTPBirth">
-                                        <div className="inputs__email">
-                                            <label>حالة الراتب</label>
-                                            <input
-                                                type="text"
-                                                value={
-                                                    teacherData.salaryStatus ||
-                                                    ""
-                                                }
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-blue-50 text-blue-800 font-medium"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-                                </>
+                    <div className="mb">
+                        {/* معلومات المعلم الحالية */}
+                        <div
+                            style={{
+                                marginBottom: 20,
+                                padding: "16px",
+                                backgroundColor: "#f8fafc",
+                                borderRadius: "8px",
+                                border: "1px solid #e2e8f0",
+                            }}
+                        >
+                            <p
+                                style={{
+                                    fontSize: "12px",
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                البيانات الحالية:{" "}
+                                {teacherData?.name || formData.role} -{" "}
+                                {teacherData?.teacher_id || teacherId}
+                            </p>
+                            {teacherData?.center_name && (
+                                <p
+                                    style={{
+                                        fontSize: "11px",
+                                        color: "#3730a3",
+                                        fontWeight: 500,
+                                    }}
+                                >
+                                    📍 {teacherData.center_name}
+                                </p>
                             )}
+                            {teacherData?.role && (
+                                <p
+                                    style={{
+                                        fontSize: "11px",
+                                        color: "#7c3aed",
+                                        fontWeight: 500,
+                                    }}
+                                >
+                                    👨‍🏫 الوظيفة: {teacherData.role}
+                                </p>
+                            )}
+                        </div>
 
-                            {/* الملاحظات */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>ملاحظات</label>
-                                    <textarea
-                                        name="notes"
-                                        value={formData.notes || ""}
-                                        onChange={handleInputChange}
-                                        rows={4}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="أي ملاحظات إضافية حول المعلم..."
-                                        disabled={isSubmitting || loadingData}
+                        {/* الوظيفة */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الوظيفة *
+                            </label>
+                            <select
+                                required
+                                name="role"
+                                value={formData.role}
+                                onChange={handleInputChange}
+                                className={`fi2 ${
+                                    errors.role
+                                        ? "border-red-300 bg-red-50"
+                                        : "border-gray-200 hover:border-gray-300"
+                                }`}
+                                disabled={isSubmitting}
+                            >
+                                <option value="">اختر الوظيفة</option>
+                                <option value="مدير">مدير</option>
+                                <option value="معلم">معلم</option>
+                                <option value="مشرف">مشرف</option>
+                                <option value="منسق">منسق</option>
+                                <option value="إداري">إداري</option>
+                            </select>
+                            {errors.role && (
+                                <p
+                                    style={{
+                                        fontSize: "10.5px",
+                                        color: "var(--red-600)",
+                                        margin: "2px 0 0 0",
+                                    }}
+                                >
+                                    {errors.role}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* معلومات إضافية - قراءة فقط */}
+                        {teacherData && (
+                            <>
+                                {/* رقم الهاتف */}
+                                <div style={{ marginBottom: 13 }}>
+                                    <label
+                                        style={{
+                                            display: "block",
+                                            fontSize: "10.5px",
+                                            fontWeight: 700,
+                                            color: "var(--n700)",
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        رقم الهاتف
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={teacherData.phone || ""}
+                                        className="fi2 bg-gray-50 cursor-not-allowed border-gray-200"
+                                        disabled
                                     />
                                 </div>
-                            </div>
 
-                            {/* Action Buttons */}
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
-                            >
-                                <button
-                                    type="button"
-                                    onClick={handleSave}
-                                    disabled={isSubmitting || loadingData}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-xl transition-all flex items-center justify-center space-x-2 space-x-reverse"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            <span>جاري الحفظ...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span>حفظ التغييرات</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Cancel Button */}
-                            {!isSubmitting && (
-                                <div className="inputs__submitBtn">
-                                    <button
-                                        type="button"
-                                        onClick={handleClose}
-                                        className="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-xl transition-all"
+                                {/* البريد الإلكتروني */}
+                                <div style={{ marginBottom: 13 }}>
+                                    <label
+                                        style={{
+                                            display: "block",
+                                            fontSize: "10.5px",
+                                            fontWeight: 700,
+                                            color: "var(--n700)",
+                                            marginBottom: 4,
+                                        }}
                                     >
-                                        إلغاء
-                                    </button>
+                                        البريد الإلكتروني
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={teacherData.email || ""}
+                                        className="fi2 bg-gray-50 cursor-not-allowed border-gray-200"
+                                        disabled
+                                    />
                                 </div>
-                            )}
+
+                                {/* حالة الحضور */}
+                                <div style={{ marginBottom: 13 }}>
+                                    <label
+                                        style={{
+                                            display: "block",
+                                            fontSize: "10.5px",
+                                            fontWeight: 700,
+                                            color: "var(--n700)",
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        حالة الحضور
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={teacherData.attendanceRate || ""}
+                                        className="fi2 bg-green-50 text-green-800 font-medium border-green-200"
+                                        disabled
+                                    />
+                                </div>
+
+                                {/* حالة الراتب */}
+                                <div style={{ marginBottom: 13 }}>
+                                    <label
+                                        style={{
+                                            display: "block",
+                                            fontSize: "10.5px",
+                                            fontWeight: 700,
+                                            color: "var(--n700)",
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        حالة الراتب
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={teacherData.salaryStatus || ""}
+                                        className="fi2 bg-blue-50 text-blue-800 font-medium border-blue-200"
+                                        disabled
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* الملاحظات */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                ملاحظات
+                            </label>
+                            <textarea
+                                name="notes"
+                                value={formData.notes || ""}
+                                onChange={handleInputChange}
+                                rows={3}
+                                className="fi2 resize-vertical border-gray-200 hover:border-gray-300"
+                                placeholder="أي ملاحظات إضافية حول المعلم..."
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        className="mf"
+                        style={{
+                            padding: "20px 20px 16px 20px",
+                            borderTop: "1px solid #e5e7eb",
+                            marginTop: "auto",
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: 12,
+                                justifyContent: "flex-end",
+                            }}
+                        >
+                            <button
+                                className="btn bs"
+                                onClick={handleClose}
+                                disabled={isSubmitting}
+                            >
+                                إلغاء
+                            </button>
+                            <button
+                                className="btn bp"
+                                onClick={handleSave}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting
+                                    ? "جاري الحفظ..."
+                                    : "حفظ التغييرات"}
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

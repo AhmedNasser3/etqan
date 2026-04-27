@@ -192,7 +192,9 @@ const CenterNavbar: React.FC = () => {
                     </div>
 
                     <div className="navbar__user">
-                        <img src={Logo} alt="لوجو" />
+                        <a href="/">
+                            <img src={Logo} alt="لوجو" />
+                        </a>
                     </div>
                 </div>
             </div>

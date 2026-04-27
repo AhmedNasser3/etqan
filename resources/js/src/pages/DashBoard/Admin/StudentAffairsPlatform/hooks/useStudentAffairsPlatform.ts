@@ -1,4 +1,4 @@
-// hooks/useStudentAffairsPlatform.ts - ✅ مصحح كاملاً بدون ريلود
+// hooks/useStudentAffairsPlatform.ts -  مصحح كاملاً بدون ريلود
 import { useState, useEffect, useCallback, useRef } from "react";
 
 interface Student {
@@ -43,7 +43,7 @@ export const useStudentAffairsPlatform = () => {
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const fetchRef = useRef(0); // لمنع الـ multiple calls
 
-    // ✅ fetchStudents - محسن بدون infinite loop
+    //  fetchStudents - محسن بدون infinite loop
     const fetchStudents = useCallback(async () => {
         const currentFetchId = ++fetchRef.current;
 
@@ -61,7 +61,7 @@ export const useStudentAffairsPlatform = () => {
                 },
             });
 
-            // ✅ منع الـ stale data
+            //  منع الـ stale data
             if (currentFetchId !== fetchRef.current) return;
 
             if (!res.ok) {
@@ -83,9 +83,9 @@ export const useStudentAffairsPlatform = () => {
                 setLoading(false);
             }
         }
-    }, []); // ✅ empty deps - مش محتاجين الـ state هنا
+    }, []); //  empty deps - مش محتاجين الـ state هنا
 
-    // ✅ تحديث البيانات عند تغيير الفلاتر فقط
+    //  تحديث البيانات عند تغيير الفلاتر فقط
     useEffect(() => {
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
@@ -102,12 +102,12 @@ export const useStudentAffairsPlatform = () => {
         };
     }, [search, filterGrade, filterStatus, fetchStudents]);
 
-    // ✅ تحميل البيانات عند الـ mount
+    //  تحميل البيانات عند الـ mount
     useEffect(() => {
         fetchStudents();
-    }, []); // ✅ يشتغل مرة واحدة بس
+    }, []); //  يشتغل مرة واحدة بس
 
-    // ✅ WhatsApp تذكير - محسن
+    //  WhatsApp تذكير - محسن
     const sendWhatsappReminder = useCallback(async (id: number) => {
         try {
             const res = await fetch(
@@ -133,7 +133,7 @@ export const useStudentAffairsPlatform = () => {
         }
     }, []);
 
-    // ✅ طباعة البطاقة
+    //  طباعة البطاقة
     const printCard = useCallback((id: number) => {
         window.open(
             `/api/v1/student-affairs-platform/${id}/print-card`,
@@ -142,7 +142,7 @@ export const useStudentAffairsPlatform = () => {
         );
     }, []);
 
-    // ✅ تنظيف عند unmount
+    //  تنظيف عند unmount
     useEffect(() => {
         return () => {
             if (timeoutRef.current) {
@@ -164,6 +164,6 @@ export const useStudentAffairsPlatform = () => {
         grades,
         sendWhatsappReminder,
         printCard,
-        refetch: fetchStudents, // ✅ للـ manual refresh
+        refetch: fetchStudents, //  للـ manual refresh
     };
 };

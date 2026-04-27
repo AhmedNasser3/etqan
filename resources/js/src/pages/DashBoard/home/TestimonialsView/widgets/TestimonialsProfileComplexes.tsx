@@ -53,7 +53,7 @@ const complexesData = [
         ],
     },
     {
-        title: "مجمع الإمام البخاري",
+        title: "مجمع ",
         description:
             "مجمع قرآني يركز على حفظ القرآن الكريم وتدريسه للأطفال والكبار، مع برامج تدريبية متخصصة.",
         img: "https://mir-s3-cdn-cf.behance.net/projects/404/df8b43228755373.Y3JvcCw4MDgsNjMyLDAsMA.png",

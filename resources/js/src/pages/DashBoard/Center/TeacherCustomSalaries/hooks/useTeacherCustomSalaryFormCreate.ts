@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
+import { CurrencyCode } from "../../SalaryRulesManagement";
 
 export interface FormData {
     teacher_id: number | "";
     custom_base_salary: string;
+    currency: CurrencyCode;
     notes: string;
 }
 
@@ -17,6 +19,7 @@ export const useTeacherCustomSalaryFormCreate = () => {
     const [formData, setFormData] = useState<FormData>({
         teacher_id: "",
         custom_base_salary: "",
+        currency: "SAR", // ✅
         notes: "",
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -39,7 +42,6 @@ export const useTeacherCustomSalaryFormCreate = () => {
         };
     }, []);
 
-    // جلب المعلمين من مركزك
     const fetchTeachers = useCallback(async () => {
         setLoadingTeachers(true);
         try {
@@ -69,14 +71,12 @@ export const useTeacherCustomSalaryFormCreate = () => {
         }
     }, [getHeaders]);
 
-    // فحص وجود راتب مخصص نشط للمعلم
     const checkExistingSalary = useCallback(
         async (teacherId: number) => {
             if (!teacherId) {
                 setExistingSalary(false);
                 return;
             }
-
             setLoadingRules(true);
             try {
                 const response = await fetch(
@@ -86,7 +86,6 @@ export const useTeacherCustomSalaryFormCreate = () => {
                         headers: getHeaders(),
                     },
                 );
-
                 const data = await response.json();
                 setExistingSalary(!!data.has_custom_salary);
             } catch (error) {
@@ -99,12 +98,15 @@ export const useTeacherCustomSalaryFormCreate = () => {
         [getHeaders],
     );
 
+    // ✅ التصحيح: نوع الحدث الآن صحيح
     const handleInputChange = (
         e: React.ChangeEvent<
             HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement
         >,
     ) => {
-        const { name, value } = e.target;
+        const { name, value } = e.target as HTMLSelectElement &
+            HTMLInputElement &
+            HTMLTextAreaElement;
 
         setFormData((prev) => ({
             ...prev,
@@ -116,16 +118,11 @@ export const useTeacherCustomSalaryFormCreate = () => {
                     : value,
         }));
 
-        // فحص الراتب المخصص عند تغيير المعلم
         if (name === "teacher_id" && value) {
             checkExistingSalary(Number(value));
         }
 
-        // مسح الأخطاء
-        setErrors((prev) => ({
-            ...prev,
-            [name]: "",
-        }));
+        setErrors((prev) => ({ ...prev, [name]: "" }));
     };
 
     const validateForm = (): Record<string, string> => {
@@ -136,9 +133,8 @@ export const useTeacherCustomSalaryFormCreate = () => {
         }
 
         const salary = Number(formData.custom_base_salary);
-        if (!formData.custom_base_salary || salary < 1000) {
-            newErrors.custom_base_salary =
-                "الراتب المخصص يجب أن يكون 1000 ريال أو أكثر";
+        if (!formData.custom_base_salary || salary < 1) {
+            newErrors.custom_base_salary = "يرجى إدخال راتب صحيح";
         }
 
         return newErrors;
@@ -166,6 +162,7 @@ export const useTeacherCustomSalaryFormCreate = () => {
                 body: JSON.stringify({
                     teacher_id: formData.teacher_id,
                     custom_base_salary: Number(formData.custom_base_salary),
+                    currency: formData.currency, // ✅
                     notes: formData.notes || null,
                     is_active: true,
                 }),
@@ -174,10 +171,11 @@ export const useTeacherCustomSalaryFormCreate = () => {
             const data = await response.json();
 
             if (response.ok) {
-                toast.success("تم إنشاء الراتب المخصص بنجاح ✅");
+                toast.success("تم إنشاء الراتب المخصص بنجاح");
                 setFormData({
                     teacher_id: "",
                     custom_base_salary: "",
+                    currency: "SAR",
                     notes: "",
                 });
                 return true;

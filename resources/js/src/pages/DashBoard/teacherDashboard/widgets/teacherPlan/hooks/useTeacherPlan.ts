@@ -1,4 +1,4 @@
-// hooks/useTeacherPlan.ts - النسخة المُصححة النهائية ✅
+// hooks/useTeacherPlan.ts - النسخة النهائية مع jitsi_room_name
 import { useState, useEffect, useCallback } from "react";
 
 export interface UpcomingSession {
@@ -9,6 +9,7 @@ export interface UpcomingSession {
     end_time: string;
     booked_students: number;
     max_students: number | null;
+    jitsi_room_name: string | null; //  رابط الميتينج
 }
 
 export const useTeacherPlan = () => {
@@ -41,7 +42,7 @@ export const useTeacherPlan = () => {
             setError(null);
             setUpcomingSessions([]);
 
-            // ✅ مباشرة جلب المواعيد - Backend بيستخدم auth()->user() تلقائياً
+            //  جلب كل الحلقات المتاحة للمعلم مع jitsi_room_name
             log("📅 طلب مواعيد الحلقات");
             const schedulesResponse = await fetch(
                 "/api/v1/teacher-plan-schedules",
@@ -66,7 +67,7 @@ export const useTeacherPlan = () => {
             }
 
             const schedules = await schedulesResponse.json();
-            log("✅ تم استلام المواعيد:", schedules);
+            log(" تم استلام المواعيد:", schedules);
 
             if (Array.isArray(schedules)) {
                 log("💾 حفظ", schedules.length, "موعد في الـ state");

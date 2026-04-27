@@ -18,7 +18,6 @@ class TeacherCustomSalaryController extends Controller
      */
     public function index(Request $request)
     {
-        // 🔥 جلب center_id بتاعك من الـ authenticated user
         $userCenterId = Auth::user()->center_id;
 
         Log::info('🔍 Custom Salaries - Center Filter', [
@@ -27,12 +26,12 @@ class TeacherCustomSalaryController extends Controller
         ]);
 
         $query = TeacherCustomSalary::with(['teacher.user'])
-            ->whereHas('teacher.user', function($q) use ($userCenterId) {
-                $q->where('center_id', $userCenterId); //  مركزك بس!
+            ->whereHas('teacher.user', function ($q) use ($userCenterId) {
+                $q->where('center_id', $userCenterId);
             })
             ->when($request->teacher_id, fn($q, $id) => $q->where('teacher_id', $id))
-            ->when($request->search, function($q, $search) use ($userCenterId) {
-                $q->whereHas('teacher.user', function($subQ) use ($search, $userCenterId) {
+            ->when($request->search, function ($q, $search) use ($userCenterId) {
+                $q->whereHas('teacher.user', function ($subQ) use ($search, $userCenterId) {
                     $subQ->where('name', 'like', "%{$search}%")
                          ->where('center_id', $userCenterId);
                 })->orWhereHas('teacher', fn($subQ) => $subQ->where('name', 'like', "%{$search}%"));
@@ -46,26 +45,28 @@ class TeacherCustomSalaryController extends Controller
             'success' => true,
             'data' => $salaries,
             'stats' => [
-                'total_custom' => $salaries->count(),
-                'active_custom' => $salaries->where('is_active', 1)->count(),
-                'center_id' => $userCenterId,
-                'your_center_teachers_count' => Teacher::whereHas('user', fn($q) => $q->where('center_id', $userCenterId))->count()
+                'total_custom'              => $salaries->count(),
+                'active_custom'             => $salaries->where('is_active', 1)->count(),
+                'center_id'                 => $userCenterId,
+                'your_center_teachers_count' => Teacher::whereHas('user', fn($q) => $q->where('center_id', $userCenterId))->count(),
             ]
         ]);
     }
 
     /**
-     * 🔥 إنشاء راتب مخصص (مركزك بس)
+     * 🔥 إنشاء راتب مخصص (مركزك بس) — الخصم الافتراضي = 0
      */
     public function store(Request $request)
     {
         $userCenterId = Auth::user()->center_id;
 
         $validated = $request->validate([
-            'teacher_id' => "required|exists:teachers,id",
-            'custom_base_salary' => 'required|numeric|min:1000',
-            'notes' => 'nullable|string|max:500',
-            'is_active' => 'boolean',
+            'teacher_id'         => 'required|exists:teachers,id',
+            'user_id'            => 'nullable|exists:users,id',
+            'custom_base_salary' => 'required|numeric|min:1',
+            'currency'           => 'nullable|in:SAR,EGP,USD',
+            'notes'              => 'nullable|string|max:500',
+            'is_active'          => 'boolean',
         ]);
 
         // 🔥 فلترة المعلم: مركزك بس
@@ -80,7 +81,7 @@ class TeacherCustomSalaryController extends Controller
             ], 403);
         }
 
-        //  منع التكرار
+        // منع التكرار
         $existingActive = TeacherCustomSalary::where('teacher_id', $validated['teacher_id'])
             ->where('is_active', 1)
             ->first();
@@ -93,24 +94,29 @@ class TeacherCustomSalaryController extends Controller
         }
 
         $salary = TeacherCustomSalary::create([
-            'teacher_id' => $validated['teacher_id'],
+            'teacher_id'         => $validated['teacher_id'],
+            'user_id'            => Auth::id(),
             'custom_base_salary' => $validated['custom_base_salary'],
-            'notes' => $validated['notes'] ?? null,
-            'is_active' => $validated['is_active'] ?? 1,
-            'created_by' => Auth::id(),
-            'center_id' => $userCenterId, //  حفظ مركزك
+            'currency'           => $validated['currency'] ?? 'SAR',
+            'deductions'         => 0, // ✅ الخصم الافتراضي = 0 دائماً
+            'notes'              => $validated['notes'] ?? null,
+            'is_active'          => $validated['is_active'] ?? 1,
+            'created_by'         => Auth::id(),
+            'center_id'          => $userCenterId,
         ]);
 
-        Log::info(' راتب مخصص جديد', [
-            'salary_id' => $salary->id,
+        Log::info('✅ راتب مخصص جديد', [
+            'salary_id'  => $salary->id,
             'teacher_id' => $validated['teacher_id'],
-            'center_id' => $userCenterId,
-            'amount' => $validated['custom_base_salary']
+            'user_id'    => Auth::id(),
+            'center_id'  => $userCenterId,
+            'amount'     => $validated['custom_base_salary'],
+            'currency'   => $validated['currency'] ?? 'SAR',
         ]);
 
         return response()->json([
             'success' => true,
-            'data' => $salary->load(['teacher.user']),
+            'data'    => $salary->load(['teacher.user']),
             'message' => 'تم إنشاء الراتب المخصص بنجاح'
         ], 201);
     }
@@ -128,7 +134,7 @@ class TeacherCustomSalaryController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $salary
+            'data'    => $salary
         ]);
     }
 
@@ -143,9 +149,11 @@ class TeacherCustomSalaryController extends Controller
             ->findOrFail($id);
 
         $validated = $request->validate([
-            'custom_base_salary' => 'sometimes|numeric|min:1000',
-            'notes' => 'nullable|string|max:500',
-            'is_active' => 'boolean',
+            'custom_base_salary' => 'sometimes|numeric|min:1',
+            'currency'           => 'sometimes|in:SAR,EGP,USD',
+            'deductions'         => 'sometimes|numeric|min:0', // يقدر المدير يخصم يدوياً
+            'notes'              => 'nullable|string|max:500',
+            'is_active'          => 'boolean',
         ]);
 
         if (isset($validated['is_active']) && !$validated['is_active']) {
@@ -163,15 +171,16 @@ class TeacherCustomSalaryController extends Controller
         $salary->update($validated);
         $salary->refresh();
 
-        Log::info(' تحديث راتب مخصص', [
-            'salary_id' => $id,
-            'center_id' => $userCenterId,
-            'new_amount' => $salary->custom_base_salary
+        Log::info('✅ تحديث راتب مخصص', [
+            'salary_id'  => $id,
+            'center_id'  => $userCenterId,
+            'new_amount' => $salary->custom_base_salary,
+            'currency'   => $salary->currency,
         ]);
 
         return response()->json([
             'success' => true,
-            'data' => $salary->load(['teacher.user']),
+            'data'    => $salary->load(['teacher.user']),
             'message' => 'تم تحديث الراتب المخصص بنجاح'
         ]);
     }
@@ -185,13 +194,6 @@ class TeacherCustomSalaryController extends Controller
 
         $salary = TeacherCustomSalary::whereHas('teacher.user', fn($q) => $q->where('center_id', $userCenterId))
             ->findOrFail($id);
-
-        if ($salary->is_active) {
-            return response()->json([
-                'success' => false,
-                'message' => 'لا يمكن حذف راتب مخصص نشط'
-            ], 400);
-        }
 
         $salary->delete();
 
@@ -211,7 +213,6 @@ class TeacherCustomSalaryController extends Controller
         $salary = TeacherCustomSalary::whereHas('teacher.user', fn($q) => $q->where('center_id', $userCenterId))
             ->findOrFail($id);
 
-        // إلغاء تفعيل الكل لنفس المعلم في مركزك
         TeacherCustomSalary::where('teacher_id', $salary->teacher_id)
             ->whereHas('teacher.user', fn($q) => $q->where('center_id', $userCenterId))
             ->where('id', '!=', $id)
@@ -221,7 +222,7 @@ class TeacherCustomSalaryController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $salary->load(['teacher.user']),
+            'data'    => $salary->load(['teacher.user']),
             'message' => $salary->is_active ? 'تم تفعيل الراتب المخصص' : 'تم إلغاء تفعيله'
         ]);
     }
@@ -240,8 +241,8 @@ class TeacherCustomSalaryController extends Controller
             ->first();
 
         return response()->json([
-            'success' => true,
-            'data' => $activeSalary,
+            'success'           => true,
+            'data'              => $activeSalary,
             'has_custom_salary' => !!$activeSalary
         ]);
     }

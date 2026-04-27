@@ -1,14 +1,11 @@
-import { useState, useCallback } from "react";
-import toast from "react-hot-toast";
-import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
-import { PiWhatsappLogoDuotone } from "react-icons/pi";
-import { FiEdit3, FiTrash2 } from "react-icons/fi";
-import { IoMdAdd } from "react-icons/io";
-import CreateCirclePage from "./models/CreateCirclePage";
+// CirclesManagement.tsx
+import React, { useState, useEffect, useRef } from "react";
 import UpdateCirclePage from "./models/UpdateCirclePage";
-import ModalNotification from "./components/ModalNotification";
+import CreateCirclePage from "./models/CreateCirclePage";
 import { useCircles } from "./hooks/useCircles";
+import { ICO } from "../../icons";
+import { useToast } from "../../../../../contexts/ToastContext";
+import * as XLSX from "xlsx";
 
 interface CircleType {
     id: number;
@@ -23,154 +20,360 @@ interface CircleType {
     updated_at: string;
 }
 
-const CirclesManagement: React.FC = () => {
-    const {
-        circles,
-        loading,
-        pagination,
-        currentPage,
-        searchCircles,
-        goToPage,
-        refetch,
-    } = useCircles();
+interface ConfirmModalProps {
+    title: string;
+    desc?: string;
+    cb: () => void;
+}
 
+interface ImportRow {
+    "اسم الحلقة": string;
+    المسجد?: string;
+    المعلم?: string;
+}
+
+interface ImportResult {
+    success: number;
+    failed: number;
+    errors: string[];
+}
+
+const CirclesManagement: React.FC = () => {
+    const { circles: circlesFromHook, loading, refetch } = useCircles();
     const [search, setSearch] = useState("");
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [isDeleteConfirm, setIsDeleteConfirm] = useState(false);
+    const [selectedCircle, setSelectedCircle] = useState<CircleType | null>(
+        null,
+    );
     const [selectedCircleId, setSelectedCircleId] = useState<number | null>(
         null,
     );
+    const [confirm, setConfirm] = useState<ConfirmModalProps | null>(null);
+    const [circles, setCircles] = useState<CircleType[]>([]);
+    const [importing, setImporting] = useState(false);
+    const [importResult, setImportResult] = useState<ImportResult | null>(null);
+    const importInputRef = useRef<HTMLInputElement>(null);
 
-    const handleSearch = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            const value = e.target.value;
-            setSearch(value);
-            searchCircles(value);
-        },
-        [searchCircles],
+    const { notifySuccess, notifyError } = useToast();
+
+    useEffect(() => {
+        setCircles(circlesFromHook);
+    }, [circlesFromHook]);
+
+    const filteredCircles = circles.filter(
+        (circle) =>
+            circle.name.toLowerCase().includes(search.toLowerCase()) ||
+            circle.center.name.toLowerCase().includes(search.toLowerCase()) ||
+            (circle.mosque?.name || "")
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+            (circle.teacher?.name || "")
+                .toLowerCase()
+                .includes(search.toLowerCase()),
     );
 
-    const handleEdit = useCallback((circle: CircleType) => {
-        setSelectedCircleId(circle.id);
-        setShowUpdateModal(true);
-    }, []);
+    // ─── Export ───────────────────────────────────────────────────────────────
+    const handleExport = () => {
+        if (circles.length === 0) {
+            notifyError("لا توجد بيانات للتصدير");
+            return;
+        }
 
-    const handleDelete = async (id: number) => {
+        const rows = circles.map((c) => ({
+            "اسم الحلقة": c.name,
+            المسجد: c.mosque?.name || "",
+            المعلم: c.teacher?.name || "",
+        }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws["!cols"] = [{ wch: 30 }, { wch: 25 }, { wch: 25 }];
+        XLSX.utils.book_append_sheet(wb, ws, "الحلقات");
+
+        const instrData = [
+            ["تعليمات الاستخدام"],
+            [""],
+            ["1. احتفظ بنفس ترتيب الأعمدة"],
+            ["2. اسم الحلقة: مطلوب"],
+            ["3. المسجد: اكتب الاسم كما هو مسجل في النظام (اختياري)"],
+            ["4. المعلم: اكتب الاسم كما هو مسجل في النظام (اختياري)"],
+            [""],
+            ["ملاحظة: المجمع يُحدَّد تلقائياً من حساب المستخدم"],
+            ["يمكنك استخدام هذا الملف مباشرة كقالب للاستيراد"],
+        ];
+        const wsInstr = XLSX.utils.aoa_to_sheet(instrData);
+        wsInstr["!cols"] = [{ wch: 60 }];
+        XLSX.utils.book_append_sheet(wb, wsInstr, "تعليمات الاستخدام");
+
+        XLSX.writeFile(
+            wb,
+            `الحلقات_${new Date().toLocaleDateString("ar-EG").replace(/\//g, "-")}.xlsx`,
+        );
+        notifySuccess(`تم تصدير ${circles.length} حلقة بنجاح`);
+    };
+
+    // ─── Download blank template ──────────────────────────────────────────────
+    const handleDownloadTemplate = () => {
+        const rows: ImportRow[] = [
+            {
+                "اسم الحلقة": "حلقة النور",
+                المسجد: "مسجد النور",
+                المعلم: "احمد ناصر محمد مجيد",
+            },
+            {
+                "اسم الحلقة": "حلقة الفجر",
+                المسجد: "مسجد السلام",
+                المعلم: "احمد ناصر محمد مجيد",
+            },
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws["!cols"] = [{ wch: 30 }, { wch: 25 }, { wch: 25 }];
+        XLSX.utils.book_append_sheet(wb, ws, "الحلقات");
+
+        const instrData = [
+            ["تعليمات الاستخدام"],
+            ["1. اسم الحلقة: مطلوب"],
+            ["2. المسجد: اكتب الاسم كما هو في النظام (اختياري)"],
+            ["3. المعلم: اكتب الاسم كما هو في النظام (اختياري)"],
+            ["ملاحظة: المجمع يُحدَّد تلقائياً من حسابك"],
+        ];
+        const wsInstr = XLSX.utils.aoa_to_sheet(instrData);
+        wsInstr["!cols"] = [{ wch: 60 }];
+        XLSX.utils.book_append_sheet(wb, wsInstr, "تعليمات الاستخدام");
+
+        XLSX.writeFile(wb, "قالب_استيراد_الحلقات.xlsx");
+        notifySuccess("تم تحميل القالب بنجاح");
+    };
+
+    // ─── Import ───────────────────────────────────────────────────────────────
+    const handleImportClick = () => importInputRef.current?.click();
+
+    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = "";
+
+        setImporting(true);
+        setImportResult(null);
+
         try {
-            const csrfToken =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute("content") || "";
-
-            const response = await fetch(`/api/v1/centers/circles/${id}`, {
-                method: "DELETE",
-                credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRF-TOKEN": csrfToken,
-                },
+            const buffer = await file.arrayBuffer();
+            const wb = XLSX.read(buffer, { type: "array" });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows: ImportRow[] = XLSX.utils.sheet_to_json(ws, {
+                defval: "",
             });
 
-            const result = await response.json();
-            if (response.ok) {
-                toast.success("تم حذف الحلقة بنجاح ");
+            if (rows.length === 0) {
+                notifyError("الملف فارغ أو لا يحتوي على بيانات");
+                setImporting(false);
+                return;
+            }
+
+            if (!("اسم الحلقة" in rows[0])) {
+                notifyError('تأكد من أن الملف يحتوي على عمود "اسم الحلقة"');
+                setImporting(false);
+                return;
+            }
+
+            const csrfToken = document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content");
+
+            if (!csrfToken) {
+                notifyError("فشل في جلب رمز الحماية");
+                setImporting(false);
+                return;
+            }
+
+            let successCount = 0;
+            let failedCount = 0;
+            const errors: string[] = [];
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const rowNum = i + 2;
+
+                const circleName = String(row["اسم الحلقة"] || "").trim();
+                if (!circleName) {
+                    errors.push(`سطر ${rowNum}: اسم الحلقة مطلوب`);
+                    failedCount++;
+                    continue;
+                }
+
+                const formData = new FormData();
+                formData.append("name", circleName);
+                formData.append(
+                    "mosque_name",
+                    String(row["المسجد"] || "").trim(),
+                );
+                formData.append(
+                    "teacher_name",
+                    String(row["المعلم"] || "").trim(),
+                );
+
+                try {
+                    const res = await fetch(
+                        "/api/v1/centers/circles/import-row",
+                        {
+                            method: "POST",
+                            credentials: "include",
+                            headers: {
+                                Accept: "application/json",
+                                "X-Requested-With": "XMLHttpRequest",
+                                "X-CSRF-TOKEN": csrfToken,
+                            },
+                            body: formData,
+                        },
+                    );
+
+                    const result = await res.json();
+
+                    if (res.ok && result.success) {
+                        successCount++;
+                    } else {
+                        failedCount++;
+                        errors.push(
+                            `سطر ${rowNum} (${circleName}): ${result.message || "فشل"}`,
+                        );
+                    }
+                } catch {
+                    failedCount++;
+                    errors.push(
+                        `سطر ${rowNum} (${circleName}): خطأ في الاتصال`,
+                    );
+                }
+            }
+
+            setImportResult({
+                success: successCount,
+                failed: failedCount,
+                errors,
+            });
+
+            if (successCount > 0) {
+                notifySuccess(`تم استيراد ${successCount} حلقة بنجاح`);
                 refetch();
-            } else {
-                toast.error(result.message || "فشل في الحذف");
+            }
+            if (failedCount > 0) {
+                notifyError(`فشل استيراد ${failedCount} حلقة`);
             }
         } catch {
-            toast.error("حدث خطأ في الحذف");
+            notifyError("حدث خطأ في قراءة الملف");
+        } finally {
+            setImporting(false);
         }
     };
 
-    const handleCloseUpdateModal = useCallback(() => {
+    // ─── Delete ───────────────────────────────────────────────────────────────
+    const handleDelete = (id: number) => {
+        setConfirm({
+            title: "حذف الحلقة",
+            desc: "هل أنت متأكد من حذف هذه الحلقة؟ لا يمكن التراجع.",
+            cb: async () => {
+                try {
+                    const csrfToken = document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content");
+
+                    if (!csrfToken) {
+                        notifyError("فشل في جلب رمز الحماية");
+                        setConfirm(null);
+                        return;
+                    }
+
+                    const response = await fetch(
+                        `/api/v1/centers/circles/${id}`,
+                        {
+                            method: "DELETE",
+                            credentials: "include",
+                            headers: {
+                                Accept: "application/json",
+                                "X-Requested-With": "XMLHttpRequest",
+                                "X-CSRF-TOKEN": csrfToken,
+                            },
+                        },
+                    );
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        notifySuccess("تم حذف الحلقة بنجاح");
+                        setCircles((prev) => prev.filter((c) => c.id !== id));
+                    } else {
+                        notifyError(result.message || "فشل في حذف الحلقة");
+                    }
+                } catch {
+                    notifyError("حدث خطأ في الحذف");
+                } finally {
+                    setConfirm(null);
+                }
+            },
+        });
+    };
+
+    const handleEdit = (circle: CircleType) => {
+        setSelectedCircle(circle);
+        setSelectedCircleId(circle.id);
+        setShowUpdateModal(true);
+    };
+
+    const handleCloseUpdateModal = () => {
         setShowUpdateModal(false);
+        setSelectedCircle(null);
         setSelectedCircleId(null);
-    }, []);
-
-    const handleUpdateSuccess = useCallback(() => {
-        toast.success("تم تحديث بيانات الحلقة بنجاح! ✨");
-        refetch();
-        handleCloseUpdateModal();
-    }, [refetch, handleCloseUpdateModal]);
-
-    const handleCloseCreateModal = useCallback(() => {
-        setShowCreateModal(false);
-    }, []);
-
-    const handleCreateSuccess = useCallback(() => {
-        refetch();
-        handleCloseCreateModal();
-    }, [refetch, handleCloseCreateModal]);
-
-    const handleAddNew = useCallback(() => {
-        setShowCreateModal(true);
-    }, []);
-
-    const handleDeleteClick = useCallback((id: number) => {
-        setSelectedCircleId(id);
-        setIsDeleteConfirm(true);
-    }, []);
-
-    const handleConfirmDelete = useCallback(() => {
-        if (selectedCircleId) {
-            handleDelete(selectedCircleId);
-            setIsDeleteConfirm(false);
-            setSelectedCircleId(null);
-        }
-    }, [selectedCircleId, handleDelete]);
-
-    const stats = {
-        total: pagination?.total || 0,
-        active: circles.filter((c) => c.mosque_id !== null).length,
-        currentPage,
-        totalPages: pagination?.last_page || 1,
     };
 
-    const renderLogo = (name: string) => {
-        const initials = name
-            .split(" ")
-            .slice(-2)
-            .map((n) => n[0])
-            .join("")
-            .slice(0, 2);
-        return (
-            <div className="w-full h-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white rounded-lg">
-                {initials}
-            </div>
-        );
+    const handleUpdateSuccess = () => {
+        notifySuccess("تم تحديث بيانات الحلقة بنجاح");
+        refetch();
     };
 
-    const hasPrev = currentPage > 1;
-    const hasNext = currentPage < (pagination?.last_page || 1);
+    const handleCloseCreateModal = () => setShowCreateModal(false);
 
-    if (loading) {
+    const handleCreateSuccess = () => {
+        refetch();
+    };
+
+    function BadgeStatus({ s }: { s: string }) {
+        const map: Record<string, React.CSSProperties> = {
+            "bg-g": { background: "var(--g100)", color: "var(--g700)" },
+            "bg-r": { background: "#fee2e2", color: "#ef4444" },
+            "bg-a": { background: "#fef3c7", color: "#92400e" },
+            "bg-n": { background: "var(--n100)", color: "var(--n500)" },
+        };
         return (
-            <div className="flex items-center justify-center min-h-[400px] p-8">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                    <div className="navbar">
-                        <div className="navbar__inner">
-                            <div className="navbar__loading">
-                                <div className="loading-spinner">
-                                    <div className="spinner-circle"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>{" "}
-                </div>
-            </div>
+            <span
+                className="badge px-2 py-1 rounded-full text-xs font-medium"
+                style={
+                    map[
+                        s === "نشط" ? "bg-g" : s === "معلق" ? "bg-a" : "bg-r"
+                    ] || map["bg-n"]
+                }
+            >
+                {s}
+            </span>
         );
     }
 
     return (
         <>
-            {showUpdateModal && selectedCircleId && (
+            {/* Hidden file input */}
+            <input
+                ref={importInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                style={{ display: "none" }}
+                onChange={handleImportFile}
+            />
+
+            {showUpdateModal && selectedCircle && selectedCircleId && (
                 <UpdateCirclePage
                     circleId={selectedCircleId}
+                    initialCircle={selectedCircle}
                     onClose={handleCloseUpdateModal}
                     onSuccess={handleUpdateSuccess}
                 />
@@ -183,227 +386,298 @@ const CirclesManagement: React.FC = () => {
                 />
             )}
 
-            <ModalNotification
-                show={isDeleteConfirm}
-                title="هل أنت متأكد؟"
-                message="هل أنت متأكد من حذف هذه الحلقة؟ هذا الإجراء لا يمكن التراجع عنه."
-                onClose={() => setIsDeleteConfirm(false)}
-                onConfirm={handleConfirmDelete}
-                confirmText="نعم، احذفها"
-                showConfirm={true}
-            />
-
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon redColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>إجمالي الحلقات</h3>
-                            <p className="text-2xl font-bold text-red-600">
-                                {stats.total}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon yellowColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>نشطة</h3>
-                            <p className="text-2xl font-bold text-yellow-600">
-                                {stats.active}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <PiWhatsappLogoDuotone />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>حلقات معتمدة</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {stats.total}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
+            {confirm && (
                 <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
                 >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            الحلقات الجديدة تخضع لمراجعة المشرف قبل الاعتماد
-                            الرسمي
-                        </div>
-                        <div className="plan__current">
-                            <h2>قائمة الحلقات</h2>
-                            <div className="plan__date-range">
-                                <div className="date-picker to">
-                                    <input
-                                        type="search"
-                                        placeholder="البحث بالحلقة أو المجمع أو المسجد أو المعلم..."
-                                        value={search}
-                                        onChange={handleSearch}
-                                        disabled={loading}
-                                    />
-                                </div>
-                                <button
-                                    className="teacherStudent__status-btn add-btn p-3 rounded-xl border-2 bg-green-50 border-green-300 text-green-600 hover:bg-green-100 font-medium ml-3"
-                                    onClick={handleAddNew}
-                                    disabled={loading}
-                                >
-                                    <IoMdAdd
-                                        size={20}
-                                        className="inline mr-2"
-                                    />
-                                    حلقة جديدة
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="plan__daily-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>الشعار</th>
-                                <th>اسم الحلقة</th>
-                                <th>المجمع</th>
-                                <th>المسجد</th>
-                                <th>المعلم</th>
-                                <th>الحالة</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {circles.map((item) => (
-                                <tr key={item.id} className="plan__row active">
-                                    <td className="teacherStudent__img">
-                                        <div className="w-12 h-12 rounded-lg overflow-hidden">
-                                            {renderLogo(item.name)}
-                                        </div>
-                                    </td>
-                                    <td>{item.name}</td>
-                                    <td>{item.center.name}</td>
-                                    <td>{item.mosque?.name || "-"}</td>
-                                    <td>{item.teacher?.name || "-"}</td>
-                                    <td>
-                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            نشطة
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="teacherStudent__btns">
-                                            <button
-                                                className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
-                                                onClick={() => handleEdit(item)}
-                                                disabled={loading}
-                                                title="تعديل بيانات الحلقة"
-                                            >
-                                                <FiEdit3 />
-                                            </button>
-                                            <button
-                                                className="teacherStudent__status-btn delete-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
-                                                onClick={() =>
-                                                    handleDeleteClick(item.id)
-                                                }
-                                                disabled={loading}
-                                                title="حذف الحلقة"
-                                            >
-                                                <FiTrash2 />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {circles.length === 0 && !loading && (
-                                <tr>
-                                    <td
-                                        colSpan={7}
-                                        className="text-center py-8 text-gray-500"
-                                    >
-                                        لا يوجد حلقات حالياً
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {pagination && pagination.last_page > 1 && (
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        style={{ width: "100%" }}
-                    >
-                        <div className="flex justify-between items-center p-4">
-                            <div className="text-sm text-gray-600">
-                                عرض {circles.length} من {pagination.total} حلقة
-                                • الصفحة <strong>{currentPage}</strong> من{" "}
-                                <strong>{pagination.last_page}</strong>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => goToPage(currentPage - 1)}
-                                    disabled={!hasPrev || loading}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
-                                >
-                                    السابق
-                                </button>
-                                <span className="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold">
-                                    {currentPage}
-                                </span>
-                                <button
-                                    onClick={() => goToPage(currentPage + 1)}
-                                    disabled={!hasNext || loading}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
-                                >
-                                    التالي
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <div
-                    className="inputs__verifyOTPBirth"
-                    id="userProfile__verifyOTPBirth"
-                    style={{ width: "100%" }}
-                >
-                    <div className="userProfile__progressContent">
-                        <div className="userProfile__progressTitle">
-                            <h1>معدل النشاط</h1>
-                        </div>
-                        <p>94%</p>
-                        <div className="userProfile__progressBar">
-                            <span style={{ width: "94%" }}></span>
-                        </div>
-                    </div>
-                    <div className="userProfile__progressContent">
-                        <div className="userProfile__progressTitle">
-                            <h1>عدد الحلقات</h1>
-                        </div>
-                        <p>{circles.length}</p>
-                        <div className="userProfile__progressBar">
+                    <div className="conf-box">
+                        <div className="conf-ico">
                             <span
                                 style={{
-                                    width: `${Math.min((circles.length / 50) * 100, 100)}%`,
+                                    width: 22,
+                                    height: 22,
+                                    display: "inline-flex",
+                                    color: "var(--red)",
                                 }}
-                            ></span>
+                            >
+                                {ICO.trash}
+                            </span>
                         </div>
+                        <div className="conf-t">{confirm.title}</div>
+                        <div className="conf-d">
+                            {confirm.desc ||
+                                "هل أنت متأكد من هذا الإجراء؟ لا يمكن التراجع."}
+                        </div>
+                        <div className="conf-acts">
+                            <button className="btn bd" onClick={confirm.cb}>
+                                تأكيد
+                            </button>
+                            <button
+                                className="btn bs"
+                                onClick={() => setConfirm(null)}
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Import Result Modal */}
+            {importResult && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <div
+                        className="conf-box"
+                        style={{ maxWidth: 480, width: "90%" }}
+                    >
+                        <div className="conf-t">نتيجة الاستيراد</div>
+                        <div
+                            style={{
+                                margin: "12px 0",
+                                display: "flex",
+                                gap: 12,
+                                justifyContent: "center",
+                            }}
+                        >
+                            <span
+                                style={{
+                                    background: "var(--g100)",
+                                    color: "var(--g700)",
+                                    padding: "6px 16px",
+                                    borderRadius: 8,
+                                    fontWeight: 700,
+                                }}
+                            >
+                                ✓ نجح: {importResult.success}
+                            </span>
+                            {importResult.failed > 0 && (
+                                <span
+                                    style={{
+                                        background: "#fee2e2",
+                                        color: "#ef4444",
+                                        padding: "6px 16px",
+                                        borderRadius: 8,
+                                        fontWeight: 700,
+                                    }}
+                                >
+                                    ✗ فشل: {importResult.failed}
+                                </span>
+                            )}
+                        </div>
+                        {importResult.errors.length > 0 && (
+                            <div
+                                style={{
+                                    background: "#fff8f8",
+                                    border: "1px solid #fecaca",
+                                    borderRadius: 8,
+                                    padding: 12,
+                                    maxHeight: 200,
+                                    overflowY: "auto",
+                                    textAlign: "right",
+                                    fontSize: 13,
+                                    margin: "8px 0",
+                                }}
+                            >
+                                {importResult.errors.map((err, i) => (
+                                    <div
+                                        key={i}
+                                        style={{
+                                            padding: "2px 0",
+                                            color: "#b91c1c",
+                                        }}
+                                    >
+                                        • {err}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="conf-acts">
+                            <button
+                                className="btn bs"
+                                onClick={() => setImportResult(null)}
+                            >
+                                إغلاق
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">إدارة الحلقات</div>
+                        <div
+                            className="flx"
+                            style={{ gap: 6, flexWrap: "wrap" }}
+                        >
+                            <input
+                                className="fi"
+                                style={{ margin: "0 6px" }}
+                                placeholder="البحث بالحلقة أو المجمع أو المسجد أو المعلم..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            <button
+                                className="btn bs bsm"
+                                onClick={handleImportClick}
+                                disabled={importing}
+                                title="استيراد من Excel"
+                            >
+                                {importing
+                                    ? "جاري الاستيراد..."
+                                    : "↑ استيراد Excel"}
+                            </button>
+                            <button
+                                className="btn bs bsm"
+                                onClick={handleExport}
+                                title="تصدير إلى Excel"
+                            >
+                                ↓ تصدير Excel
+                            </button>
+                            <button
+                                className="btn bs bsm"
+                                onClick={handleDownloadTemplate}
+                                title="تحميل قالب الاستيراد"
+                            >
+                                ⬇ قالب الاستيراد
+                            </button>
+                            <button
+                                className="btn bp bsm"
+                                onClick={() => setShowCreateModal(true)}
+                            >
+                                + حلقة جديدة
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style={{ overflowX: "auto" }}>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>الشعار</th>
+                                    <th>اسم الحلقة</th>
+                                    <th>المجمع</th>
+                                    <th>المسجد</th>
+                                    <th>المعلم</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={7}>
+                                            <div className="empty">
+                                                <p>جاري التحميل...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : filteredCircles.length > 0 ? (
+                                    filteredCircles.map((c) => (
+                                        <tr key={c.id}>
+                                            <td>
+                                                <div
+                                                    style={{
+                                                        width: 48,
+                                                        height: 48,
+                                                        borderRadius: 8,
+                                                        background:
+                                                            "linear-gradient(135deg, #16161616 0%, #16161616 100%)",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent:
+                                                            "center",
+                                                        fontSize: 12,
+                                                        fontWeight: "bold",
+                                                        color: "#131313",
+                                                    }}
+                                                >
+                                                    {c.name
+                                                        .split(" ")
+                                                        .slice(-2)
+                                                        .map((n) => n[0])
+                                                        .join("")
+                                                        .slice(0, 2)}
+                                                </div>
+                                            </td>
+                                            <td style={{ fontWeight: 700 }}>
+                                                {c.name}
+                                            </td>
+                                            <td>
+                                                {c.center?.name ||
+                                                    `مجمع #${c.center_id}`}
+                                            </td>
+                                            <td>{c.mosque?.name || "-"}</td>
+                                            <td>{c.teacher?.name || "-"}</td>
+                                            <td>
+                                                <BadgeStatus s="نشط" />
+                                            </td>
+                                            <td>
+                                                <div className="td-actions">
+                                                    <button
+                                                        className="btn bd bxs"
+                                                        onClick={() =>
+                                                            handleDelete(c.id)
+                                                        }
+                                                    >
+                                                        حذف
+                                                    </button>
+                                                    <button
+                                                        className="btn bs bxs"
+                                                        onClick={() =>
+                                                            handleEdit(c)
+                                                        }
+                                                    >
+                                                        تعديل
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={7}>
+                                            <div className="empty">
+                                                <p>
+                                                    {search
+                                                        ? "لا توجد نتائج للبحث"
+                                                        : "لا يوجد حلقات"}
+                                                </p>
+                                                <button
+                                                    className="btn bp bsm"
+                                                    onClick={() =>
+                                                        setShowCreateModal(true)
+                                                    }
+                                                >
+                                                    إضافة حلقة
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

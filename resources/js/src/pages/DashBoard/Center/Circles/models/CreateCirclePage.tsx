@@ -1,11 +1,26 @@
-import { useRef } from "react";
-import toast from "react-hot-toast";
-import { FiX } from "react-icons/fi";
+import { useState, useEffect } from "react";
 import { useCircleFormCreate } from "../hooks/useCircleFormCreate";
+import { useToast } from "../../../../../../contexts/ToastContext";
 
 interface CreateCirclePageProps {
     onClose: () => void;
     onSuccess: () => void;
+}
+
+function getPortalCenterId(): string | null {
+    const id = (window as any).__PORTAL_CENTER_ID__;
+    return id ? String(id) : null;
+}
+
+function buildHeaders(extra?: Record<string, string>): HeadersInit {
+    const headers: Record<string, string> = {
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        ...extra,
+    };
+    const centerId = getPortalCenterId();
+    if (centerId) headers["X-Center-Id"] = centerId;
+    return headers;
 }
 
 const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
@@ -17,7 +32,6 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
         errors,
         isSubmitting,
         handleInputChange,
-        submitForm,
         centersData,
         mosquesData,
         teachersData,
@@ -25,277 +39,246 @@ const CreateCirclePage: React.FC<CreateCirclePageProps> = ({
         user,
     } = useCircleFormCreate();
 
-    const handleSubmit = async (formDataSubmit: FormData) => {
-        try {
-            //  نفس CSRF logic من usePermissions
-            const csrfToken =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute("content") || "";
+    const { notifySuccess, notifyError } = useToast();
 
-            const response = await fetch("/api/v1/centers/circles", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRF-TOKEN": csrfToken,
-                    "X-XSRF-TOKEN": csrfToken,
-                },
-                body: formDataSubmit,
-            });
+    const isLoading = loadingData;
+    const currentCenter = centersData[0];
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error("❌ Error response:", errorData);
-
-                if (errorData.errors) {
-                    const errorMessages = Object.values(
-                        errorData.errors,
-                    ).flat();
-                    toast.error(errorMessages[0] || "حدث خطأ في الإضافة");
-                    return;
-                }
-                throw new Error(errorData.message || `HTTP ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log(" Create response:", result);
-            toast.success("تم إضافة الحلقة بنجاح!");
-            onSuccess();
-        } catch (error: any) {
-            console.error("❌ Create error:", error);
-            toast.error(error.message || "حدث خطأ في الإضافة");
-        }
+    const ICO = {
+        x: (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+            >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        ),
     };
 
-    const isLoading = loadingData || !user;
-    const currentCenter = centersData[0] || user?.center;
-
-    if (isLoading) {
+    function FG({
+        label,
+        children,
+    }: {
+        label: string;
+        children: React.ReactNode;
+    }) {
         return (
-            <div className="ParentModel">
-                <div className="ParentModel__overlay">
-                    <div className="ParentModel__content">
-                        <div className="flex items-center justify-center min-h-[400px] p-8">
-                            <div className="text-center">
-                                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                                <p className="text-lg text-gray-600">
-                                    جاري تحميل بيانات المجمع...
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div style={{ marginBottom: 13 }}>
+                <label
+                    style={{
+                        display: "block",
+                        fontSize: "10.5px",
+                        fontWeight: 700,
+                        color: "var(--n700)",
+                        marginBottom: 4,
+                    }}
+                >
+                    {label}
+                </label>
+                {children}
             </div>
         );
     }
 
+    const addCircleFn = async () => {
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content");
+        if (!csrfToken) {
+            notifyError("فشل في جلب رمز الحماية");
+            return;
+        }
+
+        const name =
+            (document.getElementById("ciName") as HTMLInputElement)?.value ||
+            "";
+        if (!name.trim()) {
+            notifyError("اسم الحلقة مطلوب");
+            return;
+        }
+
+        if (!formData.center_id) {
+            notifyError("المجمع غير محدد");
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append("name", name);
+        fd.append("center_id", formData.center_id);
+        fd.append(
+            "mosque_id",
+            (document.getElementById("ciMosque") as HTMLSelectElement)?.value ||
+                "",
+        );
+        fd.append(
+            "teacher_id",
+            (document.getElementById("ciTeacher") as HTMLSelectElement)
+                ?.value || "",
+        );
+        fd.append(
+            "notes",
+            (document.getElementById("ciNotes") as HTMLInputElement)?.value ||
+                "",
+        );
+
+        try {
+            const response = await fetch("/api/v1/centers/circles", {
+                method: "POST",
+                credentials: "include",
+                headers: buildHeaders({ "X-CSRF-TOKEN": csrfToken }),
+                body: fd,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                if (errorData.errors) {
+                    const msgs = Object.values(errorData.errors).flat();
+                    notifyError((msgs[0] as string) || "خطأ في البيانات");
+                } else {
+                    notifyError(errorData.message || `خطأ ${response.status}`);
+                }
+                return;
+            }
+
+            notifySuccess("تم إضافة الحلقة بنجاح");
+            onSuccess();
+        } catch (error: any) {
+            notifyError(error.message || "حدث خطأ");
+        }
+    };
+
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={onClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        <div className="ParentModel__header">
-                            <button
-                                className="ParentModel__close"
-                                onClick={onClose}
-                                disabled={isSubmitting}
-                            >
-                                <FiX size={24} />
-                            </button>
+        <div className="ov on">
+            <div className="modal">
+                <div className="mh">
+                    <span className="mh-t">اضافة حلقة جديدة</span>
+                    <button className="mx" onClick={onClose}>
+                        <span
+                            style={{
+                                width: 12,
+                                height: 12,
+                                display: "inline-flex",
+                            }}
+                        >
+                            {ICO.x}
+                        </span>
+                    </button>
+                </div>
+                <div className="mb">
+                    <FG label="اسم الحلقة *">
+                        <input
+                            className="fi2"
+                            id="ciName"
+                            name="name"
+                            placeholder="مثال: حلقة حفظ سورة يس"
+                            required
+                        />
+                    </FG>
+
+                    <FG label="المجمع">
+                        <div
+                            className="fi2"
+                            style={{
+                                padding: "8px 12px",
+                                background: "var(--color-background-secondary)",
+                                borderRadius: 8,
+                            }}
+                        >
+                            {isLoading
+                                ? "جاري التحميل..."
+                                : currentCenter?.name || "غير محدد"}
                         </div>
+                        <input
+                            type="hidden"
+                            name="center_id"
+                            value={formData.center_id || ""}
+                        />
+                    </FG>
 
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>حلقة جديدة</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>إضافة حلقة جديدة</h1>
-                                <p className="flex items-center gap-2 flex-wrap">
-                                    مجمعك:
-                                    <span className="font-semibold text-green-600">
-                                        {currentCenter?.name ||
-                                            user?.center?.name ||
-                                            "غير محدد"}
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
+                    <FG label="المسجد">
+                        <select
+                            className="fi2"
+                            id="ciMosque"
+                            name="mosque_id"
+                            defaultValue=""
+                        >
+                            <option value="">اختر المسجد (اختياري)</option>
+                            {isLoading ? (
+                                <option disabled>جاري تحميل المساجد...</option>
+                            ) : mosquesData.length === 0 ? (
+                                <option disabled>
+                                    لا توجد مساجد في هذا المجمع
+                                </option>
+                            ) : (
+                                mosquesData.map((m) => (
+                                    <option key={m.id} value={m.id}>
+                                        {m.name}
+                                    </option>
+                                ))
+                            )}
+                        </select>
+                    </FG>
 
-                        <div className="ParentModel__container">
-                            {/* اسم الحلقة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>اسم الحلقة *</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.name
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="أدخل اسم الحلقة"
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.name && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.name}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
+                    <FG label="المعلم">
+                        <select
+                            className="fi2"
+                            id="ciTeacher"
+                            name="teacher_id"
+                            defaultValue=""
+                        >
+                            <option value="">اختر المعلم (اختياري)</option>
+                            {isLoading ? (
+                                <option disabled>جاري تحميل المعلمين...</option>
+                            ) : teachersData.length === 0 ? (
+                                <option disabled>
+                                    لا يوجد معلمين في هذا المجمع
+                                </option>
+                            ) : (
+                                teachersData.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                        {t.name}
+                                    </option>
+                                ))
+                            )}
+                        </select>
+                    </FG>
 
-                            {/* المجمع */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>المجمع:</label>
-                                    <input
-                                        type="text"
-                                        value={
-                                            currentCenter?.name ||
-                                            user?.center?.name ||
-                                            "جاري التحميل..."
-                                        }
-                                        className="w-full px-4 py-3 border border-green-200 bg-green-50 rounded-xl text-green-800 font-medium"
-                                        disabled
-                                    />
-                                </div>
-                            </div>
-
-                            {/* المسجد -  مساجد المجمع بس */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>المسجد (اختياري)</label>
-                                    <select
-                                        name="mosque_id"
-                                        value={formData.mosque_id}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.mosque_id
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={isSubmitting}
-                                    >
-                                        <option value="">
-                                            اختر المسجد (اختياري)
-                                        </option>
-                                        {mosquesData.length === 0 ? (
-                                            <option disabled value="">
-                                                {user?.center_id
-                                                    ? "لا توجد مساجد في مجمعك حالياً 🕌"
-                                                    : "جاري تحميل مساجد المجمع..."}
-                                            </option>
-                                        ) : (
-                                            mosquesData.map((mosque) => (
-                                                <option
-                                                    key={mosque.id}
-                                                    value={mosque.id}
-                                                >
-                                                    {mosque.name}
-                                                </option>
-                                            ))
-                                        )}
-                                    </select>
-                                    {errors.mosque_id && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.mosque_id}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* المعلم -  معلمين المجمع بس */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>المعلم (اختياري)</label>
-                                    <select
-                                        name="teacher_id"
-                                        value={formData.teacher_id}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.teacher_id
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={isSubmitting}
-                                    >
-                                        <option value="">
-                                            اختر المعلم (اختياري)
-                                        </option>
-                                        {teachersData.length === 0 ? (
-                                            <option disabled value="">
-                                                {user?.center_id
-                                                    ? "لا يوجد معلمين في مجمعك حالياً 👨‍🏫"
-                                                    : "جاري تحميل المعلمين..."}
-                                            </option>
-                                        ) : (
-                                            teachersData.map((teacher) => (
-                                                <option
-                                                    key={teacher.id}
-                                                    value={teacher.id}
-                                                >
-                                                    {teacher.name}
-                                                </option>
-                                            ))
-                                        )}
-                                    </select>
-                                    {errors.teacher_id && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.teacher_id}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* الملاحظات */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>ملاحظات</label>
-                                    <textarea
-                                        name="notes"
-                                        value={formData.notes || ""}
-                                        onChange={handleInputChange}
-                                        rows={3}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="أي ملاحظات إضافية..."
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Submit */}
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => submitForm(handleSubmit)}
-                                    disabled={
-                                        isSubmitting || !formData.center_id
-                                    }
-                                    className="w-full"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                                            جاري الإضافة...
-                                        </>
-                                    ) : (
-                                        <>إضافة الحلقة الجديدة</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                    <FG label="ملاحظات">
+                        <input
+                            className="fi2"
+                            id="ciNotes"
+                            type="text"
+                            name="notes"
+                            placeholder="أي ملاحظات..."
+                        />
+                    </FG>
+                </div>
+                <div className="mf">
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "12px",
+                            justifyContent: "flex-end",
+                            marginTop: "20px",
+                        }}
+                    >
+                        <button
+                            className="btn bs"
+                            onClick={onClose}
+                            disabled={isSubmitting}
+                        >
+                            إلغاء
+                        </button>
+                        <button
+                            className="btn bp"
+                            onClick={addCircleFn}
+                            disabled={isSubmitting || !formData.center_id}
+                        >
+                            {isSubmitting ? "جاري الحفظ..." : "حفظ الحلقة"}
+                        </button>
                     </div>
                 </div>
             </div>

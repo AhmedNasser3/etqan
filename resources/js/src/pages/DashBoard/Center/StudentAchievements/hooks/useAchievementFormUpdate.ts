@@ -1,4 +1,4 @@
-// hooks/useAchievementFormUpdate.ts - ✅ مُصحح مع Debug
+// hooks/useAchievementFormUpdate.ts -  مُصحح مع Debug
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -57,7 +57,7 @@ export const useAchievementFormUpdate = (achievementId?: number | null) => {
 
     console.log("🟢 [UPDATE HOOK] Render - achievementId:", achievementId);
 
-    // ✅ 1️⃣ Fetch User أولاً
+    //  1️⃣ Fetch User أولاً
     useEffect(() => {
         console.log("🚀 [STEP 1] Fetching user...");
         fetchUser();
@@ -85,7 +85,7 @@ export const useAchievementFormUpdate = (achievementId?: number | null) => {
         }
     }, []);
 
-    // ✅ 2️⃣ Fetch Achievement data
+    //  2️⃣ Fetch Achievement data
     useEffect(() => {
         console.log("🔗 [useEffect] achievementId changed:", achievementId);
         if (achievementId && achievementId > 0) {
@@ -111,7 +111,7 @@ export const useAchievementFormUpdate = (achievementId?: number | null) => {
 
             if (response.ok) {
                 const achievement: AchievementType = await response.json();
-                console.log("✅ [fetchAchievement] Data:", achievement);
+                console.log(" [fetchAchievement] Data:", achievement);
 
                 setFormData({
                     id: achievement.id,
@@ -138,7 +138,7 @@ export const useAchievementFormUpdate = (achievementId?: number | null) => {
         }
     }, [achievementId]);
 
-    // ✅ 3️⃣ Fetch Students بعد user
+    //  3️⃣ Fetch Students بعد user
     useEffect(() => {
         if (user?.center_id) {
             console.log(
@@ -167,7 +167,7 @@ export const useAchievementFormUpdate = (achievementId?: number | null) => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("✅ [fetchStudents] Raw data:", data.data?.length);
+                console.log(" [fetchStudents] Raw data:", data.data?.length);
                 setUsersData(data.data || []);
             }
         } catch (error) {
@@ -178,7 +178,7 @@ export const useAchievementFormUpdate = (achievementId?: number | null) => {
         }
     }, [user?.center_id]);
 
-    // ✅ باقي الـ functions
+    //  باقي الـ functions
     const handleInputChange = useCallback(
         (
             e: React.ChangeEvent<
@@ -233,7 +233,7 @@ export const useAchievementFormUpdate = (achievementId?: number | null) => {
             newErrors.points = "النقاط يجب أن تكون بين -1000 و 1000";
         }
 
-        setErrors(newErrors); // ✅ إصلاح: newErrors مش newError
+        setErrors(newErrors); //  إصلاح: newErrors مش newError
         return Object.keys(newErrors).length === 0;
     }, [formData]);
 

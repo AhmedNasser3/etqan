@@ -1,15 +1,17 @@
-// UpdatePlanPage.tsx - نفس ديزاين CreatePlanPage بالضبط!
-import { FiX } from "react-icons/fi";
-import toast from "react-hot-toast";
+// UpdatePlanPage.tsx - نفس تصميم CreatePlanPage بالضبط مع Toast Context و CSRF
+import { useState, useEffect, useCallback } from "react";
 import { usePlanFormUpdate } from "../hooks/usePlanFormUpdate";
+import { useToast } from "../../../../../../contexts/ToastContext";
 
 interface UpdatePlanPageProps {
+    initialPlan?: any;
     onClose: () => void;
     onSuccess: () => void;
     planId: number;
 }
 
 const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
+    initialPlan,
     onClose,
     onSuccess,
     planId,
@@ -20,19 +22,89 @@ const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
         isSubmitting,
         isLoadingPlan,
         handleInputChange,
-        submitForm,
         centersData,
         loadingData,
         user,
     } = usePlanFormUpdate(planId);
 
-    const handleSubmit = async (formDataSubmit: FormData) => {
-        try {
-            const csrfToken =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute("content") || "";
+    const { notifySuccess, notifyError } = useToast();
 
+    const currentCenter = centersData.find(
+        (c) => c.id.toString() === formData.center_id,
+    );
+    const isLoading = loadingData || isLoadingPlan || !user;
+
+    const ICO: Record<string, JSX.Element> = {
+        x: (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+            >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        ),
+    };
+
+    function FG({
+        label,
+        children,
+    }: {
+        label: string;
+        children: React.ReactNode;
+    }) {
+        return (
+            <div style={{ marginBottom: 13 }}>
+                <label
+                    style={{
+                        display: "block",
+                        fontSize: "10.5px",
+                        fontWeight: 700,
+                        color: "var(--n700)",
+                        marginBottom: 4,
+                    }}
+                >
+                    {label}
+                </label>
+                {children}
+            </div>
+        );
+    }
+
+    const updatePlanFn = async () => {
+        // ✅ جيب الـ CSRF token الأول
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content");
+
+        if (!csrfToken) {
+            notifyError("فشل في جلب رمز الحماية");
+            return;
+        }
+
+        const formDataSubmit = new FormData();
+        formDataSubmit.append(
+            "plan_name",
+            (document.getElementById("upName") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "total_months",
+            (document.getElementById("upMonths") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append("_method", "PUT"); // ✅ للـ Laravel update
+        formDataSubmit.append("center_id", formData.center_id || "");
+        formDataSubmit.append("notes", formData.notes || "");
+
+        console.log(
+            "PLAN UPDATE FormData:",
+            Object.fromEntries(formDataSubmit),
+        );
+
+        try {
             const response = await fetch(`/api/v1/plans/${planId}`, {
                 method: "POST",
                 credentials: "include",
@@ -45,203 +117,144 @@ const UpdatePlanPage: React.FC<UpdatePlanPageProps> = ({
             });
 
             if (!response.ok) {
-                const errorData = await response
-                    .json()
-                    .catch(() => response.text());
-                console.error("Update error:", errorData);
+                const errorText = await response.text();
+                console.error("UPDATE ERROR:", errorText);
 
-                if (typeof errorData === "object" && errorData.errors) {
-                    const errorMessages = Object.values(
-                        errorData.errors,
-                    ).flat();
-                    toast.error(errorMessages[0] || "حدث خطأ في التعديل");
+                try {
+                    const errorData = JSON.parse(errorText);
+                    if (errorData.errors) {
+                        const errorMessages = Object.values(
+                            errorData.errors,
+                        ).flat();
+                        notifyError(errorMessages[0] || "خطأ في البيانات");
+                        return;
+                    }
+                    notifyError(errorData.message || "حدث خطأ");
+                    return;
+                } catch (e) {
+                    notifyError(`خطأ ${response.status}`);
                     return;
                 }
-                throw new Error(`HTTP ${response.status}`);
             }
 
             const result = await response.json();
-            console.log("Update response:", result);
-            toast.success("تم تعديل الخطة بنجاح!");
+            notifySuccess("تم تعديل الخطة بنجاح");
             onSuccess();
         } catch (error: any) {
-            console.error("Update error:", error);
-            toast.error(error.message || "حدث خطأ في التعديل");
+            console.error("UPDATE FAILED:", error);
+            notifyError(error.message || "حدث خطأ");
         }
     };
 
-    const currentCenter = centersData.find(
-        (c) => c.id.toString() === formData.center_id,
-    );
-    const isLoading = loadingData || isLoadingPlan || !user;
-
     if (isLoading) {
         return (
-            <div className="ParentModel">
-                <div className="ParentModel__overlay">
-                    <div className="ParentModel__content">
-                        <div className="flex items-center justify-center min-h-[400px] p-8">
-                            <div className="text-center">
-                                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                                <p className="text-lg text-gray-600">
-                                    جاري تحميل بيانات الخطة...
-                                </p>
-                            </div>
+            <>
+                <div className="ov on">
+                    <div className="modal">
+                        <div className="mh">
+                            <span className="mh-t">
+                                جاري تحميل بيانات الخطة...
+                            </span>
                         </div>
                     </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={onClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        <div className="ParentModel__header">
+        <>
+            <div className="ov on">
+                <div className="modal">
+                    <div className="mh">
+                        <span className="mh-t">تعديل الخطة</span>
+                        <button className="mx" onClick={onClose}>
+                            <span
+                                style={{
+                                    width: 12,
+                                    height: 12,
+                                    display: "inline-flex",
+                                }}
+                            >
+                                {ICO.x}
+                            </span>
+                        </button>
+                    </div>
+                    <div className="mb">
+                        <FG label="اسم الخطة *">
+                            <input
+                                className="fi2"
+                                id="upName"
+                                name="plan_name"
+                                placeholder="اسم الخطة الحالي"
+                                required
+                            />
+                        </FG>
+
+                        <FG label="المجمع">
+                            <div className="fi2 bg-green-50 border-green-300 text-green-800 p-3 rounded">
+                                {currentCenter?.name ||
+                                    user?.center?.name ||
+                                    "غير محدد"}
+                            </div>
+                            <input
+                                type="hidden"
+                                name="center_id"
+                                value={formData.center_id || ""}
+                            />
+                        </FG>
+
+                        <FG label="مدة الخطة (بالشهور) *">
+                            <input
+                                className="fi2"
+                                id="upMonths"
+                                type="number"
+                                name="total_months"
+                                placeholder="12"
+                                required
+                            />
+                        </FG>
+
+                        <FG label="ملاحظات">
+                            <input
+                                className="fi2"
+                                id="upNotes"
+                                type="text"
+                                name="notes"
+                                placeholder="أي ملاحظات..."
+                            />
+                        </FG>
+                    </div>
+                    <div className="mf">
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "12px",
+                                justifyContent: "flex-end",
+                                marginTop: "20px",
+                            }}
+                        >
                             <button
-                                className="ParentModel__close"
+                                className="btn bs"
                                 onClick={onClose}
                                 disabled={isSubmitting}
                             >
-                                <FiX size={24} />
+                                إلغاء
                             </button>
-                        </div>
-
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>تعديل خطة</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>تعديل الخطة</h1>
-                                <p className="flex items-center gap-2 flex-wrap">
-                                    البيانات الحالية محملة في الحقول أدناه
-                                    <span className="font-semibold text-green-600">
-                                        {currentCenter?.name ||
-                                            user?.center?.name ||
-                                            "غير محدد"}
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="ParentModel__container">
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>اسم الخطة *</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        name="plan_name"
-                                        value={formData.plan_name}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.plan_name
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="اسم الخطة الحالي"
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.plan_name && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.plan_name}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>المجمع:</label>
-                                    <input
-                                        type="text"
-                                        value={
-                                            currentCenter?.name ||
-                                            user?.center?.name ||
-                                            "جاري التحميل..."
-                                        }
-                                        className="w-full px-4 py-3 border border-green-200 bg-green-50 rounded-xl text-green-800 font-medium"
-                                        disabled
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>مدة الخطة (بالشهور) *</label>
-                                    <input
-                                        required
-                                        type="number"
-                                        name="total_months"
-                                        value={formData.total_months}
-                                        onChange={handleInputChange}
-                                        min="1"
-                                        max="36"
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.total_months
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="12"
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.total_months && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.total_months}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>ملاحظات</label>
-                                    <textarea
-                                        name="notes"
-                                        value={formData.notes || ""}
-                                        onChange={handleInputChange}
-                                        rows={3}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="أي ملاحظات إضافية..."
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-                            </div>
-
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
+                            <button
+                                className="btn bp"
+                                onClick={updatePlanFn}
+                                disabled={isSubmitting || !formData.center_id}
                             >
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        submitForm(handleSubmit as any)
-                                    }
-                                    disabled={
-                                        isSubmitting || !formData.center_id
-                                    }
-                                    className="w-full"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                                            جاري التعديل...
-                                        </>
-                                    ) : (
-                                        <>تعديل الخطة</>
-                                    )}
-                                </button>
-                            </div>
+                                {isSubmitting
+                                    ? "جاري التعديل..."
+                                    : "تحديث الخطة"}
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

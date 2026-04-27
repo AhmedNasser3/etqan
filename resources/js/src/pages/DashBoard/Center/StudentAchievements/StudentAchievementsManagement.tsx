@@ -1,132 +1,155 @@
 // StudentAchievementsManagement.tsx
-import { useState, useCallback, useMemo } from "react";
-import toast from "react-hot-toast";
-import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
-import { FiEdit3, FiTrash2, FiPlus } from "react-icons/fi";
+import React, { useState } from "react";
 import {
     useStudentAchievements,
-    AchievementType,
+    StudentRow,
 } from "./hooks/useStudentAchievements";
-import CreateAchievementModal from "./models/CreateAchievementModal";
-import UpdateAchievementModal from "./models/UpdateAchievementModal";
+import { useToast } from "../../../../../contexts/ToastContext";
+import { ICO } from "../../icons";
+
+type PointsAction = "added" | "deducted";
+
+interface BulkForm {
+    points: number;
+    points_action: PointsAction;
+    reason: string;
+}
+
+interface SingleForm {
+    student: StudentRow | null;
+    points: number;
+    points_action: PointsAction;
+    reason: string;
+}
 
 const StudentAchievementsManagement: React.FC = () => {
     const {
-        achievements = [],
+        students,
         loading,
         pagination,
         currentPage,
-        searchAchievements,
+        search,
+        setSearch,
         goToPage,
-        refetch,
-        deleteAchievement,
+        addPoints,
+        addPointsBulk,
     } = useStudentAchievements();
 
-    const [search, setSearch] = useState("");
-    const [showUpdateModal, setShowUpdateModal] = useState(false);
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [selectedAchievementId, setSelectedAchievementId] = useState<
-        number | null
-    >(null);
+    const { notifySuccess, notifyError } = useToast();
 
-    const handleSearch = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            const value = e.target.value;
-            setSearch(value);
-            searchAchievements(value);
-        },
-        [searchAchievements],
-    );
+    // Checkboxes
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-    const handleEdit = useCallback((achievement: AchievementType) => {
-        setSelectedAchievementId(achievement.id);
-        setShowUpdateModal(true);
-    }, []);
+    // مودال إضافة لطالب واحد
+    const [singleModal, setSingleModal] = useState<SingleForm>({
+        student: null,
+        points: 10,
+        points_action: "added",
+        reason: "",
+    });
+    const [showSingle, setShowSingle] = useState(false);
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("هل أنت متأكد من حذف هذا الإنجاز؟")) return;
+    // مودال إضافة جماعية
+    const [bulkForm, setBulkForm] = useState<BulkForm>({
+        points: 10,
+        points_action: "added",
+        reason: "",
+    });
+    const [showBulk, setShowBulk] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
-        const success = await deleteAchievement(id);
-        if (success) {
-            refetch();
+    // تحديد / إلغاء الكل
+    const allSelected =
+        students.length > 0 && selectedIds.length === students.length;
+
+    const toggleAll = () => {
+        setSelectedIds(allSelected ? [] : students.map((s) => s.id));
+    };
+
+    const toggleOne = (id: number) => {
+        setSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+        );
+    };
+
+    // فتح مودال طالب واحد
+    const openSingle = (student: StudentRow) => {
+        setSingleModal({
+            student,
+            points: 10,
+            points_action: "added",
+            reason: "",
+        });
+        setShowSingle(true);
+    };
+
+    // تقديم نقاط لطالب واحد
+    const submitSingle = async () => {
+        if (!singleModal.student) return;
+        if (!singleModal.reason.trim()) {
+            notifyError("أدخل السبب");
+            return;
+        }
+        setSubmitting(true);
+        try {
+            await addPoints({
+                user_id: singleModal.student.id,
+                points: singleModal.points,
+                points_action: singleModal.points_action,
+                reason: singleModal.reason,
+            });
+            notifySuccess("تم تحديث النقاط ✅");
+            setShowSingle(false);
+        } catch {
+            notifyError("فشل في تحديث النقاط");
+        } finally {
+            setSubmitting(false);
         }
     };
 
-    const handleCloseUpdateModal = useCallback(() => {
-        setShowUpdateModal(false);
-        setSelectedAchievementId(null);
-    }, []);
+    // تقديم نقاط جماعية
+    const submitBulk = async () => {
+        if (selectedIds.length === 0) {
+            notifyError("اختر طلاباً أولاً");
+            return;
+        }
+        if (!bulkForm.reason.trim()) {
+            notifyError("أدخل السبب");
+            return;
+        }
+        setSubmitting(true);
+        try {
+            const res = await addPointsBulk({
+                user_ids: selectedIds,
+                points: bulkForm.points,
+                points_action: bulkForm.points_action,
+                reason: bulkForm.reason,
+            });
+            notifySuccess(res.message || "تم تحديث النقاط ✅");
+            setSelectedIds([]);
+            setShowBulk(false);
+        } catch {
+            notifyError("فشل في تحديث النقاط");
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
-    const handleCloseCreateModal = useCallback(() => {
-        setShowCreateModal(false);
-    }, []);
+    const getPointsColor = (pts: number) =>
+        pts > 0
+            ? { color: "#166534", background: "#dcfce7" }
+            : pts < 0
+              ? { color: "#991b1b", background: "#fee2e2" }
+              : { color: "#6b7280", background: "#f3f4f6" };
 
-    const handleAddNew = useCallback(() => {
-        setShowCreateModal(true);
-    }, []);
-
-    const stats = useMemo(
-        () => ({
-            total: pagination?.total || 0,
-            positivePoints: achievements.filter((a) => a.points > 0).length,
-            negativePoints: achievements.filter((a) => a.points < 0).length,
-            topStudents: achievements.filter((a) => a.total_points >= 100)
-                .length,
-            currentPage,
-            totalPages: pagination?.last_page || 1,
-        }),
-        [
-            pagination?.total,
-            achievements.length,
-            currentPage,
-            pagination?.last_page,
-        ],
-    );
-
-    const getPointsStatus = useCallback((points: number) => {
-        if (points > 0) return "إضافة";
-        if (points < 0) return "خصم";
-        return "محايد";
-    }, []);
-
-    const getStatusColor = useCallback((points: number) => {
-        if (points > 0) return "bg-green-100 text-green-800";
-        if (points < 0) return "bg-red-100 text-red-800";
-        return "bg-gray-100 text-gray-800";
-    }, []);
-
-    const renderAchievementBadges = useCallback(
-        (achievements: Record<string, any>) => {
-            return Object.entries(achievements).map(([key, value]) => (
-                <span
-                    key={key}
-                    className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded mr-1"
-                >
-                    {key}: {String(value)}
-                </span>
-            ));
-        },
-        [],
-    );
-
-    const hasPrev = currentPage > 1;
-    const hasNext = currentPage < (pagination?.last_page || 1);
-
-    if (loading) {
+    if (loading && students.length === 0) {
         return (
-            <div className="flex items-center justify-center min-h-[400px] p-8">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                    <div className="navbar">
-                        <div className="navbar__inner">
-                            <div className="navbar__loading">
-                                <div className="loading-spinner">
-                                    <div className="spinner-circle"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>{" "}
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+                        <p>جاري تحميل الطلاب...</p>
+                    </div>
                 </div>
             </div>
         );
@@ -134,256 +157,435 @@ const StudentAchievementsManagement: React.FC = () => {
 
     return (
         <>
-            {showUpdateModal && selectedAchievementId && (
-                <UpdateAchievementModal
-                    achievementId={selectedAchievementId}
-                    onClose={handleCloseUpdateModal}
-                    onSuccess={() => {
-                        toast.success("تم تحديث الإنجاز بنجاح! ✨");
-                        refetch();
-                        handleCloseUpdateModal();
-                    }}
-                />
-            )}
-
-            {showCreateModal && (
-                <CreateAchievementModal
-                    onClose={handleCloseCreateModal}
-                    onSuccess={() => {
-                        toast.success("تم إضافة الإنجاز بنجاح! 🎉");
-                        refetch();
-                        handleCloseCreateModal();
-                    }}
-                />
-            )}
-
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                {/* Stats Cards */}
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon purpleColor">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>إجمالي الإنجازات</h3>
-                            <p className="text-2xl font-bold text-purple-600">
-                                {stats.total}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>نقاط إيجابية</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {stats.positivePoints}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon redColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>نقاط سالبة</h3>
-                            <p className="text-2xl font-bold text-red-600">
-                                {stats.negativePoints}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon blueColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>طلاب مميزون</h3>
-                            <p className="text-2xl font-bold text-blue-600">
-                                {stats.topStudents}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Header & Search */}
+            {/* ── مودال طالب واحد ── */}
+            {showSingle && singleModal.student && (
                 <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
                 >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            إنجازات طلاب مجمعك
+                    <div className="conf-box" style={{ minWidth: 340 }}>
+                        <div className="conf-t">
+                            تعديل نقاط: {singleModal.student.name}
                         </div>
-                        <div className="plan__current">
-                            <h2>جدول الإنجازات</h2>
-                            <div className="plan__date-range">
-                                <div className="date-picker to">
-                                    <input
-                                        type="search"
-                                        placeholder="البحث بالطالب أو السبب..."
-                                        value={search}
-                                        onChange={handleSearch}
-                                        disabled={loading}
-                                    />
-                                </div>
-                                <button
-                                    className="teacherStudent__status-btn add-btn p-3 rounded-xl border-2 bg-green-50 border-green-300 text-green-600 hover:bg-green-100 font-medium ml-3"
-                                    onClick={handleAddNew}
-                                    disabled={loading}
-                                >
-                                    <FiPlus size={20} className="inline mr-2" />
-                                    إنجاز جديد
-                                </button>
-                            </div>
+                        <div
+                            style={{
+                                fontSize: 13,
+                                color: "var(--n500)",
+                                marginBottom: 12,
+                            }}
+                        >
+                            النقاط الحالية:{" "}
+                            <strong>{singleModal.student.total_points}</strong>
+                        </div>
+
+                        {/* نوع العملية */}
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: 8,
+                                marginBottom: 12,
+                            }}
+                        >
+                            {(["added", "deducted"] as PointsAction[]).map(
+                                (action) => (
+                                    <button
+                                        key={action}
+                                        className={`btn ${singleModal.points_action === action ? "bp" : "bs"}`}
+                                        style={{ flex: 1 }}
+                                        onClick={() =>
+                                            setSingleModal((p) => ({
+                                                ...p,
+                                                points_action: action,
+                                            }))
+                                        }
+                                    >
+                                        {action === "added"
+                                            ? "➕ إضافة"
+                                            : "➖ خصم"}
+                                    </button>
+                                ),
+                            )}
+                        </div>
+
+                        {/* عدد النقاط */}
+                        <div style={{ marginBottom: 12 }}>
+                            <label
+                                style={{
+                                    fontSize: 13,
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                عدد النقاط
+                            </label>
+                            <input
+                                className="fi"
+                                type="number"
+                                min={1}
+                                value={singleModal.points}
+                                onChange={(e) =>
+                                    setSingleModal((p) => ({
+                                        ...p,
+                                        points: Math.max(
+                                            1,
+                                            Number(e.target.value),
+                                        ),
+                                    }))
+                                }
+                            />
+                        </div>
+
+                        {/* السبب */}
+                        <div style={{ marginBottom: 16 }}>
+                            <label
+                                style={{
+                                    fontSize: 13,
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                السبب
+                            </label>
+                            <input
+                                className="fi"
+                                placeholder="سبب الإضافة أو الخصم..."
+                                value={singleModal.reason}
+                                onChange={(e) =>
+                                    setSingleModal((p) => ({
+                                        ...p,
+                                        reason: e.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+
+                        <div className="conf-acts">
+                            <button
+                                className="btn bp"
+                                onClick={submitSingle}
+                                disabled={submitting}
+                            >
+                                {submitting ? "جاري..." : "تأكيد"}
+                            </button>
+                            <button
+                                className="btn bs"
+                                onClick={() => setShowSingle(false)}
+                            >
+                                إلغاء
+                            </button>
                         </div>
                     </div>
                 </div>
+            )}
 
-                {/* Table */}
-                <div className="plan__daily-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>الطالب</th>
-                                <th>النقاط</th>
-                                <th>النوع</th>
-                                <th>إجمالي النقاط</th>
-                                <th>الإنجازات</th>
-                                <th>السبب</th>
-                                <th>التاريخ</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {achievements.length === 0 && !loading ? (
+            {/* ── مودال جماعي ── */}
+            {showBulk && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <div className="conf-box" style={{ minWidth: 340 }}>
+                        <div className="conf-t">
+                            إضافة نقاط لـ {selectedIds.length} طالب
+                        </div>
+
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: 8,
+                                marginBottom: 12,
+                            }}
+                        >
+                            {(["added", "deducted"] as PointsAction[]).map(
+                                (action) => (
+                                    <button
+                                        key={action}
+                                        className={`btn ${bulkForm.points_action === action ? "bp" : "bs"}`}
+                                        style={{ flex: 1 }}
+                                        onClick={() =>
+                                            setBulkForm((p) => ({
+                                                ...p,
+                                                points_action: action,
+                                            }))
+                                        }
+                                    >
+                                        {action === "added"
+                                            ? "➕ إضافة"
+                                            : "➖ خصم"}
+                                    </button>
+                                ),
+                            )}
+                        </div>
+
+                        <div style={{ marginBottom: 12 }}>
+                            <label
+                                style={{
+                                    fontSize: 13,
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                عدد النقاط
+                            </label>
+                            <input
+                                className="fi"
+                                type="number"
+                                min={1}
+                                value={bulkForm.points}
+                                onChange={(e) =>
+                                    setBulkForm((p) => ({
+                                        ...p,
+                                        points: Math.max(
+                                            1,
+                                            Number(e.target.value),
+                                        ),
+                                    }))
+                                }
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: 16 }}>
+                            <label
+                                style={{
+                                    fontSize: 13,
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                السبب
+                            </label>
+                            <input
+                                className="fi"
+                                placeholder="سبب الإضافة أو الخصم..."
+                                value={bulkForm.reason}
+                                onChange={(e) =>
+                                    setBulkForm((p) => ({
+                                        ...p,
+                                        reason: e.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+
+                        <div className="conf-acts">
+                            <button
+                                className="btn bp"
+                                onClick={submitBulk}
+                                disabled={submitting}
+                            >
+                                {submitting
+                                    ? "جاري..."
+                                    : `تأكيد (${selectedIds.length} طالب)`}
+                            </button>
+                            <button
+                                className="btn bs"
+                                onClick={() => setShowBulk(false)}
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── المحتوى الرئيسي ── */}
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    {/* Header */}
+                    <div className="wh">
+                        <div className="wh-l">
+                            نقاط الطلاب ({pagination?.total ?? students.length}{" "}
+                            طالب)
+                        </div>
+                        <div className="flx" style={{ gap: 8 }}>
+                            <input
+                                className="fi"
+                                style={{ margin: 0 }}
+                                placeholder="بحث بالاسم أو الإيميل..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            {selectedIds.length > 0 && (
+                                <button
+                                    className="btn bp bsm"
+                                    onClick={() => setShowBulk(true)}
+                                >
+                                    ➕ نقاط للمحددين ({selectedIds.length})
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Table */}
+                    <div style={{ overflowX: "auto" }}>
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td
-                                        colSpan={8}
-                                        className="text-center py-8 text-gray-500"
-                                    >
-                                        لا يوجد إنجازات حالياً
-                                    </td>
+                                    <th style={{ width: 40 }}>
+                                        {/* تحديد الكل */}
+                                        <input
+                                            type="checkbox"
+                                            checked={allSelected}
+                                            onChange={toggleAll}
+                                            title="تحديد الكل"
+                                        />
+                                    </th>
+                                    <th>الطالب</th>
+                                    <th>إجمالي النقاط</th>
+                                    <th>مضافة</th>
+                                    <th>مخصومة</th>
+                                    <th>الإجراءات</th>
                                 </tr>
-                            ) : (
-                                achievements.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        className="plan__row active"
-                                    >
-                                        <td>
-                                            <div className="font-medium">
-                                                {item.user.name}
-                                            </div>
-                                            <div className="text-sm text-gray-500">
-                                                {item.user.email}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(item.points)}`}
-                                            >
-                                                {item.points} (
-                                                {getPointsStatus(item.points)})
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {item.achievement_type || "عام"}
-                                        </td>
-                                        <td className="font-bold text-lg">
-                                            {item.total_points}
-                                            {item.total_points >= 100 && " ⭐"}
-                                        </td>
-                                        <td>
-                                            <div className="flex flex-wrap gap-1">
-                                                {renderAchievementBadges(
-                                                    item.achievements,
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td
-                                            className="max-w-xs truncate"
-                                            title={item.reason}
+                            </thead>
+                            <tbody>
+                                {students.length > 0 ? (
+                                    students.map((student) => (
+                                        <tr
+                                            key={student.id}
+                                            style={
+                                                selectedIds.includes(student.id)
+                                                    ? {
+                                                          background:
+                                                              "var(--p50, #f5f3ff)",
+                                                      }
+                                                    : {}
+                                            }
                                         >
-                                            {item.reason}
-                                        </td>
-                                        <td>{item.created_at_formatted}</td>
-                                        <td>
-                                            <div className="teacherStudent__btns">
-                                                <button
-                                                    className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
-                                                    onClick={() =>
-                                                        handleEdit(item)
+                                            <td>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(
+                                                        student.id,
+                                                    )}
+                                                    onChange={() =>
+                                                        toggleOne(student.id)
                                                     }
-                                                    disabled={loading}
-                                                    title="تعديل الإنجاز"
+                                                />
+                                            </td>
+                                            <td>
+                                                <div
+                                                    style={{ fontWeight: 700 }}
                                                 >
-                                                    <FiEdit3 />
-                                                </button>
+                                                    {student.name}
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: 12,
+                                                        color: "var(--n500)",
+                                                    }}
+                                                >
+                                                    {student.email}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span
+                                                    className="badge"
+                                                    style={{
+                                                        ...getPointsColor(
+                                                            student.total_points,
+                                                        ),
+                                                        fontWeight: 700,
+                                                        fontSize: 15,
+                                                    }}
+                                                >
+                                                    {student.total_points}
+                                                    {student.total_points >=
+                                                        100 && " ⭐"}
+                                                </span>
+                                            </td>
+                                            <td style={{ color: "#166534" }}>
+                                                +{student.added_points}
+                                            </td>
+                                            <td style={{ color: "#991b1b" }}>
+                                                -{student.deducted_points}
+                                            </td>
+                                            <td>
                                                 <button
-                                                    className="teacherStudent__status-btn delete-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
+                                                    className="btn bs bxs"
                                                     onClick={() =>
-                                                        handleDelete(item.id)
+                                                        openSingle(student)
                                                     }
-                                                    disabled={loading}
-                                                    title="حذف الإنجاز"
                                                 >
-                                                    <FiTrash2 />
+                                                    تعديل النقاط
                                                 </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : !loading ? (
+                                    <tr>
+                                        <td colSpan={6}>
+                                            <div className="empty">
+                                                <p>
+                                                    {search
+                                                        ? "لا توجد نتائج"
+                                                        : "لا يوجد طلاب"}
+                                                </p>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                ) : null}
+                            </tbody>
+                        </table>
+                    </div>
 
-                {/* Pagination */}
-                {pagination && pagination.last_page > 1 && (
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        style={{ width: "100%" }}
-                    >
-                        <div className="flex justify-between items-center p-4">
-                            <div className="text-sm text-gray-600">
-                                عرض {achievements.length} من {pagination.total}{" "}
-                                إنجاز • الصفحة <strong>{currentPage}</strong> من{" "}
-                                <strong>{pagination.last_page}</strong>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => goToPage(currentPage - 1)}
-                                    disabled={!hasPrev || loading}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
+                    {/* Pagination */}
+                    {pagination && pagination.last_page > 1 && (
+                        <div className="pagination">
+                            <div className="flex justify-between items-center p-4 bg-n100 rounded-lg mt-4">
+                                <div
+                                    className="text-sm"
+                                    style={{ color: "var(--n600)" }}
                                 >
-                                    السابق
-                                </button>
-                                <span className="px-4 py-2 bg-purple-500 text-white rounded-lg font-bold">
-                                    {currentPage}
-                                </span>
-                                <button
-                                    onClick={() => goToPage(currentPage + 1)}
-                                    disabled={!hasNext || loading}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
-                                >
-                                    التالي
-                                </button>
+                                    الصفحة <strong>{currentPage}</strong> من{" "}
+                                    <strong>{pagination.last_page}</strong> •{" "}
+                                    <strong>{pagination.total}</strong> طالب
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        className="btn bs"
+                                        onClick={() =>
+                                            goToPage(currentPage - 1)
+                                        }
+                                        disabled={currentPage <= 1 || loading}
+                                    >
+                                        السابق
+                                    </button>
+                                    <span className="px-4 py-2 bg-purple-500 text-white rounded-lg font-bold">
+                                        {currentPage}
+                                    </span>
+                                    <button
+                                        className="btn bs"
+                                        onClick={() =>
+                                            goToPage(currentPage + 1)
+                                        }
+                                        disabled={
+                                            currentPage >=
+                                                pagination.last_page || loading
+                                        }
+                                    >
+                                        التالي
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </>
     );

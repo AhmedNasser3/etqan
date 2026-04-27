@@ -1,4 +1,3 @@
-// hooks/useMosques.ts
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
@@ -14,85 +13,74 @@ interface Mosque {
     created_at: string;
 }
 
+function getPortalCenterId(): number | null {
+    const id = (window as any).__PORTAL_CENTER_ID__;
+    return id ? Number(id) : null;
+}
+
+function getPortalMosqueId(): number | null {
+    const id = (window as any).__PORTAL_MOSQUE_ID__;
+    return id ? Number(id) : null;
+}
+
+function buildHeaders(): HeadersInit {
+    const headers: Record<string, string> = {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+    };
+    const centerId = getPortalCenterId();
+    if (centerId) headers["X-Center-Id"] = String(centerId);
+    return headers;
+}
+
 export const useMosques = () => {
     const [mosques, setMosques] = useState<Mosque[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    //  CSRF Token Helper
-    const getCsrfToken = (): string => {
-        const cookies = document.cookie.split(";");
-        const csrfCookie = cookies.find((cookie) =>
-            cookie.trim().startsWith("XSRF-TOKEN="),
-        );
-        return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
-    };
 
     const fetchMosques = async () => {
         setLoading(true);
         setError(null);
 
         try {
-            console.log("🌐 Fetching mosques...");
-
-            //  1. CSRF Token أولاً
+            // CSRF لو مش موجود
             if (!document.cookie.includes("XSRF-TOKEN=")) {
-                console.log("🔑 Getting CSRF token...");
-                const csrfResponse = await fetch("/sanctum/csrf-cookie", {
+                await fetch("/sanctum/csrf-cookie", {
                     credentials: "include",
-                    headers: {
-                        Accept: "application/json",
-                    },
+                    headers: { Accept: "application/json" },
                 });
-                console.log(" CSRF Status:", csrfResponse.status);
             }
 
-            //  2. API Request مع Headers كاملة
             const response = await fetch("/api/v1/super/mosques", {
-                credentials: "include", //  Cookies/Session
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-XSRF-TOKEN": getCsrfToken(), //  CSRF Token
-                },
+                credentials: "include",
+                headers: buildHeaders(),
             });
 
-            console.log("📡 Response status:", response.status);
-
             const responseText = await response.text();
-            console.log("📄 Response preview:", responseText.substring(0, 200));
 
-            if (!response.ok) {
-                console.error("❌ Error details:", {
-                    status: response.status,
-                    text: responseText.substring(0, 300),
-                });
-                throw new Error(
-                    `خطأ ${response.status}: ${response.statusText}`,
-                );
-            }
-
-            //  تأكد إنه JSON مش HTML
-            if (
-                responseText.trim().startsWith("<!DOCTYPE") ||
-                responseText.trim().startsWith("<html")
-            ) {
-                throw new Error("Backend returned HTML instead of JSON");
-            }
+            if (!response.ok) throw new Error(`خطأ ${response.status}`);
+            if (responseText.trim().startsWith("<"))
+                throw new Error("Backend returned HTML");
 
             const result = JSON.parse(responseText);
 
             if (result.success) {
-                setMosques(result.data || []);
-                console.log(" Mosques loaded:", result.data?.length || 0);
+                let data: Mosque[] = result.data || [];
+
+                // ── لو portal: اعرض المسجد الخاص بالرابط بس ──────────────
+                const portalMosqueId = getPortalMosqueId();
+                if (portalMosqueId) {
+                    data = data.filter((m) => m.id === portalMosqueId);
+                }
+
+                setMosques(data);
             } else {
                 setError(result.message || "فشل في جلب المساجد");
                 toast.error(result.message || "فشل في جلب المساجد");
             }
         } catch (err: any) {
-            console.error("💥 Fetch error:", err);
-            setError(err.message || "حدث خطأ في جلب المساجد");
+            setError(err.message || "حدث خطأ");
             toast.error(err.message || "فشل في جلب المساجد");
         } finally {
             setLoading(false);
@@ -103,13 +91,11 @@ export const useMosques = () => {
         fetchMosques();
     }, []);
 
-    const refetch = () => fetchMosques();
-
     return {
         mosques,
         loading,
         error,
-        refetch,
+        refetch: fetchMosques,
         stats: {
             total: mosques.length,
             active: mosques.filter((m) => m.is_active).length,

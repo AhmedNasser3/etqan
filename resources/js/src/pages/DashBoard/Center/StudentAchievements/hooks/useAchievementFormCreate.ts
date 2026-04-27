@@ -1,6 +1,6 @@
-// hooks/useAchievementFormCreate.ts - ✅ إصلاح نهائي
+// hooks/useAchievementFormCreate.ts - إصلاح نهائي كامل
 import { useState, useEffect, useCallback } from "react";
-import toast from "react-hot-toast";
+import { useToast } from "../../../../../../contexts/ToastContext"; // نفس الـ context
 
 interface UserType {
     id: number;
@@ -8,6 +8,9 @@ interface UserType {
     email: string;
     phone?: string;
     center_id: number;
+    center?: {
+        name: string;
+    };
 }
 
 interface FormData {
@@ -41,6 +44,8 @@ export const useAchievementFormCreate = () => {
     const [achievementKey, setAchievementKey] = useState("");
     const [achievementValue, setAchievementValue] = useState("");
 
+    const { notifyError } = useToast(); // ✅ نفس الـ context
+
     console.log(
         "🟢 [HOOK] Render - loading:",
         loadingData,
@@ -50,7 +55,7 @@ export const useAchievementFormCreate = () => {
         user?.id,
     );
 
-    // ✅ 1️⃣ Fetch User info أولاً
+    // 1️⃣ Fetch User info أولاً
     useEffect(() => {
         console.log("🚀 [STEP 1] Mounting - fetchUser()");
         fetchUser();
@@ -68,7 +73,7 @@ export const useAchievementFormCreate = () => {
                 const responseData = await response.json();
                 console.log("📦 [fetchUser] Raw:", responseData);
 
-                // ✅ إصلاح: User nested في success.user
+                // إصلاح: User nested في success.user
                 const actualUser = responseData.user || responseData;
                 console.log("👤 [fetchUser] Set user:", actualUser.center_id);
                 setUser(actualUser);
@@ -78,7 +83,7 @@ export const useAchievementFormCreate = () => {
         }
     }, []);
 
-    // ✅ 2️⃣ Fetch Students - dependency محسن
+    // 2️⃣ Fetch Students - dependency محسن
     const fetchCenterStudents = useCallback(async () => {
         console.log("🔄 [fetchStudents] user.center_id:", user?.center_id);
 
@@ -107,19 +112,20 @@ export const useAchievementFormCreate = () => {
             }
 
             const data = await response.json();
-            console.log("✅ Students:", data.data?.length || 0);
+            console.log("📊 Students:", data.data?.length || 0);
 
             setUsersData(data.data || []);
         } catch (error) {
             console.error("💥 fetchStudents:", error);
+            notifyError("فشل تحميل الطلاب");
             setUsersData([]);
         } finally {
             console.log("🏁 [fetchStudents] loadingData = false");
             setLoadingData(false);
         }
-    }, [user?.center_id]); // ✅ Dependency صحيح
+    }, [user?.center_id, notifyError]);
 
-    // ✅ 3️⃣ تشغيل fetchCenterStudents لما user يتغير
+    // 3️⃣ تشغيل fetchCenterStudents لما user يتغير
     useEffect(() => {
         console.log(
             "🔗 [useEffect] user.id:",
@@ -131,7 +137,7 @@ export const useAchievementFormCreate = () => {
             console.log("▶️ Triggering fetchCenterStudents");
             fetchCenterStudents();
         }
-    }, [user]); // ✅ user كامل مش user?.center_id
+    }, [user, fetchCenterStudents]);
 
     // باقي الـ functions...
     const handleInputChange = useCallback(

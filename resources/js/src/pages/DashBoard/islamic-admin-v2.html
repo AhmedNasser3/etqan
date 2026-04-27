@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>منصة نور العلم - لوحة الإدارة</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root{
+  --gold:#C9A84C;--gold-light:#E8C97A;--gold-dark:#8B6914;
+  --emerald:#1A5C3A;--emerald-light:#2E7D52;--emerald-pale:#E8F5EE;
+  --cream:#FFFDF7;--white:#FFFFFF;
+  --text-dark:#1A1A1A;--text-mid:#4A4A4A;--text-light:#888;
+  --border:#E8E0CC;
+  --shadow-gold:rgba(201,168,76,0.18);--shadow-em:rgba(26,92,58,0.12);
+  --red:#E53935;--blue:#1565C0;--orange:#F57C00;
+  --sidebar-w:272px;--topbar-h:64px;
+  --radius:16px;--radius-sm:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Tajawal',sans-serif;background:var(--cream);color:var(--text-dark);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 900px 600px at 80% 10%,rgba(201,168,76,.05) 0%,transparent 70%),radial-gradient(ellipse 600px 400px at 10% 80%,rgba(26,92,58,.04) 0%,transparent 70%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23C9A84C' fill-opacity='0.025'%3E%3Cpath d='M40 0L50 10L60 0L70 10L80 0v10L70 20l10 10L70 40l10 10L70 60l10 10v10L70 70 60 80 50 70 40 80 30 70 20 80 10 70 0 80V70L10 60 0 50l10-10L0 30l10-10L0 10V0l10 10L20 0l10 10Z'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none;z-index:0;}
+
+/* ============ SIDEBAR ============ */
+.sidebar{
+  width:var(--sidebar-w);background:linear-gradient(180deg,#0A2E18 0%,#1A5C3A 50%,#0A2E18 100%);
+  min-height:100vh;position:fixed;right:0;top:0;z-index:200;
+  display:flex;flex-direction:column;
+  box-shadow:-4px 0 30px rgba(0,0,0,.25);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);overflow:hidden;
+}
+.sidebar::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='30,0 35,10 45,10 37,17 40,28 30,22 20,28 23,17 15,10 25,10' fill='%23C9A84C' fill-opacity='0.06'/%3E%3C/svg%3E");pointer-events:none;}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;backdrop-filter:blur(2px);}
+.sidebar-overlay.show{display:block;}
+
+.sidebar-logo{padding:24px 20px 18px;text-align:center;border-bottom:1px solid rgba(201,168,76,.2);position:relative;}
+.logo-ornament{width:56px;height:56px;margin:0 auto 10px;}
+.logo-ornament svg{width:100%;height:100%;}
+.logo-title{font-family:'Amiri',serif;font-size:20px;color:var(--gold-light);font-weight:700;line-height:1.3;}
+.logo-sub{font-size:10px;color:rgba(201,168,76,.55);margin-top:3px;letter-spacing:1px;}
+
+.sidebar-nav{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-section-label{font-size:9px;color:rgba(201,168,76,.45);letter-spacing:2px;padding:10px 20px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;color:rgba(255,255,255,.7);cursor:pointer;transition:all .2s;font-size:13px;font-weight:500;border-right:3px solid transparent;position:relative;}
+.nav-item:hover,.nav-item.active{background:rgba(201,168,76,.1);color:var(--gold-light);border-right-color:var(--gold);}
+.nav-item i{width:18px;text-align:center;font-size:14px;}
+.nav-badge{margin-right:auto;background:var(--gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;}
+
+.sidebar-footer{padding:14px 20px;border-top:1px solid rgba(201,168,76,.15);display:flex;align-items:center;gap:10px;}
+.admin-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;}
+.admin-name{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;}
+.admin-role{font-size:10px;color:rgba(201,168,76,.6);}
+
+/* ============ MAIN ============ */
+.main{margin-right:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:1;}
+
+/* ============ TOPBAR ============ */
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:var(--topbar-h);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 16px rgba(0,0,0,.04);}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.menu-toggle{display:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--cream);align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--emerald);}
+.page-title{font-family:'Amiri',serif;font-size:20px;color:var(--emerald);font-weight:700;}
+.page-breadcrumb{font-size:11px;color:var(--text-light);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.search-global{display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:22px;padding:7px 16px;min-width:200px;transition:all .2s;}
+.search-global:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px var(--shadow-gold);}
+.search-global i{color:var(--text-light);font-size:13px;}
+.search-global input{border:none;background:transparent;outline:none;font-family:'Tajawal',sans-serif;font-size:13px;color:var(--text-dark);width:100%;}
+.topbar-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);cursor:pointer;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-mid);position:relative;transition:all .2s;}
+.topbar-btn:hover{background:var(--emerald-pale);color:var(--emerald);}
+.notif-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--white);}
+
+/* ============ CONTENT ============ */
+.content{padding:24px;flex:1;}
+
+/* ============ STATS GRID ============ */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--white);border-radius:var(--radius);padding:20px;border:1px solid var(--border);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;animation:fadeUp .5s ease both;cursor:pointer;}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,0,.08);}
+.stat-card::before{content:'';position:absolute;bottom:0;right:0;width:70px;height:70px;border-radius:50% 0 0 0;opacity:.08;}
+.stat-card.gold::before{background:var(--gold);}
+.stat-card.green::before{background:var(--emerald);}
+.stat-card.blue::before{background:var(--blue);}
+.stat-card.orange::before{background:var(--orange);}
+.stat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px;}
+.stat-card.gold .stat-icon{background:rgba(201,168,76,.12);color:var(--gold-dark);}
+.stat-card.green .stat-icon{background:rgba(26,92,58,.1);color:var(--emerald);}
+.stat-card.blue .stat-icon{background:rgba(21,101,192,.1);color:var(--blue);}
+.stat-card.orange .stat-icon{background:rgba(245,124,0,.1);color:var(--orange);}
+.stat-value{font-size:28px;font-weight:900;color:var(--text-dark);line-height:1;margin-bottom:4px;}
+.stat-label{font-size:12px;color:var(--text-light);font-weight:500;}
+.stat-change{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;margin-top:8px;padding:2px 7px;border-radius:20px;}
+.stat-change.up{background:rgba(46,125,50,.1);color:#2E7D32;}
+.stat-change.down{background:rgba(229,57,53,.1);color:var(--red);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+.stat-card:nth-child(1){animation-delay:.05s;}
+.stat-card:nth-child(2){animation-delay:.1s;}
+.stat-card:nth-child(3){animation-delay:.15s;}
+.stat-card:nth-child(4){animation-delay:.2s;}
+
+/* ============ QUICK STATS ============ */
+.quick-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:28px;}
+.quick-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:18px;animation:fadeUp .5s ease both;cursor:pointer;}
+.quick-card:nth-child(1){animation-delay:.25s;}
+.quick-card:nth-child(2){animation-delay:.3s;}
+.quick-card:nth-child(3){animation-delay:.35s;}
+.quick-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.06);}
+.quick-card-title{font-size:12px;font-weight:700;color:var(--text-mid);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.quick-card-title i{color:var(--gold);}
+.attendance-ring{display:flex;align-items:center;gap:14px;}
+.ring-legend{display:flex;flex-direction:column;gap:6px;}
+.ring-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-mid);}
+.ring-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.mini-stat-list{display:flex;flex-direction:column;gap:9px;}
+.mini-stat-row{display:flex;align-items:center;gap:8px;}
+.mini-stat-label{font-size:11px;color:var(--text-light);flex:1;white-space:nowrap;}
+.mini-stat-bar{flex:2;height:5px;background:#F0EDE5;border-radius:3px;overflow:hidden;}
+.mini-stat-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+.mini-stat-val{font-size:11px;font-weight:700;color:var(--text-dark);min-width:55px;text-align:left;}
+
+/* ============ SECTION HEADER ============ */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.section-title{display:flex;align-items:center;gap:10px;font-family:'Amiri',serif;font-size:19px;font-weight:700;color:var(--emerald);}
+.section-title::before{content:'';display:block;width:4px;height:22px;background:linear-gradient(180deg,var(--gold),var(--gold-dark));border-radius:2px;}
+
+/* ============ TABS ============ */
+.tabs{display:flex;gap:0;background:var(--cream);border-radius:10px;padding:4px;border:1px solid var(--border);overflow-x:auto;}
+.tab{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;color:var(--text-light);white-space:nowrap;}
+.tab.active{background:var(--white);color:var(--emerald);box-shadow:0 2px 8px rgba(0,0,0,.06);}
+
+/* ============ BUTTONS ============ */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;white-space:nowrap;}
+.btn-primary{background:linear-gradient(135deg,var(--emerald-light),var(--emerald));color:#fff;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px var(--shadow-em);}
+.btn-gold{background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#fff;}
+.btn-gold:hover{transform:translateY(-1px);box-shadow:0 6px 18px var(--shadow-gold);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-mid);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold-dark);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+.btn-icon{width:30px;height:30px;padding:0;justify-content:center;}
+.btn-red{background:rgba(229,57,53,.1);border:1px solid rgba(229,57,53,.2);color:var(--red);}
+
+/* ============ FILTERS ============ */
+.filters-bar{background:var(--white);border-radius:var(--radius);padding:14px 20px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;animation:fadeUp .4s ease both;}
+.filter-group{display:flex;align-items:center;gap:6px;}
+.filter-label{font-size:11px;color:var(--text-light);white-space:nowrap;}
+.filter-select{border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:'Tajawal',sans-serif;font-size:12px;color:var(--text-dark);background:var(--cream);outline:none;cursor:pointer;transition:all .2s;}
+.filter-select:focus{border-color:var(--gold);}
+.filter-search{display:flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;background:var(--cream);transition:all .2s;flex:1;min-width:160px;}
+.filter-search:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px var(--shadow-gold);}
+.filter-search i{color:var(--text-light);font-size:12px;}
+.filter-search input{border:none;background:transparent;outline:none;font-family:'Tajawal',sans-serif;font-size:12px;width:100%;}
+
+/* ============ TABLE CONTAINER ============ */
+.table-container{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;animation:fadeUp .5s ease both .1s;}
+.table-header-bar{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#FFFDF7,rgba(201,168,76,.03));}
+.table-title{font-weight:700;font-size:14px;color:var(--text-dark);}
+.table-count{font-size:11px;color:var(--text-light);margin-top:2px;}
+.table-actions{display:flex;gap:6px;}
+
+/* Desktop table */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;min-width:900px;}
+thead th{padding:10px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--text-light);background:#FAFAF8;border-bottom:1px solid var(--border);letter-spacing:.5px;white-space:nowrap;cursor:pointer;user-select:none;}
+thead th:hover{color:var(--emerald);}
+thead th .si{margin-right:3px;opacity:.4;font-size:9px;}
+thead th.sorted .si{opacity:1;color:var(--gold);}
+tbody tr{border-bottom:1px solid rgba(232,224,204,.4);transition:background .15s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(201,168,76,.04);}
+td{padding:12px 14px;vertical-align:middle;}
+
+/* ============ MOBILE CARDS (replaces table on mobile) ============ */
+.mobile-cards{display:none;}
+.emp-mobile-card{background:var(--white);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:10px;animation:fadeUp .3s ease;}
+.emp-mobile-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.07);}
+.emp-mc-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.emp-mc-body{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.emp-mc-field{background:var(--cream);border-radius:8px;padding:8px 10px;}
+.emp-mc-field-label{font-size:9px;color:var(--text-light);font-weight:600;margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px;}
+.emp-mc-field-val{font-size:12px;font-weight:700;color:var(--text-dark);}
+.emp-mc-actions{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.emp-mc-expand{width:100%;text-align:center;}
+
+/* ============ EMPLOYEE ============ */
+.emp-info{display:flex;align-items:center;gap:10px;}
+.emp-avatar{width:44px;height:44px;border-radius:50%;position:relative;flex-shrink:0;border:2px solid var(--border);overflow:hidden;background:linear-gradient(135deg,var(--emerald-pale),white);display:flex;align-items:center;justify-content:center;}
+.emp-avatar svg{width:34px;height:34px;}
+.emp-status-dot{position:absolute;bottom:1px;right:1px;width:11px;height:11px;border-radius:50%;border:2px solid white;}
+.emp-status-dot.online{background:#4CAF50;}
+.emp-status-dot.offline{background:#9E9E9E;}
+.emp-status-dot.away{background:#FF9800;}
+.emp-name{font-weight:700;font-size:13px;color:var(--text-dark);margin-bottom:1px;}
+.emp-id{font-size:10px;color:var(--text-light);}
+.mosque-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(26,92,58,.08);color:var(--emerald);border:1px solid rgba(26,92,58,.15);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:600;}
+.mosque-tag.none{background:rgba(158,158,158,.08);color:#888;border-color:rgba(158,158,158,.2);}
+.badge{display:inline-flex;align-items:center;gap:3px;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;}
+.badge-online{background:rgba(76,175,80,.12);color:#2E7D32;}
+.badge-offline{background:rgba(158,158,158,.12);color:#616161;}
+.badge-away{background:rgba(255,152,0,.12);color:#E65100;}
+.salary-value{font-weight:700;color:var(--text-dark);font-size:13px;}
+.salary-deduct{font-size:10px;color:var(--red);font-weight:600;}
+.salary-net{font-size:11px;color:var(--emerald);font-weight:700;}
+.hours-bar-wrap{display:flex;align-items:center;gap:7px;min-width:90px;}
+.hours-bar{flex:1;height:5px;border-radius:3px;background:rgba(0,0,0,.06);overflow:hidden;}
+.hours-bar-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+.hours-val{font-size:11px;font-weight:700;color:var(--text-mid);white-space:nowrap;}
+.circles-mini{display:flex;gap:2px;flex-wrap:wrap;}
+.circle-day{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;}
+.circle-day.present{background:rgba(26,92,58,.1);color:var(--emerald);border:1px solid rgba(26,92,58,.2);}
+.circle-day.absent{background:rgba(229,57,53,.08);color:var(--red);border:1px solid rgba(229,57,53,.15);}
+.circle-day.holiday{background:rgba(201,168,76,.1);color:var(--gold-dark);border:1px solid rgba(201,168,76,.2);}
+.time-range{font-size:11px;color:var(--text-mid);white-space:nowrap;}
+.time-range strong{color:var(--text-dark);font-weight:700;}
+.action-btns{display:flex;gap:4px;align-items:center;}
+
+/* ============ EXPAND ROW ============ */
+.expand-row{background:#FAFAF8;}
+.expand-row td{padding:0;}
+.expand-inner{padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.expand-panel{background:var(--white);border-radius:12px;border:1px solid var(--border);overflow:hidden;}
+.expand-panel-title{padding:9px 14px;background:linear-gradient(135deg,rgba(26,92,58,.06),rgba(201,168,76,.04));font-size:11px;font-weight:700;color:var(--emerald);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;}
+.expand-panel-body{padding:10px 14px;}
+.circle-list{display:flex;flex-direction:column;gap:6px;}
+.circle-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--cream);border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.circle-item:hover{border-color:var(--gold);background:rgba(201,168,76,.04);}
+.circle-item-name{font-size:12px;font-weight:600;color:var(--text-dark);}
+.circle-item-students{font-size:10px;color:var(--text-light);}
+.circle-item-time{font-size:10px;color:var(--emerald);font-weight:600;white-space:nowrap;}
+.circle-item-live{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;margin-top:2px;}
+.circle-item-live.live{background:rgba(229,57,53,.1);color:var(--red);}
+.circle-item-live.ended{background:rgba(158,158,158,.1);color:#666;}
+.circle-item-live.upcoming{background:rgba(245,124,0,.1);color:var(--orange);}
+
+.plan-list{display:flex;flex-direction:column;gap:5px;}
+.plan-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.04);}
+.plan-item:last-child{border-bottom:none;}
+.plan-day{width:34px;height:34px;border-radius:8px;background:rgba(201,168,76,.1);color:var(--gold-dark);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.plan-detail{flex:1;}
+.plan-detail-title{font-size:11px;font-weight:600;color:var(--text-dark);}
+.plan-detail-sub{font-size:10px;color:var(--text-light);}
+.plan-hours-badge{background:rgba(26,92,58,.1);color:var(--emerald);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;}
+.plan-item-btn{padding:3px 8px;font-size:9px;}
+
+/* ============ PAGINATION ============ */
+.pagination-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);background:#FAFAF8;flex-wrap:wrap;gap:8px;}
+.page-info{font-size:11px;color:var(--text-light);}
+.page-btns{display:flex;gap:3px;}
+.page-btn{min-width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;cursor:pointer;color:var(--text-mid);transition:all .15s;font-family:'Tajawal',sans-serif;padding:0 5px;}
+.page-btn:hover{border-color:var(--gold);color:var(--gold-dark);}
+.page-btn.active{background:var(--emerald);color:var(--white);border-color:var(--emerald);}
+.page-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ============ MODALS ============ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:20px;width:580px;max-width:100%;max-height:92vh;overflow-y:auto;animation:modalIn .3s cubic-bezier(.34,1.56,.64,1);}
+@keyframes modalIn{from{opacity:0;transform:scale(.92) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.modal-header{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:2;}
+.modal-title{font-family:'Amiri',serif;font-size:18px;font-weight:700;color:var(--emerald);display:flex;align-items:center;gap:8px;}
+.modal-close{width:30px;height:30px;border-radius:50%;border:none;background:var(--cream);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-mid);font-size:13px;}
+.modal-body{padding:20px 24px;}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--white);}
+
+.form-row{margin-bottom:14px;}
+.form-label{font-size:11px;font-weight:700;color:var(--text-mid);margin-bottom:5px;display:block;}
+.form-input{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;transition:all .2s;background:var(--cream);}
+.form-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--shadow-gold);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* ============ CIRCLE POPUP ============ */
+.circle-popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:1100;display:none;align-items:center;justify-content:center;padding:16px;}
+.circle-popup-overlay.open{display:flex;}
+.circle-popup{background:var(--white);border-radius:20px;width:640px;max-width:100%;max-height:90vh;overflow-y:auto;animation:modalIn .3s cubic-bezier(.34,1.56,.64,1);}
+.live-badge-big{display:inline-flex;align-items:center;gap:5px;background:rgba(229,57,53,.1);border:1px solid rgba(229,57,53,.3);color:var(--red);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;}
+.live-pulse{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulseDot 1.2s infinite;}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
+.timer-display{background:linear-gradient(135deg,var(--emerald),#0D3D22);border-radius:12px;padding:14px 20px;color:#fff;text-align:center;margin:12px 0;}
+.timer-time{font-size:32px;font-weight:900;font-family:'Tajawal',sans-serif;line-height:1;}
+.timer-label{font-size:11px;opacity:.7;margin-top:4px;}
+.timer-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;}
+.timer-box{background:var(--cream);border-radius:10px;padding:10px;text-align:center;border:1px solid var(--border);}
+.timer-box-val{font-size:20px;font-weight:900;color:var(--emerald);}
+.timer-box-label{font-size:10px;color:var(--text-light);margin-top:2px;}
+.student-list-preview{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.student-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--cream);border-radius:8px;border:1px solid var(--border);}
+.student-name{font-size:12px;font-weight:600;color:var(--text-dark);}
+.student-status-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;}
+.student-status-badge.present{background:rgba(76,175,80,.12);color:#2E7D32;}
+.student-status-badge.absent{background:rgba(229,57,53,.1);color:var(--red);}
+
+/* ============ PLAN POPUP ============ */
+.plan-popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:1100;display:none;align-items:center;justify-content:center;padding:16px;}
+.plan-popup-overlay.open{display:flex;}
+.plan-popup{background:var(--white);border-radius:20px;width:620px;max-width:100%;max-height:90vh;overflow-y:auto;animation:modalIn .3s cubic-bezier(.34,1.56,.64,1);}
+.sessions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;}
+.session-box{background:var(--cream);border-radius:10px;padding:10px;text-align:center;border:2px solid var(--border);}
+.session-box.done{border-color:var(--emerald);background:rgba(26,92,58,.05);}
+.session-box.current{border-color:var(--gold);background:rgba(201,168,76,.07);}
+.session-box-num{font-size:20px;font-weight:900;color:var(--emerald);}
+.session-box-label{font-size:9px;color:var(--text-light);margin-top:2px;}
+.plan-progress{background:var(--cream);border-radius:12px;padding:14px;border:1px solid var(--border);margin:12px 0;}
+.plan-progress-bar{height:10px;background:#E5E0D8;border-radius:5px;overflow:hidden;margin:8px 0;}
+.plan-progress-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--emerald),var(--gold));}
+.schedule-table{width:100%;border-collapse:collapse;font-size:12px;}
+.schedule-table th{background:#FAFAF8;padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text-light);border-bottom:1px solid var(--border);}
+.schedule-table td{padding:7px 10px;border-bottom:1px solid rgba(232,224,204,.4);}
+
+/* ============ STATS POPUP ============ */
+.stat-popup-content{padding:16px 0;}
+.stat-popup-list{display:flex;flex-direction:column;gap:8px;}
+.spl-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--cream);border-radius:10px;border:1px solid var(--border);}
+.spl-info{display:flex;align-items:center;gap:10px;}
+.spl-name{font-size:13px;font-weight:600;color:var(--text-dark);}
+.spl-sub{font-size:10px;color:var(--text-light);}
+.spl-val{font-size:14px;font-weight:900;}
+
+/* ============ TOOLTIP ============ */
+[data-tip]{position:relative;cursor:help;}
+[data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100%+6px);right:50%;transform:translateX(50%);background:rgba(26,30,26,.9);color:#fff;font-size:10px;padding:3px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;z-index:999;}
+[data-tip]:hover::after{opacity:1;}
+
+/* ============ TOAST ============ */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--emerald);color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;opacity:0;pointer-events:none;transition:opacity .3s;display:flex;align-items:center;gap:7px;}
+.toast.show{opacity:1;}
+
+/* ============ SCROLLBAR ============ */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:3px;}
+
+/* ============ RESPONSIVE ============ */
+@media(max-width:1280px){
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .quick-stats{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:900px){
+  :root{--sidebar-w:0px;}
+  .sidebar{transform:translateX(100%);width:272px;}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-right:0;}
+  .menu-toggle{display:flex;}
+  .search-global{min-width:120px;}
+  .quick-stats{grid-template-columns:1fr;}
+  .section-header{flex-direction:column;align-items:flex-start;}
+  .tabs{overflow-x:auto;}
+}
+@media(max-width:768px){
+  .content{padding:14px;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .topbar{padding:0 14px;height:58px;}
+  .page-title{font-size:16px;}
+  .search-global{display:none;}
+  /* Hide desktop table, show mobile cards */
+  .table-scroll{display:none;}
+  .mobile-cards{display:block;}
+  .expand-inner{grid-template-columns:1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .sessions-grid{grid-template-columns:repeat(2,1fr);}
+  .timer-row{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .stat-value{font-size:22px;}
+  .quick-stats{grid-template-columns:1fr;}
+  .emp-mc-body{grid-template-columns:1fr;}
+  .filters-bar{flex-direction:column;align-items:stretch;}
+  .filter-group{width:100%;}
+  .filter-select{flex:1;}
+}
+</style>
+</head>
+<body>
+
+<div class="layout" style="display:flex;min-height:100vh;position:relative;z-index:1;">
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-ornament">
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="28" stroke="#C9A84C" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <circle cx="30" cy="30" r="20" stroke="#C9A84C" stroke-width="1" opacity=".5"/>
+        <path d="M30 8L32 22L30 24L28 22Z" fill="#C9A84C" opacity=".9"/>
+        <path d="M30 52L32 38L30 36L28 38Z" fill="#C9A84C" opacity=".9"/>
+        <path d="M8 30L22 28L24 30L22 32Z" fill="#C9A84C" opacity=".9"/>
+        <path d="M52 30L38 28L36 30L38 32Z" fill="#C9A84C" opacity=".9"/>
+        <path d="M14 14L24 24L22 26L20 24Z" fill="#C9A84C" opacity=".6"/>
+        <path d="M46 46L36 36L38 34L40 36Z" fill="#C9A84C" opacity=".6"/>
+        <path d="M14 46L24 36L26 38L24 40Z" fill="#C9A84C" opacity=".6"/>
+        <path d="M46 14L36 24L34 22L36 20Z" fill="#C9A84C" opacity=".6"/>
+        <circle cx="30" cy="30" r="6" fill="#C9A84C" opacity=".9"/>
+        <circle cx="30" cy="30" r="3" fill="#0D3D22"/>
+      </svg>
+    </div>
+    <div class="logo-title">نور العلم</div>
+    <div class="logo-sub">NOOR AL-ILM PLATFORM</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">القائمة الرئيسية</div>
+    <div class="nav-item active" onclick="setActive(this)"><i class="fa-solid fa-grid-2"></i><span>لوحة التحكم</span></div>
+    <div class="nav-item" onclick="setActive(this)"><i class="fa-solid fa-chalkboard-user"></i><span>الموظفون والمعلمون</span><span class="nav-badge">24</span></div>
+    <div class="nav-item" onclick="setActive(this)"><i class="fa-solid fa-mosque"></i><span>المساجد</span></div>
+    <div class="nav-item" onclick="setActive(this)"><i class="fa-solid fa-users-rectangle"></i><span>الحلقات القرآنية</span><span class="nav-badge">12</span></div>
+    <div class="nav-item" onclick="setActive(this)"><i class="fa-solid fa-user-graduate"></i><span>الطلاب</span></div>
+    <div class="nav-item" onclick="setActive(this)"><i class="fa-solid fa-calendar-days"></i><span>الجداول والمواعيد</span></div>
+    <div class="nav-section-label" style="margin-top:8px;">المالية</div>
+    <div class="nav-item" onclick="setActive(this)"><i class="fa-solid fa-money-bill-trend-up"></i><span>الرواتب والمستحقات</span></div>
+    <div class="nav-item" onclick="setActive(this)"><i class="fa-solid fa-file-invoice-dollar"></i><span>الخصومات والعقوبات</span></div>
+    <div class="nav-section-label" style="margin-top:8px;">التقارير</div>
+    <div class="nav-item" onclick="setActive(this)"><i class="fa-solid fa-chart-column"></i><span>تقارير الحضور</span></div>
+    <div class="nav-item" onclick="setActive(this)"><i class="fa-solid fa-chart-pie"></i><span>التقارير الإحصائية</span></div>
+    <div class="nav-item" onclick="setActive(this)"><i class="fa-solid fa-gear"></i><span>الإعدادات</span></div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="admin-av"><i class="fa-solid fa-user-shield"></i></div>
+    <div><div class="admin-name">مدير النظام</div><div class="admin-role">Super Admin</div></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></div>
+      <div>
+        <div class="page-title">لوحة التحكم</div>
+        <div class="page-breadcrumb">الرئيسية / إدارة الموظفين</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="search-global">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="بحث سريع..." id="topSearch">
+      </div>
+      <button class="topbar-btn" onclick="openMobileSearch()"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <button class="topbar-btn" onclick="openStatPopup('attendance')"><i class="fa-solid fa-bell"></i><span class="notif-dot"></span></button>
+      <button class="topbar-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card gold" onclick="openStatPopup('attendance')">
+        <div class="stat-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+        <div class="stat-value">24</div>
+        <div class="stat-label">إجمالي المعلمين</div>
+        <span class="stat-change up"><i class="fa-solid fa-arrow-trend-up"></i> +3 هذا الشهر</span>
+      </div>
+      <div class="stat-card green" onclick="showToast('جاري فتح الحلقات...')">
+        <div class="stat-icon"><i class="fa-solid fa-users-rectangle"></i></div>
+        <div class="stat-value">48</div>
+        <div class="stat-label">حلقات نشطة</div>
+        <span class="stat-change up"><i class="fa-solid fa-arrow-trend-up"></i> +6 حلقات</span>
+      </div>
+      <div class="stat-card blue" onclick="showToast('جاري فتح الطلاب...')">
+        <div class="stat-icon"><i class="fa-solid fa-user-graduate"></i></div>
+        <div class="stat-value">847</div>
+        <div class="stat-label">إجمالي الطلاب</div>
+        <span class="stat-change up"><i class="fa-solid fa-arrow-trend-up"></i> +42 طالب</span>
+      </div>
+      <div class="stat-card orange" onclick="showToast('جاري فتح المساجد...')">
+        <div class="stat-icon"><i class="fa-solid fa-mosque"></i></div>
+        <div class="stat-value">7</div>
+        <div class="stat-label">مساجد مسجلة</div>
+        <span class="stat-change down"><i class="fa-solid fa-minus"></i> لا تغيير</span>
+      </div>
+    </div>
+
+    <!-- QUICK STATS -->
+    <div class="quick-stats">
+      <div class="quick-card" onclick="openStatPopup('attendance')">
+        <div class="quick-card-title"><i class="fa-solid fa-calendar-check"></i> ملخص حضور اليوم <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:auto;font-size:10px;opacity:.5;"></i></div>
+        <div class="attendance-ring">
+          <svg width="76" height="76" viewBox="0 0 76 76">
+            <circle cx="38" cy="38" r="30" fill="none" stroke="#F0EDE5" stroke-width="9"/>
+            <circle cx="38" cy="38" r="30" fill="none" stroke="#1A5C3A" stroke-width="9" stroke-dasharray="141" stroke-dashoffset="28" stroke-linecap="round" transform="rotate(-90 38 38)"/>
+            <circle cx="38" cy="38" r="30" fill="none" stroke="#C9A84C" stroke-width="9" stroke-dasharray="28" stroke-dashoffset="-113" stroke-linecap="round" transform="rotate(-90 38 38)"/>
+            <text x="38" y="43" text-anchor="middle" font-size="13" font-weight="900" fill="#1A5C3A" font-family="Tajawal">79%</text>
+          </svg>
+          <div class="ring-legend">
+            <div class="ring-legend-item"><span class="ring-dot" style="background:var(--emerald)"></span> حاضر (19)</div>
+            <div class="ring-legend-item"><span class="ring-dot" style="background:var(--gold)"></span> متأخر (3)</div>
+            <div class="ring-legend-item"><span class="ring-dot" style="background:#E0DBD1;border:1px solid #ccc"></span> غائب (2)</div>
+          </div>
+        </div>
+      </div>
+      <div class="quick-card" onclick="openStatPopup('salary')">
+        <div class="quick-card-title"><i class="fa-solid fa-money-bill-wave"></i> ملخص الرواتب - أبريل <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:auto;font-size:10px;opacity:.5;"></i></div>
+        <div class="mini-stat-list">
+          <div class="mini-stat-row"><div class="mini-stat-label">الأساسية</div><div class="mini-stat-bar"><div class="mini-stat-fill" style="width:100%;background:var(--emerald)"></div></div><div class="mini-stat-val">48,200 ج</div></div>
+          <div class="mini-stat-row"><div class="mini-stat-label">الخصومات</div><div class="mini-stat-bar"><div class="mini-stat-fill" style="width:15%;background:var(--red)"></div></div><div class="mini-stat-val">7,350 ج</div></div>
+          <div class="mini-stat-row"><div class="mini-stat-label">الصافي</div><div class="mini-stat-bar"><div class="mini-stat-fill" style="width:85%;background:var(--gold)"></div></div><div class="mini-stat-val">40,850 ج</div></div>
+        </div>
+      </div>
+      <div class="quick-card" onclick="openStatPopup('live')">
+        <div class="quick-card-title"><i class="fa-solid fa-signal"></i> الحالة الفورية <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:auto;font-size:10px;opacity:.5;"></i></div>
+        <div class="mini-stat-list">
+          <div class="mini-stat-row"><span class="ring-dot" style="background:#4CAF50;width:11px;height:11px;border-radius:50%;flex-shrink:0"></span><div class="mini-stat-label">أونلاين</div><div class="mini-stat-bar"><div class="mini-stat-fill" style="width:63%;background:#4CAF50"></div></div><div class="mini-stat-val">15</div></div>
+          <div class="mini-stat-row"><span class="ring-dot" style="background:#FF9800;width:11px;height:11px;border-radius:50%;flex-shrink:0"></span><div class="mini-stat-label">متأخر</div><div class="mini-stat-bar"><div class="mini-stat-fill" style="width:12%;background:#FF9800"></div></div><div class="mini-stat-val">3</div></div>
+          <div class="mini-stat-row"><span class="ring-dot" style="background:#9E9E9E;width:11px;height:11px;border-radius:50%;flex-shrink:0"></span><div class="mini-stat-label">أوفلاين</div><div class="mini-stat-bar"><div class="mini-stat-fill" style="width:25%;background:#9E9E9E"></div></div><div class="mini-stat-val">6</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE SECTION -->
+    <div class="section-header">
+      <div class="section-title">جدول الموظفين والمعلمين</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="tabs">
+          <div class="tab active" onclick="filterTab(this,'all')">الكل (24)</div>
+          <div class="tab" onclick="filterTab(this,'online')">أونلاين (15)</div>
+          <div class="tab" onclick="filterTab(this,'mosque')">مسجد</div>
+          <div class="tab" onclick="filterTab(this,'free')">بلا مسجد</div>
+        </div>
+        <button class="btn btn-gold" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> إضافة</button>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="filter-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="ابحث باسم المعلم..." id="tableSearch" oninput="applyFilters()">
+      </div>
+      <div class="filter-group">
+        <span class="filter-label"><i class="fa-solid fa-mosque"></i></span>
+        <select class="filter-select" id="filterMosque" onchange="applyFilters()">
+          <option value="">كل المساجد</option>
+          <option>مسجد النور</option>
+          <option>مسجد الفتح</option>
+          <option>مسجد الرحمة</option>
+          <option>بلا مسجد</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label"><i class="fa-solid fa-signal"></i></span>
+        <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+          <option value="">كل الحالات</option>
+          <option value="online">أونلاين</option>
+          <option value="offline">أوفلاين</option>
+          <option value="away">متأخر</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label"><i class="fa-solid fa-sort"></i></span>
+        <select class="filter-select" id="filterSort" onchange="applyFilters()">
+          <option value="name">الاسم</option>
+          <option value="hours">الساعات</option>
+          <option value="salary">الراتب</option>
+          <option value="circles">الحلقات</option>
+        </select>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="resetFilters()"><i class="fa-solid fa-rotate"></i> إعادة</button>
+      <button class="btn btn-outline btn-sm" onclick="exportTable()"><i class="fa-solid fa-file-excel"></i> تصدير</button>
+    </div>
+
+    <div class="table-container">
+      <div class="table-header-bar">
+        <div>
+          <div class="table-title">قائمة المعلمين التفصيلية</div>
+          <div class="table-count" id="tableCount">عرض 24 معلم</div>
+        </div>
+        <div class="table-actions">
+          <button class="btn btn-outline btn-sm" onclick="refreshTable()"><i class="fa-solid fa-arrows-rotate"></i> تحديث</button>
+        </div>
+      </div>
+
+      <!-- DESKTOP TABLE -->
+      <div class="table-scroll">
+        <table id="mainTable">
+          <thead>
+            <tr>
+              <th style="width:36px;"></th>
+              <th onclick="sortTable('name')"><i class="fa-solid fa-sort si"></i> المعلم</th>
+              <th onclick="sortTable('mosque')"><i class="fa-solid fa-sort si"></i> المسجد</th>
+              <th onclick="sortTable('status')"><i class="fa-solid fa-sort si"></i> الحالة</th>
+              <th onclick="sortTable('circles')"><i class="fa-solid fa-sort si"></i> الحلقات</th>
+              <th><i class="fa-solid fa-sort si"></i> أيام الحضور</th>
+              <th><i class="fa-solid fa-sort si"></i> وقت الحضور</th>
+              <th onclick="sortTable('hours')"><i class="fa-solid fa-sort si"></i> الساعات</th>
+              <th onclick="sortTable('salary')"><i class="fa-solid fa-sort si"></i> الراتب / الخصم</th>
+              <th style="width:90px;">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- MOBILE CARDS -->
+      <div class="mobile-cards" id="mobileCards"></div>
+
+      <div class="pagination-bar">
+        <div class="page-info" id="pageInfo">عرض 1-8 من 24 نتيجة</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <select class="filter-select" id="perPageSelect" onchange="changePerPage()" style="padding:5px 8px;font-size:11px;">
+            <option value="8">8 / صفحة</option>
+            <option value="12">12 / صفحة</option>
+            <option value="50">الكل</option>
+          </select>
+          <div class="page-btns" id="pageBtns"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- ===== ADD MODAL ===== -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-user-plus" style="color:var(--gold)"></i> إضافة معلم جديد</div>
+      <button class="modal-close" onclick="closeModal('addModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-row"><label class="form-label">الاسم الكامل *</label><input class="form-input" placeholder="الشيخ / المعلم..." type="text"></div>
+        <div class="form-row"><label class="form-label">رقم الهاتف</label><input class="form-input" placeholder="01xxxxxxxxx" type="text"></div>
+        <div class="form-row"><label class="form-label">المسجد التابع له</label><select class="form-input"><option value="">بلا مسجد</option><option>مسجد النور</option><option>مسجد الفتح</option><option>مسجد الرحمة</option></select></div>
+        <div class="form-row"><label class="form-label">الراتب الأساسي</label><input class="form-input" placeholder="2000" type="number"></div>
+        <div class="form-row"><label class="form-label">وقت بداية الحضور</label><input class="form-input" type="time" value="08:00"></div>
+        <div class="form-row"><label class="form-label">وقت نهاية الحضور</label><input class="form-input" type="time" value="12:00"></div>
+      </div>
+      <div class="form-row"><label class="form-label">أيام العمل</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="checkbox" checked> السبت</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="checkbox" checked> الأحد</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="checkbox" checked> الاثنين</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="checkbox" checked> الثلاثاء</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="checkbox" checked> الأربعاء</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="checkbox"> الخميس</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="checkbox"> الجمعة</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addModal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="showToast('تم حفظ بيانات المعلم بنجاح ✓');closeModal('addModal')"><i class="fa-solid fa-floppy-disk"></i> حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CIRCLE DETAIL POPUP ===== -->
+<div class="circle-popup-overlay" id="circlePopup">
+  <div class="circle-popup">
+    <div class="modal-header">
+      <div class="modal-title" id="circlePopupTitle"><i class="fa-solid fa-users-rectangle" style="color:var(--gold)"></i> تفاصيل الحلقة</div>
+      <button class="modal-close" onclick="closeModal('circlePopup')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="circlePopupBody"></div>
+  </div>
+</div>
+
+<!-- ===== PLAN DETAIL POPUP ===== -->
+<div class="plan-popup-overlay" id="planPopup">
+  <div class="plan-popup">
+    <div class="modal-header">
+      <div class="modal-title" id="planPopupTitle"><i class="fa-solid fa-calendar-days" style="color:var(--gold)"></i> تفاصيل الخطة</div>
+      <button class="modal-close" onclick="closeModal('planPopup')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="planPopupBody"></div>
+  </div>
+</div>
+
+<!-- ===== STAT POPUP ===== -->
+<div class="modal-overlay" id="statPopup">
+  <div class="modal" style="width:500px;">
+    <div class="modal-header">
+      <div class="modal-title" id="statPopupTitle"></div>
+      <button class="modal-close" onclick="closeModal('statPopup')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="statPopupBody"></div>
+    <div class="modal-footer"><button class="btn btn-primary" id="statPopupViewAll">عرض الكل</button><button class="btn btn-outline" onclick="closeModal('statPopup')">إغلاق</button></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toastMsg"></span></div>
+
+<script>
+// ======================================================
+// DATA
+// ======================================================
+const NOW = new Date();
+
+function minutesToday(h,m){const d=new Date();d.setHours(h,m,0,0);return d;}
+
+const EMPLOYEES = [
+  {
+    id:'EMP001',name:'الشيخ محمد أحمد عبد الله',status:'online',
+    mosque:'مسجد النور',circles:3,students:67,
+    salary:3200,deduction:320,net:2880,
+    presentDays:['س','أ','ث','أر','خ'],absentDays:['ج'],holidayDays:['ج'],
+    timeIn:'07:55',timeOut:'01:10',hours:18,maxHours:24,
+    circleList:[
+      {name:'حلقة الصبح - تحفيظ',students:24,startH:7,startM:0,endH:9,endM:0,
+       studentList:['أحمد محمد علي','محمود عبد الله','عمر سعيد','يوسف إبراهيم','خالد طارق']},
+      {name:'حلقة العصر - تجويد',students:18,startH:16,startM:0,endH:18,endM:0,
+       studentList:['عبد الرحمن','زيد أحمد','صالح محمد','بلال عمر','فيصل علي']},
+      {name:'حلقة النساء',students:25,startH:10,startM:0,endH:12,endM:0,
+       studentList:['فاطمة علي','زينب محمد','مريم عمر','خديجة سعيد','أسماء طارق']},
+    ],
+    plans:[
+      {day:'السبت',title:'ختم القرآن الكريم كاملاً',desc:'وجه كامل يومياً مع مراجعة وجه الأمس وختم في 17 شهراً',time:'07:00 - 09:00',hours:'2',totalSessions:170,doneSessions:62,
+       schedules:[{day:'السبت',time:'07:00-09:00',hours:2},{day:'الثلاثاء',time:'07:00-09:00',hours:2}],
+       students:24,teacherAttended:62},
+      {day:'الاثنين',title:'تجويد الحلقة المتوسطة',desc:'أحكام التجويد من أول كتاب التيسير - 120 جلسة',time:'16:00 - 18:00',hours:'2',totalSessions:120,doneSessions:35,
+       schedules:[{day:'الاثنين',time:'16:00-18:00',hours:2},{day:'الأربعاء',time:'16:00-18:00',hours:2}],
+       students:18,teacherAttended:35},
+    ]
+  },
+  {
+    id:'EMP002',name:'الشيخ عبد الرحمن السيد',status:'online',
+    mosque:'مسجد الفتح',circles:2,students:45,
+    salary:2800,deduction:0,net:2800,
+    presentDays:['س','أ','ث','أر'],absentDays:[],holidayDays:['خ','ج'],
+    timeIn:'08:00',timeOut:'12:00',hours:16,maxHours:20,
+    circleList:[
+      {name:'حلقة التحفيظ الكبرى',students:28,startH:8,startM:0,endH:10,endM:30,
+       studentList:['إبراهيم سامي','حمزة علي','منصور أحمد','وليد سعيد','طارق محمد']},
+      {name:'حلقة التجويد',students:17,startH:9,startM:0,endH:11,endM:0,
+       studentList:['نور الدين','عيسى أحمد','داود محمد','سلمان علي','قاسم عمر']},
+    ],
+    plans:[
+      {day:'الأحد',title:'حفظ الأجزاء الثلاثة الأخيرة',desc:'حفظ تراتيبي مع مراجعة يومية',time:'08:00 - 10:30',hours:'2.5',totalSessions:90,doneSessions:48,
+       schedules:[{day:'الأحد',time:'08:00-10:30',hours:2.5},{day:'الأربعاء',time:'08:00-10:30',hours:2.5}],
+       students:28,teacherAttended:48},
+    ]
+  },
+  {
+    id:'EMP003',name:'الشيخة فاطمة محمود',status:'away',
+    mosque:'مسجد الرحمة',circles:2,students:38,
+    salary:2400,deduction:480,net:1920,
+    presentDays:['س','أ'],absentDays:['ث','أر'],holidayDays:['خ','ج'],
+    timeIn:'09:10',timeOut:'11:30',hours:8,maxHours:16,
+    circleList:[
+      {name:'حلقة النساء الكبرى',students:22,startH:9,startM:0,endH:11,endM:0,
+       studentList:['أمينة سعيد','هند محمد','سارة علي','رانيا أحمد','دعاء محمود']},
+      {name:'حلقة البنات',students:16,startH:9,startM:0,endH:11,endM:0,
+       studentList:['لمياء عمر','ريم سالم','شيماء علي','دانا محمد','لانا حسن']},
+    ],
+    plans:[
+      {day:'السبت',title:'تحفيظ جزء عم',desc:'تحفيظ كامل مع أحكام التجويد',time:'09:00 - 11:00',hours:'2',totalSessions:60,doneSessions:22,
+       schedules:[{day:'السبت',time:'09:00-11:00',hours:2},{day:'الأحد',time:'09:00-11:00',hours:2}],
+       students:22,teacherAttended:22},
+    ]
+  },
+  {
+    id:'EMP004',name:'الشيخ أحمد حسن النجار',status:'offline',
+    mosque:'',circles:1,students:20,
+    salary:1800,deduction:900,net:900,
+    presentDays:['س'],absentDays:['أ','ث','أر','خ'],holidayDays:['ج'],
+    timeIn:'--',timeOut:'--',hours:4,maxHours:20,
+    circleList:[
+      {name:'حلقة المبتدئين',students:20,startH:10,startM:0,endH:12,endM:0,
+       studentList:['أيمن محمد','أنس علي','بشر أحمد','تيم سعيد','جود عمر']},
+    ],
+    plans:[
+      {day:'السبت',title:'حلقة المبتدئين - قاعدة النورانية',desc:'تعليم القاعدة النورانية من الصفر',time:'10:00 - 12:00',hours:'2',totalSessions:40,doneSessions:8,
+       schedules:[{day:'السبت',time:'10:00-12:00',hours:2}],
+       students:20,teacherAttended:8},
+    ]
+  },
+  {
+    id:'EMP005',name:'الشيخ عمر عبد العزيز',status:'online',
+    mosque:'مسجد النور',circles:4,students:88,
+    salary:4000,deduction:200,net:3800,
+    presentDays:['س','أ','ث','أر','خ'],absentDays:[],holidayDays:['ج'],
+    timeIn:'07:30',timeOut:'01:30',hours:22,maxHours:24,
+    circleList:[
+      {name:'حلقة التحفيظ المتقدم',students:25,startH:7,startM:30,endH:10,endM:0,
+       studentList:['ماجد عمر','راشد علي','سعود محمد','فهد أحمد','نواف سعيد']},
+      {name:'حلقة القراءات السبع',students:18,startH:8,startM:0,endH:10,endM:30,
+       studentList:['عادل محمد','نبيل أحمد','رامي علي','شريف سعيد','هاني عمر']},
+      {name:'حلقة التجويد',students:22,startH:7,startM:30,endH:9,endM:30,
+       studentList:['كريم محمد','وائل علي','باسم أحمد','مجدي سعيد','حسام عمر']},
+      {name:'مجلس التفسير',students:23,startH:9,startM:0,endH:11,endM:0,
+       studentList:['جمال محمد','نجيب علي','فريد أحمد','سمير سعيد','منير عمر']},
+    ],
+    plans:[
+      {day:'السبت',title:'ختم كامل مع القراءات',desc:'ختم مع رواية حفص ثم رواية ورش - 200 جلسة',time:'07:30 - 10:00',hours:'2.5',totalSessions:200,doneSessions:88,
+       schedules:[{day:'السبت',time:'07:30-10:00',hours:2.5},{day:'الأحد',time:'07:30-10:00',hours:2.5},{day:'الثلاثاء',time:'07:30-10:00',hours:2.5}],
+       students:25,teacherAttended:88},
+      {day:'الأحد',title:'القراءات السبع',desc:'دراسة القراءات السبعة المتواترة - طريق الشاطبية',time:'08:00 - 10:30',hours:'2.5',totalSessions:150,doneSessions:44,
+       schedules:[{day:'الأحد',time:'08:00-10:30',hours:2.5}],
+       students:18,teacherAttended:44},
+    ]
+  },
+  {
+    id:'EMP006',name:'الشيخة آمنة إبراهيم',status:'online',
+    mosque:'مسجد الفتح',circles:2,students:44,
+    salary:2600,deduction:0,net:2600,
+    presentDays:['س','أ','ث','أر','خ'],absentDays:[],holidayDays:['ج'],
+    timeIn:'08:05',timeOut:'12:05',hours:20,maxHours:20,
+    circleList:[
+      {name:'حلقة بنات النور',students:24,startH:8,startM:0,endH:10,endM:0,
+       studentList:['نجلاء محمد','إيمان علي','حنان أحمد','سلمى سعيد','نهى عمر']},
+      {name:'حلقة التحفيظ النسائي',students:20,startH:9,startM:0,endH:11,endM:30,
+       studentList:['ولاء محمد','رشا علي','منى أحمد','أروى سعيد','لجين عمر']},
+    ],
+    plans:[
+      {day:'السبت',title:'تحفيظ للنساء - 10 أجزاء',desc:'تحفيظ منهجي للأجزاء 21 إلى 30',time:'08:00 - 10:00',hours:'2',totalSessions:80,doneSessions:31,
+       schedules:[{day:'السبت',time:'08:00-10:00',hours:2},{day:'الثلاثاء',time:'08:00-10:00',hours:2}],
+       students:24,teacherAttended:31},
+    ]
+  },
+  {
+    id:'EMP007',name:'الشيخ يوسف رشاد حافظ',status:'offline',
+    mosque:'',circles:1,students:15,
+    salary:1500,deduction:300,net:1200,
+    presentDays:['أ','أر'],absentDays:['س','ث','خ'],holidayDays:['ج'],
+    timeIn:'10:00',timeOut:'12:00',hours:6,maxHours:16,
+    circleList:[
+      {name:'حلقة أونلاين للمبتدئين',students:15,startH:10,startM:0,endH:12,endM:0,
+       studentList:['سامي علي','حاتم محمد','ياسر أحمد','لؤي سعيد','نزار عمر']},
+    ],
+    plans:[
+      {day:'الأحد',title:'قاعدة بغدادية أونلاين',desc:'تعليم القاعدة البغدادية عبر الإنترنت',time:'10:00 - 12:00',hours:'2',totalSessions:50,doneSessions:12,
+       schedules:[{day:'الأحد',time:'10:00-12:00',hours:2},{day:'الأربعاء',time:'10:00-12:00',hours:2}],
+       students:15,teacherAttended:12},
+    ]
+  },
+  {
+    id:'EMP008',name:'الشيخ إبراهيم سعد الدين',status:'online',
+    mosque:'مسجد الرحمة',circles:3,students:58,
+    salary:3500,deduction:175,net:3325,
+    presentDays:['س','أ','ث','أر','خ'],absentDays:[],holidayDays:['ج'],
+    timeIn:'07:45',timeOut:'01:15',hours:20,maxHours:24,
+    circleList:[
+      {name:'حلقة السيرة النبوية',students:20,startH:7,startM:45,endH:9,endM:45,
+       studentList:['غازي محمد','مشاري علي','تركي أحمد','سلطان سعيد','بدر عمر']},
+      {name:'حلقة الأطفال المتقدم',students:18,startH:9,startM:0,endH:11,endM:0,
+       studentList:['عبدالله محمد','عبدالعزيز علي','عبدالرحمن أحمد','عبدالكريم سعيد','عبدالمجيد عمر']},
+      {name:'حلقة الشباب',students:20,startH:8,startM:0,endH:10,endM:30,
+       studentList:['زياد محمد','ريان علي','أيوب أحمد','يحيى سعيد','إدريس عمر']},
+    ],
+    plans:[
+      {day:'السبت',title:'السيرة النبوية المفصلة',desc:'سيرة ابن هشام كاملة - 100 جلسة',time:'07:45 - 09:45',hours:'2',totalSessions:100,doneSessions:43,
+       schedules:[{day:'السبت',time:'07:45-09:45',hours:2},{day:'الأربعاء',time:'07:45-09:45',hours:2}],
+       students:20,teacherAttended:43},
+    ]
+  },
+  {
+    id:'EMP009',name:'الشيخة مريم حسين طاهر',status:'away',
+    mosque:'مسجد النور',circles:2,students:36,
+    salary:2200,deduction:660,net:1540,
+    presentDays:['س','أ','أر'],absentDays:['ث','خ'],holidayDays:['ج'],
+    timeIn:'09:25',timeOut:'11:45',hours:10,maxHours:16,
+    circleList:[
+      {name:'حلقة النساء الصباحي',students:20,startH:9,startM:0,endH:11,endM:0,
+       studentList:['أميرة محمد','ياسمين علي','سمر أحمد','ربى سعيد','نيرة عمر']},
+      {name:'تحفيظ النساء',students:16,startH:9,startM:0,endH:11,endM:30,
+       studentList:['عفاف محمد','هبة علي','إلهام أحمد','عزة سعيد','هناء عمر']},
+    ],
+    plans:[
+      {day:'السبت',title:'تحفيظ جزء تبارك',desc:'حفظ جزء تبارك مع تجويد كامل',time:'09:00 - 11:00',hours:'2',totalSessions:45,doneSessions:18,
+       schedules:[{day:'السبت',time:'09:00-11:00',hours:2},{day:'الأحد',time:'09:00-11:00',hours:2}],
+       students:20,teacherAttended:18},
+    ]
+  },
+  {
+    id:'EMP010',name:'الشيخ صالح محمد قاسم',status:'online',
+    mosque:'مسجد الفتح',circles:2,students:42,
+    salary:2900,deduction:0,net:2900,
+    presentDays:['س','أ','ث','أر','خ'],absentDays:[],holidayDays:['ج'],
+    timeIn:'08:00',timeOut:'12:00',hours:20,maxHours:20,
+    circleList:[
+      {name:'حلقة التلاوة المجودة',students:24,startH:8,startM:0,endH:10,endM:0,
+       studentList:['عمر فاروق','حسن محمود','علي أكبر','حسين أمين','محمد جعفر']},
+      {name:'حلقة أحكام التجويد',students:18,startH:9,startM:0,endH:11,endM:0,
+       studentList:['مصطفى محمد','أمجد علي','سامح أحمد','نادر سعيد','أشرف عمر']},
+    ],
+    plans:[
+      {day:'السبت',title:'تلاوة مجودة للمتقدمين',desc:'تحسين التلاوة وضبط أحكام المد والغنة',time:'08:00 - 10:00',hours:'2',totalSessions:75,doneSessions:32,
+       schedules:[{day:'السبت',time:'08:00-10:00',hours:2},{day:'الثلاثاء',time:'08:00-10:00',hours:2}],
+       students:24,teacherAttended:32},
+    ]
+  },
+  {
+    id:'EMP011',name:'الشيخ خالد عطية محمود',status:'online',
+    mosque:'',circles:1,students:18,
+    salary:1600,deduction:0,net:1600,
+    presentDays:['أ','ث','أر'],absentDays:['س','خ'],holidayDays:['ج'],
+    timeIn:'10:00',timeOut:'12:00',hours:12,maxHours:16,
+    circleList:[
+      {name:'حلقة التحفيظ الأونلاين',students:18,startH:10,startM:0,endH:12,endM:0,
+       studentList:['طلال محمد','شهاب علي','مهند أحمد','سيف سعيد','صقر عمر']},
+    ],
+    plans:[
+      {day:'الاثنين',title:'أونلاين - حفظ الأجزاء العشرة الأخيرة',desc:'تحفيظ 10 أجزاء عبر الإنترنت منهجياً',time:'10:00 - 12:00',hours:'2',totalSessions:100,doneSessions:27,
+       schedules:[{day:'الاثنين',time:'10:00-12:00',hours:2},{day:'الأربعاء',time:'10:00-12:00',hours:2}],
+       students:18,teacherAttended:27},
+    ]
+  },
+  {
+    id:'EMP012',name:'الشيخ طارق فوزي البكري',status:'offline',
+    mosque:'مسجد الرحمة',circles:3,students:54,
+    salary:3100,deduction:620,net:2480,
+    presentDays:['س','ث'],absentDays:['أ','أر','خ'],holidayDays:['ج'],
+    timeIn:'--',timeOut:'--',hours:8,maxHours:24,
+    circleList:[
+      {name:'حلقة المتقدمين',students:20,startH:9,startM:0,endH:11,endM:0,
+       studentList:['علاء محمد','وسام علي','لقمان أحمد','عبدالناصر سعيد','جلال عمر']},
+      {name:'حلقة الأطفال',students:18,startH:10,startM:0,endH:12,endM:0,
+       studentList:['عمار محمد','ضرار علي','سلمة أحمد','قيس سعيد','جرير عمر']},
+      {name:'مجلس علمي',students:16,startH:9,startM:0,endH:11,endM:30,
+       studentList:['زبير محمد','حارثة علي','مقداد أحمد','أبو بكر سعيد','عثمان عمر']},
+    ],
+    plans:[
+      {day:'السبت',title:'ختم القرآن للمتقدمين',desc:'ختم مجود مع ضبط التجويد الكامل - 180 جلسة',time:'09:00 - 11:00',hours:'2',totalSessions:180,doneSessions:55,
+       schedules:[{day:'السبت',time:'09:00-11:00',hours:2},{day:'الثلاثاء',time:'09:00-11:00',hours:2},{day:'الخميس',time:'09:00-11:30',hours:2.5}],
+       students:20,teacherAttended:55},
+    ]
+  },
+];
+
+// ======================================================
+// STATE
+// ======================================================
+let currentPage = 1, perPage = 8, sortKey='', sortDir=1;
+let filteredData=[...EMPLOYEES], activeTab='all', expandedRows=new Set();
+
+// ======================================================
+// SHEIKH SVG
+// ======================================================
+function sheikhSVG(idx){
+  const skins=['#F5D3A8','#E8B97A','#D4915A','#F0C894','#E8A86A','#C8784A'];
+  const robes=[['#FFFFFF','#F0F0F0'],['#1A5C3A','#2E7D52'],['#C9A84C','#8B6914'],['#37474F','#263238'],['#1565C0','#0D47A1'],['#4A148C','#38006b']];
+  const skin=skins[idx%skins.length];
+  const [r1,r2]=robes[idx%robes.length];
+  const beard=idx%3!==0,glasses=idx%5===2;
+  return `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="bg${idx}" cx="50%" cy="40%" r="50%"><stop offset="0%" stop-color="#EBF5EF"/><stop offset="100%" stop-color="#D4EBD9"/></radialGradient></defs>
+    <circle cx="40" cy="40" r="38" fill="url(#bg${idx})"/>
+    <path d="M15 80C15 58 25 52 40 52C55 52 65 58 65 80Z" fill="${r1}"/>
+    <path d="M30 52L40 62L50 52Z" fill="${r2}" opacity=".4"/>
+    <rect x="35" y="44" width="10" height="10" rx="3" fill="${skin}"/>
+    <ellipse cx="40" cy="34" rx="14" ry="15" fill="${skin}"/>
+    <ellipse cx="40" cy="21" rx="12" ry="5" fill="white" opacity=".9"/>
+    <rect x="28" y="18" width="24" height="7" rx="3" fill="white" opacity=".85"/>
+    ${beard?`<path d="M28 40Q40 50 52 40Q48 48 40 50Q32 48 28 40Z" fill="#3D2314" opacity=".7"/>`:''}
+    <circle cx="35" cy="35" r="2.5" fill="#2C1810"/>
+    <circle cx="45" cy="35" r="2.5" fill="#2C1810"/>
+    <circle cx="36" cy="34" r=".8" fill="white"/>
+    <circle cx="46" cy="34" r=".8" fill="white"/>
+    ${glasses?`<path d="M31 35Q33 33 36 35Q38 33 41 35" stroke="#666" stroke-width="1.2" fill="none"/><path d="M41 35Q43 33 46 35Q48 33 50 35" stroke="#666" stroke-width="1.2" fill="none"/><line x1="38.5" y1="35" x2="41" y2="35" stroke="#666" stroke-width="1"/>`:''}
+    <path d="M36 40Q40 43 44 40" stroke="#B87040" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// ======================================================
+// LIVE STATUS CALCULATOR
+// ======================================================
+function getCircleStatus(circle){
+  const now=new Date();
+  const h=now.getHours(), m=now.getMinutes();
+  const nowMin=h*60+m;
+  const startMin=circle.startH*60+circle.startM;
+  const endMin=circle.endH*60+circle.endM;
+  if(nowMin>=startMin && nowMin<endMin){
+    const elapsed=nowMin-startMin;
+    const remaining=endMin-nowMin;
+    const total=endMin-startMin;
+    return {status:'live',elapsed,remaining,total,pct:Math.round(elapsed/total*100)};
+  } else if(nowMin<startMin){
+    return {status:'upcoming',minsUntil:startMin-nowMin};
+  } else {
+    return {status:'ended'};
+  }
+}
+
+function fmt(mins){
+  const h=Math.floor(mins/60), m=mins%60;
+  return h>0?`${h}س ${m}د`:`${m}د`;
+}
+
+// ======================================================
+// RENDER TABLE (DESKTOP)
+// ======================================================
+function renderTable(){
+  const tbody=document.getElementById('tableBody');
+  const mc=document.getElementById('mobileCards');
+  const start=(currentPage-1)*perPage;
+  const pageData=filteredData.slice(start,start+perPage);
+  tbody.innerHTML='';
+  mc.innerHTML='';
+
+  pageData.forEach((emp)=>{
+    const gi=EMPLOYEES.indexOf(emp);
+    const hp=Math.round((emp.hours/emp.maxHours)*100);
+    const hc=hp>=80?'var(--emerald)':hp>=50?'var(--gold)':'var(--red)';
+    const slabel={online:'أونلاين',offline:'أوفلاين',away:'متأخر'}[emp.status];
+    const scls={online:'badge-online',offline:'badge-offline',away:'badge-away'}[emp.status];
+    const sico={online:'fa-circle',offline:'fa-circle-xmark',away:'fa-clock'}[emp.status];
+    const days=['س','أ','ث','أر','خ'];
+    const daysH=days.map(d=>{
+      const c=emp.presentDays.includes(d)?'present':emp.holidayDays.includes(d)?'holiday':'absent';
+      return `<div class="circle-day ${c}">${d}</div>`;
+    }).join('');
+    const isExp=expandedRows.has(emp.id);
+
+    // DESKTOP ROW
+    const row=document.createElement('tr');
+    row.id=`row-${emp.id}`;
+    row.innerHTML=`
+      <td><button onclick="toggleExpand('${emp.id}')" class="btn btn-icon btn-outline" style="font-size:10px;"><i class="fa-solid fa-chevron-${isExp?'up':'down'}"></i></button></td>
+      <td><div class="emp-info"><div class="emp-avatar">${sheikhSVG(gi)}<div class="emp-status-dot ${emp.status}"></div></div><div><div class="emp-name">${emp.name}</div><div class="emp-id">${emp.id} · ${emp.students} طالب</div></div></div></td>
+      <td>${emp.mosque?`<div class="mosque-tag"><i class="fa-solid fa-mosque" style="font-size:9px;"></i>${emp.mosque}</div>`:`<div class="mosque-tag none"><i class="fa-solid fa-minus" style="font-size:9px;"></i>بلا مسجد</div>`}</td>
+      <td><span class="badge ${scls}"><i class="fa-solid ${sico}" style="font-size:8px;"></i>${slabel}</span></td>
+      <td><div style="display:flex;align-items:center;gap:4px;"><div style="font-size:18px;font-weight:900;color:var(--emerald);line-height:1;">${emp.circles}</div><div style="font-size:9px;color:var(--text-light);">حلقة</div></div></td>
+      <td><div class="circles-mini">${daysH}</div><div style="font-size:9px;color:var(--text-light);margin-top:3px;">${emp.presentDays.length}/5 يوم</div></td>
+      <td><div class="time-range"><i class="fa-regular fa-clock" style="color:var(--gold);font-size:10px;"></i> <strong>${emp.timeIn}</strong> — <strong>${emp.timeOut}</strong></div></td>
+      <td><div class="hours-bar-wrap"><div class="hours-bar"><div class="hours-bar-fill" style="width:${hp}%;background:${hc}"></div></div><div class="hours-val" style="color:${hc}">${emp.hours}س</div></div><div style="font-size:9px;color:var(--text-light);">من ${emp.maxHours}س</div></td>
+      <td><div class="salary-value">${emp.salary.toLocaleString()} ج</div>${emp.deduction>0?`<div class="salary-deduct">— ${emp.deduction.toLocaleString()} ج</div>`:''}<div class="salary-net">${emp.net.toLocaleString()} ج صافي</div></td>
+      <td><div class="action-btns">
+        <button class="btn btn-icon btn-outline" onclick="showToast('عرض ملف ${emp.name}')" title="عرض"><i class="fa-solid fa-eye" style="font-size:11px;color:var(--emerald)"></i></button>
+        <button class="btn btn-icon btn-outline" onclick="showToast('تعديل ${emp.name}')" title="تعديل"><i class="fa-solid fa-pen" style="font-size:11px;color:var(--gold-dark)"></i></button>
+        <button class="btn btn-icon btn-outline" onclick="confirmDelete('${emp.id}')" title="حذف"><i class="fa-solid fa-trash" style="font-size:11px;color:var(--red)"></i></button>
+      </div></td>`;
+    tbody.appendChild(row);
+
+    if(isExp){
+      const expRow=document.createElement('tr');
+      expRow.className='expand-row';
+      expRow.innerHTML=`<td colspan="10"><div class="expand-inner">
+        <div class="expand-panel">
+          <div class="expand-panel-title"><i class="fa-solid fa-users-rectangle"></i> الحلقات القرآنية (${emp.circles}) — اضغط لعرض التفاصيل</div>
+          <div class="expand-panel-body"><div class="circle-list">
+            ${emp.circleList.map((c,ci)=>{
+              const s=getCircleStatus(c);
+              const lbadge=s.status==='live'?`<div class="circle-item-live live"><span style="width:6px;height:6px;border-radius:50%;background:var(--red);animation:pulseDot 1.2s infinite;display:inline-block"></span>مباشر</div>`:s.status==='upcoming'?`<div class="circle-item-live upcoming"><i class="fa-solid fa-clock"></i>خلال ${fmt(s.minsUntil)}</div>`:`<div class="circle-item-live ended"><i class="fa-solid fa-check"></i>انتهت</div>`;
+              return `<div class="circle-item" onclick="openCirclePopup('${emp.id}',${ci})">
+                <div><div class="circle-item-name">${c.name}</div><div class="circle-item-students"><i class="fa-solid fa-users" style="font-size:9px;"></i> ${c.students} طالب</div>${lbadge}</div>
+                <div style="text-align:left;"><div class="circle-item-time"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ${String(c.startH).padStart(2,'0')}:${String(c.startM).padStart(2,'0')}-${String(c.endH).padStart(2,'0')}:${String(c.endM).padStart(2,'0')}</div><div style="font-size:9px;color:var(--text-light);margin-top:2px;">اضغط للتفاصيل</div></div>
+              </div>`;
+            }).join('')}
+          </div></div>
+        </div>
+        <div class="expand-panel">
+          <div class="expand-panel-title"><i class="fa-solid fa-calendar-days"></i> الخطة الأسبوعية — اضغط لعرض التفاصيل</div>
+          <div class="expand-panel-body"><div class="plan-list">
+            ${emp.plans.map((p,pi)=>{
+              const pct=Math.round(p.doneSessions/p.totalSessions*100);
+              return `<div class="plan-item" style="cursor:pointer;" onclick="openPlanPopup('${emp.id}',${pi})">
+                <div class="plan-day">${p.day.substring(0,2)}</div>
+                <div class="plan-detail">
+                  <div class="plan-detail-title">${p.title}</div>
+                  <div class="plan-detail-sub"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ${p.time} · ${p.students} طالب</div>
+                  <div style="margin-top:4px;height:4px;background:#F0EDE5;border-radius:2px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--emerald),var(--gold));border-radius:2px;"></div></div>
+                  <div style="font-size:9px;color:var(--text-light);margin-top:2px;">${p.doneSessions}/${p.totalSessions} جلسة (${pct}%)</div>
+                </div>
+                <div class="plan-hours-badge">${p.hours}س</div>
+              </div>`;
+            }).join('')}
+          </div></div>
+        </div>
+      </div></td>`;
+      tbody.appendChild(expRow);
+    }
+
+    // MOBILE CARD
+    const mCard=document.createElement('div');
+    mCard.className='emp-mobile-card';
+    mCard.innerHTML=`
+      <div class="emp-mc-top">
+        <div class="emp-avatar" style="width:50px;height:50px;">${sheikhSVG(gi)}<div class="emp-status-dot ${emp.status}"></div></div>
+        <div style="flex:1;">
+          <div class="emp-name">${emp.name}</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:3px;">
+            <span class="badge ${scls}"><i class="fa-solid ${sico}" style="font-size:8px;"></i>${slabel}</span>
+            ${emp.mosque?`<div class="mosque-tag" style="font-size:9px;"><i class="fa-solid fa-mosque" style="font-size:8px;"></i>${emp.mosque}</div>`:`<div class="mosque-tag none" style="font-size:9px;">بلا مسجد</div>`}
+          </div>
+        </div>
+        <button onclick="toggleExpandMobile('${emp.id}',this)" class="btn btn-icon btn-outline"><i class="fa-solid fa-chevron-down"></i></button>
+      </div>
+      <div class="emp-mc-body">
+        <div class="emp-mc-field"><div class="emp-mc-field-label">الحلقات</div><div class="emp-mc-field-val" style="color:var(--emerald);">${emp.circles} حلقة · ${emp.students} طالب</div></div>
+        <div class="emp-mc-field"><div class="emp-mc-field-label">ساعات الحضور</div><div class="emp-mc-field-val" style="color:${hc};">${emp.hours}س / ${emp.maxHours}س</div></div>
+        <div class="emp-mc-field"><div class="emp-mc-field-label">وقت الحضور</div><div class="emp-mc-field-val">${emp.timeIn} — ${emp.timeOut}</div></div>
+        <div class="emp-mc-field"><div class="emp-mc-field-label">الراتب الصافي</div><div class="emp-mc-field-val" style="color:var(--emerald);">${emp.net.toLocaleString()} ج</div></div>
+      </div>
+      <div id="mc-expand-${emp.id}" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+        <div style="font-size:11px;font-weight:700;color:var(--emerald);margin-bottom:6px;"><i class="fa-solid fa-users-rectangle"></i> الحلقات</div>
+        <div class="circle-list">
+          ${emp.circleList.map((c,ci)=>{
+            const s=getCircleStatus(c);
+            const lb=s.status==='live'?`<span style="background:rgba(229,57,53,.1);color:var(--red);border-radius:6px;padding:1px 6px;font-size:9px;font-weight:700;">🔴 مباشر</span>`:s.status==='upcoming'?`<span style="background:rgba(245,124,0,.1);color:var(--orange);border-radius:6px;padding:1px 6px;font-size:9px;">قريباً</span>`:`<span style="background:rgba(158,158,158,.1);color:#666;border-radius:6px;padding:1px 6px;font-size:9px;">انتهت</span>`;
+            return `<div class="circle-item" onclick="openCirclePopup('${emp.id}',${ci})"><div><div class="circle-item-name">${c.name}</div><div class="circle-item-students">${c.students} طالب</div></div><div style="text-align:left;">${lb}<div class="circle-item-time" style="margin-top:3px;">${String(c.startH).padStart(2,'0')}:${String(c.startM).padStart(2,'0')}</div></div></div>`;
+          }).join('')}
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--emerald);margin:10px 0 6px;"><i class="fa-solid fa-calendar-days"></i> الخطط</div>
+        ${emp.plans.map((p,pi)=>`<div class="plan-item" style="cursor:pointer;" onclick="openPlanPopup('${emp.id}',${pi})">
+          <div class="plan-day">${p.day.substring(0,2)}</div>
+          <div class="plan-detail"><div class="plan-detail-title">${p.title}</div><div class="plan-detail-sub">${p.doneSessions}/${p.totalSessions} جلسة</div></div>
+          <div class="plan-hours-badge">${Math.round(p.doneSessions/p.totalSessions*100)}%</div>
+        </div>`).join('')}
+      </div>
+      <div class="emp-mc-actions">
+        <button class="btn btn-outline btn-sm" onclick="showToast('عرض ملف ${emp.name}')"><i class="fa-solid fa-eye"></i> عرض</button>
+        <button class="btn btn-outline btn-sm" onclick="showToast('تعديل ${emp.name}')"><i class="fa-solid fa-pen"></i> تعديل</button>
+        <button class="btn btn-red btn-sm" onclick="confirmDelete('${emp.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div>`;
+    mc.appendChild(mCard);
+  });
+
+  updatePagination();
+}
+
+function toggleExpandMobile(id, btn){
+  const el=document.getElementById(`mc-expand-${id}`);
+  const icon=btn.querySelector('i');
+  if(el.style.display==='none'){el.style.display='block';icon.className='fa-solid fa-chevron-up';}
+  else{el.style.display='none';icon.className='fa-solid fa-chevron-down';}
+}
+
+// ======================================================
+// CIRCLE POPUP
+// ======================================================
+function openCirclePopup(empId, circleIdx){
+  const emp=EMPLOYEES.find(e=>e.id===empId);
+  if(!emp) return;
+  const c=emp.circleList[circleIdx];
+  const s=getCircleStatus(c);
+  document.getElementById('circlePopupTitle').innerHTML=`<i class="fa-solid fa-users-rectangle" style="color:var(--gold)"></i> ${c.name}`;
+  let timerHTML='';
+  if(s.status==='live'){
+    timerHTML=`<div style="margin-bottom:12px;">
+      <div class="live-badge-big"><div class="live-pulse"></div> الحلقة تعمل الآن</div>
+      <div class="timer-display">
+        <div class="timer-time" id="liveTimerMain">${fmt(s.elapsed)}</div>
+        <div class="timer-label">مضى على الحلقة</div>
+      </div>
+      <div class="timer-row">
+        <div class="timer-box"><div class="timer-box-val" id="liveTimerElapsed">${fmt(s.elapsed)}</div><div class="timer-box-label">مضى</div></div>
+        <div class="timer-box"><div class="timer-box-val" id="liveTimerRemain" style="color:var(--gold-dark);">${fmt(s.remaining)}</div><div class="timer-box-label">متبقي</div></div>
+      </div>
+      <div style="height:8px;background:#E5E0D8;border-radius:4px;overflow:hidden;margin-top:4px;">
+        <div id="liveProgressBar" style="width:${s.pct}%;height:100%;background:linear-gradient(90deg,var(--emerald),var(--gold));border-radius:4px;transition:width .5s;"></div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-light);margin-top:4px;">${s.pct}% من الحلقة مضى</div>
+    </div>`;
+  } else if(s.status==='upcoming'){
+    timerHTML=`<div style="margin-bottom:12px;background:rgba(245,124,0,.06);border:1px solid rgba(245,124,0,.2);border-radius:12px;padding:14px;text-align:center;">
+      <i class="fa-solid fa-clock" style="font-size:24px;color:var(--orange);margin-bottom:8px;"></i>
+      <div style="font-size:18px;font-weight:900;color:var(--orange);">تبدأ خلال ${fmt(s.minsUntil)}</div>
+      <div style="font-size:11px;color:var(--text-light);margin-top:4px;">في ${String(c.startH).padStart(2,'0')}:${String(c.startM).padStart(2,'0')}</div>
+    </div>`;
+  } else {
+    timerHTML=`<div style="margin-bottom:12px;background:rgba(158,158,158,.06);border:1px solid rgba(158,158,158,.2);border-radius:12px;padding:14px;text-align:center;">
+      <i class="fa-solid fa-check-circle" style="font-size:24px;color:#9E9E9E;margin-bottom:8px;"></i>
+      <div style="font-size:16px;font-weight:700;color:#616161;">انتهت الحلقة</div>
+      <div style="font-size:11px;color:var(--text-light);">من ${String(c.startH).padStart(2,'0')}:${String(c.startM).padStart(2,'0')} إلى ${String(c.endH).padStart(2,'0')}:${String(c.endM).padStart(2,'0')}</div>
+    </div>`;
+  }
+
+  const previewStudents=c.studentList.slice(0,5);
+  const remaining=c.students-previewStudents.length;
+  const statuses=['present','present','present','present','absent'];
+  const studentsHTML=previewStudents.map((n,i)=>`
+    <div class="student-row">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:rgba(26,92,58,.1);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--emerald);">${i+1}</div>
+        <div class="student-name">${n}</div>
+      </div>
+      <span class="student-status-badge ${statuses[i]}">${statuses[i]==='present'?'حاضر':'غائب'}</span>
+    </div>`).join('');
+
+  document.getElementById('circlePopupBody').innerHTML=`
+    ${timerHTML}
+    <div style="background:var(--cream);border-radius:10px;padding:12px;border:1px solid var(--border);margin-bottom:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+        <div><div style="font-size:18px;font-weight:900;color:var(--emerald);">${c.students}</div><div style="font-size:10px;color:var(--text-light);">إجمالي الطلاب</div></div>
+        <div><div style="font-size:18px;font-weight:900;color:#2E7D32;">4</div><div style="font-size:10px;color:var(--text-light);">حاضرون</div></div>
+        <div><div style="font-size:18px;font-weight:900;color:var(--red);">1</div><div style="font-size:10px;color:var(--text-light);">غائبون</div></div>
+      </div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--emerald);margin-bottom:8px;"><i class="fa-solid fa-users"></i> الطلاب (عرض ${previewStudents.length} من ${c.students})</div>
+    <div class="student-list-preview">${studentsHTML}</div>
+    ${remaining>0?`<div style="text-align:center;margin-top:10px;">
+      <button class="btn btn-outline" style="width:100%;" onclick="showToast('رابط عرض طلاب الحلقة - يمكنك إضافة الرابط هنا')"><i class="fa-solid fa-users"></i> مشاهدة جميع الطلاب (${c.students})</button>
+    </div>`:''}`;
+
+  document.getElementById('circlePopup').classList.add('open');
+
+  // Start live timer if active
+  if(s.status==='live'){
+    if(window._circleTimer) clearInterval(window._circleTimer);
+    window._circleTimer=setInterval(()=>{
+      const ns=getCircleStatus(c);
+      if(ns.status!=='live'){clearInterval(window._circleTimer);return;}
+      document.getElementById('liveTimerMain')&&(document.getElementById('liveTimerMain').textContent=fmt(ns.elapsed));
+      document.getElementById('liveTimerElapsed')&&(document.getElementById('liveTimerElapsed').textContent=fmt(ns.elapsed));
+      document.getElementById('liveTimerRemain')&&(document.getElementById('liveTimerRemain').textContent=fmt(ns.remaining));
+      document.getElementById('liveProgressBar')&&(document.getElementById('liveProgressBar').style.width=ns.pct+'%');
+    },30000);
+  }
+}
+
+// ======================================================
+// PLAN POPUP
+// ======================================================
+function openPlanPopup(empId, planIdx){
+  const emp=EMPLOYEES.find(e=>e.id===empId);
+  if(!emp) return;
+  const p=emp.plans[planIdx];
+  const pct=Math.round(p.doneSessions/p.totalSessions*100);
+  document.getElementById('planPopupTitle').innerHTML=`<i class="fa-solid fa-calendar-days" style="color:var(--gold)"></i> ${p.title}`;
+
+  const schedHTML=`<table class="schedule-table" style="margin-top:8px;">
+    <thead><tr><th>اليوم</th><th>الوقت</th><th>المدة</th></tr></thead>
+    <tbody>${p.schedules.map(s=>`<tr><td><strong>${s.day}</strong></td><td>${s.time}</td><td><span class="plan-hours-badge">${s.hours}س</span></td></tr>`).join('')}</tbody>
+  </table>`;
+
+  document.getElementById('planPopupBody').innerHTML=`
+    <div style="background:rgba(26,92,58,.05);border:1px solid rgba(26,92,58,.15);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--emerald);font-weight:700;margin-bottom:4px;"><i class="fa-solid fa-book-open"></i> وصف الخطة</div>
+      <div style="font-size:13px;color:var(--text-dark);">${p.desc}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div class="emp-mc-field"><div class="emp-mc-field-label">إجمالي الجلسات</div><div class="emp-mc-field-val" style="color:var(--text-dark);">${p.totalSessions}</div></div>
+      <div class="emp-mc-field"><div class="emp-mc-field-label">الجلسات المنجزة</div><div class="emp-mc-field-val" style="color:var(--emerald);">${p.doneSessions}</div></div>
+      <div class="emp-mc-field"><div class="emp-mc-field-label">نسبة الإنجاز</div><div class="emp-mc-field-val" style="color:var(--gold-dark);">${pct}%</div></div>
+    </div>
+    <div class="plan-progress">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:12px;font-weight:700;color:var(--emerald);">تقدم الخطة</span>
+        <span style="font-size:12px;font-weight:700;color:var(--gold-dark);">${p.doneSessions} / ${p.totalSessions} جلسة</span>
+      </div>
+      <div class="plan-progress-bar"><div class="plan-progress-fill" style="width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);">
+        <span>متبقي ${p.totalSessions-p.doneSessions} جلسة</span>
+        <span>${pct}% مكتمل</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div class="emp-mc-field"><div class="emp-mc-field-label">عدد الطلاب</div><div class="emp-mc-field-val">${p.students} طالب</div></div>
+      <div class="emp-mc-field"><div class="emp-mc-field-label">المعلم حضر</div><div class="emp-mc-field-val" style="color:var(--emerald);">${p.teacherAttended} جلسة</div></div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--emerald);margin-bottom:6px;"><i class="fa-solid fa-clock"></i> مواعيد الحصص</div>
+    ${schedHTML}
+    <div style="margin-top:14px;text-align:center;">
+      <button class="btn btn-primary" style="width:100%;" onclick="showToast('جاري فتح صفحة طلاب الخطة - أضف الرابط هنا')"><i class="fa-solid fa-users"></i> مشاهدة طلاب هذه الحلقة كاملين (${p.students})</button>
+    </div>`;
+
+  document.getElementById('planPopup').classList.add('open');
+}
+
+// ======================================================
+// STAT POPUPS
+// ======================================================
+function openStatPopup(type){
+  const popup=document.getElementById('statPopup');
+  const title=document.getElementById('statPopupTitle');
+  const body=document.getElementById('statPopupBody');
+  const viewAll=document.getElementById('statPopupViewAll');
+
+  if(type==='attendance'){
+    title.innerHTML=`<i class="fa-solid fa-calendar-check" style="color:var(--emerald);margin-left:6px;"></i> ملخص حضور اليوم`;
+    viewAll.onclick=()=>{showToast('فتح صفحة الحضور الكاملة');closeModal('statPopup');};
+    const groups=[
+      {label:'حاضر',color:'var(--emerald)',icon:'fa-circle-check',list:EMPLOYEES.filter(e=>e.status==='online').slice(0,5)},
+      {label:'متأخر',color:'var(--orange)',icon:'fa-clock',list:EMPLOYEES.filter(e=>e.status==='away').slice(0,5)},
+      {label:'غائب',color:'var(--red)',icon:'fa-circle-xmark',list:EMPLOYEES.filter(e=>e.status==='offline').slice(0,5)},
+    ];
+    body.innerHTML=groups.map(g=>`
+      <div style="margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:${g.color};margin-bottom:8px;display:flex;align-items:center;gap:6px;"><i class="fa-solid ${g.icon}"></i>${g.label} (${EMPLOYEES.filter(e=>e.status===(g.label==='حاضر'?'online':g.label==='متأخر'?'away':'offline')).length})</div>
+        <div class="stat-popup-list">
+          ${g.list.map((e,i)=>`<div class="spl-row"><div class="spl-info"><div class="emp-avatar" style="width:36px;height:36px;">${sheikhSVG(EMPLOYEES.indexOf(e))}</div><div><div class="spl-name">${e.name}</div><div class="spl-sub">${e.mosque||'بلا مسجد'} · ${e.circles} حلقات</div></div></div><div class="spl-val" style="color:${g.color};">${e.timeIn}</div></div>`).join('')}
+          ${EMPLOYEES.filter(e=>e.status===(g.label==='حاضر'?'online':g.label==='متأخر'?'away':'offline')).length>5?`<div style="text-align:center;font-size:11px;color:var(--text-light);">+ ${EMPLOYEES.filter(e=>e.status===(g.label==='حاضر'?'online':g.label==='متأخر'?'away':'offline')).length-5} آخرين</div>`:''}
+        </div>
+      </div>`).join('');
+  } else if(type==='salary'){
+    title.innerHTML=`<i class="fa-solid fa-money-bill-wave" style="color:var(--gold);margin-left:6px;"></i> آخر 5 رواتب - أبريل`;
+    viewAll.onclick=()=>{showToast('فتح صفحة الرواتب الكاملة');closeModal('statPopup');};
+    const top5=[...EMPLOYEES].sort((a,b)=>b.salary-a.salary).slice(0,5);
+    body.innerHTML=`<div class="stat-popup-list">
+      ${top5.map((e,i)=>`<div class="spl-row">
+        <div class="spl-info">
+          <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'var(--gold)':i===1?'rgba(201,168,76,.3)':'rgba(0,0,0,.08)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${i<2?'#fff':'var(--text-mid)'};">${i+1}</div>
+          <div><div class="spl-name">${e.name}</div><div class="spl-sub">${e.deduction>0?`خصم ${e.deduction.toLocaleString()} ج`:' لا خصومات'}</div></div>
+        </div>
+        <div style="text-align:left;">
+          <div class="spl-val" style="color:var(--emerald);">${e.net.toLocaleString()} ج</div>
+          <div style="font-size:10px;color:var(--text-light);">أساسي: ${e.salary.toLocaleString()}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div style="margin-top:14px;padding:12px;background:var(--emerald-pale);border-radius:10px;border:1px solid rgba(26,92,58,.15);">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+        <div><div style="font-size:16px;font-weight:900;color:var(--emerald);">48,200</div><div style="font-size:9px;color:var(--text-light);">إجمالي الرواتب</div></div>
+        <div><div style="font-size:16px;font-weight:900;color:var(--red);">7,350</div><div style="font-size:9px;color:var(--text-light);">الخصومات</div></div>
+        <div><div style="font-size:16px;font-weight:900;color:var(--gold-dark);">40,850</div><div style="font-size:9px;color:var(--text-light);">الصافي</div></div>
+      </div>
+    </div>`;
+  } else if(type==='live'){
+    title.innerHTML=`<i class="fa-solid fa-signal" style="color:var(--emerald);margin-left:6px;"></i> الحالة الفورية للمعلمين`;
+    viewAll.onclick=()=>{showToast('فتح صفحة الحضور الفوري');closeModal('statPopup');};
+    const online=[...EMPLOYEES].filter(e=>e.status==='online').slice(0,5);
+    body.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--emerald);margin-bottom:8px;"><span class="live-badge-big" style="font-size:10px;padding:3px 10px;"><div class="live-pulse"></div> أونلاين الآن</span></div>
+    <div class="stat-popup-list">
+      ${online.map((e,i)=>`<div class="spl-row">
+        <div class="spl-info">
+          <div class="emp-avatar" style="width:36px;height:36px;">${sheikhSVG(EMPLOYEES.indexOf(e))}<div class="emp-status-dot online" style="width:10px;height:10px;"></div></div>
+          <div><div class="spl-name">${e.name}</div><div class="spl-sub">${e.mosque||'بلا مسجد'} · ${e.circles} حلقات</div></div>
+        </div>
+        <div style="text-align:left;"><div style="font-size:11px;font-weight:700;color:#2E7D32;">منذ ${e.timeIn}</div><div style="font-size:10px;color:var(--text-light);">${e.hours}س حضور</div></div>
+      </div>`).join('')}
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text-light);text-align:center;">إجمالي أونلاين: ${EMPLOYEES.filter(e=>e.status==='online').length} معلم من ${EMPLOYEES.length}</div>`;
+  }
+
+  popup.classList.add('open');
+}
+
+// ======================================================
+// PAGINATION
+// ======================================================
+function updatePagination(){
+  const total=filteredData.length;
+  const totalPages=Math.max(1,Math.ceil(total/perPage));
+  const start=(currentPage-1)*perPage+1;
+  const end=Math.min(currentPage*perPage,total);
+  document.getElementById('pageInfo').textContent=`عرض ${total?start:0}-${end} من ${total} نتيجة`;
+  document.getElementById('tableCount').textContent=`عرض ${total} معلم`;
+  const pb=document.getElementById('pageBtns');
+  pb.innerHTML='';
+  const prev=document.createElement('button');
+  prev.className='page-btn';prev.innerHTML='<i class="fa-solid fa-chevron-right"></i>';
+  prev.disabled=currentPage===1;prev.onclick=()=>{if(currentPage>1){currentPage--;renderTable();}};
+  pb.appendChild(prev);
+  let pages=[];
+  if(totalPages<=6)pages=Array.from({length:totalPages},(_,i)=>i+1);
+  else if(currentPage<=3)pages=[1,2,3,4,'...',totalPages];
+  else if(currentPage>=totalPages-2)pages=[1,'...',totalPages-3,totalPages-2,totalPages-1,totalPages];
+  else pages=[1,'...',currentPage-1,currentPage,currentPage+1,'...',totalPages];
+  pages.forEach(p=>{
+    const b=document.createElement('button');
+    b.className='page-btn'+(p===currentPage?' active':'');
+    b.textContent=p==='...'?'…':p;
+    if(p!=='...')b.onclick=()=>{currentPage=p;renderTable();};
+    else b.style.pointerEvents='none';
+    pb.appendChild(b);
+  });
+  const next=document.createElement('button');
+  next.className='page-btn';next.innerHTML='<i class="fa-solid fa-chevron-left"></i>';
+  next.disabled=currentPage===totalPages;next.onclick=()=>{if(currentPage<totalPages){currentPage++;renderTable();}};
+  pb.appendChild(next);
+}
+
+// ======================================================
+// FILTERS
+// ======================================================
+function applyFilters(){
+  const search=document.getElementById('tableSearch').value.toLowerCase().trim();
+  const mosque=document.getElementById('filterMosque').value;
+  const status=document.getElementById('filterStatus').value;
+  filteredData=EMPLOYEES.filter(emp=>{
+    const ms=!search||emp.name.toLowerCase().includes(search)||emp.id.toLowerCase().includes(search);
+    const mm=!mosque||(mosque==='بلا مسجد'?!emp.mosque:emp.mosque===mosque);
+    const mst=!status||emp.status===status;
+    const mt=activeTab==='all'?true:activeTab==='online'?emp.status==='online':activeTab==='mosque'?!!emp.mosque:activeTab==='free'?!emp.mosque:true;
+    return ms&&mm&&mst&&mt;
+  });
+  applySort();currentPage=1;renderTable();
+}
+function applySort(){
+  const k=document.getElementById('filterSort').value;
+  filteredData.sort((a,b)=>{
+    if(k==='name')return a.name.localeCompare(b.name,'ar')*sortDir;
+    if(k==='hours')return(b.hours-a.hours)*sortDir;
+    if(k==='salary')return(b.salary-a.salary)*sortDir;
+    if(k==='circles')return(b.circles-a.circles)*sortDir;
+    return 0;
+  });
+}
+function sortTable(k){sortDir=(sortKey===k)?sortDir*-1:-1;sortKey=k;applyFilters();}
+function filterTab(el,tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');activeTab=tab;currentPage=1;applyFilters();}
+function resetFilters(){document.getElementById('tableSearch').value='';document.getElementById('filterMosque').value='';document.getElementById('filterStatus').value='';document.getElementById('filterSort').value='name';activeTab='all';document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===0));filteredData=[...EMPLOYEES];currentPage=1;renderTable();showToast('تم إعادة تعيين الفلاتر');}
+function changePerPage(){perPage=parseInt(document.getElementById('perPageSelect').value)||EMPLOYEES.length;currentPage=1;renderTable();}
+function toggleExpand(id){if(expandedRows.has(id))expandedRows.delete(id);else expandedRows.add(id);renderTable();}
+
+// ======================================================
+// MODALS
+// ======================================================
+function openAddModal(){document.getElementById('addModal').classList.add('open');}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  if(window._circleTimer){clearInterval(window._circleTimer);window._circleTimer=null;}
+}
+[document.getElementById('addModal'),document.getElementById('circlePopup'),document.getElementById('planPopup'),document.getElementById('statPopup')]
+  .forEach(m=>{if(m)m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);});});
+
+// ======================================================
+// SIDEBAR MOBILE
+// ======================================================
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebarOverlay').classList.toggle('show');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('show');}
+function setActive(el){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));el.classList.add('active');if(window.innerWidth<900)closeSidebar();}
+
+// ======================================================
+// UTILS
+// ======================================================
+function showToast(msg){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function confirmDelete(id){if(confirm('هل أنت متأكد من حذف هذا المعلم؟')){const idx=filteredData.findIndex(e=>e.id===id);if(idx>-1)filteredData.splice(idx,1);renderTable();showToast('تم حذف المعلم بنجاح');}}
+function refreshTable(){showToast('جاري تحديث البيانات...');setTimeout(()=>{renderTable();showToast('تم التحديث ✓');},700);}
+function exportTable(){showToast('جاري التصدير...');setTimeout(()=>showToast('تم تصدير الجدول ✓'),1200);}
+function openMobileSearch(){const s=document.querySelector('.search-global');s.style.display='flex';s.querySelector('input').focus();}
+
+// ======================================================
+// TOP SEARCH SYNC
+// ======================================================
+document.getElementById('topSearch').addEventListener('input',function(){document.getElementById('tableSearch').value=this.value;applyFilters();});
+
+// ======================================================
+// INIT
+// ======================================================
+filteredData=[...EMPLOYEES];
+renderTable();
+setTimeout(()=>{document.querySelectorAll('.hours-bar-fill').forEach(b=>{const w=b.style.width;b.style.width='0';setTimeout(()=>b.style.width=w,60);});},150);
+</script>
+</body>
+</html>

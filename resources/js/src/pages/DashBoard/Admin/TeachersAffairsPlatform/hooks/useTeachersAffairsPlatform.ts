@@ -1,4 +1,4 @@
-// hooks/useTeachersAffairsPlatform.ts - ✅ بدون React Query
+// hooks/useTeachersAffairsPlatform.ts -  بدون React Query
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 

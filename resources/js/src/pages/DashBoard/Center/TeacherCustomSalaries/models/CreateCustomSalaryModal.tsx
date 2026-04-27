@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
-import { FiX } from "react-icons/fi";
+import { useToast } from "../../../../../../contexts/ToastContext";
 import {
     useTeacherCustomSalaryFormCreate,
-    FormData,
     TeacherOption,
 } from "../hooks/useTeacherCustomSalaryFormCreate";
-
+import { ICO } from "../../../icons";
+import {
+    CURRENCIES,
+    CurrencyCode,
+} from "../../SalaryRules/SalaryRulesManagement";
 interface CreateCustomSalaryModalProps {
     onClose: () => void;
     onSuccess: () => void;
@@ -28,7 +30,9 @@ const CreateCustomSalaryModal: React.FC<CreateCustomSalaryModalProps> = ({
         submitForm,
     } = useTeacherCustomSalaryFormCreate();
 
-    const handleSubmitForm = async () => {
+    const { notifySuccess, notifyError } = useToast();
+
+    const handleSubmit = async () => {
         const success = await submitForm();
         if (success) {
             onSuccess();
@@ -36,162 +40,183 @@ const CreateCustomSalaryModal: React.FC<CreateCustomSalaryModalProps> = ({
         }
     };
 
-    return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={onClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
+    function FG({
+        label,
+        children,
+        required = false,
+    }: {
+        label: string;
+        children: React.ReactNode;
+        required?: boolean;
+    }) {
+        return (
+            <div style={{ marginBottom: 13 }}>
+                <label
+                    style={{
+                        display: "block",
+                        fontSize: "10.5px",
+                        fontWeight: 700,
+                        color: "var(--n700)",
+                        marginBottom: 4,
+                    }}
                 >
-                    <div className="ParentModel__inner">
-                        <div className="ParentModel__header">
-                            <button
-                                className="ParentModel__close"
-                                onClick={onClose}
-                                disabled={isSubmitting}
+                    {label}{" "}
+                    {required && <span style={{ color: "var(--red)" }}>*</span>}
+                </label>
+                {children}
+            </div>
+        );
+    }
+
+    return (
+        <div className="ov on">
+            <div className="modal">
+                <div className="mh">
+                    <span className="mh-t">راتب مخصص جديد</span>
+                    <button className="mx" onClick={onClose}>
+                        <span
+                            style={{
+                                width: 12,
+                                height: 12,
+                                display: "inline-flex",
+                            }}
+                        >
+                            {ICO.x}
+                        </span>
+                    </button>
+                </div>
+
+                <div className="mb">
+                    {/* المعلم */}
+                    <FG label="المعلم" required>
+                        <select
+                            name="teacher_id"
+                            value={formData.teacher_id || ""}
+                            onChange={handleInputChange}
+                            className={`fi2 ${
+                                errors.teacher_id ||
+                                existingSalary ||
+                                loadingRules
+                                    ? "border-red-300 bg-red-50"
+                                    : ""
+                            }`}
+                            disabled={loadingTeachers}
+                        >
+                            <option value="">اختر المعلم</option>
+                            {teachers.map((teacher) => (
+                                <option key={teacher.id} value={teacher.id}>
+                                    {teacher.name} - {teacher.role}
+                                </option>
+                            ))}
+                        </select>
+                        {existingSalary && (
+                            <p
+                                style={{
+                                    marginTop: 4,
+                                    fontSize: "11px",
+                                    color: "var(--red)",
+                                }}
                             >
-                                <FiX size={24} />
-                            </button>
-                        </div>
-
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>راتب مخصص جديد</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>إضافة راتب مخصص جديد</h1>
-                                <p>
-                                    اختر المعلم وأدخل الراتب المخصص له. سيتم
-                                    استخدام هذا الراتب بدلاً من الراتب
-                                    الافتراضي.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="ParentModel__container">
-                            {/* اختيار المعلم */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>المعلم *</label>
-                                    <select
-                                        required
-                                        name="teacher_id"
-                                        value={formData.teacher_id as number}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.teacher_id ||
-                                            existingSalary ||
-                                            loadingRules ||
-                                            loadingTeachers
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={
-                                            isSubmitting || loadingTeachers
-                                        }
-                                    >
-                                        <option value="">اختر المعلم</option>
-                                        {teachers.map((teacher) => (
-                                            <option
-                                                key={teacher.id}
-                                                value={teacher.id}
-                                            >
-                                                {teacher.name} - {teacher.role}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {existingSalary && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            يوجد بالفعل راتب مخصص نشط لهذا
-                                            المعلم
-                                        </p>
-                                    )}
-                                    {errors.teacher_id && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.teacher_id}
-                                        </p>
-                                    )}
-                                    {loadingRules && (
-                                        <div className="mt-1 text-sm text-blue-600 flex items-center">
-                                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-                                            جاري فحص الراتب المخصص...
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* الراتب المخصص */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الراتب المخصص (ر.س) *</label>
-                                    <input
-                                        required
-                                        type="number"
-                                        name="custom_base_salary"
-                                        value={formData.custom_base_salary}
-                                        onChange={handleInputChange}
-                                        min="1000"
-                                        step="0.01"
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all ${
-                                            errors.custom_base_salary
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="5000"
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.custom_base_salary && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.custom_base_salary}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* الملاحظات */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>ملاحظات (اختياري)</label>
-                                    <textarea
-                                        name="notes"
-                                        value={formData.notes}
-                                        onChange={handleInputChange}
-                                        rows={3}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all resize-vertical"
-                                        placeholder="سبب تحديد هذا الراتب المخصص..."
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* زر الإرسال */}
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
+                                يوجد بالفعل راتب مخصص نشط لهذا المعلم
+                            </p>
+                        )}
+                        {errors.teacher_id && (
+                            <p
+                                style={{
+                                    marginTop: 4,
+                                    fontSize: "11px",
+                                    color: "var(--red)",
+                                }}
                             >
-                                <button
-                                    type="button"
-                                    onClick={handleSubmitForm}
-                                    disabled={
-                                        isSubmitting ||
-                                        existingSalary ||
-                                        loadingRules ||
-                                        !formData.teacher_id ||
-                                        loadingTeachers
-                                    }
-                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                                            جاري الإضافة...
-                                        </>
-                                    ) : (
-                                        <>إضافة الراتب المخصص</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                                {errors.teacher_id}
+                            </p>
+                        )}
+                    </FG>
+
+                    {/* العملة */}
+                    <FG label="العملة" required>
+                        <select
+                            name="currency"
+                            value={formData.currency}
+                            onChange={handleInputChange}
+                            className="fi2"
+                        >
+                            {(Object.keys(CURRENCIES) as CurrencyCode[]).map(
+                                (code) => (
+                                    <option key={code} value={code}>
+                                        {CURRENCIES[code].label}
+                                    </option>
+                                ),
+                            )}
+                        </select>
+                    </FG>
+
+                    {/* الراتب المخصص */}
+                    <FG label="الراتب المخصص" required>
+                        <input
+                            type="number"
+                            name="custom_base_salary"
+                            value={formData.custom_base_salary}
+                            onChange={handleInputChange}
+                            min="0"
+                            step="0.01"
+                            placeholder="5000"
+                            className={`fi2 ${errors.custom_base_salary ? "border-red-300 bg-red-50" : ""}`}
+                        />
+                        {errors.custom_base_salary && (
+                            <p
+                                style={{
+                                    marginTop: 4,
+                                    fontSize: "11px",
+                                    color: "var(--red)",
+                                }}
+                            >
+                                {errors.custom_base_salary}
+                            </p>
+                        )}
+                    </FG>
+
+                    {/* الملاحظات */}
+                    <FG label="ملاحظات">
+                        <textarea
+                            name="notes"
+                            value={formData.notes || ""}
+                            onChange={handleInputChange}
+                            rows={3}
+                            className="fi2"
+                            placeholder="سبب تحديد هذا الراتب المخصص..."
+                        />
+                    </FG>
+                </div>
+
+                <div className="mf">
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "12px",
+                            justifyContent: "flex-end",
+                            marginTop: "20px",
+                        }}
+                    >
+                        <button className="btn bs" onClick={onClose}>
+                            إلغاء
+                        </button>
+                        <button
+                            className="btn bp"
+                            onClick={handleSubmit}
+                            disabled={
+                                existingSalary ||
+                                loadingRules ||
+                                loadingTeachers ||
+                                isSubmitting ||
+                                !formData.teacher_id ||
+                                !formData.custom_base_salary
+                            }
+                        >
+                            {isSubmitting
+                                ? "جاري الإضافة..."
+                                : "إضافة الراتب المخصص"}
+                        </button>
                     </div>
                 </div>
             </div>

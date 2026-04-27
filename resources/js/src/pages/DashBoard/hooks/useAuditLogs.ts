@@ -65,7 +65,7 @@ export const useAuditLogs = () => {
     const fetchAuditLogs = useCallback(async (periodParam: string = "") => {
         setLoading(true);
         try {
-            // ✅ الـ endpoint الصحيح للـ web routes
+            //  الـ endpoint الصحيح للـ web routes
             const url = `/api/v1/reports/audit-logs/${periodParam || ""}`;
             console.log("🔍 Fetching audit logs from:", url);
 
@@ -86,7 +86,7 @@ export const useAuditLogs = () => {
             }
 
             const result: ApiResponse = await response.json();
-            console.log("✅ Audit logs loaded:", result);
+            console.log(" Audit logs loaded:", result);
 
             if (result.success && result.data?.logs) {
                 const processedLogs: AuditLogDisplay[] = result.data.logs.map(
@@ -192,7 +192,7 @@ export const useAuditLogs = () => {
     const exportLogs = useCallback(async () => {
         setLoading(true);
         try {
-            // ✅ استخدم الـ web route الصحيح
+            //  استخدم الـ web route الصحيح
             const url = `/api/v1/reports/audit-logs/export/${period || ""}`;
             console.log("🔍 Exporting from:", url);
 

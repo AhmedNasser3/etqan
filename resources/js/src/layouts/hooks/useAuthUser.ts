@@ -1,4 +1,4 @@
-// hooks/useAuthUser.ts - محدّث مع معلومات إضافية ✅
+// hooks/useAuthUser.ts - محدّث مع معلومات إضافية
 import { useState, useEffect } from "react";
 
 export const useAuthUser = () => {

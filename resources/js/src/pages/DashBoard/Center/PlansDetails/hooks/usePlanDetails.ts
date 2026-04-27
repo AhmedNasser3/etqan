@@ -20,7 +20,7 @@ interface Pagination {
     per_page: number;
 }
 
-// ✅ Hook يدعم الـ 2 حالات
+//  Hook يدعم الـ 2 حالات
 export const usePlanDetails = (planId?: number) => {
     const [details, setDetails] = useState<PlanDetailType[]>([]);
     const [loading, setLoading] = useState(false);
@@ -41,7 +41,7 @@ export const usePlanDetails = (planId?: number) => {
             setDetails([]);
 
             try {
-                // ✅ دعم الـ 2 URLs
+                //  دعم الـ 2 URLs
                 const url = planId
                     ? `/api/v1/plans/${planId}/details?page=${pageNum}`
                     : `/api/v1/plans/details?page=${pageNum}`;
@@ -85,7 +85,7 @@ export const usePlanDetails = (planId?: number) => {
                     return;
                 }
 
-                console.log("✅ [fetchDetails] Parsing JSON...");
+                console.log(" [fetchDetails] Parsing JSON...");
                 const data = await response.json();
                 console.log("📦 [fetchDetails] Raw response:", data);
 
@@ -107,7 +107,7 @@ export const usePlanDetails = (planId?: number) => {
                 setDetails(safeData);
                 setPagination(safePagination);
                 setCurrentPage(safePagination.current_page || 1);
-                console.log("✅ [fetchDetails] State updated!");
+                console.log(" [fetchDetails] State updated!");
             } catch (error: any) {
                 console.error("💥 [fetchDetails] NETWORK ERROR:", error);
                 setDetails([]);

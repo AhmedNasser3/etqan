@@ -101,7 +101,7 @@ const FinancialModel: React.FC<FinancialModelProps> = ({ isOpen, onClose }) => {
                                     <div className="inputs__email">
                                         <label>الحالة</label>
                                         <select defaultValue="مدفوع">
-                                            <option>✅ مدفوع</option>
+                                            <option> مدفوع</option>
                                             <option> معلق</option>
                                         </select>
                                     </div>

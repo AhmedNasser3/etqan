@@ -2,10 +2,9 @@ import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
 import { FaStar } from "react-icons/fa";
 import { GoGoal } from "react-icons/go";
-import { FiMessageSquare, FiSearch } from "react-icons/fi";
-import { useState, useEffect } from "react";
+import { FiMessageSquare } from "react-icons/fi";
+import { useState } from "react";
 import { useTeacherStudents } from "./hooks/useTeacherStudents";
-import Profile from "../dashboard/profile";
 
 interface Student {
     id: number;
@@ -19,10 +18,7 @@ interface Student {
 
 const TeacherStudents: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
-    const [dateFrom, setDateFrom] = useState("");
-    const [dateTo, setDateTo] = useState("");
 
-    // ✅ استخدام الـ Hook الجديد
     const { students, totalCount, loading, error, toggleStudentStatus } =
         useTeacherStudents();
 
@@ -30,229 +26,173 @@ const TeacherStudents: React.FC = () => {
         student.name.toLowerCase().includes(searchTerm.toLowerCase()),
     );
 
-    const getProgressClass = (progress: number) => {
-        if (progress >= 70) return "teacherStudent__progress-badge green";
-        if (progress >= 50) return "teacherStudent__progress-badge orange";
-        return "teacherStudent__progress-badge red";
+    const getStatusStyle = (status: Student["status"]): React.CSSProperties => {
+        return status === "active"
+            ? {
+                  background: "var(--g100, #dcfce7)",
+                  color: "var(--g700, #15803d)",
+              }
+            : { background: "#fee2e2", color: "#ef4444" };
     };
 
     const getStatusIcon = (status: Student["status"]) => {
         return status === "active" ? (
-            <GrStatusGood className={`teacherStudent__status-icon ${status}`} />
+            <GrStatusGood style={{ color: "#16a34a", width: 14, height: 14 }} />
         ) : (
             <GrStatusCritical
-                className={`teacherStudent__status-icon ${status}`}
+                style={{ color: "#ef4444", width: 14, height: 14 }}
             />
         );
     };
 
-    const getStatusText = (status: Student["status"]) => {
-        return status === "active" ? "نشط" : "متوقف";
-    };
+    const getStatusText = (status: Student["status"]) =>
+        status === "active" ? "نشط" : "متوقف";
 
-    const getActionText = (status: Student["status"]) => {
-        return status === "active" ? "وقف الطالب" : "تنشيط الطالب";
-    };
+    const getActionText = (status: Student["status"]) =>
+        status === "active" ? "وقف الطالب" : "تنشيط الطالب";
 
-    if (loading) {
-        return <div className="loading">جاري التحميل...</div>;
-    }
+    const avgProgress =
+        students.length > 0
+            ? Math.round(
+                  students.reduce((acc, s) => acc + (s.progress || 0), 0) /
+                      students.length,
+              ) + "%"
+            : "0%";
 
-    if (error) {
-        return <div className="error">خطأ: {error}</div>;
-    }
+    const activeCount = students.filter((s) => s.status === "active").length;
 
     return (
-        <>
-            <Profile />
-            <div
-                className="userProfile__plan"
-                style={{ paddingBottom: "24px" }}
-            >
-                <div className="userProfile__planTitle">
-                    <h1>
-                        جميع طلابك <span>{totalCount} طالب</span>
-                    </h1>
-                </div>
-
-                <div className="plan__header">
-                    <div className="plan__ai-suggestion">
-                        <i>
-                            <RiRobot2Fill />
-                        </i>
-                        راجع الطلاب المتوقفين قريباً
-                    </div>
-                    <div className="plan__current">
-                        <h2>قائمة الطلاب</h2>
-                        <div className="plan__filters">
-                            {/* ✅ فلتر البحث */}
-                            <div className="date-picker search-input">
-                                <FiSearch className="search-icon" />
-                                <input
-                                    type="search"
-                                    placeholder="البحث بالاسم..."
-                                    value={searchTerm}
-                                    onChange={(e) =>
-                                        setSearchTerm(e.target.value)
-                                    }
-                                />
-                            </div>
-                        </div>
+        <div className="content" id="contentArea">
+            <div className="widget">
+                {/* Header */}
+                <div className="wh">
+                    <div className="wh-l">قائمة الطلاب</div>
+                    <div className="flx">
+                        <input
+                            className="fi"
+                            style={{ margin: "0 6px" }}
+                            placeholder="البحث بالاسم..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                     </div>
                 </div>
 
-                <div className="plan__daily-table">
+                {/* Table */}
+                <div style={{ overflowX: "auto" }}>
                     <table>
                         <thead>
                             <tr>
                                 <th>الصورة</th>
                                 <th>اسم الطالب</th>
-                                {/* <th>مستوى التقدم</th> */}
                                 <th>الحالة</th>
-                                <th>الإجراء</th>
-                                {/* <th>التواصل</th> */}
+                                <th>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredStudents.map((item) => (
-                                <tr
-                                    key={item.id}
-                                    className={`plan__row ${item.status}`}
-                                >
-                                    <td className="teacherStudent__img">
-                                        <div className="w-12 h-12 rounded-full overflow-hidden">
-                                            <img
-                                                src={item.avatar}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover"
-                                            />
+                            {filteredStudents.length === 0 ? (
+                                <tr>
+                                    <td colSpan={4}>
+                                        <div className="empty">
+                                            <p>
+                                                {searchTerm
+                                                    ? `لا توجد نتائج لـ "${searchTerm}"`
+                                                    : "لا يوجد طلاب"}
+                                            </p>
                                         </div>
                                     </td>
-                                    <td>{item.name}</td>
-                                    {/* <td>
-                                        <span
-                                            className={`teacherStudent__progress-badge ${getProgressClass(item.progress || 0)}`}
-                                        >
-                                            {item.progress || 0}%
-                                        </span>
-                                    </td> */}
-                                    <td>
-                                        <span>
-                                            {getStatusText(item.status)}
-                                        </span>
-                                    </td>
-                                    <td className="teacherStudent__status">
-                                        <button
-                                            className={`teacherStudent__status-btn ${item.status} p-2 rounded-full border-2 transition-all flex items-center justify-center w-10 h-10 mr-2`}
-                                            onClick={() =>
-                                                toggleStudentStatus(item.id)
-                                            }
-                                        >
-                                            {getStatusIcon(item.status)}
-                                        </button>
-                                        <span>
-                                            {getActionText(item.status)}
-                                        </span>
-                                    </td>
-                                    {/* <td>
-                                        <button className="teacherStudent__chat">
-                                            <FiMessageSquare className="text-xl" />
-                                        </button>
-                                    </td> */}
                                 </tr>
-                            ))}
+                            ) : (
+                                filteredStudents.map((item) => (
+                                    <tr key={item.id}>
+                                        {/* الصورة */}
+                                        <td>
+                                            {item.avatar ? (
+                                                <img
+                                                    src={item.avatar}
+                                                    alt={item.name}
+                                                    style={{
+                                                        width: 36,
+                                                        height: 36,
+                                                        borderRadius: "50%",
+                                                        objectFit: "cover",
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div
+                                                    style={{
+                                                        width: 36,
+                                                        height: 36,
+                                                        borderRadius: "50%",
+                                                        background:
+                                                            "var(--color-background-info)",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent:
+                                                            "center",
+                                                        fontSize: 13,
+                                                        fontWeight: 500,
+                                                        color: "var(--color-text-info)",
+                                                    }}
+                                                >
+                                                    {item.name.charAt(0)}
+                                                </div>
+                                            )}
+                                        </td>
+
+                                        {/* الاسم */}
+                                        <td style={{ fontWeight: 500 }}>
+                                            {item.name}
+                                        </td>
+
+                                        {/* الحالة */}
+                                        <td>
+                                            <span
+                                                style={{
+                                                    ...getStatusStyle(
+                                                        item.status,
+                                                    ),
+                                                    fontSize: 12,
+                                                    padding: "3px 10px",
+                                                    borderRadius: 999,
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: 5,
+                                                    fontWeight: 500,
+                                                }}
+                                            >
+                                                {getStatusIcon(item.status)}
+                                                {getStatusText(item.status)}
+                                            </span>
+                                        </td>
+
+                                        {/* الإجراءات */}
+                                        <td>
+                                            <div className="td-actions">
+                                                <button
+                                                    className={
+                                                        item.status === "active"
+                                                            ? "btn bd bxs"
+                                                            : "btn bs bxs"
+                                                    }
+                                                    onClick={() =>
+                                                        toggleStudentStatus(
+                                                            item.id,
+                                                        )
+                                                    }
+                                                >
+                                                    {getActionText(item.status)}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
-
-                {/* ✅ الإحصائيات */}
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon redColor">
-                            <i>
-                                <GoGoal />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>عدد الطلاب</h3>
-                            <p className="text-2xl font-bold text-red-600">
-                                {totalCount}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon yellowColor">
-                            <i>
-                                <FaStar />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>متوسط التقدم</h3>
-                            <p className="text-2xl font-bold text-yellow-600">
-                                {students.length > 0
-                                    ? Math.round(
-                                          students.reduce(
-                                              (acc, s) =>
-                                                  acc + (s.progress || 0),
-                                              0,
-                                          ) / students.length,
-                                      ) + "%"
-                                    : "0%"}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <FiMessageSquare />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>نشط حالياً</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {
-                                    students.filter(
-                                        (s) => s.status === "active",
-                                    ).length
-                                }
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ✅ الـ Progress Bars */}
-                <div
-                    className="inputs__verifyOTPBirth"
-                    id="userProfile__verifyOTPBirth"
-                >
-                    <div className="userProfile__progressContent">
-                        <div className="userProfile__progressTitle">
-                            <h1>إجمالي التقدم</h1>
-                        </div>
-                        <p>
-                            {students.length > 0
-                                ? Math.round(
-                                      students.reduce(
-                                          (acc, s) => acc + (s.progress || 0),
-                                          0,
-                                      ) / students.length,
-                                  ) + "%"
-                                : "0%"}
-                        </p>
-                        <div className="userProfile__progressBar">
-                            <span
-                                style={{
-                                    width:
-                                        students.length > 0
-                                            ? `${Math.round(students.reduce((acc, s) => acc + (s.progress || 0), 0) / students.length)}%`
-                                            : "0%",
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
             </div>
-        </>
+        </div>
     );
 };
 

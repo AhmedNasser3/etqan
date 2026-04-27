@@ -64,7 +64,7 @@ const CenterAdd: React.FC = () => {
                                         <div className="card-icon">
                                             <PiChalkboardTeacherDuotone />
                                         </div>
-                                        <h3>لماذا إتقان</h3>
+                                        <h3>لمريرياذا إتقان</h3>
                                         <p>
                                             أقوى منصة لتعليم القرآن عالمياً تدير
                                             آلاف المجمعات بتقنية Multi-Tenant

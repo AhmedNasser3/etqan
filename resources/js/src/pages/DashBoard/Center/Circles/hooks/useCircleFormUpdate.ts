@@ -1,4 +1,3 @@
-// src/hooks/useCircleFormUpdate.ts -  محدث نهائياً
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -6,20 +5,17 @@ interface CenterType {
     id: number;
     name: string;
 }
-
 interface MosqueType {
     id: number;
     name: string;
     center_id: number;
 }
-
 interface TeacherType {
     id: number;
     name: string;
     role: string;
     center_id?: number;
 }
-
 interface CircleData {
     id: number;
     name: string;
@@ -28,7 +24,6 @@ interface CircleData {
     teacher_id?: number;
     notes?: string;
 }
-
 interface FormData {
     name: string;
     center_id: string;
@@ -36,9 +31,24 @@ interface FormData {
     teacher_id: string;
     notes?: string;
 }
-
 interface FormErrors {
     [key: string]: string;
+}
+
+function getPortalCenterId(): number | null {
+    const id = (window as any).__PORTAL_CENTER_ID__;
+    return id ? Number(id) : null;
+}
+
+function buildHeaders(extra?: Record<string, string>): HeadersInit {
+    const headers: Record<string, string> = {
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        ...extra,
+    };
+    const centerId = getPortalCenterId();
+    if (centerId) headers["X-Center-Id"] = String(centerId);
+    return headers;
 }
 
 export const useCircleFormUpdate = (circleId: number) => {
@@ -59,149 +69,83 @@ export const useCircleFormUpdate = (circleId: number) => {
     const [user, setUser] = useState<any>(null);
     const [circleData, setCircleData] = useState<CircleData | null>(null);
 
+    const getCsrf = () =>
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content") ?? "";
+
+    // ── جيب بيانات الحلقة ────────────────────────────────────────────────
     useEffect(() => {
-        if (circleId) {
-            loadCircleData();
-        }
+        if (!circleId) return;
+
+        fetch(`/api/v1/centers/circles/${circleId}`, {
+            credentials: "include",
+            headers: buildHeaders(),
+        })
+            .then((r) => r.json())
+            .then((circle) => {
+                setCircleData(circle);
+                setFormData({
+                    name: circle.name || "",
+                    center_id: circle.center_id?.toString() || "",
+                    mosque_id: circle.mosque_id?.toString() || "",
+                    teacher_id: circle.teacher_id?.toString() || "",
+                    notes: circle.notes || "",
+                });
+            })
+            .catch(() => toast.error("فشل في تحميل الحلقة"))
+            .finally(() => setIsLoadingCircle(false));
     }, [circleId]);
 
-    const loadCircleData = useCallback(async () => {
-        try {
-            console.log("🔍 Loading circle data for ID:", circleId);
-            const response = await fetch(
-                `/api/v1/centers/circles/${circleId}`,
-                {
-                    credentials: "include",
-                    headers: { Accept: "application/json" },
-                },
-            );
-
-            if (!response.ok) {
-                const errorData = await response
-                    .json()
-                    .catch(() => response.text());
-                console.error("Circle API error:", response.status, errorData);
-                toast.error("فشل في تحميل الحلقة");
-                return;
-            }
-
-            const circle = await response.json();
-            console.log(" Circle loaded:", circle);
-            setCircleData(circle);
-
-            setFormData({
-                name: circle.name || "",
-                center_id: circle.center_id?.toString() || "",
-                mosque_id: circle.mosque_id?.toString() || "",
-                teacher_id: circle.teacher_id?.toString() || "",
-                notes: circle.notes || "",
-            });
-        } catch (error) {
-            console.error("❌ Load circle data error:", error);
-            toast.error("فشل في تحميل الحلقة");
-        } finally {
-            setIsLoadingCircle(false);
-        }
-    }, [circleId]);
-
+    // ── جيب الداتا بناءً على center_id ───────────────────────────────────
     useEffect(() => {
-        fetchUser();
-    }, []);
+        const portalCenterId = getPortalCenterId();
+        const centerId =
+            portalCenterId || user?.center_id || circleData?.center_id;
+        if (!centerId) return;
 
-    const fetchUser = useCallback(async () => {
-        try {
-            const response = await fetch("/api/user", {
-                credentials: "include",
-                headers: { Accept: "application/json" },
+        setLoadingData(true);
+
+        // اسم المجمع
+        fetch("/api/v1/centers", {
+            credentials: "include",
+            headers: buildHeaders({ "X-CSRF-TOKEN": getCsrf() }),
+        })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (!data) return;
+                const center = (data.data || []).find(
+                    (c: any) => c.id === centerId,
+                );
+                setCentersData(center ? [center] : []);
             });
-            if (response.ok) {
-                const responseData = await response.json();
-                const actualUser = responseData.user || responseData;
-                setUser(actualUser);
-            }
-        } catch (error) {
-            console.error("Failed to fetch user:", error);
-        }
-    }, []);
 
+        // المساجد
+        fetch(`/api/v1/centers/${centerId}/mosques`, {
+            credentials: "include",
+            headers: buildHeaders(),
+        })
+            .then((r) => (r.ok ? r.json() : { data: [] }))
+            .then((data) => setMosquesData(data.data || []));
+
+        // المعلمين
+        fetch(`/api/v1/centers/${centerId}/teachers`, {
+            credentials: "include",
+            headers: buildHeaders(),
+        })
+            .then((r) => (r.ok ? r.json() : { data: [] }))
+            .then((data) => setTeachersData(data.data || []))
+            .finally(() => setLoadingData(false));
+    }, [user?.center_id, circleData?.center_id]);
+
+    // ── جيب الـ user لو مش portal ─────────────────────────────────────────
     useEffect(() => {
-        if (user) {
-            fetchCenters();
-        }
-    }, [user]);
-
-    const fetchCenters = useCallback(async () => {
-        try {
-            setLoadingData(true);
-            const response = await fetch("/api/v1/centers", {
-                credentials: "include",
-                headers: { Accept: "application/json" },
+        if (getPortalCenterId()) return; // portal mode — مش محتاج
+        fetch("/api/user", { credentials: "include", headers: buildHeaders() })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (data) setUser(data.user || data);
             });
-
-            if (response.ok) {
-                const data = await response.json();
-                let centers: CenterType[] = [];
-
-                if (user?.role?.id === 1 && user.center_id) {
-                    const userCenter = data.data?.find(
-                        (c: any) => c.id === user.center_id,
-                    );
-                    if (userCenter) {
-                        centers = [userCenter];
-                    }
-                } else {
-                    centers = data.data || [];
-                }
-
-                setCentersData(centers);
-
-                if (circleData?.center_id) {
-                    fetchCenterMosques(circleData.center_id);
-                    fetchCenterTeachers(circleData.center_id);
-                }
-            }
-        } catch (error) {
-            console.error("Failed to fetch centers:", error);
-            setCentersData([]);
-        } finally {
-            setLoadingData(false);
-        }
-    }, [user, circleData?.center_id]);
-
-    const fetchCenterMosques = useCallback(async (centerId: number) => {
-        try {
-            const response = await fetch(
-                `/api/v1/centers/${centerId}/mosques`,
-                {
-                    credentials: "include",
-                    headers: { Accept: "application/json" },
-                },
-            );
-            if (response.ok) {
-                const data = await response.json();
-                setMosquesData(data.data || []);
-            }
-        } catch (error) {
-            console.error("Failed to fetch center mosques:", error);
-        }
-    }, []);
-
-    const fetchCenterTeachers = useCallback(async (centerId: number) => {
-        try {
-            const response = await fetch(
-                `/api/v1/centers/${centerId}/teachers`,
-                {
-                    credentials: "include",
-                    headers: { Accept: "application/json" },
-                },
-            );
-            if (response.ok) {
-                const data = await response.json();
-                setTeachersData(data.data || []);
-            }
-        } catch (error) {
-            console.error("Failed to fetch center teachers:", error);
-        }
     }, []);
 
     const handleInputChange = useCallback(
@@ -212,56 +156,44 @@ export const useCircleFormUpdate = (circleId: number) => {
         ) => {
             const { name, value } = e.target;
             setFormData((prev) => ({ ...prev, [name]: value }));
-            if (errors[name]) {
-                setErrors((prev) => ({ ...prev, [name]: "" }));
-            }
+            if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
         },
         [errors],
     );
 
     const validateForm = useCallback((): boolean => {
         const newErrors: FormErrors = {};
-
         if (!formData.name.trim()) newErrors.name = "اسم الحلقة مطلوب";
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }, [formData]);
 
     const submitForm = useCallback(
-        async (onSubmit: (formDataSubmit: FormData) => Promise<void>) => {
-            if (!validateForm()) {
-                return;
-            }
-
+        async (onSubmit: (fd: FormData) => Promise<void>) => {
+            if (!validateForm()) return;
             if (!formData.center_id) {
                 toast.error("المجمع غير محدد");
                 return;
             }
-
             if (isSubmitting) return;
 
             setIsSubmitting(true);
             try {
-                const formDataSubmit = new FormData();
-                formDataSubmit.append("_method", "PUT");
-                formDataSubmit.append("name", formData.name);
-                formDataSubmit.append("center_id", formData.center_id);
+                const fd = new FormData();
+                fd.append("_method", "PUT");
+                fd.append("name", formData.name);
+                fd.append("center_id", formData.center_id);
                 if (formData.mosque_id)
-                    formDataSubmit.append("mosque_id", formData.mosque_id);
+                    fd.append("mosque_id", formData.mosque_id);
                 if (formData.teacher_id)
-                    formDataSubmit.append("teacher_id", formData.teacher_id);
-                if (formData.notes)
-                    formDataSubmit.append("notes", formData.notes);
-
-                await onSubmit(formDataSubmit);
-            } catch (error) {
-                console.error("Update error:", error);
+                    fd.append("teacher_id", formData.teacher_id);
+                if (formData.notes) fd.append("notes", formData.notes);
+                await onSubmit(fd);
             } finally {
                 setIsSubmitting(false);
             }
         },
-        [formData, validateForm, isSubmitting],
+        [formData, isSubmitting, validateForm],
     );
 
     return {

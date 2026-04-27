@@ -57,7 +57,7 @@ export const useDomainRequestFormCreate = () => {
         if (!data.dns1.trim()) newErrors.dns1 = "DNS الأول مطلوب";
         if (!data.dns2.trim()) newErrors.dns2 = "DNS الثاني مطلوب";
 
-        console.log("✅ Validation Debug:", {
+        console.log(" Validation Debug:", {
             errors: newErrors,
             isValid: Object.keys(newErrors).length === 0,
         });
@@ -86,7 +86,7 @@ export const useDomainRequestFormCreate = () => {
         ) => {
             console.log("🚀 SUBMIT START - Full Debug Mode");
 
-            // ✅ Validation
+            //  Validation
             const validationErrors = validateForm(formData);
             if (Object.keys(validationErrors).length > 0) {
                 console.log("❌ VALIDATION FAILED:", validationErrors);
@@ -95,12 +95,12 @@ export const useDomainRequestFormCreate = () => {
                 return;
             }
 
-            console.log("✅ VALIDATION PASSED - FormData:", formData);
+            console.log(" VALIDATION PASSED - FormData:", formData);
 
             setIsSubmitting(true);
             const formDataToSubmit = new FormData();
 
-            // ✅ Build FormData
+            //  Build FormData
             Object.entries(formData).forEach(([key, value]) => {
                 if (value !== null && value !== undefined && value !== "") {
                     formDataToSubmit.append(key, value.toString());
@@ -115,7 +115,7 @@ export const useDomainRequestFormCreate = () => {
                     : "multiple",
             });
 
-            // ✅ CSRF Debug قبل الإرسال
+            //  CSRF Debug قبل الإرسال
             const csrfToken = getCsrfToken();
             console.log("🔐 FINAL CSRF CHECK:", {
                 csrfTokenExists: !!csrfToken,
@@ -124,7 +124,7 @@ export const useDomainRequestFormCreate = () => {
             try {
                 console.log("🌐 CALLING SUBMIT HANDLER...");
                 await submitHandler(formDataToSubmit);
-                console.log("✅ SUBMIT HANDLER SUCCESS!");
+                console.log(" SUBMIT HANDLER SUCCESS!");
                 toast.success("تم إرسال طلب الدومين بنجاح!");
                 resetForm();
             } catch (error: any) {
@@ -137,7 +137,7 @@ export const useDomainRequestFormCreate = () => {
                     fullError: error,
                 });
 
-                // ✅ Debug الـ response text
+                //  Debug الـ response text
                 if (error.responseText) {
                     console.log(
                         "📄 RAW RESPONSE:",

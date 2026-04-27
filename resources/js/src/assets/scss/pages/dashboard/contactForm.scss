@@ -7,7 +7,7 @@
     position: relative;
     overflow: hidden;
 
-    // المربع الأول المتحرك ✅ صحيح
+    // المربع الأول المتحرك  صحيح
     .floating-box-1 {
         position: absolute;
         top: 20%;
@@ -22,7 +22,7 @@
         filter: blur(1px);
     }
 
-    // المربع الثاني المتحرك ✅ صحيح
+    // المربع الثاني المتحرك  صحيح
     .floating-box-2 {
         position: absolute;
         bottom: 15%;

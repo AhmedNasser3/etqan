@@ -1,125 +1,139 @@
-import { useState, useRef, useEffect } from "react";
+// StudentApproval.tsx - مصحح مع نفس ديزاين StaffApproval + PlansManagement classes
+import React, { useState, useEffect } from "react";
+import ParentModel from "./modals/ParentModel";
 import { usePendingStudents } from "./hooks/usePendingStudents";
 import {
     useConfirmStudent,
     useRejectStudent,
 } from "./hooks/usePendingStudents";
-import toast from "react-hot-toast";
-import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
-import { PiWhatsappLogoDuotone } from "react-icons/pi";
-import { RiMessage2Line } from "react-icons/ri";
-import { FiXCircle } from "react-icons/fi";
-import { IoCheckmarkCircleOutline } from "react-icons/io5";
-import { IoMdLink } from "react-icons/io";
-import { FiDatabase } from "react-icons/fi";
-import ParentModel from "./modals/ParentModel";
+import { ICO } from "../../../icons";
+import { useToast } from "../../../../../../contexts/ToastContext";
 
-declare global {
-    interface Window {
-        XLSX: any;
-    }
+interface StudentType {
+    id: number;
+    name: string;
+    id_number: string;
+    grade_level: string;
+    circle: string;
+    center?: { name: string };
+    created_at: string;
+    guardian?: { name: string };
+    user?: { name: string; status: string; avatar?: string };
+    avatar?: string;
+}
+
+interface ConfirmModalProps {
+    title: string;
+    desc?: string;
+    cb: () => void;
 }
 
 const StudentApproval: React.FC = () => {
     const {
-        students,
+        students: studentsFromHook = [],
         loading: studentsLoading,
         refetch,
     } = usePendingStudents();
-    const { confirmStudent, loading: confirmLoading } = useConfirmStudent();
-    const { rejectStudent, loading: rejectLoading } = useRejectStudent();
 
+    const { confirmStudent } = useConfirmStudent();
+    const { rejectStudent } = useRejectStudent();
+
+    const { notifySuccess, notifyError } = useToast();
     const [search, setSearch] = useState("");
     const [showParentModal, setShowParentModal] = useState(false);
-    const [debugInfo, setDebugInfo] = useState<any>(null);
-    const [selectedStudent, setSelectedStudent] = useState<any>(null);
+    const [selectedStudent, setSelectedStudent] = useState<StudentType | null>(
+        null,
+    );
+    const [confirmLoadingIds, setConfirmLoadingIds] = useState<Set<number>>(
+        new Set(),
+    );
+    const [rejectLoadingIds, setRejectLoadingIds] = useState<Set<number>>(
+        new Set(),
+    );
+    const [confirm, setConfirm] = useState<ConfirmModalProps | null>(null);
 
-    // Fixed filtering - handle missing nested properties safely
+    // Local state للحذف الفوري
+    const [students, setStudents] = useState<StudentType[]>([]);
+
+    useEffect(() => {
+        setStudents(studentsFromHook);
+    }, [studentsFromHook]);
+
+    // فلترة فورية آمنة
     const filteredStudents = students.filter(
-        (student: any) =>
-            student.name?.toLowerCase().includes(search.toLowerCase()) ||
-            student.id_number?.toLowerCase().includes(search.toLowerCase()) ||
-            student.grade_level?.toLowerCase().includes(search.toLowerCase()) ||
-            student.circle?.toLowerCase().includes(search.toLowerCase()) ||
-            student.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-            student.guardian?.name
-                ?.toLowerCase()
+        (student) =>
+            (student.name || "").toLowerCase().includes(search.toLowerCase()) ||
+            (student.id_number || "")
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+            (student.grade_level || "")
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+            (student.circle || "")
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+            (student.user?.name || "")
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+            (student.guardian?.name || "")
+                .toLowerCase()
                 .includes(search.toLowerCase()),
     );
 
-    useEffect(() => {
-        refetch();
-    }, []);
-
-    // ✅ Debug button handler - معدل للـ API structure الصحيح
-    const handleDebug = async () => {
-        try {
-            // استخدام نفس الـ apiCall pattern مع CSRF و session
-            const response = await fetch(
-                "/api/v1/centers/pending-students-debug",
-                {
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-                        "X-Requested-With": "XMLHttpRequest",
-                        "X-CSRF-TOKEN":
-                            document
-                                .querySelector('meta[name="csrf-token"]')
-                                ?.getAttribute("content") || "",
-                    },
-                },
-            );
-
-            if (!response.ok) {
-                throw new Error(
-                    `HTTP ${response.status}: ${response.statusText}`,
-                );
-            }
-
-            const data = await response.json();
-            setDebugInfo(data);
-            toast.success("تم جلب معلومات التشخيص");
-        } catch (error) {
-            toast.error("خطأ في جلب بيانات التشخيص");
-        }
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearch(e.target.value);
     };
 
+    // Confirm بـ per-student loading
     const handleApprove = async (id: number) => {
+        setConfirmLoadingIds((prev) => new Set([...prev, id]));
         try {
             await confirmStudent(id);
-            toast.success(" تم اعتماد الطالب بنجاح!");
-            refetch();
+            notifySuccess("تم اعتماد الطالب بنجاح!");
+            // حذف فوري من الواجهة
+            setStudents((prev) => prev.filter((s) => s.id !== id));
         } catch (error: any) {
-            toast.error(
-                ` خطأ في اعتماد الطالب: ${error.message || "خطأ غير معروف"}`,
-            );
+            notifyError(error.message || "خطأ في اعتماد الطالب");
+        } finally {
+            setConfirmLoadingIds((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(id);
+                return newSet;
+            });
         }
     };
 
-    const handleReject = async (id: number) => {
-        if (!confirm("هل أنت متأكد من رفض طلب هذا الطالب؟")) return;
-
-        try {
-            await rejectStudent(id);
-            toast.success(" تم رفض طلب الطالب بنجاح");
-            refetch();
-        } catch (error: any) {
-            toast.error(
-                `❌ خطأ في رفض الطالب: ${error.message || "خطأ غير معروف"}`,
-            );
-        }
-    };
-
-    const handleSendOTP = (name: string) => {
-        toast(`📱 تم إرسال رمز التحقق إلى ${name}`, {
-            duration: 4000,
-            position: "top-right",
+    // Reject مع مودال تأكيد
+    const handleReject = (id: number) => {
+        setConfirm({
+            title: "رفض طلب الطالب",
+            desc: "هل أنت متأكد من رفض طلب هذا الطالب؟ لا يمكن التراجع.",
+            cb: async () => {
+                setRejectLoadingIds((prev) => new Set([...prev, id]));
+                try {
+                    await rejectStudent(id);
+                    notifySuccess("تم رفض طلب الطالب بنجاح!");
+                    // حذف فوري من الواجهة
+                    setStudents((prev) => prev.filter((s) => s.id !== id));
+                } catch (error: any) {
+                    notifyError(error.message || "خطأ في رفض الطالب");
+                } finally {
+                    setRejectLoadingIds((prev) => {
+                        const newSet = new Set(prev);
+                        newSet.delete(id);
+                        return newSet;
+                    });
+                    setConfirm(null);
+                }
+            },
         });
     };
 
-    const handleOpenParentModal = (student: any) => {
+    const handleSendOTP = (name: string) => {
+        notifySuccess(`تم إرسال OTP إلى ${name}`);
+    };
+
+    const handleOpenParentModal = (student: StudentType) => {
         setSelectedStudent(student);
         setShowParentModal(true);
     };
@@ -129,19 +143,13 @@ const StudentApproval: React.FC = () => {
         setSelectedStudent(null);
     };
 
-    if (studentsLoading) {
+    if (studentsLoading && students.length === 0) {
         return (
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <div className="navbar">
-                        <div className="navbar__inner">
-                            <div className="navbar__loading">
-                                <div className="loading-spinner">
-                                    <div className="spinner-circle"></div>
-                                </div>
-                            </div>
-                        </div>
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p>جاري تحميل الطلاب...</p>
                     </div>
                 </div>
             </div>
@@ -150,115 +158,72 @@ const StudentApproval: React.FC = () => {
 
     return (
         <>
-            <ParentModel
-                isOpen={showParentModal}
-                onClose={handleCloseParentModal}
-                student={selectedStudent}
-            />
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                {/* Debug Section */}
-                {debugInfo && (
-                    <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                        <h3 className="font-bold text-yellow-800 mb-2">
-                            🔍 معلومات التشخيص:
-                        </h3>
-                        <pre className="text-xs bg-yellow-100 p-3 rounded text-yellow-900 overflow-auto max-h-40">
-                            {JSON.stringify(debugInfo, null, 2)}
-                        </pre>
-                        <button
-                            onClick={() => setDebugInfo(null)}
-                            className="mt-2 text-xs text-yellow-700 underline"
-                        >
-                            إخفاء التشخيص
-                        </button>
-                    </div>
-                )}
-
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon redColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
+            {/* مودال التأكيد */}
+            {confirm && (
+                <div
+                    className="conf-ov on"
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <div className="conf-box">
+                        <div className="conf-ico">
+                            <span
+                                style={{
+                                    width: 22,
+                                    height: 22,
+                                    display: "inline-flex",
+                                    color: "var(--red)",
+                                }}
+                            >
+                                {ICO.trash}
+                            </span>
                         </div>
-                        <div>
-                            <h3>إجمالي الطلاب</h3>
-                            <p className="text-2xl font-bold text-red-600">
-                                {students.length}
-                            </p>
+                        <div className="conf-t">{confirm.title}</div>
+                        <div className="conf-d">
+                            {confirm.desc ||
+                                "هل أنت متأكد من هذا الإجراء؟ لا يمكن التراجع."}
                         </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon yellowColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>معلقة</h3>
-                            <p className="text-2xl font-bold text-yellow-600">
-                                {filteredStudents.length}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <PiWhatsappLogoDuotone />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>من المجمعات</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {
-                                    students.filter((s: any) => s.center?.name)
-                                        .length
-                                }
-                            </p>
+                        <div className="conf-acts">
+                            <button className="btn bd" onClick={confirm.cb}>
+                                تأكيد
+                            </button>
+                            <button
+                                className="btn bs"
+                                onClick={() => setConfirm(null)}
+                            >
+                                إلغاء
+                            </button>
                         </div>
                     </div>
                 </div>
+            )}
 
-                <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
-                >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            تحقق من بيانات الطلاب قبل الاعتماد النهائي
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">
+                            اعتماد الطلاب الجدد ({filteredStudents.length} طالب)
                         </div>
-                        <div className="plan__current">
-                            <h2>قائمة الطلاب المعلقين</h2>
-                            <div className="plan__date-range">
-                                <div className="date-picker to">
-                                    <input
-                                        type="search"
-                                        placeholder="البحث بالاسم أو رقم الهوية أو الحلقة..."
-                                        value={search}
-                                        onChange={(e) =>
-                                            setSearch(e.target.value)
-                                        }
-                                    />
-                                </div>
-                            </div>
+                        <div className="flx">
+                            <input
+                                className="fi"
+                                style={{ margin: "0 6px" }}
+                                placeholder="البحث بالاسم أو رقم الهوية أو الحلقة..."
+                                value={search}
+                                onChange={handleSearch}
+                            />
                         </div>
                     </div>
 
-                    {/* ✅ Debug Button في الهيدر */}
-                    <div className="flex justify-between items-center mb-4">
-                        <button
-                            onClick={handleDebug}
-                            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm"
-                        >
-                            <FiDatabase />
-                            <span>تشخيص البيانات</span>
-                        </button>
-                    </div>
-
-                    <div className="plan__daily-table">
+                    <div style={{ overflowX: "auto" }}>
                         <table>
                             <thead>
                                 <tr>
@@ -274,199 +239,168 @@ const StudentApproval: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredStudents.map((item: any) => (
-                                    <tr
-                                        key={item.id}
-                                        className={`plan__row ${item.user?.status === "pending" ? "pending" : ""}`}
-                                    >
-                                        <td className="teacherStudent__img">
-                                            <div className="w-12 h-12 rounded-full overflow-hidden">
-                                                <img
-                                                    src={
-                                                        item.user?.avatar ||
-                                                        item.avatar ||
-                                                        "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png"
-                                                    }
-                                                    alt={
-                                                        item.name ||
-                                                        item.user?.name
-                                                    }
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => {
-                                                        e.currentTarget.src =
-                                                            "https://static.vecteezy.com/system/resources/thumbnails/063/407/852/small/happy-smiling-arab-man-isolated-on-transparent-background-png.png";
-                                                    }}
-                                                />
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {item.name ||
-                                                item.user?.name ||
-                                                "غير محدد"}
-                                        </td>
-                                        <td>{item.id_number || "-"}</td>
-                                        <td>{item.grade_level || "-"}</td>
-                                        <td>{item.circle || "-"}</td>
-                                        <td>{item.center?.name || "-"}</td>
-                                        <td>
-                                            {item.created_at
-                                                ? new Date(
-                                                      item.created_at,
-                                                  ).toLocaleDateString("ar-EG")
-                                                : new Date().toLocaleDateString(
-                                                      "ar-EG",
-                                                  )}
-                                        </td>
-                                        <td>
-                                            <span className="text-green-600 font-medium">
-                                                {item.guardian?.name ||
+                                {filteredStudents.length > 0 ? (
+                                    filteredStudents.map((item) => (
+                                        <tr key={item.id}>
+                                            <td>
+                                                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                                                    <span className="text-xs font-medium text-gray-700">
+                                                        {(
+                                                            item.name ||
+                                                            item.user?.name ||
+                                                            "?"
+                                                        ).charAt(0)}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td style={{ fontWeight: 700 }}>
+                                                {item.name ||
+                                                    item.user?.name ||
                                                     "غير محدد"}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div className="teacherStudent__btns">
-                                                <button
-                                                    className="teacherStudent__status-btn approve-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 hover:bg-green-50"
-                                                    onClick={() =>
-                                                        handleApprove(item.id)
-                                                    }
-                                                    disabled={
-                                                        confirmLoading ||
-                                                        studentsLoading
-                                                    }
-                                                    title="اعتماد الطالب"
-                                                >
-                                                    {confirmLoading ? (
-                                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                    ) : (
-                                                        <IoCheckmarkCircleOutline />
-                                                    )}
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn reject-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
-                                                    onClick={() =>
-                                                        handleReject(item.id)
-                                                    }
-                                                    disabled={
-                                                        rejectLoading ||
-                                                        studentsLoading
-                                                    }
-                                                    title="رفض الطالب"
-                                                >
-                                                    <FiXCircle />
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn otp-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
-                                                    onClick={() =>
-                                                        handleSendOTP(
-                                                            item.guardian
-                                                                ?.name ||
-                                                                item.name ||
-                                                                "",
+                                            </td>
+                                            <td>{item.id_number || "-"}</td>
+                                            <td>{item.grade_level || "-"}</td>
+                                            <td>{item.circle || "-"}</td>
+                                            <td>{item.center?.name || "-"}</td>
+                                            <td>
+                                                {
+                                                    (
+                                                        item.created_at || ""
+                                                    ).split("T")[0]
+                                                }
+                                            </td>
+                                            <td>
+                                                <span className="font-medium text-green-600">
+                                                    {item.guardian?.name ||
+                                                        "غير محدد"}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="td-actions">
+                                                    <button
+                                                        className="btn bs bxs"
+                                                        onClick={() =>
+                                                            handleOpenParentModal(
+                                                                item,
+                                                            )
+                                                        }
+                                                        title="بيانات ولي الأمر"
+                                                    >
+                                                        بيانات ولي
+                                                    </button>
+                                                    <button
+                                                        className={`btn bp bxs ${
+                                                            confirmLoadingIds.has(
+                                                                item.id,
+                                                            )
+                                                                ? "loading"
+                                                                : ""
+                                                        }`}
+                                                        onClick={() =>
+                                                            handleApprove(
+                                                                item.id,
+                                                            )
+                                                        }
+                                                        disabled={confirmLoadingIds.has(
+                                                            item.id,
+                                                        )}
+                                                    >
+                                                        {confirmLoadingIds.has(
+                                                            item.id,
                                                         )
-                                                    }
-                                                    disabled={studentsLoading}
-                                                    title="إرسال OTP"
-                                                >
-                                                    <i>
-                                                        <RiMessage2Line />
-                                                    </i>
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn link-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100"
-                                                    onClick={() =>
-                                                        handleOpenParentModal(
-                                                            item,
+                                                            ? "جاري..."
+                                                            : "اعتماد"}
+                                                    </button>
+                                                    <button
+                                                        className={`btn bd bxs red ${
+                                                            rejectLoadingIds.has(
+                                                                item.id,
+                                                            )
+                                                                ? "loading"
+                                                                : ""
+                                                        }`}
+                                                        onClick={() =>
+                                                            handleReject(
+                                                                item.id,
+                                                            )
+                                                        }
+                                                        disabled={rejectLoadingIds.has(
+                                                            item.id,
+                                                        )}
+                                                    >
+                                                        {rejectLoadingIds.has(
+                                                            item.id,
                                                         )
-                                                    }
-                                                    title="بيانات ولي الأمر"
-                                                >
-                                                    <IoMdLink />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredStudents.length === 0 &&
-                                    !studentsLoading && (
-                                        <tr>
-                                            <td
-                                                colSpan={9}
-                                                className="text-center py-12 text-gray-500"
-                                            >
-                                                <div className="space-y-2">
-                                                    <p>
-                                                        لا توجد طلبات معلقة
-                                                        حالياً
-                                                    </p>
-                                                    <p className="text-sm text-gray-400">
-                                                        {students.length > 0
-                                                            ? `تم العثور على ${students.length} طالب لكن لا يوجد معلقين`
-                                                            : "لا توجد بيانات طلاب"}
-                                                    </p>
+                                                            ? "جاري..."
+                                                            : "رفض"}
+                                                    </button>
+                                                    <button
+                                                        className="btn bs bxs blue"
+                                                        onClick={() =>
+                                                            handleSendOTP(
+                                                                item.guardian
+                                                                    ?.name ||
+                                                                    item.name ||
+                                                                    "الولي",
+                                                            )
+                                                        }
+                                                    >
+                                                        OTP
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    )}
+                                    ))
+                                ) : !studentsLoading ? (
+                                    <tr>
+                                        <td colSpan={9}>
+                                            <div className="empty">
+                                                <p>
+                                                    {search
+                                                        ? "لا توجد نتائج للبحث"
+                                                        : "لا يوجد طلاب معلقين"}
+                                                </p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : null}
                             </tbody>
                         </table>
                     </div>
-
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        id="userProfile__verifyOTPBirth"
-                    >
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h1>معدل الاعتماد</h1>
-                            </div>
-                            <p>
-                                {Math.round(
-                                    (students.filter((s: any) => s.status === 1)
-                                        .length /
-                                        Math.max(students.length, 1)) *
-                                        100,
-                                )}
-                                %
-                            </p>
-                            <div className="userProfile__progressBar">
-                                <span
-                                    style={{
-                                        width: `${Math.min(
-                                            Math.round(
-                                                (students.filter(
-                                                    (s: any) => s.status === 1,
-                                                ).length /
-                                                    Math.max(
-                                                        students.length,
-                                                        1,
-                                                    )) *
-                                                    100,
-                                            ),
-                                            100,
-                                        )}%`,
-                                    }}
-                                ></span>
-                            </div>
-                        </div>
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h1>متوسط وقت المعالجة</h1>
-                            </div>
-                            <p>
-                                {students.length > 0
-                                    ? `${Math.round(students.length / 10)} ساعة`
-                                    : "0 ساعة"}
-                            </p>
-                            <div className="userProfile__progressBar">
-                                <span style={{ width: "85%" }}></span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
+
+            {/* Parent Modal */}
+            {showParentModal && selectedStudent && (
+                <ParentModel
+                    isOpen={showParentModal}
+                    onClose={handleCloseParentModal}
+                    student={selectedStudent}
+                />
+            )}
         </>
     );
 };
+
+// Badge للحالة
+function BadgeStatus({ status }: { status: string }) {
+    const map: Record<string, React.CSSProperties> = {
+        active: { background: "var(--g100)", color: "var(--g700)" },
+        pending: { background: "#fef3c7", color: "#92400e" },
+    };
+    return (
+        <span
+            className="badge px-2 py-1 rounded-full text-xs font-medium"
+            style={
+                map[status] || {
+                    background: "var(--n100)",
+                    color: "var(--n500)",
+                }
+            }
+        >
+            {status === "active" ? "معتمد" : "⏳ معلق"}
+        </span>
+    );
+}
 
 export default StudentApproval;

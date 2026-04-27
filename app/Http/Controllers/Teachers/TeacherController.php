@@ -2,76 +2,120 @@
 
 namespace App\Http\Controllers\Teachers;
 
-use Carbon\Carbon;
-use App\Models\Auth\User;
+use App\Http\Controllers\Controller;
 use App\Models\Auth\Teacher;
-use Illuminate\Http\Request;
+use App\Models\Auth\User;
+use App\Models\Plans\PlanCircleSchedule;
 use App\Models\Tenant\Circle;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
-use App\Models\Plans\PlanCircleSchedule;
 
 class TeacherController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
-    {
-        $query = User::with(['teacher'])->whereHas('teacher');
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('teacher_role')) {
-            $query->whereHas('teacher', function ($q) use ($request) {
-                $q->where('role', $request->teacher_role);
-            });
-        }
-
-        if ($request->filled('role')) {
-            $query->whereHas('teacher', function ($q) use ($request) {
-                $q->where('role', $request->role);
-            });
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%')
-                  ->orWhereHas('teacher', function ($tq) use ($search) {
-                      $tq->where('role', 'like', '%' . $search . '%')
-                         ->orWhere('notes', 'like', '%' . $search . '%');
-                  });
-            });
-        }
-
-        $teachers = $query->orderBy('created_at', 'desc')->paginate(15);
-
+public function index(Request $request)
+{
+    // ✅ التحقق من وجود المستخدم أولاً
+    $user = Auth::user();
+    if (!$user) {
         return response()->json([
-            'success' => true,
-            'data' => $teachers->items(),
-            'pagination' => [
-                'current_page' => $teachers->currentPage(),
-                'total' => $teachers->total(),
-                'per_page' => $teachers->perPage(),
-                'last_page' => $teachers->lastPage(),
-                'from' => $teachers->firstItem(),
-                'to' => $teachers->lastItem(),
-            ]
-        ]);
+            'success' => false,
+            'message' => 'غير مسجل الدخول'
+        ], 401);
     }
+
+    $currentUserCenterId = $user->center_id;
+
+    // ✅ التحقق من وجود center_id
+    if (!$currentUserCenterId) {
+        return response()->json([
+            'success' => false,
+            'message' => 'لا يوجد مجمع مرتبط بحسابك'
+        ], 400);
+    }
+
+    // ✅ بناء الاستعلام مع فلترة center_id
+    $query = User::with(['teacher'])
+        ->whereHas('teacher')
+        ->where('center_id', $currentUserCenterId); // شرط أساسي
+
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
+    }
+
+    if ($request->filled('teacher_role')) {
+        $query->whereHas('teacher', function ($q) use ($request) {
+            $q->where('role', $request->teacher_role);
+        });
+    }
+
+    if ($request->filled('role')) {
+        $query->whereHas('teacher', function ($q) use ($request) {
+            $q->where('role', $request->role);
+        });
+    }
+
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', '%' . $search . '%')
+              ->orWhere('email', 'like', '%' . $search . '%')
+              ->orWhereHas('teacher', function ($tq) use ($search) {
+                  $tq->where('role', 'like', '%' . $search . '%')
+                     ->orWhere('notes', 'like', '%' . $search . '%');
+              });
+        });
+    }
+
+    $teachers = $query->orderBy('created_at', 'desc')->paginate(15);
+
+    return response()->json([
+        'success' => true,
+        'data' => $teachers->items(),
+        'pagination' => [
+            'current_page' => $teachers->currentPage(),
+            'total' => $teachers->total(),
+            'per_page' => $teachers->perPage(),
+            'last_page' => $teachers->lastPage(),
+            'from' => $teachers->firstItem(),
+            'to' => $teachers->lastItem(),
+        ],
+        'center_id' => $currentUserCenterId, // ✅ إضافة center_id للـ response
+        'center_filter_active' => true
+    ]);
+}
 
     /**
      * جلب المعلمين المعلقين فقط
      */
-    public function pending()
-    {
+public function pending()
+{
+    try {
+        // ✅ التحقق الآمن من المستخدم
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مسجل الدخول'
+            ], 401);
+        }
+
+        $currentUserCenterId = $user->center_id;
+        if (!$currentUserCenterId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لا يوجد مجمع مرتبط بحسابك'
+            ], 400);
+        }
+
         $teachers = User::with(['teacher'])
             ->whereHas('teacher')
+            ->where('center_id', $currentUserCenterId)
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
@@ -84,9 +128,17 @@ class TeacherController extends Controller
                 'total' => $teachers->total(),
                 'per_page' => $teachers->perPage(),
                 'last_page' => $teachers->lastPage(),
-            ]
+            ],
+            'center_id' => $currentUserCenterId
         ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'خطأ في الخادم: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Display the specified resource.

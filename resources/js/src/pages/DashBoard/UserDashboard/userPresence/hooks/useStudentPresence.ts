@@ -3,13 +3,13 @@ import { useState, useEffect } from "react";
 
 interface PresenceRecord {
     id: number;
-    attendance_date: string; // ✅ من sa.created_at
+    attendance_date: string; //  من sa.created_at
     surah_name: string;
     new_memorization: string | null;
     review_memorization: string | null;
     status: "حاضر" | "غائب" | "لم يتم تسجيل";
     note: string | null;
-    recorded_at: string; // ✅ وقت التسجيل الفعلي
+    recorded_at: string; //  وقت التسجيل الفعلي
 }
 
 interface PresenceStats {
@@ -38,14 +38,14 @@ export const useStudentPresence = () => {
 
                 console.log("📋 بداية جلب بيانات الحضور والغياب...");
 
-                // ✅ 1. CSRF Cookie
+                //  1. CSRF Cookie
                 await fetch("/sanctum/csrf-cookie", {
                     method: "GET",
                     credentials: "include",
                 });
-                console.log("✅ CSRF Cookie جاهز");
+                console.log(" CSRF Cookie جاهز");
 
-                // ✅ 2. CSRF Token
+                //  2. CSRF Token
                 const metaToken = document
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content");
@@ -63,7 +63,7 @@ export const useStudentPresence = () => {
 
                 console.log("🔑 CSRF Token:", !!csrfToken);
 
-                // ✅ 3. جلب بيانات الحضور
+                //  3. جلب بيانات الحضور
                 const response = await fetch("/api/v1/user/presence", {
                     method: "GET",
                     credentials: "include",
@@ -84,9 +84,9 @@ export const useStudentPresence = () => {
                 }
 
                 const result = await response.json();
-                console.log("✅ Presence Result:", result);
+                console.log(" Presence Result:", result);
 
-                // ✅ Debug للتواريخ
+                //  Debug للتواريخ
                 if (result.success && result.presence_records) {
                     result.presence_records.forEach(
                         (record: any, index: number) => {

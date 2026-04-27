@@ -1,4 +1,4 @@
-//  الكود الكامل مع الإحصائيات المطلوبة بكلاسس مميزة
+// UserPresence.tsx - مع نفس الديزاين من CirclesManagement + إحصائيات مميزة
 import { RiRobot2Fill } from "react-icons/ri";
 import { useState, useEffect } from "react";
 import { useStudentPresence } from "./hooks/useStudentPresence";
@@ -36,24 +36,24 @@ const UserPresence: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="text-center py-8 text-gray-500">
-                <div className="navbar">
-                    <div className="navbar__inner">
-                        <div className="navbar__loading">
-                            <div className="loading-spinner">
-                                <div className="spinner-circle"></div>
-                            </div>
-                        </div>
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">جاري التحميل...</div>
                     </div>
-                </div>{" "}
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="text-red-500 text-center py-8 p-4 bg-red-50 rounded-lg">
-                {error}
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">خطأ في تحميل البيانات</div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -69,137 +69,153 @@ const UserPresence: React.FC = () => {
         attendance_rate: 0,
     };
 
+    function BadgeStatus({ s }: { s: string }) {
+        const map: Record<string, React.CSSProperties> = {
+            "bg-g": { background: "var(--g100)", color: "var(--g700)" },
+            "bg-r": { background: "#fee2e2", color: "#ef4444" },
+            "bg-a": { background: "#fef3c7", color: "#92400e" },
+            "bg-n": { background: "var(--n100)", color: "var(--n500)" },
+        };
+        return (
+            <span
+                className="badge px-2 py-1 rounded-full text-xs font-medium"
+                style={
+                    map[
+                        s === "حاضر" ? "bg-g" : s === "غائب" ? "bg-r" : "bg-a"
+                    ] || map["bg-n"]
+                }
+            >
+                {s}
+            </span>
+        );
+    }
+
     return (
-        <div className="userProfile__plan" style={{ marginBottom: "24px" }}>
-            <div className="userPresence__features">
-                {/*  العنوان */}
-                <div className="testimonials__mainTitle">
-                    <h1>حضور وغياب الطالب</h1>
-                </div>
-
-                {/*  فلتر التواريخ + AI Suggestion */}
-                <div className="userProfile__plan" id="userProfile__plan">
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            نسبة حضورك <strong>{stats.attendance_rate}%</strong>
-                        </div>
-                        <div className="plan__current">
-                            <div className="plan__date-range">
-                                <div className="date-picker to">
-                                    <label>إلى</label>
-                                    <input
-                                        type="date"
-                                        value={dateTo}
-                                        onChange={(e) =>
-                                            setDateTo(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div className="date-picker from">
-                                    <label>من</label>
-                                    <input
-                                        type="date"
-                                        value={dateFrom}
-                                        onChange={(e) =>
-                                            setDateFrom(e.target.value)
-                                        }
-                                    />
-                                </div>
+        <div className="content" id="contentArea">
+            <div className="widget">
+                {/* Header مع البحث بالتواريخ */}
+                <div className="wh">
+                    <div className="wh-l">حضور وغياب الطالب</div>
+                    <div className="flx">
+                        {/* فلتر التواريخ */}
+                        <div
+                            className="flx"
+                            style={{
+                                gap: "8px",
+                                alignItems: "center",
+                                display: "flex",
+                            }}
+                        >
+                            <div
+                                className="date-picker from"
+                                style={{ margin: 0 }}
+                            >
+                                <label
+                                    style={{
+                                        fontSize: "12px",
+                                        color: "var(--n500)",
+                                    }}
+                                >
+                                    من
+                                </label>
+                                <input
+                                    type="date"
+                                    value={dateFrom}
+                                    onChange={(e) =>
+                                        setDateFrom(e.target.value)
+                                    }
+                                    className="fi"
+                                    style={{
+                                        padding: "8px 12px",
+                                        border: "1px solid var(--n200)",
+                                        borderRadius: "8px",
+                                        fontSize: "14px",
+                                    }}
+                                />
+                            </div>
+                            <div
+                                className="date-picker to"
+                                style={{ margin: 0 }}
+                            >
+                                <label
+                                    style={{
+                                        fontSize: "12px",
+                                        color: "var(--n500)",
+                                    }}
+                                >
+                                    إلى
+                                </label>
+                                <input
+                                    type="date"
+                                    value={dateTo}
+                                    onChange={(e) => setDateTo(e.target.value)}
+                                    className="fi"
+                                    style={{
+                                        padding: "8px 12px",
+                                        border: "1px solid var(--n200)",
+                                        borderRadius: "8px",
+                                        fontSize: "14px",
+                                    }}
+                                />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/*  إحصائيات الحضور - التصميم الجديد مع كلاسس مميزة */}
-                <div className="presence-stats-container">
-                    <div className="stats-grid">
-                        {/* 1. إجمالي الحصص */}
-                        <div className="stat-card total-sessions">
-                            <div className="stat-icon total-icon">
-                                <span className="icon-circle"></span>
-                            </div>
-                            <div className="stat-number">{stats.total}</div>
-                            <div className="stat-label">إجمالي الحصص</div>
-                        </div>
-
-                        {/* 2. حاضر */}
-                        <div className="stat-card present-sessions">
-                            <div className="stat-icon present-icon">
-                                <span className="icon-circle"></span>
-                            </div>
-                            <div className="stat-number">{stats.present}</div>
-                            <div className="stat-label">حاضر</div>
-                        </div>
-
-                        {/* 3. غائب */}
-                        <div className="stat-card absent-sessions">
-                            <div className="stat-icon absent-icon">
-                                <span className="icon-circle"></span>
-                            </div>
-                            <div className="stat-number">{stats.absent}</div>
-                            <div className="stat-label">غائب</div>
-                        </div>
-                    </div>
-
-                    {/*  سجلات مُعروضة: 2 */}
-                    <div className="records-display">
-                        <span className="records-badge">سجلات مُعروضة:</span>
-                        <span className="records-count">
-                            {presenceRecords.length}
-                        </span>
-                    </div>
+                {/* جدول السجلات */}
+                <div style={{ overflowX: "auto" }}>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>السورة</th>
+                                <th>الحفظ الجديد</th>
+                                <th>المراجعة</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {presenceRecords.length > 0 ? (
+                                presenceRecords.map((record: any) => (
+                                    <tr key={record.id}>
+                                        <td style={{ fontWeight: 700 }}>
+                                            {record.attendance_date}
+                                        </td>
+                                        <td>{record.surah_name}</td>
+                                        <td>
+                                            {record.new_memorization || "-"}
+                                        </td>
+                                        <td>
+                                            {record.review_memorization || "-"}
+                                        </td>
+                                        <td>
+                                            <BadgeStatus s={record.status} />
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={5}>
+                                        <div
+                                            className="empty"
+                                            style={{
+                                                textAlign: "center",
+                                                padding: "40px 20px",
+                                                color: "var(--n500)",
+                                            }}
+                                        >
+                                            <p>
+                                                {dateFrom || dateTo
+                                                    ? "لا توجد بيانات حضور وغياب في هذه الفترة"
+                                                    : "لا توجد بيانات حضور وغياب"}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-
-                {/*  سجل الحضور */}
-                <div className="userProgress__content">
-                    {presenceRecords.map((record: any) => (
-                        <div key={record.id} className="userProgress__comments">
-                            <div className="userProgress__title">
-                                <h1>
-                                    الحصة بتاريخ:{" "}
-                                    <span>{record.attendance_date}</span>
-                                </h1>
-                            </div>
-                            <div className="userProgress__data">
-                                <h4>{record.surah_name}</h4>
-                                {record.new_memorization && (
-                                    <h2>
-                                        محتوي الحصة:{" "}
-                                        <span>{record.new_memorization}</span>
-                                    </h2>
-                                )}
-                                {record.review_memorization && (
-                                    <h2>مراجعة {record.review_memorization}</h2>
-                                )}
-                            </div>
-                            <div className="userProgress__comment">
-                                <h1>الحالة:-</h1>
-                                {record.status === "غائب" ? (
-                                    <h2 id="userProfile__commentBad">غياب</h2>
-                                ) : (
-                                    <h2
-                                        className={`font-bold text-xl ${
-                                            record.status === "حاضر"
-                                                ? "text-green-500"
-                                                : "text-gray-500"
-                                        }`}
-                                    >
-                                        {record.status}
-                                    </h2>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {presenceRecords.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                        لا توجد بيانات حضور وغياب في هذه الفترة
-                    </div>
-                )}
             </div>
         </div>
     );

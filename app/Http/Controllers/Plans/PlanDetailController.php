@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers\Plans;
 
-use App\Models\Plans\Plan;
-use Illuminate\Http\Request;
-use App\Models\Plans\PlanDetail;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\Plans\Plan;
+use App\Models\Plans\PlanDetail;
+use App\Models\Plans\PlatformPlan;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class PlanDetailController extends Controller
 {
-    /**
-     * 1- خطط المجمع الخاص بي (للـ dropdown) -  محدث مع total_months
-     */
     public function myCenterPlans(Request $request): JsonResponse
     {
         try {
@@ -36,13 +34,12 @@ class PlanDetailController extends Controller
 
             Log::info('🔍 Searching plans for user: ' . $user->id . ', center: ' . $user->center_id);
 
-            // 🔥 الحل النهائي - إضافة total_months و details_count
             $plans = Plan::where('center_id', $user->center_id)
                 ->select([
                     'plans.id',
                     'plans.plan_name',
                     'plans.center_id',
-                    'plans.total_months',    //  الآن مضمون!
+                    'plans.total_months',
                     'plans.created_at'
                 ])
                 ->addSelect(DB::raw('(SELECT COUNT(*) FROM plan_details WHERE plan_details.plan_id = plans.id) as details_count'))
@@ -50,42 +47,37 @@ class PlanDetailController extends Controller
                 ->orderBy('plan_name')
                 ->paginate(50);
 
-            // 🔥 تحويل مع ضمان الحقول
             $plansData = $plans->getCollection()->map(function ($plan) {
                 return [
-                    'id' => $plan->id,
-                    'plan_name' => $plan->plan_name,
-                    'center_id' => $plan->center_id,
-                    'total_months' => $plan->total_months ?? 1,  //  قيمة افتراضية
+                    'id'            => $plan->id,
+                    'plan_name'     => $plan->plan_name,
+                    'center_id'     => $plan->center_id,
+                    'total_months'  => $plan->total_months ?? 1,
                     'details_count' => $plan->details_count ?? 0,
-                    'center' => $plan->center,
-                    'created_at' => $plan->created_at,
+                    'center'        => $plan->center,
+                    'created_at'    => $plan->created_at,
                 ];
             });
 
             $plans->setCollection($plansData);
 
-            Log::info(' Found ' . $plans->total() . ' plans for center: ' . $user->center_id);
-            Log::info('📊 Plans with total_months: ', $plansData->toArray());
+            Log::info('✅ Found ' . $plans->total() . ' plans for center: ' . $user->center_id);
 
             return response()->json($plans);
 
         } catch (\Exception $e) {
             Log::error('❌ myCenterPlans error: ' . $e->getMessage());
             return response()->json([
-                'data' => [],
-                'message' => 'خطأ في تحميل الخطط',
+                'data'         => [],
+                'message'      => 'خطأ في تحميل الخطط',
                 'current_page' => 1,
-                'last_page' => 1,
-                'per_page' => 50,
-                'total' => 0
+                'last_page'    => 1,
+                'per_page'     => 50,
+                'total'        => 0
             ]);
         }
     }
 
-    /**
-     * 2- كل تفاصيل خطط المجمع (بدون plan_id)
-     */
     public function allMyCenterPlansDetails(Request $request): JsonResponse
     {
         $user = Auth::user();
@@ -97,21 +89,18 @@ class PlanDetailController extends Controller
 
         Log::info('🔍 Fetching all details for center: ' . $user->center_id);
 
-        $details = PlanDetail::whereHas('plan', function($q) use ($user) {
+        $details = PlanDetail::whereHas('plan', function ($q) use ($user) {
                 $q->where('center_id', $user->center_id);
             })
-            ->with('plan:id,plan_name,total_months,center_id')  //  إضافة total_months
+            ->with('plan:id,plan_name,total_months,center_id')
             ->orderBy('plan_id')
             ->orderBy('day_number')
             ->paginate(50);
 
-        Log::info(' Found ' . $details->total() . ' details for center: ' . $user->center_id);
+        Log::info('✅ Found ' . $details->total() . ' details for center: ' . $user->center_id);
         return response()->json($details);
     }
 
-    /**
-     * 3- تفاصيل خطة محددة
-     */
     public function index(Plan $plan): JsonResponse
     {
         if ($plan->center_id !== Auth::user()->center_id) {
@@ -127,9 +116,6 @@ class PlanDetailController extends Controller
         return response()->json($details);
     }
 
-    /**
-     * 🔥 4- الحذف الجماعي (BULK DELETE) - الجديد المطلوب
-     */
     public function bulkDelete(Request $request): JsonResponse
     {
         $user = Auth::user();
@@ -139,19 +125,16 @@ class PlanDetailController extends Controller
         }
 
         $request->validate([
-            'ids' => 'required|array|min:1',
+            'ids'   => 'required|array|min:1',
             'ids.*' => 'integer|exists:plan_details,id'
         ]);
 
         $ids = $request->input('ids', []);
 
-        // التحقق من أن كل IDs تخص نفس المركز
-        $details = PlanDetail::whereIn('id', $ids)
-            ->with('plan')
-            ->get();
+        $details = PlanDetail::whereIn('id', $ids)->with('plan')->get();
 
         foreach ($details as $detail) {
-            if ($detail->plan->center_id !== $user->center_id) {
+            if (!$detail->plan || $detail->plan->center_id !== $user->center_id) {
                 return response()->json(['message' => 'بعض العناصر غير مصرح لك'], 403);
             }
         }
@@ -159,12 +142,11 @@ class PlanDetailController extends Controller
         try {
             DB::beginTransaction();
 
-            // حذف جماعي سريع باستخدام whereIn
             $deletedCount = PlanDetail::whereIn('id', $ids)->delete();
 
             DB::commit();
 
-            Log::info("🗑️ Bulk Delete - User: {$user->id}, Deleted: {$deletedCount}, IDs: " . implode(', ', $ids));
+            Log::info("🗑️ Bulk Delete - User: {$user->id}, Deleted: {$deletedCount}");
 
             return response()->json([
                 'success' => true,
@@ -179,22 +161,19 @@ class PlanDetailController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ أثناء الحذف الجماعي',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * 5- إنشاء PlanDetail
-     */
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'plan_id' => 'required|exists:plans,id',
-            'day_number' => 'required|integer|min:1',
-            'new_memorization' => 'nullable|string|max:50',
-            'review_memorization' => 'nullable|string|max:50',
-            'status' => 'nullable|in:pending,current,completed'
+            'plan_id'              => 'required|exists:plans,id',
+            'day_number'           => 'required|integer|min:1',
+            'new_memorization'     => 'nullable|string|max:50',
+            'review_memorization'  => 'nullable|string|max:50',
+            'status'               => 'nullable|in:pending,current,completed'
         ]);
 
         $user = Auth::user();
@@ -215,20 +194,17 @@ class PlanDetailController extends Controller
         }
 
         $detail = PlanDetail::create([
-            'plan_id' => $plan->id,
-            'day_number' => $request->day_number,
-            'new_memorization' => $request->new_memorization,
+            'plan_id'             => $plan->id,
+            'day_number'          => $request->day_number,
+            'new_memorization'    => $request->new_memorization,
             'review_memorization' => $request->review_memorization,
-            'status' => $request->status ?? 'pending'
+            'status'              => $request->status ?? 'pending'
         ]);
 
         Log::info('➕ Created PlanDetail: ' . $detail->id);
         return response()->json($detail, 201);
     }
 
-    /**
-     * 6- استيراد جماعي من Excel (BULK IMPORT)
-     */
     public function bulkImport(Request $request, int $planId): JsonResponse
     {
         $user = Auth::user();
@@ -242,22 +218,22 @@ class PlanDetailController extends Controller
         }
 
         $request->validate([
-            'details' => 'required|array|min:1',
-            'details.*.day_number' => 'required|integer|min:1|max:9999',
-            'details.*.new_memorization' => 'nullable|string|max:50',
+            'details'                       => 'required|array|min:1',
+            'details.*.day_number'          => 'required|integer|min:1|max:9999',
+            'details.*.new_memorization'    => 'nullable|string|max:50',
             'details.*.review_memorization' => 'nullable|string|max:50',
-            'details.*.status' => ['nullable', Rule::in(['pending', 'current', 'completed'])]
+            'details.*.status'              => ['nullable', Rule::in(['pending', 'current', 'completed'])]
         ]);
 
         $detailsData = $request->input('details', []);
-        $imported = 0;
-        $skipped = 0;
-        $errors = [];
+        $imported    = 0;
+        $skipped     = 0;
+        $errors      = [];
 
         DB::beginTransaction();
 
         try {
-            foreach ($detailsData as $index => $data) {
+            foreach ($detailsData as $data) {
                 $dayNumber = $data['day_number'];
 
                 $exists = PlanDetail::where('plan_id', $planId)
@@ -271,11 +247,11 @@ class PlanDetailController extends Controller
                 }
 
                 PlanDetail::create([
-                    'plan_id' => $planId,
-                    'day_number' => $dayNumber,
-                    'new_memorization' => $data['new_memorization'] ?? null,
+                    'plan_id'             => $planId,
+                    'day_number'          => $dayNumber,
+                    'new_memorization'    => $data['new_memorization'] ?? null,
                     'review_memorization' => $data['review_memorization'] ?? null,
-                    'status' => $data['status'] ?? 'pending'
+                    'status'              => $data['status'] ?? 'pending'
                 ]);
 
                 $imported++;
@@ -286,10 +262,10 @@ class PlanDetailController extends Controller
             Log::info("📊 Bulk Import - Plan: {$planId}, Imported: {$imported}, Skipped: {$skipped}");
 
             return response()->json([
-                'message' => 'تم الاستيراد بنجاح',
+                'message'  => 'تم الاستيراد بنجاح',
                 'imported' => $imported,
-                'skipped' => $skipped,
-                'errors' => $errors
+                'skipped'  => $skipped,
+                'errors'   => $errors
             ], 201);
 
         } catch (\Exception $e) {
@@ -297,17 +273,14 @@ class PlanDetailController extends Controller
             Log::error("❌ Bulk Import Error - Plan: {$planId}: " . $e->getMessage());
 
             return response()->json([
-                'message' => 'فشل في الاستيراد',
-                'error' => $e->getMessage(),
+                'message'  => 'فشل في الاستيراد',
+                'error'    => $e->getMessage(),
                 'imported' => $imported,
-                'skipped' => $skipped
+                'skipped'  => $skipped
             ], 422);
         }
     }
 
-    /**
-     * عرض PlanDetail واحد
-     */
     public function show(PlanDetail $planDetail): JsonResponse
     {
         $plan = Plan::find($planDetail->plan_id);
@@ -319,9 +292,6 @@ class PlanDetailController extends Controller
         return response()->json($planDetail);
     }
 
-    /**
-     * تحديث حالة PlanDetail
-     */
     public function updateStatus(Request $request, PlanDetail $planDetail): JsonResponse
     {
         $plan = Plan::find($planDetail->plan_id);
@@ -334,9 +304,6 @@ class PlanDetailController extends Controller
         return response()->json($planDetail->fresh());
     }
 
-    /**
-     * تحديث PlanDetail كامل
-     */
     public function update(Request $request, PlanDetail $planDetail): JsonResponse
     {
         $plan = Plan::find($planDetail->plan_id);
@@ -345,10 +312,10 @@ class PlanDetailController extends Controller
         }
 
         $request->validate([
-            'day_number' => 'sometimes|integer|min:1|unique:plan_details,day_number,' . $planDetail->id . ',id,plan_id,' . $planDetail->plan_id,
-            'new_memorization' => 'sometimes|string|max:50',
-            'review_memorization' => 'sometimes|string|max:50',
-            'status' => 'sometimes|in:pending,current,completed'
+            'day_number'           => 'sometimes|integer|min:1|unique:plan_details,day_number,' . $planDetail->id . ',id,plan_id,' . $planDetail->plan_id,
+            'new_memorization'     => 'sometimes|string|max:50',
+            'review_memorization'  => 'sometimes|string|max:50',
+            'status'               => 'sometimes|in:pending,current,completed'
         ]);
 
         $planDetail->update($request->only([
@@ -358,9 +325,162 @@ class PlanDetailController extends Controller
         return response()->json($planDetail->fresh());
     }
 
-    /**
-     * حذف PlanDetail
-     */
+    public function availablePlatformPlans(Request $request): JsonResponse
+    {
+        try {
+            $plans = PlatformPlan::active()
+                ->withCount('details')
+                ->orderByDesc('is_featured')
+                ->orderBy('title')
+                ->get(['id', 'title', 'description', 'duration_days', 'is_featured']);
+
+            return response()->json(['data' => $plans]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ availablePlatformPlans error: ' . $e->getMessage());
+            return response()->json(['data' => []], 500);
+        }
+    }
+public function importFromPlatformPlan(Request $request, int $planId): JsonResponse
+{
+    try {
+        $user = Auth::user();
+
+        // ✅ Log كل حاجة عشان نعرف السبب
+        Log::info("🔍 importFromPlatformPlan called", [
+            'planId'      => $planId,
+            'user_id'     => $user?->id,
+            'center_id'   => $user?->center_id,
+            'auth_check'  => Auth::check(),
+            'guard'       => Auth::getDefaultDriver(),
+        ]);
+
+        if (!$user || !$user->center_id) {
+            Log::warning("🚫 No user or center_id", [
+                'user'      => $user?->id,
+                'center_id' => $user?->center_id,
+            ]);
+            return response()->json([
+                'message' => 'غير مصرح لك - لا يوجد مستخدم أو مجمع',
+                'debug'   => [
+                    'user_id'   => $user?->id,
+                    'center_id' => $user?->center_id,
+                ]
+            ], 403);
+        }
+
+        // ✅ تحقق إن الخطة موجودة وتخص المجمع
+        $plan = Plan::where('id', $planId)
+            ->where('center_id', $user->center_id)
+            ->first();
+
+        Log::info("🔍 Plan lookup", [
+            'planId'    => $planId,
+            'center_id' => $user->center_id,
+            'found'     => $plan ? true : false,
+            // شوف كل الخطط المتاحة للـ center ده
+            'available_plan_ids' => Plan::where('center_id', $user->center_id)->pluck('id'),
+        ]);
+
+        if (!$plan) {
+            return response()->json([
+                'message' => 'الخطة غير موجودة أو غير مصرح لك',
+                'debug'   => [
+                    'planId'             => $planId,
+                    'your_center_id'     => $user->center_id,
+                    'available_plan_ids' => Plan::where('center_id', $user->center_id)->pluck('id'),
+                ]
+            ], 404);
+        }
+
+        $request->validate([
+            'platform_plan_id' => 'required|integer|exists:platform_plans,id',
+        ]);
+
+        $platformPlanId = $request->input('platform_plan_id');
+
+        $platformPlan = PlatformPlan::find($platformPlanId);
+
+        if (!$platformPlan) {
+            return response()->json(['message' => 'خطة المنصة غير موجودة'], 404);
+        }
+
+        $platformDetails = DB::table('platform_plan_details')
+            ->where('platform_plan_id', $platformPlanId)
+            ->get();
+
+        if ($platformDetails->isEmpty()) {
+            return response()->json(['message' => 'خطة المنصة لا تحتوي على أيام'], 422);
+        }
+
+        $imported = 0;
+        $skipped  = 0;
+
+        DB::beginTransaction();
+
+        foreach ($platformDetails as $d) {
+            $exists = PlanDetail::where('plan_id', $planId)
+                ->where('day_number', $d->day_number)
+                ->exists();
+
+            if ($exists) {
+                $skipped++;
+                continue;
+            }
+
+            PlanDetail::create([
+                'plan_id'             => $planId,
+                'day_number'          => $d->day_number,
+                'new_memorization'    => $d->new_memorization ?? null,
+                'review_memorization' => $d->review_memorization ?? null,
+                'status'              => 'pending',
+            ]);
+
+            $imported++;
+        }
+
+        DB::table('platform_plans')
+            ->where('id', $platformPlanId)
+            ->increment('used_count');
+
+        DB::commit();
+
+        $msg = "تم استيراد {$imported} يوم بنجاح";
+        if ($skipped) {
+            $msg .= " (تم تخطي {$skipped} يوم مكرر)";
+        }
+
+        Log::info("✅ importFromPlatformPlan done", [
+            'planId'    => $planId,
+            'imported'  => $imported,
+            'skipped'   => $skipped,
+        ]);
+
+        return response()->json([
+            'message'  => $msg,
+            'imported' => $imported,
+            'skipped'  => $skipped,
+        ], 201);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'message' => 'بيانات غير صحيحة',
+            'errors'  => $e->errors()
+        ], 422);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error("❌ importFromPlatformPlan error", [
+            'planId'  => $planId,
+            'message' => $e->getMessage(),
+            'line'    => $e->getLine(),
+        ]);
+        return response()->json([
+            'message' => 'حدث خطأ: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
     public function destroy(PlanDetail $planDetail): JsonResponse
     {
         $plan = Plan::find($planDetail->plan_id);

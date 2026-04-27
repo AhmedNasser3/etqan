@@ -69,7 +69,7 @@ export const usePlanFormUpdate = (planId: number) => {
             }
 
             const plan = await response.json();
-            console.log("✅ Plan loaded:", plan);
+            console.log(" Plan loaded:", plan);
             setPlanData(plan);
 
             setFormData({
@@ -100,7 +100,7 @@ export const usePlanFormUpdate = (planId: number) => {
             if (response.ok) {
                 const responseData = await response.json();
                 const actualUser = responseData.user || responseData;
-                console.log("✅ ACTUAL USER:", actualUser);
+                console.log(" ACTUAL USER:", actualUser);
                 setUser(actualUser);
             }
         } catch (error) {

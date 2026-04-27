@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
+import { CurrencyCode } from "../../SalaryRulesManagement";
 
 export interface FormData {
     teacher_id: number;
     custom_base_salary: string;
+    currency: CurrencyCode;
     notes: string;
 }
 
@@ -17,6 +19,7 @@ export const useTeacherCustomSalaryFormUpdate = (salaryId: number) => {
     const [formData, setFormData] = useState<FormData>({
         teacher_id: 0,
         custom_base_salary: "",
+        currency: "SAR", // ✅
         notes: "",
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -38,7 +41,6 @@ export const useTeacherCustomSalaryFormUpdate = (salaryId: number) => {
         };
     }, []);
 
-    // جلب بيانات الراتب المخصص
     const fetchSalaryDetail = useCallback(async () => {
         setLoadingDetail(true);
         try {
@@ -55,6 +57,7 @@ export const useTeacherCustomSalaryFormUpdate = (salaryId: number) => {
                 setFormData({
                     teacher_id: data.data.teacher_id,
                     custom_base_salary: data.data.custom_base_salary.toString(),
+                    currency: (data.data.currency as CurrencyCode) || "SAR", // ✅
                     notes: data.data.notes || "",
                 });
             }
@@ -66,7 +69,6 @@ export const useTeacherCustomSalaryFormUpdate = (salaryId: number) => {
         }
     }, [salaryId, getHeaders]);
 
-    // جلب المعلمين
     const fetchTeachers = useCallback(async () => {
         setLoadingTeachers(true);
         try {
@@ -96,22 +98,22 @@ export const useTeacherCustomSalaryFormUpdate = (salaryId: number) => {
         }
     }, [getHeaders]);
 
+    // ✅ التصحيح: نوع ChangeEvent موحّد
     const handleInputChange = (
         e: React.ChangeEvent<
             HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement
         >,
     ) => {
-        const { name, value } = e.target;
+        const { name, value } = e.target as HTMLSelectElement &
+            HTMLInputElement &
+            HTMLTextAreaElement;
 
         setFormData((prev) => ({
             ...prev,
             [name]: name === "teacher_id" ? Number(value) : value,
         }));
 
-        setErrors((prev) => ({
-            ...prev,
-            [name]: "",
-        }));
+        setErrors((prev) => ({ ...prev, [name]: "" }));
     };
 
     const validateForm = (): Record<string, string> => {
@@ -122,9 +124,8 @@ export const useTeacherCustomSalaryFormUpdate = (salaryId: number) => {
         }
 
         const salary = Number(formData.custom_base_salary);
-        if (!formData.custom_base_salary || salary < 1000) {
-            newErrors.custom_base_salary =
-                "الراتب المخصص يجب أن يكون 1000 ريال أو أكثر";
+        if (!formData.custom_base_salary || salary < 1) {
+            newErrors.custom_base_salary = "يرجى إدخال راتب صحيح";
         }
 
         return newErrors;
@@ -148,6 +149,7 @@ export const useTeacherCustomSalaryFormUpdate = (salaryId: number) => {
                     headers: getHeaders(),
                     body: JSON.stringify({
                         custom_base_salary: Number(formData.custom_base_salary),
+                        currency: formData.currency, // ✅
                         notes: formData.notes || null,
                     }),
                 },
@@ -156,7 +158,7 @@ export const useTeacherCustomSalaryFormUpdate = (salaryId: number) => {
             const data = await response.json();
 
             if (response.ok) {
-                toast.success("تم تحديث الراتب المخصص بنجاح ✅");
+                toast.success("تم تحديث الراتب المخصص بنجاح");
                 return true;
             } else {
                 toast.error(data.message || "حدث خطأ في التحديث");

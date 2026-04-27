@@ -1,3 +1,4 @@
+// components/CenterTeacherTestimonials.tsx
 import { useState, useRef, useEffect, useCallback } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { useCenterTeachers } from "../hooks/useCenterTeachers";
@@ -10,24 +11,22 @@ interface Testimonial {
     title: string;
 }
 
-const CenterStudentTestimonials: React.FC = () => {
-    const {
-        teachers: testimonials, // تصحيح: teachers بدلاً من studentTestimonials
-        loading,
-        error,
-    } = useCenterTeachers();
-
+const CenterTeacherTestimonials: React.FC = () => {
+    const { teachers: testimonials, loading, error } = useCenterTeachers();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [slideWidth, setSlideWidth] = useState(374);
     const testimonialsRef = useRef<HTMLDivElement>(null);
 
     if (error) {
         return (
-            <div className="testimonials">
-                <div className="testimonials__mainTitle">
-                    <h1 style={{ color: "red" }}>
+            <div className="qtestimonials">
+                <div className="qtestimonials__header">
+                    <h2
+                        className="qtestimonials__title"
+                        style={{ color: "var(--qt-danger, #e74c3c)" }}
+                    >
                         خطأ في تحميل المعلمين: {error}
-                    </h1>
+                    </h2>
                 </div>
             </div>
         );
@@ -39,129 +38,124 @@ const CenterStudentTestimonials: React.FC = () => {
         return 374;
     }, []);
 
-    const visibleCards = useCallback(() => {
-        return window.innerWidth <= 768 ? 1 : 4;
-    }, []);
-
-    const maxIndex = useCallback(() => {
-        return Math.max(0, testimonials.length - visibleCards());
-    }, [testimonials.length, visibleCards]);
+    const visibleCards = useCallback(
+        () => (window.innerWidth <= 768 ? 1 : 4),
+        [],
+    );
+    const maxIndex = useCallback(
+        () => Math.max(0, testimonials.length - visibleCards()),
+        [testimonials.length, visibleCards],
+    );
 
     useEffect(() => {
         const handleResize = () => {
-            const newSlideWidth = getSlideWidth();
-            setSlideWidth(newSlideWidth);
-
-            const currentMaxIndex = maxIndex();
-            if (currentIndex > currentMaxIndex) {
-                setCurrentIndex(Math.max(0, currentMaxIndex));
-            }
+            setSlideWidth(getSlideWidth());
+            const mi = maxIndex();
+            if (currentIndex > mi) setCurrentIndex(Math.max(0, mi));
         };
-
         handleResize();
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, [testimonials.length, getSlideWidth, maxIndex, currentIndex]);
 
     const nextSlide = useCallback(() => {
-        const currentMaxIndex = maxIndex();
-        setCurrentIndex((prev) => Math.min(prev + 1, currentMaxIndex));
+        setCurrentIndex((p) => Math.min(p + 1, maxIndex()));
     }, [maxIndex]);
 
-    const prevSlide = useCallback(() => {
-        setCurrentIndex((prev) => Math.max(prev - 1, 0));
-    }, []);
+    const prevSlide = useCallback(
+        () => setCurrentIndex((p) => Math.max(p - 1, 0)),
+        [],
+    );
 
     const goToSlide = useCallback(
-        (index: number) => {
-            const currentMaxIndex = maxIndex();
-            setCurrentIndex(Math.max(0, Math.min(index, currentMaxIndex)));
-        },
+        (i: number) => setCurrentIndex(Math.max(0, Math.min(i, maxIndex()))),
         [maxIndex],
     );
 
-    const getActiveDotIndex = useCallback(() => {
-        return currentIndex;
-    }, [currentIndex]);
-
-    // إذا كان في loading أو مفيش معلمين خالص
     if (loading || testimonials.length === 0) {
         return (
-            <div className="testimonials">
-                <div className="testimonials__mainTitle">
-                    <h1>لا يوجد معلمين لهذا المجمع</h1>
+            <div className="qtestimonials">
+                <div className="qtestimonials__header">
+                    <h2 className="qtestimonials__title">
+                        لا يوجد معلمين لهذا المجمع
+                    </h2>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="testimonials">
-            <div className="testimonials__mainTitle">
-                <button>جميع المعلمين</button>
-                <h1>المعلمين الخاصين بنا</h1>
+        <div className="qtestimonials qtestimonials--teachers">
+            <div className="qtestimonials__header">
+                <span className="qtestimonials__label">معلمونا</span>
+                <h2 className="qtestimonials__title">المعلمون الخاصون بنا</h2>
+                <button className="qtestimonials__all-btn">
+                    جميع المعلمين
+                </button>
             </div>
-            <div className="testimonials__slider-container">
-                <div className="testimonials__inner">
-                    <div
-                        className="testimonials__content"
-                        ref={testimonialsRef}
-                        style={{
-                            transform: `translateX(-${currentIndex * slideWidth}px)`,
-                            transition: "transform 0.3s ease-in-out",
-                        }}
-                    >
-                        {testimonials.map((testimonial: Testimonial) => (
-                            <div
-                                key={testimonial.id}
-                                className="testimonials__data"
-                            >
-                                <div className="testimonials__img">
-                                    <img
-                                        src={facelessAvatar}
-                                        alt={testimonial.name}
-                                        loading="lazy"
-                                    />
-                                </div>
-                                <div className="testimonials__name">
-                                    <h2>{testimonial.name}</h2>
-                                    <p>{testimonial.title}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-            <div className="testimonials__toggleContainer">
+
+            <div className="qtestimonials__viewport">
                 <div
-                    className="testimonials__toggleLeft"
-                    onClick={prevSlide}
-                    style={{ opacity: currentIndex === 0 ? 0.5 : 1 }}
+                    className="qtestimonials__track"
+                    ref={testimonialsRef}
+                    style={{
+                        transform: `translateX(-${currentIndex * slideWidth}px)`,
+                        transition: "transform 0.3s ease-in-out",
+                    }}
                 >
-                    <IoIosArrowBack />
+                    {testimonials.map((t: Testimonial) => (
+                        <div key={t.id} className="qtestimonials__card">
+                            <div className="qtestimonials__avatar qtestimonials__avatar--teacher">
+                                <img
+                                    src={facelessAvatar}
+                                    alt={t.name}
+                                    loading="lazy"
+                                />
+                            </div>
+                            <div className="qtestimonials__info">
+                                <h3>{t.name}</h3>
+                                <p>{t.title}</p>
+                            </div>
+                        </div>
+                    ))}
                 </div>
-                {Array.from(
-                    { length: Math.max(1, maxIndex() + 1) },
-                    (_, index) => (
-                        <span
-                            key={index}
-                            className={`testimonials__toggle ${
-                                getActiveDotIndex() === index ? "active" : ""
-                            }`}
-                            onClick={() => goToSlide(index)}
-                        />
-                    ),
-                )}
-                <div
-                    className="testimonials__toggleRight"
+            </div>
+
+            <div className="qtestimonials__controls">
+                <button
+                    className="qtestimonials__nav-btn"
                     onClick={nextSlide}
-                    style={{ opacity: currentIndex === maxIndex() ? 0.5 : 1 }}
+                    disabled={currentIndex === maxIndex()}
+                    aria-label="التالي"
+                    style={{ opacity: currentIndex === maxIndex() ? 0.4 : 1 }}
                 >
                     <IoIosArrowForward />
+                </button>
+                <div className="qtestimonials__dots">
+                    {Array.from(
+                        { length: Math.max(1, maxIndex() + 1) },
+                        (_, i) => (
+                            <button
+                                key={i}
+                                className={`qtestimonials__dot${currentIndex === i ? " qtestimonials__dot--active" : ""}`}
+                                onClick={() => goToSlide(i)}
+                                aria-label={`الشريحة ${i + 1}`}
+                            />
+                        ),
+                    )}
                 </div>
+                <button
+                    className="qtestimonials__nav-btn"
+                    onClick={prevSlide}
+                    disabled={currentIndex === 0}
+                    aria-label="السابق"
+                    style={{ opacity: currentIndex === 0 ? 0.4 : 1 }}
+                >
+                    <IoIosArrowBack />
+                </button>
             </div>
         </div>
     );
 };
 
-export default CenterStudentTestimonials;
+export default CenterTeacherTestimonials;

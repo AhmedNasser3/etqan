@@ -30,7 +30,7 @@ const MeetingsManagement: React.FC = () => {
         null,
     );
 
-    // ✅ Delete Modal State مع loading
+    //  Delete Modal State مع loading
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteMeetingId, setDeleteMeetingId] = useState<number | null>(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
@@ -44,7 +44,7 @@ const MeetingsManagement: React.FC = () => {
         [searchMeetings],
     );
 
-    // ✅ handleDeleteConfirm محدث للـ DeleteModal الجديد
+    //  handleDeleteConfirm محدث للـ DeleteModal الجديد
     const handleDeleteConfirm = async () => {
         if (!deleteMeetingId) return;
 
@@ -173,7 +173,7 @@ const MeetingsManagement: React.FC = () => {
 
     return (
         <>
-            {/* ✅ DeleteModal الجديد */}
+            {/*  DeleteModal الجديد */}
             <DeleteModal
                 show={showDeleteModal}
                 title="تأكيد الحذف"

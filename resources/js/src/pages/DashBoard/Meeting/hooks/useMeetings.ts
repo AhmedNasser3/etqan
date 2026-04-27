@@ -34,10 +34,10 @@ export const useMeetings = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
 
-    // ✅ الحل النهائي - TypeScript 100% صحيح
+    //  الحل النهائي - TypeScript 100% صحيح
     const searchTimeoutRef = useRef<number | null>(null);
 
-    // ✅ Helper to get CSRF token
+    //  Helper to get CSRF token
     const getCsrfToken = useCallback((): string => {
         return (
             document
@@ -86,7 +86,7 @@ export const useMeetings = () => {
                 }
 
                 const data = await response.json();
-                console.log("✅ Meetings loaded:", data);
+                console.log(" Meetings loaded:", data);
 
                 setMeetings(Array.isArray(data.data) ? data.data : []);
                 setPagination({
@@ -128,7 +128,7 @@ export const useMeetings = () => {
 
                 const result = await response.json();
                 if (response.ok) {
-                    toast.success("تم إنشاء الميتينج بنجاح! ✅");
+                    toast.success("تم إنشاء الميتينج بنجاح! ");
                     return result;
                 } else {
                     toast.error(result.message || "فشل في إنشاء الميتينج");
@@ -194,7 +194,7 @@ export const useMeetings = () => {
 
                 const result = await response.json();
                 if (response.ok) {
-                    toast.success("تم حذف الميتينج بنجاح! ✅");
+                    toast.success("تم حذف الميتينج بنجاح! ");
                     return true;
                 } else {
                     toast.error(result.message || "فشل في الحذف");
@@ -222,12 +222,12 @@ export const useMeetings = () => {
 
     const searchMeetings = useCallback(
         (term: string) => {
-            // ✅ Clear previous timeout
+            //  Clear previous timeout
             if (searchTimeoutRef.current !== null) {
                 clearTimeout(searchTimeoutRef.current);
             }
 
-            // ✅ Set new timeout - number type
+            //  Set new timeout - number type
             searchTimeoutRef.current = window.setTimeout(() => {
                 setSearchTerm(term);
                 setCurrentPage(1);
@@ -249,12 +249,12 @@ export const useMeetings = () => {
         fetchMeetings(currentPage, searchTerm);
     }, [fetchMeetings, currentPage, searchTerm]);
 
-    // ✅ Initial load - بس مرة واحدة
+    //  Initial load - بس مرة واحدة
     useEffect(() => {
         fetchMeetings(1, "");
     }, [fetchMeetings]);
 
-    // ✅ Cleanup timeout
+    //  Cleanup timeout
     useEffect(() => {
         return () => {
             if (searchTimeoutRef.current !== null) {

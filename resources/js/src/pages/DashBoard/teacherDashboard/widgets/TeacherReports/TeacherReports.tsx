@@ -1,3 +1,4 @@
+// TeacherReports.tsx - مع تصميم PlansManagement
 import React, { useState } from "react";
 import { FaStar } from "react-icons/fa";
 import AddProgressForm from "./forms/addProgressForm";
@@ -97,7 +98,7 @@ const TeacherReports: React.FC = () => {
     };
 
     const renderStars = (rating: number = 0) => (
-        <div className="testimonialsView__ratingStars">
+        <div className="stars-container">
             {Array(5)
                 .fill(0)
                 .map((_, i) => (
@@ -109,84 +110,221 @@ const TeacherReports: React.FC = () => {
     );
 
     const LessonItem = ({ lesson }: { lesson: Lesson }) => (
-        <div className="userProgress__comments">
-            <div className="userProgress__title">
-                <h1>
-                    الحصة بتاريخ: <span>{lesson.date}</span>
-                </h1>
-            </div>
-            <div className="userProgress__data">
-                <h4>{lesson.surah}</h4>
-                <h2>
-                    محتوي الحصة: <span>{lesson.content}</span>
-                </h2>
-                <h2>{lesson.review}</h2>
-            </div>
-            {!lesson.hasNote ? (
-                <div className="userProgress__comment">
-                    <button onClick={() => handleAddNote(lesson)}>
-                        اضافة ملاحظة لهذا الطلب؟
-                    </button>
+        <tr>
+            <td style={{ fontWeight: 700 }}>
+                <div>
+                    <div>{lesson.surah}</div>
+                    <div style={{ fontSize: "0.875rem", color: "var(--n500)" }}>
+                        {lesson.date}
+                    </div>
                 </div>
-            ) : (
-                <>
-                    <div className="userProgress__comment">
-                        <h1>تعليق المعلم :-</h1>
-                        <h2>{lesson.note}</h2>
+            </td>
+            <td>
+                <div>
+                    <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+                        محتوى الحصة:
                     </div>
-                    <h1>تقييم مستوي الطالب لهذه الحصة</h1>
-                    <div className="userProgress__rate">
-                        {renderStars(lesson.rating)}
+                    <div>{lesson.content}</div>
+                    <div style={{ marginTop: "8px" }}>
+                        <strong>مراجعة:</strong> {lesson.review}
                     </div>
-                </>
-            )}
-            <h1>
-                الطالب: <span>{lesson.student}</span>
-            </h1>
-            <div className="userProgress__rate"></div>
-        </div>
+                </div>
+            </td>
+            <td>
+                <div style={{ fontWeight: 600, marginBottom: "8px" }}>
+                    {lesson.student}
+                </div>
+                {!lesson.hasNote ? (
+                    <button
+                        className="btn bd bxs"
+                        onClick={() => handleAddNote(lesson)}
+                    >
+                        إضافة ملاحظة
+                    </button>
+                ) : (
+                    <>
+                        <div style={{ marginBottom: "12px" }}>
+                            <div
+                                style={{ fontWeight: 600, marginBottom: "4px" }}
+                            >
+                                تعليق المعلم:
+                            </div>
+                            <div>{lesson.note}</div>
+                        </div>
+                        <div>
+                            <div
+                                style={{ fontWeight: 600, marginBottom: "4px" }}
+                            >
+                                التقييم:
+                            </div>
+                            {renderStars(lesson.rating)}
+                        </div>
+                    </>
+                )}
+            </td>
+            <td>
+                <div className="td-actions">
+                    {!lesson.hasNote && (
+                        <button
+                            className="btn bs bxs"
+                            onClick={() => handleAddNote(lesson)}
+                        >
+                            تعديل
+                        </button>
+                    )}
+                </div>
+            </td>
+        </tr>
     );
 
     return (
-        <div className="teacherRoom">
-            <div
-                className={`userProgress__formContainer ${
-                    showForm ? "form-visible" : "form-hidden"
-                }`}
-            >
-                <div className="userProgress__form">
-                    <AddProgressForm
-                        gender="male"
-                        onClose={() => setShowForm(false)}
-                        lesson={selectedLesson || recentLessons[0]}
-                    />
+        <>
+            {/* المودال */}
+            {showForm && (
+                <div
+                    className="conf-ov on"
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <div
+                        className="conf-box"
+                        style={{ maxWidth: "500px", width: "90%" }}
+                    >
+                        <div className="conf-ico">
+                            <span
+                                style={{
+                                    width: 22,
+                                    height: 22,
+                                    display: "inline-flex",
+                                }}
+                            >
+                                ⭐
+                            </span>
+                        </div>
+                        <div className="conf-t" style={{ fontSize: "1.25rem" }}>
+                            إضافة ملاحظة
+                        </div>
+                        <div className="conf-d">أضف تعليقك وتقييمك للحصة</div>
+                        <div className="conf-acts">
+                            <div className="flx">
+                                <AddProgressForm
+                                    gender="male"
+                                    onClose={() => setShowForm(false)}
+                                    lesson={selectedLesson || recentLessons[0]}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">تقارير المعلم</div>
+                        <div className="flx">
+                            <button
+                                className="btn bp bsm"
+                                onClick={() => setShowForm(true)}
+                            >
+                                + حصة جديدة
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="testimonials__mainTitle">
+                        <h1>آخر الحصص</h1>
+                    </div>
+                    <div style={{ overflowX: "auto", marginBottom: "32px" }}>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>السورة</th>
+                                    <th>تفاصيل الحصة</th>
+                                    <th>الطالب</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {recentLessons.length > 0 ? (
+                                    recentLessons.map((lesson, index) => (
+                                        <LessonItem
+                                            key={`recent-${index}`}
+                                            lesson={lesson}
+                                        />
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={4}>
+                                            <div
+                                                className="empty"
+                                                style={{
+                                                    textAlign: "center",
+                                                    padding: "40px",
+                                                }}
+                                            >
+                                                <p>لا يوجد حصص بعد</p>
+                                                <button className="btn bp bsm">
+                                                    إضافة حصة
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="testimonials__mainTitle">
+                        <h1>سجل الملاحظات</h1>
+                    </div>
+                    <div style={{ overflowX: "auto" }}>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>السورة</th>
+                                    <th>تفاصيل الحصة</th>
+                                    <th>الطالب</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {notesLessons.length > 0 ? (
+                                    notesLessons.map((lesson, index) => (
+                                        <LessonItem
+                                            key={`notes-${index}`}
+                                            lesson={lesson}
+                                        />
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={4}>
+                                            <div
+                                                className="empty"
+                                                style={{
+                                                    textAlign: "center",
+                                                    padding: "40px",
+                                                }}
+                                            >
+                                                <p>لا توجد ملاحظات بعد</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <div className="TeacherRoom__inner">
-                <div className="testimonials__mainTitle">
-                    <h1>اخر الحصص</h1>
-                </div>
-                <div
-                    className="userProgress__content"
-                    style={{ margin: "24px 0" }}
-                >
-                    {recentLessons.map((lesson, index) => (
-                        <LessonItem key={`recent-${index}`} lesson={lesson} />
-                    ))}
-                </div>
-                <div className="testimonials__mainTitle">
-                    <h1>سجل الملاحظات</h1>
-                </div>
-                <div
-                    className="userProgress__content"
-                    style={{ margin: "24px 0" }}
-                >
-                    {notesLessons.map((lesson, index) => (
-                        <LessonItem key={`notes-${index}`} lesson={lesson} />
-                    ))}
-                </div>
-            </div>
-        </div>
+        </>
     );
 };
 

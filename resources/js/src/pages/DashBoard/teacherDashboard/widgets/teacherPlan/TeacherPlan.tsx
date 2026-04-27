@@ -1,25 +1,16 @@
-// TeacherPlan.tsx - الكامل مع التاريخ واليوم الحالي من React
 import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
-import { PiTimerDuotone } from "react-icons/pi";
-import { FaStar } from "react-icons/fa";
+import { IoCopy } from "react-icons/io5";
 import { useState, useMemo } from "react";
-import Profile from "../dashboard/profile.js";
 import { useTeacherPlan, UpcomingSession } from "./hooks/useTeacherPlan";
+import { useNavigate } from "react-router-dom";
 
 const TeacherPlan: React.FC = () => {
-    const [students, setStudents] = useState<any[]>([]);
-    const [selectedStudent, setSelectedStudent] = useState<any>(null);
-    const [quickRecitationModal, setQuickRecitationModal] = useState(false);
-    const [aiReport, setAiReport] = useState("");
-
+    const navigate = useNavigate();
     const { upcomingSessions, loading, error, refetch } = useTeacherPlan();
 
-    //  التاريخ واليوم الحالي من React (ديناميكي)
     const todayInfo = useMemo(() => {
         const today = new Date();
-        const egyptTime = new Date(today.getTime() + 2 * 60 * 60 * 1000); // EET +2
-
+        const egyptTime = new Date(today.getTime() + 2 * 60 * 60 * 1000);
         const days = [
             "الأحد",
             "الإثنين",
@@ -43,12 +34,10 @@ const TeacherPlan: React.FC = () => {
             "نوفمبر",
             "ديسمبر",
         ];
-
         const dayName = days[egyptTime.getDay()];
         const day = egyptTime.getDate();
         const month = months[egyptTime.getMonth()];
         const year = egyptTime.getFullYear();
-
         return {
             dayName,
             formattedDate: `${day} ${month} ${year}`,
@@ -56,7 +45,6 @@ const TeacherPlan: React.FC = () => {
         };
     }, []);
 
-    //  تنسيق الوقت 10:15:00 → 10:15 ص
     const formatTime = (timeString: string): string => {
         try {
             const [hourStr, minuteStr] = timeString.split(":");
@@ -69,249 +57,313 @@ const TeacherPlan: React.FC = () => {
         }
     };
 
-    // Loading State
+    const copyRoomLink = (roomName: string | null) => {
+        if (roomName) navigator.clipboard.writeText(roomName);
+    };
+
+    const joinMeeting = (scheduleId: number) => {
+        navigate(`/teacher-dashboard/room?schedule=${scheduleId}`);
+    };
+
     if (loading) {
         return (
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: "2rem",
-                    fontSize: "18px",
-                    color: "#666",
-                    minHeight: "400px",
-                }}
-            >
-                <div className="navbar">
-                    <div className="navbar__inner">
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">حلقاتك المتاحة</div>
+                    </div>
+                    <div style={{ padding: "60px 0", textAlign: "center" }}>
                         <div className="navbar__loading">
                             <div className="loading-spinner">
                                 <div className="spinner-circle"></div>
                             </div>
                         </div>
                     </div>
-                </div>{" "}
+                </div>
             </div>
         );
     }
 
-    // Error State
     if (error) {
         return (
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: "2rem",
-                    background: "#f8d7da",
-                    borderRadius: "8px",
-                    color: "#721c24",
-                    margin: "1rem",
-                }}
-            >
-                ❌ خطأ في تحميل الحلقات: {error}
-                <div style={{ marginTop: "1rem" }}>
-                    <button
-                        onClick={refetch}
-                        style={{
-                            padding: "10px 20px",
-                            background: "#007bff",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            marginRight: "10px",
-                        }}
-                    >
-                        🔄 إعادة المحاولة
-                    </button>
-                    <button
-                        onClick={() => window.location.reload()}
-                        style={{
-                            padding: "10px 20px",
-                            background: "#6c757d",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                        }}
-                    >
-                        🔄 إعادة تحميل الصفحة
-                    </button>
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">حلقاتك المتاحة</div>
+                    </div>
+                    <div style={{ padding: "24px 18px" }}>
+                        <div
+                            style={{
+                                background: "#fee2e2",
+                                borderRadius: "var(--border-radius-md)",
+                                padding: "16px 18px",
+                                color: "#991b1b",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: "12px",
+                            }}
+                        >
+                            <span>❌ خطأ في تحميل الحلقات: {error}</span>
+                            <div className="flx">
+                                <button
+                                    className="btn bp bsm"
+                                    onClick={refetch}
+                                >
+                                    🔄 إعادة المحاولة
+                                </button>
+                                <button
+                                    className="btn bs bsm"
+                                    style={{ margin: "0 6px" }}
+                                    onClick={() => window.location.reload()}
+                                >
+                                    🔄 إعادة تحميل الصفحة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <>
-            <Profile />
-            <div
-                className="userProfile__plan"
-                style={{ paddingBottom: "24px" }}
-            >
-                {/* Stats Cards */}
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>الحصص المكتملة</h3>
-                            <p className="teacherPlan__stat-number">3/3</p>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon yellowColor">
-                            <i>
-                                <PiTimerDuotone />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>الحصص المتاحة</h3>
-                            <p className="teacherPlan__stat-number">
-                                {upcomingSessions.length}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Title */}
-                <div className="testimonials__mainTitle">
-                    <h1>حلقاتك المتاحة</h1>
-                </div>
-
-                {/* حالة عدم وجود حلقات */}
-                {upcomingSessions.length === 0 ? (
-                    <div
-                        style={{
-                            textAlign: "center",
-                            padding: "4rem 2rem",
-                            background: "#f8f9fa",
-                            borderRadius: "12px",
-                            border: "2px dashed #dee2e6",
-                            margin: "2rem 0",
-                        }}
-                    >
-                        <div style={{ fontSize: "24px", marginBottom: "1rem" }}>
-                            📭 لا توجد حلقات متاحة حالياً
-                        </div>
-                        <div style={{ color: "#6c757d", marginBottom: "2rem" }}>
-                            تأكد من وجود حلقات بـ{" "}
-                            <strong>is_available = true</strong>
-                            <br />
-                            <small>اليوم: {todayInfo.fullDate}</small>
-                        </div>
-                        <button
-                            onClick={refetch}
-                            style={{
-                                padding: "12px 24px",
-                                background: "#28a745",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "8px",
-                                fontSize: "16px",
-                                cursor: "pointer",
-                            }}
-                        >
-                            🔄 تحديث البيانات
+        <div className="content" id="contentArea" style={{ padding: "12px 0" }}>
+            <div className="widget">
+                {/* Header */}
+                <div className="wh">
+                    <div className="wh-l">حلقاتك المتاحة</div>
+                    <div className="flx">
+                        <button className="btn bp bsm" onClick={refetch}>
+                            تحديث
                         </button>
                     </div>
-                ) : (
-                    /*  جدول مُحدث - التاريخ واليوم الحالي فقط */
-                    <div className="plan__daily-table">
-                        <table>
-                            <thead>
+                </div>
+
+                {/* Table */}
+                <div style={{ overflowX: "auto" }}>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>وقت الحلقة</th>
+                                <th>التاريخ</th>
+                                <th>الغرفة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {upcomingSessions.length === 0 ? (
                                 <tr>
-                                    <th>#</th>
-                                    <th>وقت الحصة</th>
-                                    <th>عدد الطلاب</th>
-                                    <th>التاريخ</th>
+                                    <td colSpan={4}>
+                                        <div className="empty">
+                                            <p>📭 لا توجد حلقات متاحة حالياً</p>
+                                            <p
+                                                style={{
+                                                    fontSize: 12,
+                                                    color: "var(--color-text-secondary)",
+                                                    margin: "6px 0 12px",
+                                                }}
+                                            >
+                                                اليوم: {todayInfo.fullDate}
+                                            </p>
+                                            <button
+                                                className="btn bp bsm"
+                                                onClick={refetch}
+                                            >
+                                                🔄 تحديث البيانات
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {upcomingSessions.map(
+                            ) : (
+                                upcomingSessions.map(
                                     (
                                         session: UpcomingSession,
                                         index: number,
                                     ) => (
-                                        <tr
-                                            key={session.id}
-                                            className="plan__row pending"
-                                        >
-                                            <td>{index + 1}</td>
-                                            <td className="teacherPlan__session-time">
-                                                <span>من</span>
-                                                {formatTime(session.start_time)}
-                                                <br />
-                                                <span>الي</span>
-                                                {formatTime(session.end_time)}
-                                            </td>
-                                            <td className="teacherPlan__students-count">
-                                                {session.booked_students}/
-                                                {session.max_students || "∞"}
-                                            </td>
+                                        <tr key={session.id}>
+                                            {/* الرقم */}
                                             <td
-                                                colSpan={2}
                                                 style={{
-                                                    textAlign: "center",
-                                                    padding: "12px 0",
+                                                    fontWeight: 700,
+                                                    width: 50,
+                                                    color: "var(--color-text-secondary)",
                                                 }}
                                             >
-                                                {/*  البيانات من Backend بس الوقت */}
+                                                {index + 1}
+                                            </td>
+
+                                            {/* وقت الحلقة */}
+                                            <td>
                                                 <div
-                                                    colSpan={2}
                                                     style={{
-                                                        textAlign: "center",
+                                                        display: "flex",
+                                                        gap: 16,
+                                                        alignItems:
+                                                            "flex-start",
                                                     }}
                                                 >
-                                                    {/*  التاريخ واليوم الحالي ديناميكي */}
-                                                    <div
-                                                        style={{
-                                                            fontWeight: "600",
-                                                            color: "#495057",
-                                                            marginBottom: "5px",
-                                                        }}
-                                                    >
-                                                        {todayInfo.dayName}
+                                                    <div>
+                                                        <div
+                                                            style={{
+                                                                fontSize: 11,
+                                                                color: "var(--color-text-secondary)",
+                                                                marginBottom: 2,
+                                                            }}
+                                                        >
+                                                            من
+                                                        </div>
+                                                        <div
+                                                            style={{
+                                                                fontWeight: 500,
+                                                                fontSize: 13,
+                                                            }}
+                                                        >
+                                                            {formatTime(
+                                                                session.start_time,
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div
-                                                        style={{
-                                                            fontSize: "14px",
-                                                            color: "#6c757d",
-                                                        }}
-                                                    >
-                                                        {
-                                                            todayInfo.formattedDate
-                                                        }
+                                                    <div>
+                                                        <div
+                                                            style={{
+                                                                fontSize: 11,
+                                                                color: "var(--color-text-secondary)",
+                                                                marginBottom: 2,
+                                                            }}
+                                                        >
+                                                            إلى
+                                                        </div>
+                                                        <div
+                                                            style={{
+                                                                fontWeight: 500,
+                                                                fontSize: 13,
+                                                            }}
+                                                        >
+                                                            {formatTime(
+                                                                session.end_time,
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
+
+                                            {/* التاريخ */}
+                                            <td>
+                                                <div
+                                                    style={{
+                                                        fontWeight: 500,
+                                                        fontSize: 13,
+                                                    }}
+                                                >
+                                                    {todayInfo.dayName}
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: 12,
+                                                        color: "var(--color-text-secondary)",
+                                                        marginTop: 2,
+                                                    }}
+                                                >
+                                                    {todayInfo.formattedDate}
+                                                </div>
+                                            </td>
+
+                                            {/* الغرفة */}
+                                            <td>
+                                                {session.jitsi_room_name ? (
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            flexDirection:
+                                                                "column",
+                                                            gap: 8,
+                                                            alignItems:
+                                                                "flex-start",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            onClick={() =>
+                                                                copyRoomLink(
+                                                                    session.jitsi_room_name,
+                                                                )
+                                                            }
+                                                            style={{
+                                                                cursor: "pointer",
+                                                                padding:
+                                                                    "5px 10px",
+                                                                borderRadius:
+                                                                    "var(--border-radius-md)",
+                                                                background:
+                                                                    "var(--color-background-secondary)",
+                                                                border: "0.5px solid var(--color-border-tertiary)",
+                                                                display:
+                                                                    "inline-flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                gap: 6,
+                                                                fontSize: 12,
+                                                                color: "var(--color-text-secondary)",
+                                                                maxWidth: 200,
+                                                                overflow:
+                                                                    "hidden",
+                                                            }}
+                                                        >
+                                                            <IoCopy
+                                                                style={{
+                                                                    flexShrink: 0,
+                                                                    width: 13,
+                                                                    height: 13,
+                                                                }}
+                                                            />
+                                                            <span
+                                                                style={{
+                                                                    overflow:
+                                                                        "hidden",
+                                                                    textOverflow:
+                                                                        "ellipsis",
+                                                                    whiteSpace:
+                                                                        "nowrap",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    session.jitsi_room_name
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                        <div className="td-actions">
+                                                            <button
+                                                                className="btn bp bxs"
+                                                                onClick={() =>
+                                                                    joinMeeting(
+                                                                        session.id,
+                                                                    )
+                                                                }
+                                                            >
+                                                                دخول الحلقة
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <span
+                                                        style={{
+                                                            color: "var(--color-text-secondary)",
+                                                            fontSize: 13,
+                                                        }}
+                                                    >
+                                                        غير محدد
+                                                    </span>
+                                                )}
+                                            </td>
                                         </tr>
                                     ),
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {/* AI Report */}
-                {aiReport && (
-                    <div className="plan__ai-suggestion teacherPlan__ai-report">
-                        <i>
-                            <RiRobot2Fill />
-                        </i>
-                        <strong>تقرير AI:</strong> {aiReport}
-                    </div>
-                )}
+                                )
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </>
+        </div>
     );
 };
 

@@ -1,4 +1,3 @@
-// src/pages/DashBoard/Center/Circles/hooks/useCircleFormCreate.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 
@@ -6,22 +5,18 @@ interface CenterType {
     id: number;
     name: string;
 }
-
 interface MosqueType {
     id: number;
     name: string;
     center_id: number;
 }
-
-//  Teacher من جدول users مع teacher.user_id
 interface TeacherType {
-    id: number; // teacher.id
-    user_id: number; // teacher.user_id
-    name: string; // users.name
-    role: string; // users.role
-    center_id: number; // users.center_id
+    id: number;
+    user_id: number;
+    name: string;
+    role: string;
+    center_id: number;
 }
-
 interface FormData {
     name: string;
     center_id: string;
@@ -29,9 +24,25 @@ interface FormData {
     teacher_id: string;
     notes?: string;
 }
-
 interface FormErrors {
     [key: string]: string;
+}
+
+// ── helpers ────────────────────────────────────────────────────────────────
+function getPortalCenterId(): number | null {
+    const id = (window as any).__PORTAL_CENTER_ID__;
+    return id ? Number(id) : null;
+}
+
+function buildHeaders(extra?: Record<string, string>): HeadersInit {
+    const headers: Record<string, string> = {
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        ...extra,
+    };
+    const centerId = getPortalCenterId();
+    if (centerId) headers["X-Center-Id"] = String(centerId);
+    return headers;
 }
 
 export const useCircleFormCreate = () => {
@@ -51,215 +62,174 @@ export const useCircleFormCreate = () => {
     const [user, setUser] = useState<any>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    //  CSRF Token helper
     const getCsrfToken = useCallback((): string => {
-        const metaToken = document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute("content");
-        if (metaToken) return metaToken;
-
-        const csrfMeta = document
-            .querySelector('meta[name="csrf"]')
-            ?.getAttribute("content");
-        if (csrfMeta) return csrfMeta;
-
-        const csrfCookie = document.cookie
-            .split(";")
-            .find((row) => row.startsWith("XSRF-TOKEN"))
-            ?.split("=")[1];
-        return csrfCookie ? decodeURIComponent(csrfCookie) : "";
+        return (
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content") ?? ""
+        );
     }, []);
 
-    //  Fetch User
+    // ── يجيب الـ center_id من الـ portal أو من الـ user ──────────────────
+    const resolveCenter = useCallback(
+        (userData?: any): number | null => {
+            const portalId = getPortalCenterId();
+            if (portalId) return portalId;
+            return userData?.center_id ?? user?.center_id ?? null;
+        },
+        [user],
+    );
+
+    // ── fetch user — لو portal مش محتاجه بس نجيبه للـ fallback ──────────
     const fetchUser = useCallback(async () => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
+        if (abortControllerRef.current) abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
 
         try {
-            console.log("🔍 Fetching user...");
             const response = await fetch("/api/user", {
                 signal: abortControllerRef.current.signal,
                 credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRF-TOKEN": getCsrfToken(),
-                },
+                headers: buildHeaders({ "X-CSRF-TOKEN": getCsrfToken() }),
             });
-
             if (response.ok) {
-                const responseData = await response.json();
-                const actualUser = responseData.user || responseData;
-                console.log(" User loaded:", actualUser);
+                const data = await response.json();
+                const actualUser = data.user || data;
                 setUser(actualUser);
+                return actualUser;
             }
         } catch (error: any) {
-            if (error.name !== "AbortError") {
+            if (error.name !== "AbortError")
                 console.error("❌ Failed to fetch user:", error);
-            }
         }
+        return null;
     }, [getCsrfToken]);
 
-    //  Initial user fetch
-    useEffect(() => {
-        fetchUser();
-    }, [fetchUser]);
-
-    //  Auto-set center_id
-    useEffect(() => {
-        if (user?.center_id && !formData.center_id) {
-            console.log("🏢 Auto-setting center_id:", user.center_id);
-            setFormData((prev) => ({
-                ...prev,
-                center_id: user.center_id.toString(),
-            }));
-        }
-    }, [user?.center_id]);
-
-    //  Fetch all data when user loads
-    useEffect(() => {
-        if (user?.center_id) {
-            console.log("🚀 User center loaded, fetching data...");
-            fetchAllCenterData(user.center_id);
-        }
-    }, [user?.center_id]);
-
-    //  Fetch all center data مرة واحدة
-    const fetchAllCenterData = useCallback(
-        async (centerId: number) => {
-            setLoadingData(true);
-
-            // Parallel fetches
-            const [mosquesPromise, teachersPromise] = await Promise.allSettled([
+    // ── load كل الداتا بناءً على center_id ───────────────────────────────
+    const fetchAllCenterData = useCallback(async (centerId: number) => {
+        setLoadingData(true);
+        try {
+            await Promise.all([
                 fetchCenterMosques(centerId),
-                fetchCenterTeachers(centerId), //  معلمين من users مع teacher.user_id
+                fetchCenterTeachers(centerId),
+                fetchCenters(centerId),
             ]);
-
-            // Centers
-            await fetchCenters();
-
+        } finally {
             setLoadingData(false);
+        }
+    }, []);
+
+    const fetchCenters = useCallback(
+        async (centerId: number) => {
+            try {
+                const response = await fetch("/api/v1/centers", {
+                    credentials: "include",
+                    headers: buildHeaders({ "X-CSRF-TOKEN": getCsrfToken() }),
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const center = (data.data || []).find(
+                        (c: any) => c.id === centerId,
+                    );
+                    setCentersData(center ? [center] : []);
+                }
+            } catch (error) {
+                console.error("❌ Failed to fetch centers:", error);
+            }
         },
         [getCsrfToken],
     );
 
-    const fetchCenters = useCallback(async () => {
-        try {
-            console.log("📥 Fetching centers...");
-            const response = await fetch("/api/v1/centers", {
-                credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRF-TOKEN": getCsrfToken(),
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log("📊 Centers response:", data);
-
-                let centers: CenterType[] = [];
-                const actualUser = user;
-
-                //  Center Owner → مركزه بس
-                if (actualUser?.role?.id === 1 && actualUser.center_id) {
-                    const userCenter = data.data?.find(
-                        (c: any) => c.id === actualUser.center_id,
-                    );
-                    if (userCenter) {
-                        centers = [userCenter];
-                    }
-                } else {
-                    // Admin → كل المراكز
-                    centers = data.data || [];
-                }
-
-                setCentersData(centers);
-            }
-        } catch (error: any) {
-            console.error("❌ Failed to fetch centers:", error);
-            toast.error("فشل في تحميل المراكز");
-        }
-    }, [user, getCsrfToken]);
-
-    //  مساجد مجمع اليوزر
     const fetchCenterMosques = useCallback(
         async (centerId: number) => {
             try {
-                console.log("🕌 Fetching mosques for center:", centerId);
                 const response = await fetch(
                     `/api/v1/centers/${centerId}/mosques`,
                     {
                         credentials: "include",
-                        headers: {
-                            Accept: "application/json",
-                            "X-Requested-With": "XMLHttpRequest",
+                        headers: buildHeaders({
                             "X-CSRF-TOKEN": getCsrfToken(),
-                        },
+                        }),
                     },
                 );
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(" Mosques loaded:", data.data?.length || 0);
-                    setMosquesData(Array.isArray(data.data) ? data.data : []);
+                    let mosques = Array.isArray(data.data) ? data.data : [];
+
+                    // ── لو portal: اعرض المسجد المحدد في الرابط بس ──────────────
+                    const portalMosqueId = (window as any).__PORTAL_MOSQUE_ID__;
+                    if (portalMosqueId) {
+                        mosques = mosques.filter(
+                            (m: any) => m.id === Number(portalMosqueId),
+                        );
+                    }
+
+                    setMosquesData(mosques);
                 } else {
-                    console.log("❌ No mosques for center:", centerId);
                     setMosquesData([]);
                 }
-            } catch (error) {
-                console.error("❌ Failed to fetch mosques:", error);
+            } catch {
                 setMosquesData([]);
             }
         },
         [getCsrfToken],
     );
-
-    //  معلمين مجمع اليوزر من users مع teacher.user_id
     const fetchCenterTeachers = useCallback(
         async (centerId: number) => {
             try {
-                console.log("👨‍🏫 Fetching teachers for center:", centerId);
-                //  endpoint جديد للمعلمين من users مع teacher.user_id
                 const response = await fetch(
                     `/api/v1/centers/${centerId}/teachers`,
                     {
                         credentials: "include",
-                        headers: {
-                            Accept: "application/json",
-                            "X-Requested-With": "XMLHttpRequest",
+                        headers: buildHeaders({
                             "X-CSRF-TOKEN": getCsrfToken(),
-                        },
+                        }),
                     },
                 );
-
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(" Teachers loaded:", data.data?.length || 0);
-
-                    //  فلترة المعلمين اللي ليهم teacher.user_id
-                    const teachers = (
-                        Array.isArray(data.data) ? data.data : []
-                    ).filter(
-                        (teacher: any) =>
-                            teacher.user_id && teacher.center_id === centerId,
-                    );
-
-                    setTeachersData(teachers as TeacherType[]);
+                    setTeachersData(Array.isArray(data.data) ? data.data : []);
                 } else {
-                    console.log("❌ No teachers for center:", centerId);
                     setTeachersData([]);
                 }
-            } catch (error) {
-                console.error("❌ Failed to fetch teachers:", error);
+            } catch {
                 setTeachersData([]);
             }
         },
         [getCsrfToken],
     );
+
+    // ── initial load ──────────────────────────────────────────────────────
+    useEffect(() => {
+        const portalCenterId = getPortalCenterId();
+
+        if (portalCenterId) {
+            // portal mode — مش محتاج نجيب user
+            setFormData((prev) => ({
+                ...prev,
+                center_id: String(portalCenterId),
+            }));
+            fetchAllCenterData(portalCenterId);
+        } else {
+            // normal mode — نجيب user الأول
+            fetchUser().then((userData) => {
+                const centerId = userData?.center_id;
+                if (centerId) {
+                    setFormData((prev) => ({
+                        ...prev,
+                        center_id: String(centerId),
+                    }));
+                    fetchAllCenterData(centerId);
+                } else {
+                    setLoadingData(false);
+                }
+            });
+        }
+
+        return () => {
+            abortControllerRef.current?.abort();
+        };
+    }, []);
 
     const handleInputChange = useCallback(
         (
@@ -269,9 +239,7 @@ export const useCircleFormCreate = () => {
         ) => {
             const { name, value } = e.target;
             setFormData((prev) => ({ ...prev, [name]: value }));
-            if (errors[name]) {
-                setErrors((prev) => ({ ...prev, [name]: "" }));
-            }
+            if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
         },
         [errors],
     );
@@ -285,29 +253,25 @@ export const useCircleFormCreate = () => {
 
     const submitForm = useCallback(
         async (onSubmit: (formDataSubmit: FormData) => Promise<void>) => {
-            console.log("🚀 SUBMIT - formData:", formData);
             if (!validateForm()) return;
-
             if (!formData.center_id) {
                 toast.error("المجمع غير محدد");
                 return;
             }
-
             if (isSubmitting) return;
 
             setIsSubmitting(true);
             try {
-                const formDataSubmit = new FormData();
-                formDataSubmit.append("name", formData.name);
-                formDataSubmit.append("center_id", formData.center_id);
+                const fd = new FormData();
+                fd.append("name", formData.name);
+                fd.append("center_id", formData.center_id);
                 if (formData.mosque_id)
-                    formDataSubmit.append("mosque_id", formData.mosque_id);
+                    fd.append("mosque_id", formData.mosque_id);
                 if (formData.teacher_id)
-                    formDataSubmit.append("teacher_id", formData.teacher_id);
+                    fd.append("teacher_id", formData.teacher_id);
                 if (formData.notes?.trim())
-                    formDataSubmit.append("notes", formData.notes.trim());
-
-                await onSubmit(formDataSubmit);
+                    fd.append("notes", formData.notes.trim());
+                await onSubmit(fd);
             } catch (error) {
                 console.error("Submit error:", error);
             } finally {
@@ -324,8 +288,8 @@ export const useCircleFormCreate = () => {
         handleInputChange,
         submitForm,
         centersData,
-        mosquesData, //  مساجد المجمع بس
-        teachersData, //  معلمين المجمع بس مع teacher.user_id
+        mosquesData,
+        teachersData,
         loadingData,
         user,
     };

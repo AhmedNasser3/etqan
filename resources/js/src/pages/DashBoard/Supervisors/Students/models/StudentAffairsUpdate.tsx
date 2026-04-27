@@ -1,8 +1,7 @@
-// pages/student-affairs-update.tsx - ✅ مُصحح كامل
-import { useEffect } from "react";
-import { FiX } from "react-icons/fi";
-import toast from "react-hot-toast";
+// StudentAffairsUpdate.tsx - مُصحح كامل بدون أخطاء
+import React, { useState, useEffect, useCallback } from "react";
 import { useStudentAffairsUpdate } from "../hooks/useStudentAffairsUpdate";
+import { useToast } from "../../../../../../contexts/ToastContext";
 
 interface StudentAffairsUpdateProps {
     onClose: () => void;
@@ -23,315 +22,359 @@ const StudentAffairsUpdate: React.FC<StudentAffairsUpdateProps> = ({
         studentData,
         grades,
         handleInputChange,
-        submitForm, // ✅ استخدم submitForm من الـ hook
         loadStudentData,
     } = useStudentAffairsUpdate(studentId);
 
-    // ✅ تحميل البيانات تلقائياً (مش محتاج useEffect)
+    const { notifySuccess, notifyError } = useToast();
+
+    const ICO = {
+        x: (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+            >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        ),
+    };
+
+    function FG({
+        label,
+        children,
+    }: {
+        label: string;
+        children: React.ReactNode;
+    }) {
+        return (
+            <div style={{ marginBottom: 13 }}>
+                <label
+                    style={{
+                        display: "block",
+                        fontSize: "10.5px",
+                        fontWeight: 700,
+                        color: "var(--n700)",
+                        marginBottom: 4,
+                    }}
+                >
+                    {label}
+                </label>
+                {children}
+            </div>
+        );
+    }
+
+    // تحميل البيانات تلقائياً
     useEffect(() => {
         loadStudentData();
     }, [studentId, loadStudentData]);
 
-    // ✅ استخدم submitForm من الـ hook مباشرة
-    const handleSave = async () => {
-        const success = await submitForm();
-        if (success) {
-            onSuccess(); // ✅ إغلاق الـ Modal بعد النجاح
+    const updateStudentFn = async () => {
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content");
+
+        if (!csrfToken) {
+            notifyError("فشل في جلب رمز الحماية");
+            return;
+        }
+
+        const formDataSubmit = new FormData();
+        formDataSubmit.append(
+            "id_number",
+            (document.getElementById("suIdNumber") as HTMLInputElement)
+                ?.value || "",
+        );
+        formDataSubmit.append(
+            "grade_level",
+            (document.getElementById("suGrade") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "circle",
+            (document.getElementById("suCircle") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "status",
+            (document.getElementById("suStatus") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "health_status",
+            (document.getElementById("suHealth") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "reading_level",
+            (document.getElementById("suReading") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "session_time",
+            (document.getElementById("suSession") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append(
+            "attendance_rate",
+            (document.getElementById("suAttendance") as HTMLInputElement)
+                ?.value || "",
+        );
+        formDataSubmit.append(
+            "notes",
+            (document.getElementById("suNotes") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append("_method", "PUT");
+
+        console.log(
+            "STUDENT UPDATE FormData:",
+            Object.fromEntries(formDataSubmit),
+        );
+
+        try {
+            const response = await fetch(`/api/v1/students/${studentId}`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRF-TOKEN": csrfToken,
+                },
+                body: formDataSubmit,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("UPDATE ERROR:", errorText);
+
+                try {
+                    const errorData = JSON.parse(errorText);
+                    if (errorData.errors) {
+                        const errorMessages = Object.values(
+                            errorData.errors,
+                        ).flat();
+                        notifyError(errorMessages[0] || "خطأ في البيانات");
+                        return;
+                    }
+                    notifyError(errorData.message || "حدث خطأ");
+                    return;
+                } catch (e) {
+                    notifyError(`خطأ ${response.status}`);
+                    return;
+                }
+            }
+
+            const result = await response.json();
+            notifySuccess("تم تعديل بيانات الطالب بنجاح");
+            onSuccess();
+        } catch (error: any) {
+            console.error("UPDATE FAILED:", error);
+            notifyError(error.message || "حدث خطأ");
         }
     };
 
-    if (loadingData) {
-        return (
-            <div className="ParentModel">
-                <div className="ParentModel__overlay">
-                    <div className="ParentModel__content">
-                        <div className="ParentModel__inner">
-                            <div className="flex justify-center items-center h-64">
-                                <div className="navbar">
-                                    <div className="navbar__inner">
-                                        <div className="navbar__loading">
-                                            <div className="loading-spinner">
-                                                <div className="spinner-circle"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>{" "}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     if (!studentData && !loadingData) {
         return (
-            <div className="ParentModel">
-                <div className="ParentModel__overlay">
-                    <div className="ParentModel__content">
-                        <div className="ParentModel__inner">
-                            <div className="text-center p-8">
-                                الطالب غير موجود
-                            </div>
+            <>
+                <div className="ov on">
+                    <div className="modal">
+                        <div className="mh">
+                            <span className="mh-t">الطالب غير موجود</span>
                         </div>
                     </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={onClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        <div className="ParentModel__header">
+        <>
+            <div className="ov on">
+                <div className="modal">
+                    <div className="mh">
+                        <span className="mh-t">تعديل بيانات الطالب</span>
+                        <button
+                            className="mx"
+                            onClick={onClose}
+                            disabled={isSubmitting}
+                        >
+                            <span
+                                style={{
+                                    width: 12,
+                                    height: 12,
+                                    display: "inline-flex",
+                                }}
+                            >
+                                {ICO.x}
+                            </span>
+                        </button>
+                    </div>
+                    <div className="mb">
+                        <FG label="رقم الهوية *">
+                            <input
+                                className="fi2"
+                                id="suIdNumber"
+                                defaultValue={
+                                    studentData?.idNumber ||
+                                    formData.id_number ||
+                                    ""
+                                }
+                                placeholder="رقم الهوية الحالي"
+                                required
+                            />
+                        </FG>
+
+                        <FG label="الصف *">
+                            <select
+                                className="fi2"
+                                id="suGrade"
+                                defaultValue={
+                                    studentData?.grade_level ||
+                                    formData.grade_level ||
+                                    ""
+                                }
+                                required
+                            >
+                                <option value="">اختر الصف</option>
+                                {grades.map((grade: string) => (
+                                    <option key={grade} value={grade}>
+                                        {grade}
+                                    </option>
+                                ))}
+                            </select>
+                        </FG>
+
+                        <FG label="الحلقة *">
+                            <input
+                                className="fi2"
+                                id="suCircle"
+                                defaultValue={
+                                    studentData?.circle || formData.circle || ""
+                                }
+                                placeholder="الحلقة الحالية"
+                                required
+                            />
+                        </FG>
+
+                        <FG label="الحالة">
+                            <select
+                                className="fi2"
+                                id="suStatus"
+                                defaultValue={
+                                    studentData?.status ||
+                                    formData.status ||
+                                    "نشط"
+                                }
+                            >
+                                <option value="نشط">نشط</option>
+                                <option value="معلق">معلق</option>
+                                <option value="موقوف">موقوف</option>
+                            </select>
+                        </FG>
+
+                        <FG label="الحالة الصحية">
+                            <input
+                                className="fi2"
+                                id="suHealth"
+                                defaultValue={
+                                    studentData?.health_status ||
+                                    formData.health_status ||
+                                    ""
+                                }
+                                type="text"
+                                placeholder="سليم / مريض..."
+                            />
+                        </FG>
+
+                        <FG label="مستوى القراءة">
+                            <input
+                                className="fi2"
+                                id="suReading"
+                                defaultValue={
+                                    studentData?.reading_level ||
+                                    formData.reading_level ||
+                                    ""
+                                }
+                                type="text"
+                                placeholder="نص جزء ثالث..."
+                            />
+                        </FG>
+
+                        <FG label="وقت الحلقة">
+                            <input
+                                className="fi2"
+                                id="suSession"
+                                defaultValue={
+                                    studentData?.session_time ||
+                                    formData.session_time ||
+                                    ""
+                                }
+                                type="text"
+                                placeholder="عصر / مغرب..."
+                            />
+                        </FG>
+
+                        <FG label="نسبة الحضور %">
+                            <input
+                                className="fi2"
+                                id="suAttendance"
+                                defaultValue={
+                                    studentData?.attendance_rate ||
+                                    formData.attendance_rate ||
+                                    ""
+                                }
+                                type="number"
+                                min={0}
+                                max={100}
+                                placeholder="95"
+                            />
+                        </FG>
+
+                        <FG label="ملاحظات">
+                            <input
+                                className="fi2"
+                                id="suNotes"
+                                defaultValue={
+                                    studentData?.notes || formData.notes || ""
+                                }
+                                type="text"
+                                placeholder="أي ملاحظات..."
+                            />
+                        </FG>
+                    </div>
+                    <div className="mf">
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "12px",
+                                justifyContent: "flex-end",
+                                marginTop: "20px",
+                            }}
+                        >
                             <button
-                                className="ParentModel__close"
+                                className="btn bs"
                                 onClick={onClose}
                                 disabled={isSubmitting}
                             >
-                                <FiX size={24} />
+                                إلغاء
                             </button>
-                        </div>
-
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>تعديل بيانات الطالب</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>تعديل بيانات الطالب</h1>
-                                <p>
-                                    البيانات الحالية محملة في الحقول أدناه
-                                    {loadingData && (
-                                        <span className="block text-sm text-blue-600 mt-1">
-                                            جاري تحميل البيانات...
-                                        </span>
-                                    )}
-                                    <span className="block text-sm text-green-600 mt-1">
-                                        {studentData?.name ||
-                                            formData.id_number}{" "}
-                                        -{" "}
-                                        {studentData?.idNumber ||
-                                            formData.id_number}
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="ParentModel__container">
-                            {/* رقم الهوية */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>رقم الهوية *</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        name="id_number"
-                                        value={formData.id_number || ""}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.id_number
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="رقم الهوية الحالي"
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                    {errors.id_number && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.id_number}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* الصف */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الصف *</label>
-                                    <select
-                                        required
-                                        name="grade_level"
-                                        value={formData.grade_level || ""}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.grade_level || loadingData
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={isSubmitting || loadingData}
-                                    >
-                                        <option value="">اختر الصف</option>
-                                        {grades.map((grade) => (
-                                            <option key={grade} value={grade}>
-                                                {grade}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {errors.grade_level && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.grade_level}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* الحلقة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الحلقة *</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        name="circle"
-                                        value={formData.circle || ""}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.circle
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="الحلقة الحالية"
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                    {errors.circle && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.circle}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* الحالة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الحالة</label>
-                                    <select
-                                        name="status"
-                                        value={formData.status || "نشط"}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        disabled={isSubmitting || loadingData}
-                                    >
-                                        <option value="نشط">نشط</option>
-                                        <option value="معلق">معلق</option>
-                                        <option value="موقوف">موقوف</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* الحالة الصحية */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الحالة الصحية</label>
-                                    <input
-                                        type="text"
-                                        name="health_status"
-                                        value={formData.health_status || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="سليم / مريض..."
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* مستوى القراءة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>مستوى القراءة</label>
-                                    <input
-                                        type="text"
-                                        name="reading_level"
-                                        value={formData.reading_level || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="نص جزء ثالث..."
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* وقت الحصة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>وقت الحصة</label>
-                                    <input
-                                        type="text"
-                                        name="session_time"
-                                        value={formData.session_time || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="عصر / مغرب..."
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* نسبة الحضور */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>نسبة الحضور %</label>
-                                    <input
-                                        type="number"
-                                        name="attendance_rate"
-                                        value={formData.attendance_rate || ""}
-                                        onChange={handleInputChange}
-                                        min={0}
-                                        max={100}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="95"
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* الملاحظات */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>ملاحظات</label>
-                                    <textarea
-                                        name="notes"
-                                        value={formData.notes || ""}
-                                        onChange={handleInputChange}
-                                        rows={4}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="أي ملاحظات إضافية..."
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* زر الإرسال - ✅ مُصحح */}
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
+                            <button
+                                className="btn bp"
+                                onClick={updateStudentFn}
+                                disabled={isSubmitting}
                             >
-                                <button
-                                    type="button"
-                                    onClick={handleSave} // ✅ استخدم handleSave الجديد
-                                    disabled={isSubmitting || loadingData}
-                                    className="w-full"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                                            جاري حفظ التغييرات...
-                                        </>
-                                    ) : (
-                                        <>حفظ التغييرات</>
-                                    )}
-                                </button>
-                            </div>
+                                {isSubmitting
+                                    ? "جاري التعديل..."
+                                    : "حفظ التغييرات"}
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

@@ -1,18 +1,63 @@
-// StaffAttendance.tsx - النسخة النهائية  متوافق مع Hook الجديد
+// StaffAttendance.tsx
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { FiFileText } from "react-icons/fi";
-import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
-import { PiWhatsappLogoDuotone } from "react-icons/pi";
+import { FiFileText, FiRefreshCw } from "react-icons/fi";
 import { CiCircleCheck, CiWarning, CiCircleRemove } from "react-icons/ci";
+import {
+    BsPersonCheck,
+    BsPersonX,
+    BsPersonExclamation,
+    BsBarChart,
+    BsClock,
+    BsClipboardData,
+    BsBuilding,
+} from "react-icons/bs";
 import {
     useStaffAttendance,
     StaffAttendance as StaffAttendanceType,
 } from "./hooks/useStaffAttendance";
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const STATUS_CFG = {
+    present: {
+        label: "حاضر",
+        bg: "#dcfce7",
+        color: "#15803d",
+        border: "#bbf7d0",
+    },
+    late: {
+        label: "متأخر",
+        bg: "#fef9c3",
+        color: "#a16207",
+        border: "#fde68a",
+    },
+    absent: {
+        label: "غائب",
+        bg: "#fee2e2",
+        color: "#b91c1c",
+        border: "#fecaca",
+    },
+} as const;
+
+const ROLE_CFG: Record<string, { bg: string; color: string }> = {
+    معلم: { bg: "#dcfce7", color: "#15803d" },
+    "مشرف تعليمي": { bg: "#dbeafe", color: "#1d4ed8" },
+    مدير: { bg: "#ede9fe", color: "#7c3aed" },
+};
+const roleStyle = (role: string) =>
+    ROLE_CFG[role] ?? { bg: "#f1f5f9", color: "#475569" };
+
+const DATE_LABELS = {
+    today: "اليومي",
+    yesterday: "الأمس",
+    week: "الأسبوعي",
+    month: "الشهري",
+} as const;
+
+// ── Component ─────────────────────────────────────────────────────────────────
 const StaffAttendance: React.FC = () => {
     const {
-        staff: filteredStaff,
+        staff,
         stats,
         loading,
         search,
@@ -26,446 +71,822 @@ const StaffAttendance: React.FC = () => {
     } = useStaffAttendance();
 
     const [markingId, setMarkingId] = useState<number | null>(null);
+    const [lateModal, setLateModal] = useState<{ id: number } | null>(null);
+    const [lateReason, setLateReason] = useState("");
+    const [lateMinutes, setLateMinutes] = useState(15);
 
-    const getStatusColor = (status: StaffAttendanceType["status"]) => {
-        switch (status) {
-            case "present":
-                return "text-green-600 bg-green-100";
-            case "late":
-                return "text-yellow-600 bg-yellow-100";
-            case "absent":
-                return "text-red-600 bg-red-100";
-            default:
-                return "text-gray-600 bg-gray-100";
-        }
-    };
-
-    const getStatusIcon = (status: StaffAttendanceType["status"]) => {
-        switch (status) {
-            case "present":
-                return <CiCircleCheck className="inline mr-1 w-4 h-4" />;
-            case "late":
-                return <CiWarning className="inline mr-1 w-4 h-4" />;
-            case "absent":
-                return <CiCircleRemove className="inline mr-1 w-4 h-4" />;
-            default:
-                return <CiCircleRemove className="inline mr-1 w-4 h-4" />;
-        }
-    };
-
-    const handleMarkAttendance = async (
-        staffId: number,
+    // ── handlers ─────────────────────────────────────────────────────────────
+    const handleMark = async (
+        id: number,
         status: "present" | "late" | "absent",
+        reason?: string,
+        minutes?: number,
     ) => {
-        setMarkingId(staffId);
-        const success = await markAttendance(staffId, status);
-
-        if (success) {
+        setMarkingId(id);
+        const ok = await markAttendance(id, status, reason, minutes);
+        if (ok) {
             toast.success(
                 status === "present"
-                    ? "تم تسجيل الحضور بنجاح "
+                    ? "تم تسجيل الحضور"
                     : status === "late"
-                      ? "تم تسجيل التأخير بنجاح "
-                      : "تم تسجيل الغياب بنجاح ",
-                {
-                    duration: 4000,
-                    position: "top-right",
-                },
+                      ? "تم تسجيل التأخير"
+                      : "تم تسجيل الغياب",
+                { duration: 3000, position: "top-right" },
             );
-            // Refresh بعد نجاح العملية
-            setTimeout(() => fetchAttendance(), 1000);
+            setTimeout(fetchAttendance, 800);
         } else {
-            toast.error("فشل في تحديث الحضور! يرجى المحاولة مرة أخرى", {
-                duration: 5000,
+            toast.error("فشل في التحديث - حاول مرة أخرى", {
+                duration: 4000,
                 position: "top-right",
             });
         }
         setMarkingId(null);
     };
 
+    const handleLateSubmit = async () => {
+        if (!lateModal) return;
+        setLateModal(null);
+        await handleMark(lateModal.id, "late", lateReason, lateMinutes);
+        setLateReason("");
+        setLateMinutes(15);
+    };
+
     const handleExportPDF = () => {
-        toast.loading("جاري إعداد ملف PDF...", { id: "export-pdf" });
-        //  URL صحيح للـ export (هتحتاج Backend endpoint)
+        toast.loading("جاري إعداد ملف PDF...", { id: "pdf" });
         window.open(
             `/api/v1/attendance/export-pdf?date_filter=${dateFilter}`,
             "_blank",
         );
-        toast.success("تم فتح ملف PDF!", { id: "export-pdf" });
+        setTimeout(() => toast.success("تم فتح الملف!", { id: "pdf" }), 1000);
     };
 
-    const getRoleColor = (role: string) => {
-        switch (role) {
-            case "معلم":
-                return "bg-green-100 text-green-800";
-            case "مشرف تعليمي":
-                return "bg-blue-100 text-blue-800";
-            case "مدير":
-                return "bg-purple-100 text-purple-800";
-            default:
-                return "bg-gray-100 text-gray-800";
-        }
-    };
-
-    // Error State
-    if (error) {
+    // ── error state ───────────────────────────────────────────────────────────
+    if (error)
         return (
-            <div className="teacherMotivate" style={{ padding: "0 15%" }}>
-                <div className="flex items-center justify-center py-20">
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-8 max-w-md mx-auto text-center">
-                        <CiCircleRemove className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-red-800 mb-2">
-                            خطأ في تحميل البيانات
-                        </h3>
-                        <p className="text-red-700 mb-4">{error}</p>
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div
+                        style={{
+                            textAlign: "center",
+                            padding: "48px 24px",
+                            color: "#b91c1c",
+                            background: "#fee2e2",
+                            borderRadius: "12px",
+                            margin: "24px",
+                        }}
+                    >
+                        <CiCircleRemove
+                            size={48}
+                            style={{ marginBottom: 12, opacity: 0.7 }}
+                        />
+                        <div style={{ fontWeight: 600, marginBottom: "16px" }}>
+                            خطأ في تحميل البيانات: {error}
+                        </div>
                         <button
+                            className="btn bp bsm"
                             onClick={fetchAttendance}
-                            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all"
                         >
+                            <FiRefreshCw size={14} style={{ marginLeft: 6 }} />
                             إعادة المحاولة
                         </button>
                     </div>
                 </div>
             </div>
         );
-    }
 
-    if (loading) {
-        return (
-            <div className="teacherMotivate" style={{ padding: "0 15%" }}>
-                <div className="flex items-center justify-center py-20">
-                    <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mr-4" />
-                    <span className="text-lg text-gray-600 font-medium">
-                        <div className="navbar">
-                            <div className="navbar__inner">
-                                <div className="navbar__loading">
-                                    <div className="loading-spinner">
-                                        <div className="spinner-circle"></div>
-                                    </div>
+    // ── main render ───────────────────────────────────────────────────────────
+    return (
+        <div className="content" id="contentArea">
+            <div className="widget">
+                {/* ── Header ── */}
+                <div className="wh">
+                    <div className="wh-l">
+                        سجل الحضور {DATE_LABELS[dateFilter]}
+                    </div>
+                    <div
+                        className="flx"
+                        style={{
+                            display: "flex",
+                            gap: "8px",
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <select
+                            value={dateFilter}
+                            onChange={(e) =>
+                                setDateFilter(e.target.value as any)
+                            }
+                            className="fi"
+                            disabled={loading}
+                        >
+                            <option value="today">اليوم</option>
+                            <option value="yesterday">أمس</option>
+                            <option value="week">هذا الأسبوع</option>
+                            <option value="month">هذا الشهر</option>
+                        </select>
+                        <input
+                            type="search"
+                            placeholder="بحث بالاسم أو الدور أو المركز..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="fi"
+                            disabled={loading}
+                            style={{ minWidth: "200px" }}
+                        />
+                        <button
+                            onClick={fetchAttendance}
+                            className="btn bs bsm"
+                            disabled={loading}
+                        >
+                            <FiRefreshCw size={14} style={{ marginLeft: 6 }} />
+                            تحديث
+                        </button>
+                        <button
+                            onClick={handleExportPDF}
+                            disabled={loading || staff.length === 0}
+                            className="btn bp bsm"
+                        >
+                            <FiFileText size={14} style={{ marginLeft: 6 }} />
+                            PDF
+                        </button>
+                    </div>
+                </div>
+
+                {/* ── Stats Bar ── */}
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                            "repeat(auto-fill, minmax(130px,1fr))",
+                        gap: "10px",
+                        marginBottom: "20px",
+                        padding: "24px",
+                    }}
+                >
+                    {[
+                        {
+                            label: "الإجمالي",
+                            value: stats.total,
+                            Icon: BsClipboardData,
+                            color: "#6366f1",
+                            bg: "#eef2ff",
+                        },
+                        {
+                            label: "حاضر",
+                            value: stats.present,
+                            Icon: BsPersonCheck,
+                            color: "#16a34a",
+                            bg: "#dcfce7",
+                        },
+                        {
+                            label: "متأخر",
+                            value: stats.late,
+                            Icon: BsPersonExclamation,
+                            color: "#d97706",
+                            bg: "#fef9c3",
+                        },
+                        {
+                            label: "غائب",
+                            value: stats.absent,
+                            Icon: BsPersonX,
+                            color: "#dc2626",
+                            bg: "#fee2e2",
+                        },
+                        {
+                            label: "نسبة الحضور",
+                            value: `${stats.monthlyAttendanceRate}%`,
+                            Icon: BsBarChart,
+                            color: "#0891b2",
+                            bg: "#e0f2fe",
+                        },
+                        {
+                            label: "متوسط التأخير",
+                            value: `${stats.avgDelay} د`,
+                            Icon: BsClock,
+                            color: "#7c3aed",
+                            bg: "#ede9fe",
+                        },
+                    ].map(({ label, value, Icon, color, bg }) => (
+                        <div
+                            key={label}
+                            style={{
+                                background: "white",
+                                border: "1px solid #e2e8f0",
+                                borderRadius: "12px",
+                                padding: "14px 16px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: 10,
+                                    background: bg,
+                                    color,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                }}
+                            >
+                                <Icon size={18} />
+                            </div>
+                            <div>
+                                <div
+                                    style={{
+                                        fontSize: "1.3rem",
+                                        fontWeight: 800,
+                                        color,
+                                        lineHeight: 1,
+                                    }}
+                                >
+                                    {value}
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: "0.72rem",
+                                        color: "#94a3b8",
+                                        marginTop: 3,
+                                    }}
+                                >
+                                    {label}
                                 </div>
                             </div>
-                        </div>{" "}
-                    </span>
+                        </div>
+                    ))}
                 </div>
-            </div>
-        );
-    }
 
-    return (
-        <div className="teacherMotivate" style={{ padding: "0 15%" }}>
-            <div className="teacherMotivate__inner">
-                <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
-                >
-                    <div className="userProfile__planTitle">
-                        <h1>
-                            حضور الموظفين{" "}
-                            <span>{filteredStaff.length} موظف</span>
-                        </h1>
-                    </div>
-
-                    {/* Header Controls */}
-                    <div className="plan__header">
-                        <div className="plan__current">
-                            <h2>
-                                سجل الحضور{" "}
-                                {dateFilter === "today"
-                                    ? "اليومي"
-                                    : dateFilter === "yesterday"
-                                      ? "الأمس"
-                                      : dateFilter === "week"
-                                        ? "الأسبوعي"
-                                        : "الشهري"}
-                            </h2>
-                            <div className="plan__date-range flex gap-3 items-center">
-                                <select
-                                    value={dateFilter}
-                                    onChange={(e) =>
-                                        setDateFilter(e.target.value as any)
-                                    }
-                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 transition-all"
-                                    disabled={loading}
-                                >
-                                    <option value="today">اليوم</option>
-                                    <option value="yesterday">أمس</option>
-                                    <option value="week">هذا الأسبوع</option>
-                                    <option value="month">هذا الشهر</option>
-                                </select>
-                                <input
-                                    type="search"
-                                    placeholder="البحث بالاسم أو الدور..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 disabled:opacity-50 transition-all"
-                                    disabled={loading}
-                                />
-                                <button
-                                    onClick={handleExportPDF}
-                                    disabled={
-                                        loading || filteredStaff.length === 0
-                                    }
-                                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md hover:shadow-lg transition-all duration-200"
-                                    title="تصدير PDF"
-                                >
-                                    <FiFileText className="w-4 h-4" />
-                                    تصدير PDF
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Stats Cards */}
-                    <div className="plan__stats grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="stat-card bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all">
-                            <div className="stat-icon greenColor p-3 rounded-xl bg-green-50">
-                                <GrStatusGood className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-700 mb-1">
-                                    حضور اليوم
-                                </h3>
-                                <p className="text-3xl font-bold text-green-600">
-                                    {stats.present}/{stats.total}
-                                </p>
-                                <span className="text-sm text-gray-500 font-medium">
-                                    {stats.total > 0
-                                        ? Math.round(
-                                              (stats.present / stats.total) *
-                                                  100,
-                                          )
-                                        : 0}
-                                    %
-                                </span>
-                            </div>
-                        </div>
-                        <div className="stat-card bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all">
-                            <div className="stat-icon yellowColor p-3 rounded-xl bg-yellow-50">
-                                <GrStatusCritical className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-700 mb-1">
-                                    متأخرين
-                                </h3>
-                                <p className="text-3xl font-bold text-yellow-600">
-                                    {stats.late}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="stat-card bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all">
-                            <div className="stat-icon redColor p-3 rounded-xl bg-red-50">
-                                <PiWhatsappLogoDuotone className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-700 mb-1">
-                                    غائبين
-                                </h3>
-                                <p className="text-3xl font-bold text-red-600">
-                                    {stats.absent}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Attendance Table */}
-                    <div className="plan__daily-table overflow-x-auto">
-                        <table className="w-full bg-white rounded-xl shadow-sm border border-gray-100">
-                            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                                <tr>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                                        الصورة
-                                    </th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                                        الاسم
-                                    </th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                                        الدور
-                                    </th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                                        الحالة
-                                    </th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                                        ملاحظات
-                                    </th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                                        الإجراءات
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {filteredStaff.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        className="hover:bg-gray-50 transition-colors"
+                {/* ── Table ── */}
+                <div style={{ overflowX: "auto" }}>
+                    <table
+                        style={{ width: "100%", borderCollapse: "collapse" }}
+                    >
+                        <thead>
+                            <tr
+                                style={{
+                                    background: "#f8fafc",
+                                    borderBottom: "2px solid #e2e8f0",
+                                }}
+                            >
+                                {[
+                                    "",
+                                    "الموظف",
+                                    "الدور",
+                                    "المركز",
+                                    "الحالة",
+                                    "التأخير",
+                                    "الملاحظات",
+                                    "الإجراءات",
+                                ].map((h) => (
+                                    <th
+                                        key={h}
+                                        style={{
+                                            padding: "12px 14px",
+                                            textAlign: "right",
+                                            fontWeight: 700,
+                                            color: "#64748b",
+                                            fontSize: "0.78rem",
+                                            whiteSpace: "nowrap",
+                                        }}
                                     >
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center shadow-sm">
-                                                <span className="text-sm font-semibold text-gray-700">
+                                        {h}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {/* Loading Skeleton */}
+                            {loading &&
+                                [1, 2, 3, 4].map((i) => (
+                                    <tr
+                                        key={i}
+                                        style={{
+                                            borderBottom: "1px solid #f1f5f9",
+                                        }}
+                                    >
+                                        {[
+                                            50, 160, 90, 110, 80, 70, 130, 110,
+                                        ].map((w, j) => (
+                                            <td
+                                                key={j}
+                                                style={{ padding: "14px" }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        height: 14,
+                                                        width: w,
+                                                        borderRadius: 6,
+                                                        background:
+                                                            "linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%)",
+                                                        backgroundSize:
+                                                            "200% 100%",
+                                                        animation:
+                                                            "shimmer 1.4s infinite",
+                                                    }}
+                                                />
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+
+                            {/* Empty */}
+                            {!loading && staff.length === 0 && (
+                                <tr>
+                                    <td
+                                        colSpan={8}
+                                        style={{
+                                            textAlign: "center",
+                                            padding: "56px 0",
+                                            color: "#94a3b8",
+                                        }}
+                                    >
+                                        <BsClipboardData
+                                            size={48}
+                                            style={{
+                                                marginBottom: 12,
+                                                opacity: 0.4,
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                fontWeight: 600,
+                                                color: "#64748b",
+                                                marginBottom: 6,
+                                            }}
+                                        >
+                                            {isEmpty
+                                                ? "لا توجد سجلات حضور لهذه الفترة"
+                                                : "لا توجد نتائج للبحث"}
+                                        </div>
+                                        <div style={{ fontSize: "0.85rem" }}>
+                                            جرب تغيير الفترة الزمنية أو الفلتر
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+
+                            {/* Rows */}
+                            {!loading &&
+                                staff.map((item) => {
+                                    const s =
+                                        STATUS_CFG[item.status] ??
+                                        STATUS_CFG.absent;
+                                    const rs = roleStyle(item.role);
+                                    const isMarking = markingId === item.id;
+
+                                    return (
+                                        <tr
+                                            key={item.id}
+                                            style={{
+                                                borderBottom:
+                                                    "1px solid #f1f5f9",
+                                                background: "white",
+                                                transition: "background .1s",
+                                            }}
+                                            onMouseEnter={(e) =>
+                                                (e.currentTarget.style.background =
+                                                    "#f8fafc")
+                                            }
+                                            onMouseLeave={(e) =>
+                                                (e.currentTarget.style.background =
+                                                    "white")
+                                            }
+                                        >
+                                            {/* Avatar */}
+                                            <td
+                                                style={{
+                                                    padding: "12px 14px",
+                                                    width: 52,
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        width: 38,
+                                                        height: 38,
+                                                        borderRadius: 10,
+                                                        background:
+                                                            "linear-gradient(135deg,#6366f1,#4f46e5)",
+                                                        color: "white",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent:
+                                                            "center",
+                                                        fontWeight: 800,
+                                                        fontSize: "1rem",
+                                                    }}
+                                                >
                                                     {item.teacher_name.charAt(
                                                         0,
                                                     )}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 font-medium text-gray-900">
-                                            {item.teacher_name}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleColor(
-                                                    item.role,
-                                                )}`}
-                                            >
-                                                {item.role}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span
-                                                className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(
-                                                    item.status,
-                                                )} flex items-center gap-1`}
-                                            >
-                                                {getStatusIcon(item.status)}
-                                                {item.status === "present"
-                                                    ? "حاضر"
-                                                    : item.status === "late"
-                                                      ? "متأخر"
-                                                      : "غائب"}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
-                                            <div
-                                                className="line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors"
-                                                title={item.notes}
-                                            >
-                                                {item.notes || "-"}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    className="p-3 rounded-xl border-2 border-green-300 bg-green-50 text-green-600 hover:bg-green-100 hover:border-green-400 transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    onClick={() =>
-                                                        handleMarkAttendance(
-                                                            item.id,
-                                                            "present",
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        markingId === item.id ||
-                                                        loading
-                                                    }
-                                                    title="حاضر"
-                                                >
-                                                    {markingId === item.id ? (
-                                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                    ) : (
-                                                        <CiCircleCheck className="w-5 h-5" />
-                                                    )}
-                                                </button>
-                                                <button
-                                                    className="p-3 rounded-xl border-2 border-yellow-300 bg-yellow-50 text-yellow-600 hover:bg-yellow-100 hover:border-yellow-400 transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md disabled:opacity-50"
-                                                    onClick={() =>
-                                                        handleMarkAttendance(
-                                                            item.id,
-                                                            "late",
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        markingId === item.id ||
-                                                        loading
-                                                    }
-                                                    title="متأخر"
-                                                >
-                                                    <CiWarning className="w-5 h-5" />
-                                                </button>
-                                                <button
-                                                    className="p-3 rounded-xl border-2 border-red-300 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-400 transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md disabled:opacity-50"
-                                                    onClick={() =>
-                                                        handleMarkAttendance(
-                                                            item.id,
-                                                            "absent",
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        markingId === item.id ||
-                                                        loading
-                                                    }
-                                                    title="غائب"
-                                                >
-                                                    <CiCircleRemove className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {isEmpty && (
-                                    <tr>
-                                        <td
-                                            colSpan={6}
-                                            className="px-6 py-20 text-center text-gray-500 bg-gray-50 rounded-b-xl"
-                                        >
-                                            <div className="max-w-md mx-auto">
-                                                <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                                                    <FiFileText className="w-10 h-10 text-gray-400" />
                                                 </div>
-                                                <h3 className="text-lg font-semibold mb-2 text-gray-900">
-                                                    لا توجد سجلات حضور
-                                                </h3>
-                                                <p className="text-sm">
-                                                    {dateFilter === "today"
-                                                        ? "لا توجد سجلات حضور لهذا اليوم"
-                                                        : dateFilter ===
-                                                            "yesterday"
-                                                          ? "لا توجد سجلات حضور لليوم السابق"
-                                                          : dateFilter ===
-                                                              "week"
-                                                            ? "لا توجد سجلات حضور لهذا الأسبوع"
-                                                            : "لا توجد سجلات حضور لهذا الشهر"}
-                                                </p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </td>
 
-                    {/* Monthly Progress Bar */}
-                    {stats.total > 0 && (
-                        <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-semibold text-gray-900">
-                                    معدل الحضور الشهري
-                                </h3>
-                                <span className="text-2xl font-bold text-blue-600">
-                                    {stats.monthlyAttendanceRate}%
-                                </span>
-                            </div>
-                            <div className="relative pt-1">
-                                <div className="flex h-4 overflow-hidden rounded-full bg-gray-200">
-                                    <div
-                                        className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-green-500 to-blue-600 h-4 rounded-full transition-all duration-500"
-                                        style={{
-                                            width: `${Math.min(stats.monthlyAttendanceRate, 100)}%`,
-                                        }}
-                                    ></div>
-                                </div>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2 text-right font-medium">
-                                {stats.monthlyAttendanceRate >= 90
-                                    ? "ممتاز! 🎉"
-                                    : stats.monthlyAttendanceRate >= 75
-                                      ? "جيد 👍"
-                                      : stats.monthlyAttendanceRate >= 50
-                                        ? "متوسط ⚠️"
-                                        : "يحتاج تحسين ❌"}
-                            </p>
-                        </div>
-                    )}
+                                            {/* Name + date */}
+                                            <td
+                                                style={{ padding: "12px 14px" }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        fontWeight: 700,
+                                                        color: "#1e293b",
+                                                        fontSize: "0.9rem",
+                                                    }}
+                                                >
+                                                    {item.teacher_name}
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: "0.75rem",
+                                                        color: "#94a3b8",
+                                                        marginTop: 2,
+                                                    }}
+                                                >
+                                                    {item.date}
+                                                    {item.checkin_time &&
+                                                        ` · ${item.checkin_time}`}
+                                                </div>
+                                            </td>
+
+                                            {/* Role */}
+                                            <td
+                                                style={{ padding: "12px 14px" }}
+                                            >
+                                                <span
+                                                    style={{
+                                                        background: rs.bg,
+                                                        color: rs.color,
+                                                        padding: "3px 10px",
+                                                        borderRadius: 999,
+                                                        fontSize: "0.75rem",
+                                                        fontWeight: 600,
+                                                    }}
+                                                >
+                                                    {item.role}
+                                                </span>
+                                            </td>
+
+                                            {/* Center */}
+                                            <td
+                                                style={{ padding: "12px 14px" }}
+                                            >
+                                                <span
+                                                    style={{
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        gap: 5,
+                                                        background: "#f1f5f9",
+                                                        color: "#475569",
+                                                        padding: "3px 10px",
+                                                        borderRadius: 8,
+                                                        fontSize: "0.8rem",
+                                                        border: "1px solid #e2e8f0",
+                                                    }}
+                                                >
+                                                    <BsBuilding size={12} />
+                                                    {item.center_name}
+                                                </span>
+                                            </td>
+
+                                            {/* Status */}
+                                            <td
+                                                style={{ padding: "12px 14px" }}
+                                            >
+                                                <span
+                                                    style={{
+                                                        background: s.bg,
+                                                        color: s.color,
+                                                        border: `1px solid ${s.border}`,
+                                                        padding: "4px 12px",
+                                                        borderRadius: 999,
+                                                        fontSize: "0.78rem",
+                                                        fontWeight: 700,
+                                                        display: "inline-block",
+                                                    }}
+                                                >
+                                                    {s.label}
+                                                </span>
+                                            </td>
+
+                                            {/* Delay */}
+                                            <td
+                                                style={{ padding: "12px 14px" }}
+                                            >
+                                                {item.delay_minutes > 0 ? (
+                                                    <span
+                                                        style={{
+                                                            display:
+                                                                "inline-flex",
+                                                            alignItems:
+                                                                "center",
+                                                            gap: 4,
+                                                            background:
+                                                                "#fef9c3",
+                                                            color: "#a16207",
+                                                            border: "1px solid #fde68a",
+                                                            padding: "3px 10px",
+                                                            borderRadius: 999,
+                                                            fontSize: "0.78rem",
+                                                            fontWeight: 600,
+                                                        }}
+                                                    >
+                                                        <BsClock size={11} />
+                                                        {item.delay_minutes} د
+                                                    </span>
+                                                ) : (
+                                                    <span
+                                                        style={{
+                                                            color: "#cbd5e1",
+                                                        }}
+                                                    >
+                                                        —
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Notes */}
+                                            <td
+                                                style={{
+                                                    padding: "12px 14px",
+                                                    maxWidth: 180,
+                                                }}
+                                            >
+                                                <span
+                                                    title={item.notes}
+                                                    style={{
+                                                        display: "block",
+                                                        overflow: "hidden",
+                                                        textOverflow:
+                                                            "ellipsis",
+                                                        whiteSpace: "nowrap",
+                                                        color: "#64748b",
+                                                        fontSize: "0.8rem",
+                                                    }}
+                                                >
+                                                    {item.notes || "—"}
+                                                </span>
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td
+                                                style={{ padding: "12px 14px" }}
+                                            >
+                                                <div className="td-actions">
+                                                    {/* حاضر */}
+                                                    <button
+                                                        className="btn bp bxs"
+                                                        onClick={() =>
+                                                            handleMark(
+                                                                item.id,
+                                                                "present",
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            isMarking || loading
+                                                        }
+                                                        title="تسجيل حاضر"
+                                                        style={{
+                                                            padding: "5px 10px",
+                                                        }}
+                                                    >
+                                                        {isMarking ? (
+                                                            <div
+                                                                style={
+                                                                    spinnerStyle
+                                                                }
+                                                            />
+                                                        ) : (
+                                                            <CiCircleCheck
+                                                                size={17}
+                                                            />
+                                                        )}
+                                                    </button>
+
+                                                    {/* متأخر - يفتح modal السبب */}
+                                                    <button
+                                                        className="btn bs bxs"
+                                                        onClick={() => {
+                                                            setLateModal({
+                                                                id: item.id,
+                                                            });
+                                                            setLateReason("");
+                                                            setLateMinutes(15);
+                                                        }}
+                                                        disabled={
+                                                            isMarking || loading
+                                                        }
+                                                        title="تسجيل متأخر"
+                                                        style={{
+                                                            padding: "5px 10px",
+                                                        }}
+                                                    >
+                                                        <CiWarning size={17} />
+                                                    </button>
+
+                                                    {/* غائب */}
+                                                    <button
+                                                        className="btn bd bxs"
+                                                        onClick={() =>
+                                                            handleMark(
+                                                                item.id,
+                                                                "absent",
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            isMarking || loading
+                                                        }
+                                                        title="تسجيل غائب"
+                                                        style={{
+                                                            padding: "5px 10px",
+                                                        }}
+                                                    >
+                                                        <CiCircleRemove
+                                                            size={17}
+                                                        />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
+            {/* ── Late Reason Modal ── */}
+            {lateModal && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.45)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: 16,
+                    }}
+                >
+                    <div
+                        style={{
+                            background: "white",
+                            borderRadius: 16,
+                            padding: 28,
+                            width: "100%",
+                            maxWidth: 420,
+                            boxShadow: "0 20px 60px rgba(0,0,0,.25)",
+                        }}
+                    >
+                        {/* Modal Header */}
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 12,
+                                marginBottom: 20,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: 42,
+                                    height: 42,
+                                    borderRadius: 10,
+                                    background: "#fef9c3",
+                                    color: "#a16207",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                <BsClock size={20} />
+                            </div>
+                            <div>
+                                <div
+                                    style={{
+                                        fontWeight: 700,
+                                        fontSize: "1rem",
+                                        color: "#1e293b",
+                                    }}
+                                >
+                                    تسجيل تأخير
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: "0.8rem",
+                                        color: "#94a3b8",
+                                    }}
+                                >
+                                    أدخل مدة التأخير وسببه
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* دقائق التأخير */}
+                        <div style={{ marginBottom: 16 }}>
+                            <label style={labelStyle}>
+                                مدة التأخير (بالدقائق)
+                            </label>
+                            <input
+                                type="number"
+                                min={1}
+                                max={120}
+                                value={lateMinutes}
+                                onChange={(e) =>
+                                    setLateMinutes(Number(e.target.value))
+                                }
+                                style={inputStyle}
+                            />
+                        </div>
+
+                        {/* سبب التأخير */}
+                        <div style={{ marginBottom: 20 }}>
+                            <label style={labelStyle}>سبب التأخير *</label>
+                            <textarea
+                                value={lateReason}
+                                onChange={(e) => setLateReason(e.target.value)}
+                                placeholder="اكتب سبب التأخير هنا..."
+                                rows={3}
+                                style={{
+                                    ...inputStyle,
+                                    resize: "vertical",
+                                    fontFamily: "inherit",
+                                    lineHeight: 1.6,
+                                }}
+                            />
+                        </div>
+
+                        {/* Buttons */}
+                        <div style={{ display: "flex", gap: 10 }}>
+                            <button
+                                className="btn bp bsm"
+                                onClick={handleLateSubmit}
+                                disabled={!lateReason.trim()}
+                                style={{ flex: 1, height: 42, fontWeight: 700 }}
+                            >
+                                <CiWarning
+                                    size={16}
+                                    style={{ marginLeft: 6 }}
+                                />
+                                تسجيل التأخير
+                            </button>
+                            <button
+                                className="btn bs bsm"
+                                onClick={() => setLateModal(null)}
+                                style={{ flex: 1, height: 42 }}
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes shimmer {
+                    0%   { background-position: -200% 0; }
+                    100% { background-position:  200% 0; }
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
+};
+
+const spinnerStyle: React.CSSProperties = {
+    width: 15,
+    height: 15,
+    border: "2px solid rgba(255,255,255,0.4)",
+    borderTop: "2px solid white",
+    borderRadius: "50%",
+    animation: "spin 0.7s linear infinite",
+    display: "inline-block",
+};
+
+const labelStyle: React.CSSProperties = {
+    display: "block",
+    fontSize: "0.8rem",
+    color: "#475569",
+    fontWeight: 600,
+    marginBottom: 6,
+};
+
+const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "9px 12px",
+    border: "1px solid #e2e8f0",
+    borderRadius: 8,
+    fontSize: "0.9rem",
+    outline: "none",
+    direction: "rtl",
+    background: "#f8fafc",
+    color: "#1e293b",
+    boxSizing: "border-box",
 };
 
 export default StaffAttendance;

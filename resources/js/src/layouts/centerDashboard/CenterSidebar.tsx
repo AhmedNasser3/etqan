@@ -1,466 +1,526 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { ICO } from "../../pages/DashBoard/icons";
 import { usePermissions } from "./hooks/usePermissions";
-import { TbLayoutDashboardFilled } from "react-icons/tb";
-import { MdOutlineDomain } from "react-icons/md";
-import { FaChalkboardTeacher } from "react-icons/fa";
-import { FaBullhorn } from "react-icons/fa";
-import { FaUsers } from "react-icons/fa";
-import { FaFileAlt } from "react-icons/fa";
-import { FaHistory } from "react-icons/fa";
-import { FaMosque } from "react-icons/fa";
 
-interface SubMenuItem {
-    href: string;
-    title: string;
+interface CenterSidebarProps {
+    mobileSB: boolean;
+    setMobileSB: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-interface MenuItem {
-    key: string;
-    href: string;
-    icon: React.ReactNode;
-    title: string;
-    activePage: string;
-    submenu?: SubMenuItem[];
-    alwaysShow?: boolean;
+interface MeInfo {
+    name: string;
+    role: string;
+    centerName: string;
+    avatar: string;
 }
 
-const CenterSidebar: React.FC = () => {
-    const [activePage, setActivePage] = useState("dashboard");
-    const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
-    const [activeSubPage, setActiveSubPage] = useState("");
+// ── ترجمة المسميات الوظيفية ───────────────────────────────────────────────
+function translateRole(user: any): string {
+    // أولاً: لو center_owner
+    const roleName = user.role?.name ?? "";
+    if (roleName === "center_owner") return "مدير المجمع";
+
+    // ثانياً: لو عنده teacher record — نترجم role الـ teacher
+    const teacherRole = user.teacher?.role ?? "";
+    const teacherRoleMap: Record<string, string> = {
+        teacher: "معلم قرآن",
+        quran_teacher: "معلم قرآن",
+        supervisor: "مشرف تعليمي",
+        admin: "مدير إداري",
+        coordinator: "منسق",
+        assistant: "مساعد معلم",
+        accountant: "محاسب",
+        secretary: "سكرتير",
+        it: "مسؤول تقنية",
+        social_worker: "أخصائي اجتماعي",
+        manager: "مدير",
+        vice_manager: "نائب المدير",
+        staff: "موظف",
+    };
+    if (teacherRole && teacherRoleMap[teacherRole]) {
+        return teacherRoleMap[teacherRole];
+    }
+
+    // ثالثاً: title_ar من الـ role لو موجود
+    if (user.role?.title_ar) return user.role.title_ar;
+
+    // رابعاً: fallback لبقية الـ roles
+    const roleNameMap: Record<string, string> = {
+        super_admin: "مدير النظام",
+        mosque_admin: "مدير مسجد",
+        guardian: "ولي أمر",
+        student: "طالب",
+        teacher: "معلم",
+    };
+
+    return roleNameMap[roleName] || roleName || "مشرف";
+}
+
+const CenterSidebar: React.FC<CenterSidebarProps> = ({
+    mobileSB,
+    setMobileSB,
+}) => {
+    const [sidebarMini, setSidebarMini] = useState(false);
+    const [page, setPage] = useState("overview");
+    const [me, setMe] = useState<MeInfo>({
+        name: "",
+        role: "",
+        centerName: "",
+        avatar: "",
+    });
 
     const { loading, hasPermission } = usePermissions();
 
-    //  Active page logic مُصحح مع كل الـ roles الجديدة
+    // ── جيب بيانات الـ user الحقيقية ─────────────────────────────────────
+    useEffect(() => {
+        fetch("/api/user", {
+            credentials: "include",
+            headers: { Accept: "application/json" },
+        })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (!data) return;
+                const user = data.user || data;
+                setMe({
+                    name: user.name ?? "",
+                    role: translateRole(user),
+                    centerName: user.center?.name ?? "",
+                    avatar: user.name ? user.name.charAt(0) : "م",
+                });
+            })
+            .catch(() => {});
+    }, []);
+
+    // ── Active page detection ─────────────────────────────────────────────
     useEffect(() => {
         if (loading) return;
-
-        const currentPath = window.location.pathname;
-
-        // Mosque subpages
-        if (
-            currentPath.includes("students/approval") &&
-            hasPermission("mosque", "/center-dashboard/students/approval")
-        ) {
-            setActivePage("mosque");
-            setActiveSubPage("/center-dashboard/students/approval");
-            setOpenMenus((prev) => ({ ...prev, mosque: true }));
-        } else if (
-            currentPath.includes("booking-manegment") &&
-            hasPermission("mosque", "/center-dashboard/booking-manegment")
-        ) {
-            setActivePage("mosque");
-            setActiveSubPage("/center-dashboard/booking-manegment");
-            setOpenMenus((prev) => ({ ...prev, mosque: true }));
-        }
-        // Staff subpages
-        else if (
-            currentPath.includes("staff-approval") &&
-            hasPermission("staff", "/center-dashboard/staff-approval")
-        ) {
-            setActivePage("staff");
-            setActiveSubPage("/center-dashboard/staff-approval");
-            setOpenMenus((prev) => ({ ...prev, staff: true }));
-        } else if (
-            currentPath.includes("staff-attendance") &&
-            hasPermission("staff", "/center-dashboard/staff-attendance")
-        ) {
-            setActivePage("staff");
-            setActiveSubPage("/center-dashboard/staff-attendance");
-            setOpenMenus((prev) => ({ ...prev, staff: true }));
-        } else if (
-            currentPath.includes("user-suspend") &&
-            hasPermission("staff", "/center-dashboard/user-suspend")
-        ) {
-            setActivePage("staff");
-            setActiveSubPage("/center-dashboard/user-suspend");
-            setOpenMenus((prev) => ({ ...prev, staff: true }));
-        }
-        // Financial subpages
-        else if (
-            currentPath.includes("financial-dashboard") &&
-            hasPermission("financial", "/center-dashboard/financial-dashboard")
-        ) {
-            setActivePage("financial");
-            setActiveSubPage("/center-dashboard/financial-dashboard");
-            setOpenMenus((prev) => ({ ...prev, financial: true }));
-        } else if (
-            currentPath.includes("teaceher-salary-manegment") &&
-            hasPermission(
-                "financial",
-                "/center-dashboard/teaceher-salary-manegment",
-            )
-        ) {
-            setActivePage("financial");
-            setActiveSubPage("/center-dashboard/teaceher-salary-manegment");
-            setOpenMenus((prev) => ({ ...prev, financial: true }));
-        } else if (
-            currentPath.includes("custom-salary-manegment") &&
-            hasPermission(
-                "financial",
-                "/center-dashboard/custom-salary-manegment",
-            )
-        ) {
-            setActivePage("financial");
-            setActiveSubPage("/center-dashboard/custom-salary-manegment");
-            setOpenMenus((prev) => ({ ...prev, financial: true }));
-        }
-        // Education pages حسب الـ role
-        else if (
-            currentPath.includes("education-supervisor") &&
-            hasPermission("education", "/center-dashboard/education-supervisor")
-        ) {
-            setActivePage("education");
-            setActiveSubPage("/center-dashboard/education-supervisor");
-        } else if (
-            currentPath.includes("special-request-manegment") &&
-            hasPermission(
-                "education",
-                "/center-dashboard/special-request-manegment",
-            )
-        ) {
-            setActivePage("education");
-            setActiveSubPage("/center-dashboard/special-request-manegment");
-        } else if (
-            currentPath.includes("students/approval") &&
-            hasPermission("education", "/center-dashboard/students/approval")
-        ) {
-            setActivePage("education");
-            setActiveSubPage("/center-dashboard/students/approval");
-        } else if (
-            currentPath.includes("plan-transfer-management") &&
-            hasPermission(
-                "education",
-                "/center-dashboard/plan-transfer-management",
-            )
-        ) {
-            setActivePage("education");
-            setActiveSubPage("/center-dashboard/plan-transfer-management");
-        }
-        // Direct pages
-        else if (
-            currentPath.includes("achieve-manegment") &&
-            hasPermission("attendance")
-        ) {
-            setActivePage("attendance");
-            setActiveSubPage("");
-        } else if (
-            currentPath.includes("student-supervisor") &&
-            hasPermission("reports")
-        ) {
-            setActivePage("reports");
-            setActiveSubPage("");
-        } else if (
-            currentPath.includes("centers-approval") &&
-            hasPermission("domain")
-        ) {
-            setActivePage("domain");
-            setActiveSubPage("");
-        } else if (
-            currentPath.includes("audit-log") &&
-            hasPermission("messages")
-        ) {
-            setActivePage("messages");
-            setActiveSubPage("");
-        } else {
-            setActivePage("dashboard");
-            setActiveSubPage("");
-        }
+        const p = window.location.pathname;
+        if (p.includes("students/approval"))
+            setPage("circle-manegment/approval");
+        else if (p.includes("booking-manegment")) setPage("booking-manegment");
+        else if (p.includes("staff-approval")) setPage("staff-approval");
+        else if (p.includes("staff-attendance")) setPage("staff-attendance");
+        else if (p.includes("user-suspend")) setPage("educational");
+        else if (p.includes("financial-dashboard")) setPage("finance");
+        else if (p.includes("teaceher-salary-manegment"))
+            setPage("teaceher-salary-manegment");
+        else if (p.includes("custom-salary-manegment"))
+            setPage("custom-salary-manegment");
+        else if (p.includes("education-supervisor")) setPage("educational");
+        else if (p.includes("special-request-manegment"))
+            setPage("special-request-manegment");
+        else if (p.includes("plan-transfer-management"))
+            setPage("plan-transfer-management");
+        else if (p.includes("achieve-manegment")) setPage("achieve-manegment");
+        else if (p.includes("student-supervisor")) setPage("students");
+        else if (p.includes("audit-log") || p.includes("audit"))
+            setPage("audit");
+        else if (p.includes("mosque-manegment")) setPage("mosque-manegment");
+        else if (p.includes("circle-manegment")) setPage("circles");
+        else if (p.includes("plans-details-manegment"))
+            setPage("plans-details");
+        else if (p.includes("plans-manegment")) setPage("plans");
+        else if (p.includes("shedule-manegment")) setPage("schedules");
+        else if (p.includes("teachers-management")) setPage("teachers");
+        else setPage("overview");
     }, [loading, hasPermission]);
 
-    // Toggle submenu فقط
-    const toggleMenu = (menuKey: string, e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setOpenMenus((prev) => ({
-            ...prev,
-            [menuKey]: !prev[menuKey],
-        }));
-    };
-
-    // Submenu link click
-    const handleSubLinkClick = (href: string, parentKey: string) => {
-        setActiveSubPage(href);
-        setActivePage(parentKey);
-        setOpenMenus((prev) => ({ ...prev, [parentKey]: true }));
-    };
-
-    //  Menu items مُقسمة حسب الصلاحيات الجديدة
-    const baseMenuItems: MenuItem[] = [
-        // Dashboard - دايماً موجود
+    const NAV_ITEMS = [
         {
-            key: "dashboard",
-            href: "/center-dashboard",
-            icon: <TbLayoutDashboardFilled />,
-            title: "مجمعي",
-            activePage: "dashboard",
-            alwaysShow: true,
-        },
-
-        // 1. المساجد والحلقات (للمجمع وشؤون الطلاب)
-        {
-            key: "mosque",
-            href: "#",
-            icon: (
-                <FaMosque
-                    className={`arrow-icon ${openMenus.mosque ? "rotated" : ""}`}
-                />
-            ),
-            title: "إدارة المساجد والحلقات",
-            activePage: "mosque",
-            submenu: [
+            sec: "الرئيسية",
+            permissionKey: null,
+            items: [
                 {
-                    href: "/center-dashboard/mosque-manegment",
-                    title: "المساجد",
+                    id: "overview",
+                    path: "/center-dashboard",
+                    lbl: "لوحة التحكم",
+                    ico: "grid",
+                    badge: null,
+                    permissionKey: null,
+                    permissionPath: null,
                 },
                 {
-                    href: "/center-dashboard/circle-manegment",
-                    title: "إدارة الحلقات",
-                },
-                {
-                    href: "/center-dashboard/plans-manegment",
-                    title: "إدارة الخطط",
-                },
-                {
-                    href: "/center-dashboard/plans-details-manegment",
-                    title: "تفاصيل الخطط",
-                },
-                {
-                    href: "/center-dashboard/shedule-manegment",
-                    title: "مواعيد الحلقات",
-                },
-                {
-                    href: "/center-dashboard/booking-manegment",
-                    title: "طلبات الطلاب للخطط",
+                    id: "itqan",
+                    path: "/",
+                    lbl: "مجمعك الرئيسي",
+                    ico: "grid",
+                    badge: null,
+                    permissionKey: null,
+                    permissionPath: null,
                 },
             ],
         },
-
-        // 2. إدارة الموظفين (للمجمع بس)
         {
-            key: "staff",
-            href: "#",
-            icon: (
-                <FaChalkboardTeacher
-                    className={`arrow-icon ${openMenus.staff ? "rotated" : ""}`}
-                />
-            ),
-            title: "إدارة الموظفين",
-            activePage: "staff",
-            submenu: [
+            sec: "الأكاديمية",
+            permissionKey: "mosque",
+            items: [
                 {
-                    href: "/center-dashboard/teachers-management",
-                    title: "إدارة معلمين",
+                    id: "mosque-manegment",
+                    path: "/center-dashboard/mosque-manegment",
+                    lbl: "إدارة المساجد",
+                    ico: "mosque",
+                    badge: null,
+                    permissionKey: "mosque",
+                    permissionPath: "/center-dashboard/mosque-manegment",
                 },
                 {
-                    href: "/center-dashboard/staff-approval",
-                    title: "اعتماد المعلمين",
+                    id: "portal/mosqou",
+                    path: "/center-dashboard/portal/mosqou",
+                    lbl: "إنشاء رابط مسجد",
+                    ico: "mosque",
+                    badge: null,
+                    permissionKey: "mosque",
+                    permissionPath: "/center-dashboard/mosque-manegment",
                 },
                 {
-                    href: "/center-dashboard/staff-attendance",
-                    title: "حضور الموظفين",
+                    id: "circles",
+                    path: "/center-dashboard/circle-manegment",
+                    lbl: "إدارة الحلقات",
+                    ico: "globe",
+                    badge: null,
+                    permissionKey: "mosque",
+                    permissionPath: "/center-dashboard/circle-manegment",
                 },
                 {
-                    href: "/center-dashboard/user-suspend",
-                    title: "موظفين موقوفين",
+                    id: "plans",
+                    path: "/center-dashboard/plans-manegment",
+                    lbl: "إدارة الخطط",
+                    ico: "book",
+                    badge: null,
+                    permissionKey: "mosque",
+                    permissionPath: "/center-dashboard/plans-manegment",
+                },
+                {
+                    id: "plans-details",
+                    path: "/center-dashboard/plans-details-manegment",
+                    lbl: "إدارة تفاصيل الخطط",
+                    ico: "book",
+                    badge: null,
+                    permissionKey: "mosque",
+                    permissionPath: "/center-dashboard/plans-details-manegment",
+                },
+                {
+                    id: "schedules",
+                    path: "/center-dashboard/shedule-manegment",
+                    lbl: "مواعيد الحلقات",
+                    ico: "cal",
+                    badge: null,
+                    permissionKey: "mosque",
+                    permissionPath: "/center-dashboard/shedule-manegment",
                 },
             ],
         },
-
-        // 3. الإدارة المالية (للمالي بس)
         {
-            key: "financial",
-            href: "#",
-            icon: (
-                <FaFileAlt
-                    className={`arrow-icon ${openMenus.financial ? "rotated" : ""}`}
-                />
-            ),
-            title: "الإدارة المالية",
-            activePage: "financial",
-            submenu: [
+            sec: "الموظفون",
+            permissionKey: "staff",
+            items: [
                 {
-                    href: "/center-dashboard/financial-dashboard",
-                    title: "اللوحة المالية",
+                    id: "teachers",
+                    path: "/center-dashboard/teachers-management",
+                    lbl: "المعلمون والموظفون",
+                    ico: "users",
+                    badge: null,
+                    permissionKey: "staff",
+                    permissionPath: "/center-dashboard/teachers-management",
                 },
                 {
-                    href: "/center-dashboard/teaceher-salary-manegment",
-                    title: "قواعد الراتب",
+                    id: "staff-approval",
+                    path: "/center-dashboard/staff-approval",
+                    lbl: "قبول الموظفون",
+                    ico: "users",
+                    badge: null,
+                    permissionKey: "staff",
+                    permissionPath: "/center-dashboard/staff-approval",
                 },
                 {
-                    href: "/center-dashboard/custom-salary-manegment",
-                    title: "رواتب مخصصة",
+                    id: "teachers-work-shedule",
+                    path: "/center-dashboard/teachers-work-shedule",
+                    lbl: "مواعيد عمل الموظفون",
+                    ico: "users",
+                    badge: null,
+                    permissionKey: "staff",
+                    permissionPath: "/center-dashboard/staff-attendance",
+                },
+                {
+                    id: "staff-attendance",
+                    path: "/center-dashboard/staff-attendance",
+                    lbl: "حضور الموظفون",
+                    ico: "users",
+                    badge: null,
+                    permissionKey: "staff",
+                    permissionPath: "/center-dashboard/staff-attendance",
+                },
+                {
+                    id: "educational",
+                    path: "/center-dashboard/user-suspend",
+                    lbl: "مستخدمين معطلين",
+                    ico: "star",
+                    badge: null,
+                    permissionKey: "staff",
+                    permissionPath: "/center-dashboard/user-suspend",
+                },
+                {
+                    id: "finance",
+                    path: "/center-dashboard/financial-dashboard",
+                    lbl: "اللوحة المالية",
+                    ico: "money",
+                    badge: null,
+                    permissionKey: "financial",
+                    permissionPath: "/center-dashboard/financial-dashboard",
+                },
+                {
+                    id: "teaceher-salary-manegment",
+                    path: "/center-dashboard/teaceher-salary-manegment",
+                    lbl: "قواعد الرواتب",
+                    ico: "rules",
+                    badge: null,
+                    permissionKey: "financial",
+                    permissionPath:
+                        "/center-dashboard/teaceher-salary-manegment",
+                },
+                {
+                    id: "custom-salary-manegment",
+                    path: "/center-dashboard/custom-salary-manegment",
+                    lbl: "الرواتب المخصصة",
+                    ico: "custom",
+                    badge: null,
+                    permissionKey: "financial",
+                    permissionPath: "/center-dashboard/custom-salary-manegment",
                 },
             ],
         },
-
-        // 4. اعتماد المجمعات (للمجمع بس)
         {
-            key: "domain",
-            href: "/center-dashboard/centers-approval",
-            icon: <MdOutlineDomain />,
-            title: "اعتماد المجمعات",
-            activePage: "domain",
-        },
-
-        // 5. إدارة التعليم (للمشرف وشؤون الطلاب)
-        {
-            key: "education",
-            href: "#",
-            icon: (
-                <FaChalkboardTeacher
-                    className={`arrow-icon ${openMenus.education ? "rotated" : ""}`}
-                />
-            ),
-            title: "إدارة التعليم",
-            activePage: "education",
-            submenu: [
+            sec: "إدارة الطلاب",
+            permissionKey: null,
+            items: [
                 {
-                    href: "/center-dashboard/education-supervisor",
-                    title: "إدارة معلمين وحلقات",
+                    id: "students",
+                    path: "/center-dashboard/student-supervisor",
+                    lbl: "شؤون الطلاب",
+                    ico: "student",
+                    badge: { n: 5, cls: "grn" },
+                    permissionKey: "reports",
+                    permissionPath: null,
                 },
                 {
-                    href: "/center-dashboard/special-request-manegment",
-                    title: "طلبات لحلقات خاصة",
+                    id: "plan-transfer-management",
+                    path: "/center-dashboard/plan-transfer-management",
+                    lbl: "نقل الطلاب من الحلقات",
+                    ico: "clipboard",
+                    badge: { n: 2, cls: "red" },
+                    permissionKey: "mosque",
+                    permissionPath: "/center-dashboard/booking-manegment",
                 },
                 {
-                    href: "/center-dashboard/students/approval",
-                    title: "اعتماد الطلاب",
+                    id: "student-rewards",
+                    path: "/center-dashboard/student-rewards",
+                    lbl: "ادارة الجوائز",
+                    ico: "clipboard",
+                    badge: { n: 2, cls: "red" },
+                    permissionKey: "mosque",
+                    permissionPath: "/center-dashboard/booking-manegment",
                 },
                 {
-                    href: "/center-dashboard/plan-transfer-management",
-                    title: "نقل الطلاب من الخطط",
+                    id: "booking-manegment",
+                    path: "/center-dashboard/booking-manegment",
+                    lbl: "طلبات الاشتراك",
+                    ico: "clipboard",
+                    badge: { n: 2, cls: "red" },
+                    permissionKey: "mosque",
+                    permissionPath: "/center-dashboard/booking-manegment",
                 },
                 {
-                    href: "/center-dashboard/request-domain-manegment",
-                    title: "طلب دومين خاص",
+                    id: "special-request-manegment",
+                    path: "/center-dashboard/special-request-manegment",
+                    lbl: "طلب حلقة خاصة",
+                    ico: "student",
+                    badge: { n: 5, cls: "grn" },
+                    permissionKey: "education",
+                    permissionPath:
+                        "/center-dashboard/special-request-manegment",
+                },
+                {
+                    id: "circle-manegment/approval",
+                    path: "/center-dashboard/circle-manegment/approval",
+                    lbl: "طلبات التسجيل",
+                    ico: "star",
+                    badge: null,
+                    permissionKey: "education",
+                    permissionPath: "/center-dashboard/students/approval",
+                },
+                {
+                    id: "achieve-manegment",
+                    path: "/center-dashboard/achieve-manegment",
+                    lbl: "التحفيزات",
+                    ico: "star",
+                    badge: null,
+                    permissionKey: "attendance",
+                    permissionPath: null,
                 },
             ],
         },
-
-        // 6. إدارة التحفيزات (للتحفيزي وشؤون الطلاب والمشرف)
         {
-            key: "attendance",
-            href: "/center-dashboard/achieve-manegment",
-            icon: <FaBullhorn />,
-            title: "إدارة التحفيزات",
-            activePage: "attendance",
-        },
-
-        // 7. إدارة الطلاب (للتحفيزي وشؤون الطلاب والمشرف)
-        {
-            key: "reports",
-            href: "/center-dashboard/student-supervisor",
-            icon: <FaUsers />,
-            title: "إدارة الطلاب",
-            activePage: "reports",
-        },
-
-        // 8. سجل الإجراءات (للمجمع بس)
-        {
-            key: "messages",
-            href: "/center-dashboard/audit-log",
-            icon: <FaHistory />,
-            title: "سجل الإجراءات",
-            activePage: "messages",
+            sec: "الحساب",
+            permissionKey: null,
+            items: [
+                {
+                    id: "account",
+                    path: "/account",
+                    lbl: "إعدادات الحساب",
+                    ico: "person",
+                    badge: null,
+                    permissionKey: null,
+                    permissionPath: null,
+                },
+            ],
         },
     ];
 
-    const menuItems: MenuItem[] = baseMenuItems.filter(
-        (item) => item.alwaysShow || hasPermission(item.key),
-    );
+    const nav = (path: string, id: string) => {
+        window.location.href = path;
+        setPage(id);
+        setMobileSB(false);
+    };
 
-    if (loading) {
-        return (
-            <div className="sidebar">
-                <div className="sidebar__features">
-                    <div className="sidebar__inner">
-                        <div className="sidebar__container">
-                            <div className="sidebar__data loading">
-                                <div className="sidebar__title">
-                                    <div className="loading-skeleton"></div>
+    return (
+        <>
+            {mobileSB && (
+                <div
+                    className="sb-overlay on"
+                    onClick={() => setMobileSB(false)}
+                />
+            )}
+            <aside
+                className={`sb${sidebarMini ? " mini" : ""}${mobileSB ? " mobile-open" : ""}`}
+                id="sb"
+            >
+                <div
+                    className="sb-brand"
+                    onClick={() => setSidebarMini((p) => !p)}
+                    title="طي القائمة"
+                >
+                    <div className="sb-logo">
+                        <svg viewBox="0 0 24 24" fill="#fff">
+                            <path d="M12 2a9 9 0 0 1 9 9c0 4.5-3 8.7-6.3 11.3a4.2 4.2 0 0 1-5.4 0C6 19.7 3 15.5 3 11a9 9 0 0 1 9-9z" />
+                        </svg>
+                    </div>
+                    <span className="sb-brand-name sb-lbl">
+                        إتقان<span style={{ color: "var(--g400)" }}>.</span>
+                    </span>
+                </div>
+
+                {/* ── بيانات المجمع ─────────────────────────────────────── */}
+                <div className="sb-academy sb-lbl">
+                    <div
+                        style={{
+                            fontSize: 9,
+                            fontWeight: 700,
+                            color: "var(--g400)",
+                            textTransform: "uppercase",
+                            letterSpacing: 0.5,
+                            marginBottom: 3,
+                        }}
+                    >
+                        المجمع الحالي
+                    </div>
+                    <div className="sba-n">{me.centerName || "—"}</div>
+                    <div className="sba-r">
+                        {me.name && me.role
+                            ? `${me.name} · ${me.role}`
+                            : me.name || ""}
+                    </div>
+                </div>
+
+                <div className="sb-scroll">
+                    <nav className="sb-nav" id="sbNav">
+                        {NAV_ITEMS.map((sec) => {
+                            const visibleItems = sec.items.filter((item) => {
+                                if (!item.permissionKey) return true;
+                                return hasPermission(
+                                    item.permissionKey,
+                                    item.permissionPath ?? undefined,
+                                );
+                            });
+                            if (visibleItems.length === 0) return null;
+                            return (
+                                <div key={sec.sec}>
+                                    <div className="sb-section sb-lbl">
+                                        {sec.sec}
+                                    </div>
+                                    <nav className="sb-nav">
+                                        {visibleItems.map((item) => (
+                                            <div
+                                                key={item.id}
+                                                className={`sb-nav-item${page === item.id ? " on" : ""}`}
+                                                onClick={() =>
+                                                    nav(item.path, item.id)
+                                                }
+                                            >
+                                                <span
+                                                    style={{
+                                                        width: 14,
+                                                        height: 14,
+                                                        display: "inline-flex",
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    {ICO[item.ico]}
+                                                </span>
+                                                <span className="sb-lbl">
+                                                    {item.lbl}
+                                                </span>
+                                                {item.badge && (
+                                                    <span
+                                                        className={`sb-badge ${item.badge.cls}`}
+                                                    >
+                                                        {item.badge.n}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </nav>
+                                </div>
+                            );
+                        })}
+                    </nav>
+                </div>
+
+                {/* ── بيانات المستخدم ───────────────────────────────────── */}
+                <div className="sb-bottom">
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                        }}
+                    >
+                        <div
+                            className="sb-user"
+                            onClick={() => {
+                                window.location.href = "/account";
+                                setMobileSB(false);
+                            }}
+                            style={{ flex: 1 }}
+                        >
+                            <div className="sb-av">{me.avatar || "م"}</div>
+                            <div style={{ minWidth: 0 }}>
+                                <div className="sb-uname sb-lbl">
+                                    {me.name
+                                        ? me.name
+                                              .split(" ")
+                                              .slice(0, 2)
+                                              .join(" ")
+                                        : "المستخدم"}
+                                </div>
+                                <div className="sb-uemail sb-lbl">
+                                    {me.role || "مشرف"}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="sidebar">
-            <div className="sidebar__features">
-                <div className="sidebar__inner">
-                    <div className="sidebar__container">
-                        {menuItems.map((item) => (
-                            <div
-                                key={item.key}
-                                className={`sidebar__data ${activePage === item.activePage ? "active" : ""}`}
-                            >
-                                <div className="sidebar__title">
-                                    {item.href === "#" ? (
-                                        // Submenu toggle
-                                        <a
-                                            href="#"
-                                            className="no-link"
-                                            onClick={(e) =>
-                                                toggleMenu(item.key, e)
-                                            }
-                                        >
-                                            <i>{item.icon}</i>
-                                            <h2>{item.title}</h2>
-                                        </a>
-                                    ) : (
-                                        // Main navigation
-                                        <a href={item.href}>
-                                            <i>{item.icon}</i>
-                                            <h2>{item.title}</h2>
-                                        </a>
-                                    )}
-                                </div>
-
-                                {/* Submenu */}
-                                {item.submenu && hasPermission(item.key) && (
-                                    <ul
-                                        className={`sub-menu ${openMenus[item.key as string] ? "open" : ""}`}
-                                    >
-                                        {item.submenu
-                                            .filter((subItem) =>
-                                                hasPermission(
-                                                    item.key,
-                                                    subItem.href,
-                                                ),
-                                            )
-                                            .map((subItem, index) => (
-                                                <li
-                                                    key={index}
-                                                    className={
-                                                        activeSubPage ===
-                                                        subItem.href
-                                                            ? "active"
-                                                            : ""
-                                                    }
-                                                    onClick={() =>
-                                                        handleSubLinkClick(
-                                                            subItem.href,
-                                                            item.key,
-                                                        )
-                                                    }
-                                                >
-                                                    <a href={subItem.href}>
-                                                        {subItem.title}
-                                                    </a>
-                                                </li>
-                                            ))}
-                                    </ul>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
+            </aside>
+        </>
     );
 };
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { XIcon } from "../../../../components/XIcon";
 import { ShieldCheckIcon } from "../../../../components/ShieldCheckIcon";
 import { useOtpTimer } from "../hooks/useOtpTimer";
@@ -24,9 +24,15 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
         const otpString = Array.isArray(otpValue)
             ? otpValue.join("")
             : String(otpValue);
-        if (!otpString || otpString.length !== 4) return; // فقط 4 أرقام.
+        if (!otpString || otpString.length !== 4) return;
         verifyOtp(otpString, onSuccess);
     };
+
+    useEffect(() => {
+        if (otpValue[0] && !inputsRef.current[0]?.value) {
+            inputsRef.current[0]?.focus();
+        }
+    }, [otpValue]);
 
     return (
         <div className="verifyPopout visible">
@@ -49,9 +55,7 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                                 <ShieldCheckIcon />
                             </i>
                             <h1>التحقق من البريد الإلكتروني</h1>
-                            <p>
-                                ادخل الرمز الذي ظهر في الرسالة أعلاه (4 أرقام)
-                            </p>
+                            <p>أدخل الرمز الذي أرسلناه إلى بريدك (4 أرقام)</p>
                         </div>
 
                         <div
@@ -80,7 +84,7 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                                     onDragStart={(e) => e.preventDefault()}
                                     onDrop={(e) => e.preventDefault()}
                                     spellCheck="false"
-                                    autoComplete="off"
+                                    autoComplete="one-time-code"
                                     style={{
                                         textAlign: "center",
                                         userSelect: "none",
@@ -90,14 +94,20 @@ const VerifyOtpPopout: React.FC<VerifyOtpPopoutProps> = ({
                                     }}
                                     inputMode="numeric"
                                     pattern="[0-9]*"
-                                    className={verified ? "verified" : ""}
+                                    className="otp-input"
                                 />
                             ))}
                         </div>
 
+                        {error && (
+                            <div className="otp-err-msg">
+                                الرمز غير صحيح، حاول مرة أخرى
+                            </div>
+                        )}
+
                         <div
-                            className="inputs__verifyOTPtimer"
                             id="verifyPopout__verifyOTPtimer"
+                            className="inputs__verifyOTPtimer"
                         >
                             {isTimerActive ? (
                                 <p>

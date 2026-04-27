@@ -1,9 +1,6 @@
-// TeacherAchievementsManagement.tsx - ✅ نسخة كاملة للمعلم
 import { useState, useCallback, useMemo } from "react";
 import toast from "react-hot-toast";
-import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
-import { FiEdit3, FiTrash2, FiPlus } from "react-icons/fi";
+import { FiEdit3, FiTrash2 } from "react-icons/fi";
 import {
     useTeacherAchievements,
     AchievementType,
@@ -44,14 +41,15 @@ const TeacherAchievementsManagement: React.FC = () => {
         setShowUpdateModal(true);
     }, []);
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("هل أنت متأكد من حذف هذا الإنجاز؟")) return;
-
-        const success = await deleteAchievement(id);
-        if (success) {
-            refetch();
-        }
-    };
+    const handleDelete = useCallback(
+        async (id: number) => {
+            const success = await deleteAchievement(id);
+            if (success) {
+                refetch();
+            }
+        },
+        [deleteAchievement, refetch],
+    );
 
     const handleCloseUpdateModal = useCallback(() => {
         setShowUpdateModal(false);
@@ -66,42 +64,40 @@ const TeacherAchievementsManagement: React.FC = () => {
         setShowCreateModal(true);
     }, []);
 
-    const stats = useMemo(
-        () => ({
-            total: pagination?.total || 0,
-            positivePoints: achievements.filter((a) => a.points > 0).length,
-            negativePoints: achievements.filter((a) => a.points < 0).length,
-            topStudents: achievements.filter((a) => a.total_points >= 100)
-                .length,
-            currentPage,
-            totalPages: pagination?.last_page || 1,
-        }),
-        [
-            pagination?.total,
-            achievements.length,
-            currentPage,
-            pagination?.last_page,
-        ],
-    );
-
     const getPointsStatus = useCallback((points: number) => {
         if (points > 0) return "إضافة";
         if (points < 0) return "خصم";
         return "محايد";
     }, []);
 
-    const getStatusColor = useCallback((points: number) => {
-        if (points > 0) return "bg-green-100 text-green-800";
-        if (points < 0) return "bg-red-100 text-red-800";
-        return "bg-gray-100 text-gray-800";
-    }, []);
+    const getPointsStyle = useCallback(
+        (points: number): React.CSSProperties => {
+            if (points > 0) return { background: "#dcfce7", color: "#15803d" };
+            if (points < 0) return { background: "#fee2e2", color: "#ef4444" };
+            return {
+                background: "var(--color-background-secondary)",
+                color: "var(--color-text-secondary)",
+            };
+        },
+        [],
+    );
 
     const renderAchievementBadges = useCallback(
         (achievements: Record<string, any>) => {
             return Object.entries(achievements).map(([key, value]) => (
                 <span
                     key={key}
-                    className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded mr-1"
+                    style={{
+                        display: "inline-block",
+                        padding: "2px 8px",
+                        background: "#ede9fe",
+                        color: "#6d28d9",
+                        fontSize: 11,
+                        borderRadius: 999,
+                        marginLeft: 4,
+                        marginBottom: 2,
+                        fontWeight: 500,
+                    }}
                 >
                     {key}: {String(value)}
                 </span>
@@ -115,18 +111,18 @@ const TeacherAchievementsManagement: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px] p-8">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                    <div className="navbar">
-                        <div className="navbar__inner">
-                            <div className="navbar__loading">
-                                <div className="loading-spinner">
-                                    <div className="spinner-circle"></div>
-                                </div>
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">إدارة الإنجازات</div>
+                    </div>
+                    <div style={{ padding: "60px 0", textAlign: "center" }}>
+                        <div className="navbar__loading">
+                            <div className="loading-spinner">
+                                <div className="spinner-circle"></div>
                             </div>
                         </div>
-                    </div>{" "}
+                    </div>
                 </div>
             </div>
         );
@@ -140,7 +136,6 @@ const TeacherAchievementsManagement: React.FC = () => {
                     achievementId={selectedAchievementId}
                     onClose={handleCloseUpdateModal}
                     onSuccess={() => {
-                        toast.success("تم تحديث الإنجاز بنجاح! ✨");
                         refetch();
                         handleCloseUpdateModal();
                     }}
@@ -152,240 +147,276 @@ const TeacherAchievementsManagement: React.FC = () => {
                 <TeacherCreateAchievementModal
                     onClose={handleCloseCreateModal}
                     onSuccess={() => {
-                        toast.success("تم إضافة الإنجاز بنجاح! 🎉");
                         refetch();
                         handleCloseCreateModal();
                     }}
                 />
             )}
 
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                {/* Stats Cards */}
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon purpleColor">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>إجمالي إنجازات طلابك</h3>
-                            <p className="text-2xl font-bold text-purple-600">
-                                {stats.total}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>نقاط إيجابية</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {stats.positivePoints}
-                            </p>
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    {/* Header */}
+                    <div className="wh">
+                        <div className="wh-l">إدارة الإنجازات</div>
+                        <div className="flx">
+                            <input
+                                className="fi"
+                                style={{ margin: "0 6px" }}
+                                placeholder="البحث بالطالب أو السبب..."
+                                value={search}
+                                onChange={handleSearch}
+                                disabled={loading}
+                            />
+                            <button
+                                className="btn bp bsm"
+                                onClick={handleAddNew}
+                                disabled={loading}
+                            >
+                                + إنجاز جديد
+                            </button>
                         </div>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-icon redColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>نقاط سالبة</h3>
-                            <p className="text-2xl font-bold text-red-600">
-                                {stats.negativePoints}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon blueColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>طلاب مميزون</h3>
-                            <p className="text-2xl font-bold text-blue-600">
-                                {stats.topStudents}
-                            </p>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Header & Search */}
-                <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
-                >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            إنجازات طلابك
-                        </div>
-                        <div className="plan__current">
-                            <h2>جدول الإنجازات</h2>
-                            <div className="plan__date-range">
-                                <div className="date-picker to">
-                                    <input
-                                        type="search"
-                                        placeholder="البحث بالطالب أو السبب..."
-                                        value={search}
-                                        onChange={handleSearch}
-                                        disabled={loading}
-                                    />
-                                </div>
-                                <button
-                                    className="teacherStudent__status-btn add-btn p-3 rounded-xl border-2 bg-green-50 border-green-300 text-green-600 hover:bg-green-100 font-medium ml-3"
-                                    onClick={handleAddNew}
-                                    disabled={loading}
-                                >
-                                    <FiPlus size={20} className="inline mr-2" />
-                                    إنجاز جديد
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Table */}
-                <div className="plan__daily-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>الطالب</th>
-                                <th>النقاط</th>
-                                <th>النوع</th>
-                                <th>إجمالي النقاط</th>
-                                <th>الإنجازات</th>
-                                <th>السبب</th>
-                                <th>التاريخ</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {achievements.length === 0 && !loading ? (
+                    {/* Table */}
+                    <div style={{ overflowX: "auto" }}>
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td
-                                        colSpan={8}
-                                        className="text-center py-8 text-gray-500"
-                                    >
-                                        لا يوجد إنجازات حالياً
-                                    </td>
+                                    <th>الطالب</th>
+                                    <th>النقاط</th>
+                                    <th>النوع</th>
+                                    <th>إجمالي النقاط</th>
+                                    <th>الإنجازات</th>
+                                    <th>السبب</th>
+                                    <th>التاريخ</th>
+                                    <th>الإجراءات</th>
                                 </tr>
-                            ) : (
-                                achievements.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        className="plan__row active"
-                                    >
-                                        <td>
-                                            <div className="font-medium">
-                                                {item.user.name}
-                                            </div>
-                                            <div className="text-sm text-gray-500">
-                                                {item.user.email}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(item.points)}`}
-                                            >
-                                                {item.points} (
-                                                {getPointsStatus(item.points)})
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {item.achievement_type || "عام"}
-                                        </td>
-                                        <td className="font-bold text-lg">
-                                            {item.total_points}
-                                            {item.total_points >= 100 && " ⭐"}
-                                        </td>
-                                        <td>
-                                            <div className="flex flex-wrap gap-1">
-                                                {renderAchievementBadges(
-                                                    item.achievements,
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td
-                                            className="max-w-xs truncate"
-                                            title={item.reason}
-                                        >
-                                            {item.reason}
-                                        </td>
-                                        <td>{item.created_at_formatted}</td>
-                                        <td>
-                                            <div className="teacherStudent__btns">
+                            </thead>
+                            <tbody>
+                                {achievements.length === 0 && !loading ? (
+                                    <tr>
+                                        <td colSpan={8}>
+                                            <div className="empty">
+                                                <p>لا يوجد إنجازات حالياً</p>
                                                 <button
-                                                    className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
-                                                    onClick={() =>
-                                                        handleEdit(item)
-                                                    }
-                                                    disabled={loading}
-                                                    title="تعديل الإنجاز"
+                                                    className="btn bp bsm"
+                                                    onClick={handleAddNew}
                                                 >
-                                                    <FiEdit3 />
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn delete-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
-                                                    onClick={() =>
-                                                        handleDelete(item.id)
-                                                    }
-                                                    disabled={loading}
-                                                    title="حذف الإنجاز"
-                                                >
-                                                    <FiTrash2 />
+                                                    إضافة إنجاز
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                ) : (
+                                    achievements.map((item) => (
+                                        <tr key={item.id}>
+                                            {/* الطالب */}
+                                            <td>
+                                                <div
+                                                    style={{
+                                                        fontWeight: 500,
+                                                        fontSize: 13,
+                                                    }}
+                                                >
+                                                    {item.user.name}
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: 12,
+                                                        color: "var(--color-text-secondary)",
+                                                        marginTop: 2,
+                                                    }}
+                                                >
+                                                    {item.user.email}
+                                                </div>
+                                            </td>
 
-                {/* Pagination */}
-                {pagination && pagination.last_page > 1 && (
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        style={{ width: "100%" }}
-                    >
-                        <div className="flex justify-between items-center p-4">
-                            <div className="text-sm text-gray-600">
+                                            {/* النقاط */}
+                                            <td>
+                                                <span
+                                                    style={{
+                                                        ...getPointsStyle(
+                                                            item.points,
+                                                        ),
+                                                        fontSize: 12,
+                                                        padding: "3px 10px",
+                                                        borderRadius: 999,
+                                                        display: "inline-block",
+                                                        fontWeight: 500,
+                                                    }}
+                                                >
+                                                    {item.points} (
+                                                    {getPointsStatus(
+                                                        item.points,
+                                                    )}
+                                                    )
+                                                </span>
+                                            </td>
+
+                                            {/* النوع */}
+                                            <td
+                                                style={{
+                                                    fontSize: 13,
+                                                    color: "var(--color-text-secondary)",
+                                                }}
+                                            >
+                                                {item.achievement_type || "عام"}
+                                            </td>
+
+                                            {/* إجمالي النقاط */}
+                                            <td
+                                                style={{
+                                                    fontWeight: 700,
+                                                    fontSize: 14,
+                                                }}
+                                            >
+                                                {item.total_points}
+                                                {item.total_points >= 100 &&
+                                                    " ⭐"}
+                                            </td>
+
+                                            {/* الإنجازات */}
+                                            <td>
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        flexWrap: "wrap",
+                                                        gap: 2,
+                                                    }}
+                                                >
+                                                    {renderAchievementBadges(
+                                                        item.achievements,
+                                                    )}
+                                                </div>
+                                            </td>
+
+                                            {/* السبب */}
+                                            <td
+                                                style={{
+                                                    maxWidth: 160,
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    whiteSpace: "nowrap",
+                                                    fontSize: 13,
+                                                    color: "var(--color-text-secondary)",
+                                                }}
+                                                title={item.reason}
+                                            >
+                                                {item.reason}
+                                            </td>
+
+                                            {/* التاريخ */}
+                                            <td
+                                                style={{
+                                                    fontSize: 13,
+                                                    color: "var(--color-text-secondary)",
+                                                    whiteSpace: "nowrap",
+                                                }}
+                                            >
+                                                {item.created_at_formatted}
+                                            </td>
+
+                                            {/* الإجراءات */}
+                                            <td>
+                                                <div className="td-actions">
+                                                    <button
+                                                        className="btn bd bxs"
+                                                        onClick={() =>
+                                                            handleDelete(
+                                                                item.id,
+                                                            )
+                                                        }
+                                                        disabled={loading}
+                                                        title="حذف"
+                                                    >
+                                                        <FiTrash2
+                                                            style={{
+                                                                width: 13,
+                                                                height: 13,
+                                                            }}
+                                                        />
+                                                    </button>
+                                                    <button
+                                                        className="btn bs bxs"
+                                                        onClick={() =>
+                                                            handleEdit(item)
+                                                        }
+                                                        disabled={loading}
+                                                        title="تعديل"
+                                                    >
+                                                        <FiEdit3
+                                                            style={{
+                                                                width: 13,
+                                                                height: 13,
+                                                            }}
+                                                        />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {pagination && pagination.last_page > 1 && (
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "14px 18px",
+                                borderTop:
+                                    "0.5px solid var(--color-border-tertiary)",
+                            }}
+                        >
+                            <span
+                                style={{
+                                    fontSize: 13,
+                                    color: "var(--color-text-secondary)",
+                                }}
+                            >
                                 عرض {achievements.length} من {pagination.total}{" "}
                                 إنجاز • الصفحة <strong>{currentPage}</strong> من{" "}
                                 <strong>{pagination.last_page}</strong>
-                            </div>
-                            <div className="flex items-center gap-2">
+                            </span>
+                            <div className="flx" style={{ gap: 6 }}>
                                 <button
+                                    className="btn bs bsm"
                                     onClick={() => goToPage(currentPage - 1)}
                                     disabled={!hasPrev || loading}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
                                 >
                                     السابق
                                 </button>
-                                <span className="px-4 py-2 bg-purple-500 text-white rounded-lg font-bold">
+                                <span
+                                    style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        height: 30,
+                                        padding: "0 12px",
+                                        background: "#7c3aed",
+                                        color: "#fff",
+                                        borderRadius: "var(--border-radius-md)",
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                    }}
+                                >
                                     {currentPage}
                                 </span>
                                 <button
+                                    className="btn bs bsm"
                                     onClick={() => goToPage(currentPage + 1)}
                                     disabled={!hasNext || loading}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
                                 >
                                     التالي
                                 </button>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </>
     );

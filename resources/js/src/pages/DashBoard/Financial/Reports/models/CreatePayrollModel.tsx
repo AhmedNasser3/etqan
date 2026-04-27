@@ -90,7 +90,7 @@ const CreatePayrollModel: React.FC<CreatePayrollModelProps> = ({
                                         <label>الحالة</label>
                                         <select>
                                             <option> معلق</option>
-                                            <option>✅ مدفوع</option>
+                                            <option> مدفوع</option>
                                         </select>
                                     </div>
                                 </div>

@@ -19,8 +19,8 @@ export interface ScheduleType {
     booked_students: number;
     is_available: boolean;
     notes?: string;
-    jitsi_room_name?: string; // ✅ جديد - اسم الغرفة
-    jitsi_url: string; // ✅ جديد - الرابط الكامل
+    jitsi_room_name?: string; //  جديد - اسم الغرفة
+    jitsi_url: string; //  جديد - الرابط الكامل
     created_at: string;
     updated_at: string;
     bookings_count?: number;
@@ -75,9 +75,9 @@ export const usePlanSchedules = () => {
                 }
 
                 const data = await response.json();
-                console.log("✅ Schedules loaded مع Jitsi:", data);
+                console.log(" Schedules loaded مع Jitsi:", data);
 
-                // ✅ تحويل data للـ ScheduleType مع Jitsi fields
+                //  تحويل data للـ ScheduleType مع Jitsi fields
                 const scheduleData = Array.isArray(data.data) ? data.data : [];
                 setSchedules(scheduleData);
 

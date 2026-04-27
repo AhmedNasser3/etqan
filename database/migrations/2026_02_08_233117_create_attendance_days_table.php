@@ -12,14 +12,14 @@ return new class extends Migration
         Schema::create('attendance_days', function (Blueprint $table) {
             $table->id();
             $table->foreignId('teacher_id')->constrained('teachers')->onDelete('cascade');
-            $table->foreignId('center_id')->constrained('circles')->onDelete('cascade'); // الحلقة
+            $table->foreignId('center_id')->constrained('centers')->onDelete('cascade'); // الحلقة
             $table->date('date'); // التاريخ
 
             // الحالة: present=حاضر, absent=غائب, late=متأخر
             $table->enum('status', ['present', 'absent', 'late'])->default('present');
 
             // التأخير بالدقائق (NULL لو مفيش تأخير)
-            $table->unsignedTinyInteger('delay_minutes')->nullable();
+$table->integer('delay_minutes')->default(0);  // max=2B safe
 
             // ملاحظات التأخير أو الغياب
             $table->text('notes')->nullable();

@@ -1,156 +1,293 @@
-// WhyHome.tsx - قسم "لماذا إتقان" كامل مع Multi-Tenant
-import { motion } from "framer-motion";
-import {
-    MdPhoneIphone,
-    MdLink,
-    MdCalendarToday,
-    MdSupport,
-    MdAnalytics,
-    MdSavings,
-    MdLiveTv,
-} from "react-icons/md";
-import { FiCode } from "react-icons/fi";
-import { GrPlan } from "react-icons/gr";
-import {
-    PiChalkboardTeacherDuotone,
-    PiStudentDuotone,
-    PiBookOpenDuotone,
-    PiBrain,
-    PiMicrophoneStage,
-    PiChartLineUp,
-    PiWallet,
-    PiClock,
-} from "react-icons/pi";
-import { useState } from "react";
-
 const WhyHome: React.FC = () => {
-    const [isHovered, setIsHovered] = useState(false);
-
-    const features = [
+    const pains = [
         {
-            icon: PiBrain,
-            title: "AI مساعد ذكي بالـ ",
-            description:
-                "مساعد ذكي يساعد المعلم في بناء الخطط التعليمية ويقترح أساليب تدريس مخصصة لكل طالب حسب مستواه واحتياجاته",
+            title: "ضياع بيانات الطلاب",
+            desc: "السجلات الورقية عرضة للضياع والتلف مما يفقد تاريخ الطالب الكامل.",
         },
         {
-            icon: PiMicrophoneStage,
-            title: "غرف التسميع الذكية",
-            description:
-                "غرف تسميع مخصصة لكل معلم وطالب مع تسجيل الشاشة، فتح الكاميرا، مشاركة الشاشة، ومراجعة الجلسات لاحقاً",
+            title: "صعوبة متابعة ولي الأمر",
+            desc: "لا توجد وسيلة واضحة لتوصيل تقدم الطالب لوليّ أمره بصفة منتظمة.",
         },
         {
-            icon: PiChartLineUp,
-            title: "تقارير شاملة",
-            description:
-                "تقارير مفصلة لكل مجمع وطالب مع صفحة خاصة لولي الأمر لمتابعة تقدم ابنه/بِنْتُه اليومي والأسبوعي والشهري",
+            title: "تعقيد الرواتب والمصروفات",
+            desc: "حساب رواتب المعلمين ومصروفات المجمع يدوياً مرهق ومعرَّض للأخطاء.",
+        },
+    ];
+    const solutions = [
+        {
+            title: "بيانات محمية ومنظّمة",
+            desc: "سجلات رقمية آمنة لكل طالب يمكن الوصول إليها في أي وقت من أي جهاز.",
         },
         {
-            icon: PiWallet,
-            title: "إدارة المصروفات",
-            description:
-                "متابعة شاملة لمصروفات المجمع وعملية صرف المرتبات الشهرية لكل معلم وموظف تلقائياً (مشرف عام، مالي، طلاب، تحفيزي)",
+            title: "تقارير فورية",
+            desc: "تقارير الحضور والحفظ تُولَّد تلقائياً يومياً وأسبوعياً وشهرياً.",
         },
         {
-            icon: PiClock,
-            title: "تحضير المعلمين",
-            description:
-                "جدولة تحضير المعلمين مع تسجيل الحضور اليومي وإضافة مكافآت وتحفيزات للطلاب المتفوقين مباشرة من المنصة",
+            title: "بوابة الأولياء",
+            desc: "رابط خاص لكل طالب بدون كلمة مرور لمتابعة الإنجاز اليومي.",
         },
         {
-            icon: MdPhoneIphone,
-            title: "المرونة",
-            description:
-                "إمكانية استعراض بوابة المعلم والطالب من خلال جميع أنواع الشاشات جهاز كمبيوتر – أجهزة لوحية – جوالات",
-        },
-        {
-            icon: FiCode,
-            title: "التطوير",
-            description:
-                "إضافات وتحسين مستمر لضمان تحقيق الأثر من استخدام المنصة على الميدان",
-        },
-        {
-            icon: MdLink,
-            title: "سجل الطالب",
-            description:
-                "رابط إلكتروني خاص بالطالب بدون اسم مستخدم أو كلمة مرور يستعرض من خلاله إنجازه اليومي بشكل واضح",
-        },
-        {
-            icon: GrPlan,
-            title: "الخطة التعليمية",
-            description:
-                "بناء خطة لكل طالب بسهولة بالغة فقط المطلوب تحديد الهدف اليومي للحفظ بالأسطر وللمراجعة بالأوجه",
-        },
-        {
-            icon: MdCalendarToday,
-            title: "تقويم دراسي",
-            description:
-                "بمجرد تحديد مشرف الحلقة لبداية ونهاية الدورة الدراسية وتحديد أيام العمل يخرج تقويم دراسي فوري",
-        },
-        {
-            icon: MdPhoneIphone,
-            title: "سهولة الاستخدام",
-            description:
-                "تدرج منطقي في العمليات ووضوح تام للإجراءات ويمكن استيعاب عمل المنصة وطريقتها في وقت قليل",
-        },
-        {
-            icon: MdSupport,
-            title: "التدريب",
-            description:
-                "للمشرف وللمعلمين على استخدام المنصة والمتابعة المستمرة في الأيام الأولى لضمان تحقيق أعلى استفادة ممكنة",
+            title: "رواتب تلقائية",
+            desc: "حساب وصرف الرواتب للمعلمين والموظفين دون أي حسابات يدوية.",
         },
     ];
 
     return (
-        <div className="why-itqan" style={{ padding: "0 15%" }}>
-            {/* من نحن Section */}
-            <div className="about-section">
-                <motion.h2
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="section-title-add"
-                >
-                    لماذا إتقان
-                </motion.h2>
-
-                {/* Multi-Tenant Cards */}
-                <div className="about-grid">
-                    {/* Features Grid */}
-                    {features.map((feature, index) => (
-                        <motion.div
-                            key={index}
-                            className="about-card platform"
-                            initial={{ opacity: 0, x: -50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.8, delay: 0.2 }}
-                        >
-                            <div className="card-icon">
-                                <feature.icon size={40} />
-                            </div>
-                            <h3>{feature.title}</h3>
-                            <p>{feature.description}</p>
-                        </motion.div>
-                    ))}
-                    <motion.div
-                        className="about-card platform"
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
+        <section
+            style={{
+                padding: "clamp(60px,8vw,100px) 15%",
+                background: "var(--n900)",
+                position: "relative",
+                overflow: "hidden",
+            }}
+        >
+            <div
+                style={{
+                    position: "absolute",
+                    inset: 0,
+                    backgroundImage:
+                        "linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px)",
+                    backgroundSize: "60px 60px",
+                }}
+            />
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "clamp(40px,6vw,80px)",
+                    alignItems: "center",
+                }}
+                className="problem-grid"
+            >
+                <div className="reveal-right">
+                    <div
+                        style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            background: "rgba(255,255,255,.06)",
+                            border: "1px solid rgba(255,255,255,.1)",
+                            color: "var(--g300)",
+                            padding: "5px 14px",
+                            borderRadius: 100,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            marginBottom: 20,
+                        }}
                     >
-                        <div className="card-icon">
-                            <PiBookOpenDuotone size={40} />
-                        </div>
-                        <h3>ما هي إتقان</h3>
-                        <p>
-                            منصة متكاملة لإدارة الحلقات القرآنية النسائية - كل
-                            حلقة لها إدارة مستقلة، تصميم منفصل، وتقارير خاصة
-                            بها.
-                        </p>
-                    </motion.div>
+                        التحدي الذي تواجهه مجمعاتنا
+                    </div>
+                    <h2
+                        style={{
+                            fontFamily: "Tajawal,sans-serif",
+                            fontSize: "clamp(1.6rem,2.8vw,2.5rem)",
+                            fontWeight: 900,
+                            color: "#fff",
+                            lineHeight: 1.25,
+                            marginBottom: 20,
+                        }}
+                    >
+                        إدارة الحلقات بالطريقة التقليدية{" "}
+                        <span style={{ color: "var(--g300)" }}>
+                            تُكلّفك الكثير
+                        </span>
+                    </h2>
+                    <p
+                        style={{
+                            fontSize: 15,
+                            color: "rgba(255,255,255,.5)",
+                            lineHeight: 1.9,
+                            marginBottom: 36,
+                        }}
+                    >
+                        كثير من مجمعات التحفيظ لا تزال تعتمد على السجلات الورقية
+                        وجداول يدوية تستنزف وقت المشرفين وتُضيّع بيانات الطلاب.
+                    </p>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 14,
+                        }}
+                    >
+                        {pains.map((p, i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                    gap: 14,
+                                    padding: "16px 20px",
+                                    background: "rgba(255,255,255,.04)",
+                                    border: "1px solid rgba(255,255,255,.07)",
+                                    borderRadius: "var(--radius-m)",
+                                    transition: ".2s",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background =
+                                        "rgba(255,255,255,.07)";
+                                    e.currentTarget.style.borderColor =
+                                        "rgba(30,143,97,.25)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background =
+                                        "rgba(255,255,255,.04)";
+                                    e.currentTarget.style.borderColor =
+                                        "rgba(255,255,255,.07)";
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 9,
+                                        background: "rgba(30,143,97,.12)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    <svg
+                                        width={20}
+                                        height={20}
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="var(--g400)"
+                                        strokeWidth={2}
+                                    >
+                                        <circle cx={12} cy={12} r={10} />
+                                        <line x1={15} y1={9} x2={9} y2={15} />
+                                        <line x1={9} y1={9} x2={15} y2={15} />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div
+                                        style={{
+                                            fontSize: 14,
+                                            fontWeight: 700,
+                                            color: "#fff",
+                                            marginBottom: 4,
+                                        }}
+                                    >
+                                        {p.title}
+                                    </div>
+                                    <div
+                                        style={{
+                                            fontSize: 13,
+                                            color: "rgba(255,255,255,.45)",
+                                            lineHeight: 1.7,
+                                        }}
+                                    >
+                                        {p.desc}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="reveal-left">
+                    <div
+                        style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            background: "rgba(255,255,255,.06)",
+                            border: "1px solid rgba(255,255,255,.1)",
+                            color: "var(--g300)",
+                            padding: "5px 14px",
+                            borderRadius: 100,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            marginBottom: 20,
+                        }}
+                    >
+                        الحل مع إتقان
+                    </div>
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: 14,
+                        }}
+                    >
+                        {solutions.map((s, i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    background: "rgba(255,255,255,.05)",
+                                    border: "1px solid rgba(255,255,255,.08)",
+                                    borderRadius: "var(--radius-l)",
+                                    padding: 24,
+                                    transition: ".25s",
+                                    gridColumn: i === 0 ? "span 2" : "auto",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background =
+                                        "rgba(30,143,97,.08)";
+                                    e.currentTarget.style.borderColor =
+                                        "rgba(30,143,97,.25)";
+                                    e.currentTarget.style.transform =
+                                        "translateY(-3px)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background =
+                                        "rgba(255,255,255,.05)";
+                                    e.currentTarget.style.borderColor =
+                                        "rgba(255,255,255,.08)";
+                                    e.currentTarget.style.transform = "";
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 10,
+                                        background: "rgba(30,143,97,.15)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        marginBottom: 14,
+                                    }}
+                                >
+                                    <svg
+                                        width={22}
+                                        height={22}
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="var(--g300)"
+                                        strokeWidth={2}
+                                    >
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 14,
+                                        fontWeight: 800,
+                                        color: "#fff",
+                                        marginBottom: 6,
+                                    }}
+                                >
+                                    {s.title}
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 13,
+                                        color: "rgba(255,255,255,.45)",
+                                        lineHeight: 1.7,
+                                    }}
+                                >
+                                    {s.desc}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
-        </div>
+            <style>{`@media(max-width:768px){.problem-grid{grid-template-columns:1fr!important;}}`}</style>
+        </section>
     );
 };
 

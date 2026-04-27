@@ -1,11 +1,12 @@
+// PendingCentersApproval.tsx - نفس تصميم الجدول الجديد content/widget/wh/table
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import {
     usePendingCenters,
     useConfirmCenter,
     useRejectCenter,
     useDeleteCenter,
 } from "./hooks/usePendingCenters";
-import toast, { Toaster } from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
 import { PiWhatsappLogoDuotone } from "react-icons/pi";
@@ -38,7 +39,7 @@ const PendingCentersApproval: React.FC = () => {
 
     const [search, setSearch] = useState("");
 
-    // ✅ تصفية متوافقة مع الهيكل الجديد
+    // تصفية متوافقة مع الهيكل الجديد
     const filteredCenters = centers.filter(
         (center) =>
             center.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -49,7 +50,7 @@ const PendingCentersApproval: React.FC = () => {
             center.user_email?.toLowerCase().includes(search.toLowerCase()),
     );
 
-    // ✅ إخفاء أخطاء الـ hooks
+    // إخفاء أخطاء الـ hooks
     useEffect(() => {
         if (confirmError) {
             toast.error(`❌ خطأ في التفعيل: ${confirmError}`);
@@ -119,116 +120,109 @@ const PendingCentersApproval: React.FC = () => {
 
     if (centersLoading) {
         return (
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-lg text-gray-600">
-                        جاري تحميل المجامع...
-                    </p>
+            <div
+                className="content"
+                style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "400px",
+                }}
+            >
+                <div className="navbar">
+                    <div className="navbar__inner">
+                        <div className="navbar__loading">
+                            <div className="loading-spinner">
+                                <div className="spinner-circle"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <>
-            <Toaster position="top-center" />
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                {/* ✅ إحصائيات محدثة */}
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon redColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>إجمالي المجمعات</h3>
-                            <p className="text-2xl font-bold text-red-600">
-                                {total || centers.length}
-                            </p>
-                        </div>
+        <div className="content" id="contentArea">
+            <div className="widget">
+                {/* Header */}
+                <div className="wh">
+                    <div className="wh-l">
+                        المجامع المعلقة للاعتماد
+                        <span className="filter-form text-sm text-gray-600 ml-2">
+                            ({filteredCenters.length})
+                        </span>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-icon yellowColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>معلقة</h3>
-                            <p className="text-2xl font-bold text-yellow-600">
-                                {filteredCenters.length}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <PiWhatsappLogoDuotone />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>مطلوبة</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {centers.length}
-                            </p>
+                    <div className="flx">
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "10px",
+                                alignItems: "center",
+                                minWidth: "400px",
+                            }}
+                        >
+                            <input
+                                type="search"
+                                className="fi"
+                                placeholder="البحث بالاسم أو البريد أو النطاق..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            <button
+                                className="btn bp"
+                                onClick={refetch}
+                                style={{
+                                    padding: "8px 16px",
+                                    minWidth: "100px",
+                                }}
+                                disabled={centersLoading}
+                            >
+                                تحديث
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
-                >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            تحقق من بيانات المجمعات قبل الاعتماد النهائي
-                        </div>
-                        <div className="plan__current">
-                            <h2>قائمة المجمعات المعلقة</h2>
-                            <div className="plan__date-range">
-                                <div className="date-picker to">
-                                    <input
-                                        type="search"
-                                        placeholder="البحث بالاسم أو البريد أو النطاق..."
-                                        value={search}
-                                        onChange={(e) =>
-                                            setSearch(e.target.value)
-                                        }
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="plan__daily-table">
-                        <table>
-                            <thead>
+                {/* Table */}
+                <div style={{ overflowX: "auto" }}>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الشعار</th>
+                                <th>اسم المجمع</th>
+                                <th>اسم المدير</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>رقم الجوال</th>
+                                <th>النطاق</th>
+                                <th>تاريخ التسجيل</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredCenters.length === 0 ? (
                                 <tr>
-                                    <th>الشعار</th>
-                                    <th>اسم المجمع</th>
-                                    <th>اسم المدير</th>
-                                    <th>البريد الإلكتروني</th>
-                                    <th>رقم الجوال</th>
-                                    <th>النطاق</th>
-                                    <th>تاريخ التسجيل</th>
-                                    <th>الحالة</th>
-                                    <th>الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredCenters.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        className="plan__row pending"
+                                    <td
+                                        colSpan={9}
+                                        className="text-center py-8 text-gray-500"
                                     >
-                                        {/* ✅ شعار محدث */}
-                                        <td className="teacherStudent__img">
-                                            <div className="w-12 h-12 rounded-full overflow-hidden">
+                                        <div className="space-y-2">
+                                            <p>لا توجد طلبات معلقة حالياً</p>
+                                            <p className="text-sm text-gray-400">
+                                                {centers.length > 0
+                                                    ? `تم العثور على ${centers.length} مجمع لكن لا يوجد معلقين`
+                                                    : "لا توجد بيانات مجمعات"}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredCenters.map((item) => (
+                                    <tr key={item.id}>
+                                        {/* الشعار */}
+                                        <td>
+                                            <div className="w-12 h-12 rounded-full overflow-hidden mx-auto">
                                                 {item.logo ? (
                                                     <img
                                                         src={item.logo}
@@ -254,42 +248,52 @@ const PendingCentersApproval: React.FC = () => {
                                             </div>
                                         </td>
 
-                                        {/* ✅ البيانات محدثة */}
-                                        <td>
-                                            <span className="font-medium">
-                                                {item.name || "غير محدد"}
-                                            </span>
+                                        {/* اسم المجمع */}
+                                        <td className="font-semibold">
+                                            {item.name || "غير محدد"}
                                         </td>
+
+                                        {/* اسم المدير */}
                                         <td>{item.user_name || "غير محدد"}</td>
-                                        <td>
-                                            <span className="text-gray-600">
-                                                {item.email || "-"}
-                                            </span>
+
+                                        {/* البريد الإلكتروني */}
+                                        <td className="text-gray-600 text-sm">
+                                            {item.email || "-"}
                                         </td>
-                                        <td>
-                                            <span className="text-gray-600">
-                                                {item.phone || "-"}
-                                            </span>
+
+                                        {/* رقم الجوال */}
+                                        <td className="text-gray-600 text-sm">
+                                            {item.phone || "-"}
                                         </td>
+
+                                        {/* النطاق */}
                                         <td>
-                                            <span className="text-blue-600 font-mono text-sm">
+                                            <span className="font-mono text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
                                                 {item.subdomain || "-"}
                                             </span>
                                         </td>
-                                        <td>
-                                            <span className="text-gray-500 text-sm">
-                                                {item.created_at || "-"}
-                                            </span>
+
+                                        {/* تاريخ التسجيل */}
+                                        <td className="text-sm text-gray-500">
+                                            {item.created_at
+                                                ? new Date(
+                                                      item.created_at,
+                                                  ).toLocaleDateString("ar-EG")
+                                                : "-"}
                                         </td>
+
+                                        {/* الحالة */}
                                         <td>
-                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">
                                                 معلق
                                             </span>
                                         </td>
+
+                                        {/* الإجراءات */}
                                         <td>
-                                            <div className="teacherStudent__btns">
+                                            <div className="td-actions">
                                                 <button
-                                                    className="teacherStudent__status-btn approve-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 hover:bg-green-50"
+                                                    className="btn bp bxs"
                                                     onClick={() =>
                                                         handleApprove(item.id)
                                                     }
@@ -297,16 +301,13 @@ const PendingCentersApproval: React.FC = () => {
                                                         confirmLoading ||
                                                         centersLoading
                                                     }
-                                                    title="اعتماد المجمع"
                                                 >
-                                                    {confirmLoading ? (
-                                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                    ) : (
-                                                        <IoCheckmarkCircleOutline />
-                                                    )}
+                                                    {confirmLoading
+                                                        ? "جاري..."
+                                                        : "اعتماد"}
                                                 </button>
                                                 <button
-                                                    className="teacherStudent__status-btn reject-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
+                                                    className="btn bd bxs"
                                                     onClick={() =>
                                                         handleReject(item.id)
                                                     }
@@ -314,12 +315,11 @@ const PendingCentersApproval: React.FC = () => {
                                                         rejectLoading ||
                                                         centersLoading
                                                     }
-                                                    title="رفض المجمع"
                                                 >
-                                                    <FiXCircle />
+                                                    رفض
                                                 </button>
                                                 <button
-                                                    className="teacherStudent__status-btn link-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100"
+                                                    className="btn br bxs"
                                                     onClick={() =>
                                                         handleDelete(item.id)
                                                     }
@@ -327,84 +327,21 @@ const PendingCentersApproval: React.FC = () => {
                                                         deleteLoading ||
                                                         centersLoading
                                                     }
-                                                    title="حذف المجمع نهائياً"
                                                 >
-                                                    <MdDelete />
+                                                    حذف
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
-                                {filteredCenters.length === 0 &&
-                                    !centersLoading && (
-                                        <tr>
-                                            <td
-                                                colSpan={9}
-                                                className="text-center py-12 text-gray-500"
-                                            >
-                                                <div className="space-y-2">
-                                                    <p>
-                                                        لا توجد طلبات معلقة
-                                                        حالياً
-                                                    </p>
-                                                    <p className="text-sm text-gray-400">
-                                                        {centers.length > 0
-                                                            ? `تم العثور على ${centers.length} مجمع لكن لا يوجد معلقين`
-                                                            : "لا توجد بيانات مجمعات"}
-                                                    </p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* ✅ إحصائيات محدثة */}
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        id="userProfile__verifyOTPBirth"
-                    >
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h1>معدل المعالجة</h1>
-                            </div>
-                            <p>
-                                {centers.length > 0
-                                    ? `${Math.round((filteredCenters.length / centers.length) * 100)}%`
-                                    : "0%"}
-                            </p>
-                            <div className="userProfile__progressBar">
-                                <span
-                                    style={{
-                                        width: `${Math.min(
-                                            Math.round(
-                                                (filteredCenters.length /
-                                                    Math.max(
-                                                        centers.length,
-                                                        1,
-                                                    )) *
-                                                    100,
-                                            ),
-                                            100,
-                                        )}%`,
-                                    }}
-                                ></span>
-                            </div>
-                        </div>
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h1>عدد الطلبات</h1>
-                            </div>
-                            <p>{total || centers.length}</p>
-                            <div className="userProfile__progressBar">
-                                <span style={{ width: "100%" }}></span>
-                            </div>
-                        </div>
-                    </div>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
+
+                {/* Stats Cards */}
             </div>
-        </>
+        </div>
     );
 };
 

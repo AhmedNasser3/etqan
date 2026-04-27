@@ -1,4 +1,4 @@
-// hooks/useStudentAffairsUpdatePlatform.ts - ✅ بدون React Query
+// hooks/useStudentAffairsUpdatePlatform.ts -  بدون React Query
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -45,7 +45,7 @@ export const useStudentAffairsUpdatePlatform = (studentId: number) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [studentData, setStudentData] = useState<StudentData | null>(null);
 
-    // ✅ جلب بيانات الطالب
+    //  جلب بيانات الطالب
     const fetchStudentData = useCallback(async () => {
         if (!studentId) return;
 
@@ -69,12 +69,12 @@ export const useStudentAffairsUpdatePlatform = (studentId: number) => {
         }
     }, [studentId]);
 
-    // ✅ تحميل البيانات عند تغيير studentId
+    //  تحميل البيانات عند تغيير studentId
     useEffect(() => {
         fetchStudentData();
     }, [fetchStudentData]);
 
-    // ✅ تحديث النموذج
+    //  تحديث النموذج
     useEffect(() => {
         if (studentData) {
             setFormData({

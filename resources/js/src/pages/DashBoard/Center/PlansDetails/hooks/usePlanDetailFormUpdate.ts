@@ -123,7 +123,7 @@ export const usePlanDetailFormUpdate = (detailId: number) => {
                 formDataSubmit.append("_method", "PUT");
                 formDataSubmit.append("day_number", formData.day_number);
 
-                // ✅ إرسال null للحقول الفارغة
+                //  إرسال null للحقول الفارغة
                 formDataSubmit.append(
                     "new_memorization",
                     formData.new_memorization.trim() || null,

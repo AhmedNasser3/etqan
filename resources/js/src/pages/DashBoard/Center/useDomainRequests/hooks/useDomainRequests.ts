@@ -23,10 +23,10 @@ export const useDomainRequests = () => {
         setError(null);
 
         try {
-            console.log("🌐 Fetching from: /api/v1/idea-domain-requests"); // ✅ /api/
+            console.log("🌐 Fetching from: /api/v1/idea-domain-requests"); //  /api/
 
             const response = await fetch("/api/v1/idea-domain-requests", {
-                // ✅ /api/
+                //  /api/
                 headers: {
                     Accept: "application/json",
                     "Content-Type": "application/json",
@@ -37,7 +37,7 @@ export const useDomainRequests = () => {
 
             console.log("📊 Response status:", response.status);
 
-            // ✅ Check Content-Type قبل JSON.parse
+            //  Check Content-Type قبل JSON.parse
             const contentType = response.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
                 const htmlText = await response.text();
@@ -56,7 +56,7 @@ export const useDomainRequests = () => {
             }
 
             const result = await response.json();
-            console.log("✅ JSON Data:", result);
+            console.log(" JSON Data:", result);
 
             setRequests(Array.isArray(result) ? result : result.data || []);
         } catch (err: any) {
@@ -75,7 +75,7 @@ export const useDomainRequests = () => {
         try {
             setLoading(true);
 
-            // ✅ CSRF Token للـ DELETE requests
+            //  CSRF Token للـ DELETE requests
             const csrfToken =
                 document
                     .querySelector('meta[name="csrf-token"]')
@@ -89,19 +89,19 @@ export const useDomainRequests = () => {
             const response = await fetch(
                 `/api/v1/idea-domain-requests/${requestId}`,
                 {
-                    // ✅ /api/
+                    //  /api/
                     method: "DELETE",
                     credentials: "include",
                     headers: {
                         Accept: "application/json",
                         "Content-Type": "application/json",
                         "X-Requested-With": "XMLHttpRequest",
-                        "X-CSRF-TOKEN": csrfToken, // ✅ CSRF Token
+                        "X-CSRF-TOKEN": csrfToken, //  CSRF Token
                     },
                 },
             );
 
-            // ✅ Content-Type Check للـ DELETE
+            //  Content-Type Check للـ DELETE
             const contentType = response.headers.get("content-type");
             if (!response.ok) {
                 const errorText = await response.text();
@@ -110,7 +110,7 @@ export const useDomainRequests = () => {
             }
 
             const result = await response.json();
-            console.log("✅ Delete Success:", result);
+            console.log(" Delete Success:", result);
             return { success: true, data: result };
         } catch (err: any) {
             console.error("❌ Delete error:", err);

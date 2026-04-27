@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Teachers;
 
-use Illuminate\Http\Request;
-use App\Models\Auth\User;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
+use App\Models\Auth\User;
+use App\Models\Tenant\Mosque;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class MyTeachersController extends Controller
 {
-    /**
-     * جلب المعلمين في مجمعي فقط
-     */
     public function index(Request $request)
     {
-        $currentUserCenterId = Auth::user()->center_id;
+        $currentUser = Auth::user();
+        $currentUserCenterId = $currentUser?->center_id;
 
         if (!$currentUserCenterId) {
             return response()->json([
@@ -38,22 +39,195 @@ class MyTeachersController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
+
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%')
-                  ->orWhereHas('teacher', function ($tq) use ($search) {
-                      $tq->where('role', 'like', '%' . $search . '%')
-                         ->orWhere('notes', 'like', '%' . $search . '%');
-                  });
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhereHas('teacher', function ($tq) use ($search) {
+                        $tq->where('role', 'like', "%{$search}%")
+                           ->orWhere('notes', 'like', "%{$search}%");
+                    });
             });
         }
 
-        $teachers = $query->orderBy('created_at', 'desc')->paginate(15);
+        $teachers = $query
+            ->orderBy('created_at', 'desc')
+            ->paginate((int) $request->get('per_page', 15));
+
+        $plansColumns = Schema::getColumnListing('plans');
+
+        $planTitleColumn = collect(['title', 'name', 'plan_name'])
+            ->first(fn ($column) => in_array($column, $plansColumns));
+
+        $planDescriptionColumn = collect(['description', 'notes', 'details'])
+            ->first(fn ($column) => in_array($column, $plansColumns));
+
+        $data = collect($teachers->items())->map(function ($user) use (
+            $currentUserCenterId,
+            $planTitleColumn,
+            $planDescriptionColumn
+        ) {
+            $mosque = Mosque::where('center_id', $currentUserCenterId)
+                ->where('supervisor_id', $user->id)
+                ->select('id', 'name')
+                ->first();
+
+            $circles = DB::table('plan_circle_schedules as pcs')
+                ->join('circles as c', 'c.id', '=', 'pcs.circle_id')
+                ->leftJoin('circle_student_bookings as csb', function ($join) {
+                    $join->on('csb.plan_circle_schedule_id', '=', 'pcs.id')
+                        ->where('csb.status', '=', 'confirmed');
+                })
+                ->where('pcs.teacher_id', $user->id)
+                ->select(
+                    'c.id',
+                    'c.name',
+                    DB::raw('MIN(pcs.start_time) as start_time'),
+                    DB::raw('MAX(pcs.end_time) as end_time'),
+                    DB::raw('COUNT(DISTINCT csb.user_id) as students_count')
+                )
+                ->groupBy('c.id', 'c.name')
+                ->orderBy('c.name')
+                ->get()
+                ->map(function ($circle) {
+                    return [
+                        'id' => (int) $circle->id,
+                        'name' => $circle->name,
+                        'studentsCount' => (int) $circle->students_count,
+                        'timeRange' => ($circle->start_time && $circle->end_time)
+                            ? substr($circle->start_time, 0, 5) . ' - ' . substr($circle->end_time, 0, 5)
+                            : null,
+                    ];
+                })
+                ->values();
+
+            $students = DB::table('plan_circle_schedules as pcs')
+                ->join('circle_student_bookings as csb', function ($join) {
+                    $join->on('csb.plan_circle_schedule_id', '=', 'pcs.id')
+                        ->where('csb.status', '=', 'confirmed');
+                })
+                ->join('users as students', 'students.id', '=', 'csb.user_id')
+                ->where('pcs.teacher_id', $user->id)
+                ->select(
+                    'students.id',
+                    'students.name',
+                    'students.email',
+                    'students.phone',
+                    'students.status'
+                )
+                ->distinct()
+                ->orderBy('students.name')
+                ->get()
+                ->map(function ($student) {
+                    return [
+                        'id' => (int) $student->id,
+                        'name' => $student->name,
+                        'email' => $student->email,
+                        'phone' => $student->phone,
+                        'status' => $student->status,
+                    ];
+                })
+                ->values();
+
+            $planQuery = DB::table('plan_circle_schedules as pcs')
+                ->join('plans as p', 'p.id', '=', 'pcs.plan_id')
+                ->where('pcs.teacher_id', $user->id)
+                ->select(
+                    'p.id',
+                    DB::raw('COUNT(DISTINCT pcs.id) as sessions_total'),
+                    DB::raw('SUM(CASE WHEN pcs.schedule_date <= CURDATE() THEN 1 ELSE 0 END) as sessions_done'),
+                    DB::raw('MIN(pcs.start_time) as start_time'),
+                    DB::raw('MAX(pcs.end_time) as end_time')
+                );
+
+            if ($planTitleColumn) {
+                $planQuery->addSelect(DB::raw("p.`{$planTitleColumn}` as plan_title"));
+            }
+
+            if ($planDescriptionColumn) {
+                $planQuery->addSelect(DB::raw("p.`{$planDescriptionColumn}` as plan_description"));
+            }
+
+            $groupBy = ['p.id'];
+
+            if ($planTitleColumn) {
+                $groupBy[] = "p.{$planTitleColumn}";
+            }
+
+            if ($planDescriptionColumn) {
+                $groupBy[] = "p.{$planDescriptionColumn}";
+            }
+
+            $planRow = $planQuery
+                ->groupBy($groupBy)
+                ->orderByDesc('sessions_total')
+                ->first();
+
+            $weeklyDays = DB::table('plan_circle_schedules as pcs')
+                ->where('pcs.teacher_id', $user->id)
+                ->whereNotNull('pcs.day_of_week')
+                ->select('pcs.day_of_week')
+                ->distinct()
+                ->pluck('day_of_week')
+                ->map(function ($day) {
+                    return match ($day) {
+                        'sunday' => 'الأحد',
+                        'monday' => 'الاثنين',
+                        'tuesday' => 'الثلاثاء',
+                        'wednesday' => 'الأربعاء',
+                        'thursday' => 'الخميس',
+                        'friday' => 'الجمعة',
+                        'saturday' => 'السبت',
+                        default => $day,
+                    };
+                })
+                ->values();
+
+            return [
+                'id' => $user->id,
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'avatar' => $user->avatar,
+                'status' => $user->status,
+                'created_at' => optional($user->created_at)->format('Y-m-d H:i:s'),
+
+                'mosque' => $mosque?->name,
+                'mosque_id' => $mosque?->id,
+
+                'circles_count' => $circles->count(),
+                'students_count' => $students->count(),
+
+                'circles' => $circles,
+                'students' => $students,
+
+                'teacher' => [
+                    'role' => $user->teacher->role ?? null,
+                    'notes' => $user->teacher->notes ?? null,
+                    'session_time' => $user->teacher->session_time ?? null,
+                ],
+
+                'plan' => $planRow ? [
+                    'id' => (string) $planRow->id,
+                    'title' => $planRow->plan_title ?? 'خطة تعليمية',
+                    'description' => $planRow->plan_description ?? '',
+                    'studentsCount' => $students->count(),
+                    'sessionsDone' => (int) $planRow->sessions_done,
+                    'sessionsTotal' => (int) $planRow->sessions_total,
+                    'weeklyDays' => $weeklyDays,
+                    'timeRange' => ($planRow->start_time && $planRow->end_time)
+                        ? substr($planRow->start_time, 0, 5) . ' - ' . substr($planRow->end_time, 0, 5)
+                        : null,
+                ] : null,
+            ];
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $teachers->items(),
+            'data' => $data,
             'pagination' => [
                 'current_page' => $teachers->currentPage(),
                 'total' => $teachers->total(),
@@ -63,16 +237,20 @@ class MyTeachersController extends Controller
                 'to' => $teachers->lastItem(),
             ],
             'center_id' => $currentUserCenterId,
-            'center_filter_active' => true
+            'center_filter_active' => true,
         ]);
     }
 
-    /**
-     * جلب المعلمين المعلقين في مجمعي فقط
-     */
-    public function pending()
+    public function pending(Request $request)
     {
-        $currentUserCenterId = Auth::user()->center_id;
+        $request->merge(['status' => 'pending']);
+        return $this->index($request);
+    }
+
+    public function students($id)
+    {
+        $currentUser = Auth::user();
+        $currentUserCenterId = $currentUser?->center_id;
 
         if (!$currentUserCenterId) {
             return response()->json([
@@ -81,33 +259,43 @@ class MyTeachersController extends Controller
             ], 400);
         }
 
-        $teachers = User::with(['teacher'])
+        $teacher = User::where('center_id', $currentUserCenterId)
             ->whereHas('teacher')
-            ->where('center_id', $currentUserCenterId)
-            ->where('status', 'pending')
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->findOrFail($id);
+
+        $students = DB::table('plan_circle_schedules as pcs')
+            ->join('circle_student_bookings as csb', function ($join) {
+                $join->on('csb.plan_circle_schedule_id', '=', 'pcs.id')
+                    ->where('csb.status', '=', 'confirmed');
+            })
+            ->join('users as students', 'students.id', '=', 'csb.user_id')
+            ->where('pcs.teacher_id', $teacher->id)
+            ->select(
+                'students.id',
+                'students.name',
+                'students.email',
+                'students.phone',
+                'students.status'
+            )
+            ->distinct()
+            ->orderBy('students.name')
+            ->get();
 
         return response()->json([
             'success' => true,
-            'data' => $teachers->items(),
-            'pagination' => [
-                'current_page' => $teachers->currentPage(),
-                'total' => $teachers->total(),
-                'per_page' => $teachers->perPage(),
-                'last_page' => $teachers->lastPage(),
+            'teacher' => [
+                'id' => $teacher->id,
+                'name' => $teacher->name,
             ],
-            'center_id' => $currentUserCenterId
+            'count' => $students->count(),
+            'data' => $students,
         ]);
     }
 
-    /**
-     * تعديل بيانات المعلم في مجمعي فقط
-     */
     public function update(Request $request, $id)
     {
         $currentUser = Auth::user();
-        $currentUserCenterId = $currentUser->center_id;
+        $currentUserCenterId = $currentUser?->center_id;
 
         if (!$currentUserCenterId) {
             return response()->json([
@@ -123,20 +311,22 @@ class MyTeachersController extends Controller
 
         $request->validate([
             'name' => 'nullable|string|max:255|min:3',
-            'email' => ['nullable', 'email:rfc,dns', 'max:255', 'unique:users,email,' . $id],
-            'phone' => ['nullable', 'string', 'max:20', 'unique:users,phone,' . $id],
+            'email' => 'nullable|email|max:255|unique:users,email,' . $id,
+            'phone' => 'nullable|string|max:20|unique:users,phone,' . $id,
             'status' => 'nullable|in:pending,active,inactive,suspended',
             'notes' => 'nullable|string|max:1000',
-            'teacher_role' => ['nullable', 'in:teacher,supervisor,motivator,student_affairs,financial'],
+            'teacher_role' => 'nullable|in:teacher,supervisor,motivator,student_affairs,financial',
         ]);
 
         $user->update($request->only(['name', 'email', 'phone', 'status']));
 
         if ($user->teacher) {
             $teacherData = [];
+
             if ($request->filled('notes')) {
                 $teacherData['notes'] = $request->notes;
             }
+
             if ($request->filled('teacher_role')) {
                 $teacherData['role'] = $request->teacher_role;
             }
@@ -153,13 +343,10 @@ class MyTeachersController extends Controller
         ]);
     }
 
-    /**
-     * حذف / تعليق معلم في مجمعي فقط
-     */
     public function destroy($id)
     {
         $currentUser = Auth::user();
-        $currentUserCenterId = $currentUser->center_id;
+        $currentUserCenterId = $currentUser?->center_id;
 
         if (!$currentUserCenterId) {
             return response()->json([
@@ -173,7 +360,6 @@ class MyTeachersController extends Controller
             ->whereHas('teacher')
             ->findOrFail($id);
 
-        // تعليق فقط (لا حذف فعلًا)
         $user->update(['status' => 'suspended']);
 
         return response()->json([
@@ -182,15 +368,10 @@ class MyTeachersController extends Controller
         ]);
     }
 
-    /**
-     * تفعيل أو تعطيل معلم في مجمعي فقط (Toggle status)
-     * - إذا كان Active: يُعلق
-     * - إذا كان معلق: يُفعّل
-     */
     public function toggleStatus(Request $request, $id)
     {
         $currentUser = Auth::user();
-        $currentUserCenterId = $currentUser->center_id;
+        $currentUserCenterId = $currentUser?->center_id;
 
         if (!$currentUserCenterId) {
             return response()->json([
@@ -204,7 +385,6 @@ class MyTeachersController extends Controller
             ->whereHas('teacher')
             ->findOrFail($id);
 
-        // التبديل بين active و suspended
         $currentStatus = $user->status;
         $newStatus = $currentStatus === 'active' ? 'suspended' : 'active';
 
@@ -213,8 +393,8 @@ class MyTeachersController extends Controller
         return response()->json([
             'success' => true,
             'message' => $newStatus === 'active'
-                ? 'تم تفعيل المعلم في مجمعك بنجاح'
-                : 'تم تعليق حساب المعلم في مجمعك بنجاح',
+                ? 'تم تفعيل المعلم بنجاح'
+                : 'تم تعليق المعلم بنجاح',
             'status' => $newStatus,
             'current_status' => $currentStatus,
             'data' => $user->fresh(['teacher'])

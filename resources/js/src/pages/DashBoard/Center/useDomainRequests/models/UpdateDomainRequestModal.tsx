@@ -51,19 +51,16 @@ const UpdateDomainRequestModal: React.FC<UpdateDomainRequestModalProps> = ({
         console.log("📋 Updating request ID:", requestId);
 
         try {
-            // ✅ CSRF Cookie أولاً دايماً
+            //  CSRF Cookie أولاً دايماً
             console.log("🍪 Getting CSRF Cookie...");
             await fetch("/sanctum/csrf-cookie", {
                 credentials: "include",
             });
 
             const csrfToken = getCsrfToken();
-            console.log(
-                "🔐 CSRF Token:",
-                csrfToken ? "✅ موجود" : "❌ مش موجود",
-            );
+            console.log("🔐 CSRF Token:", csrfToken ? " موجود" : "❌ مش موجود");
 
-            // ✅ POST + _method=PUT بدل PUT مباشرة (FormData مش بيشتغل مع PUT)
+            //  POST + _method=PUT بدل PUT مباشرة (FormData مش بيشتغل مع PUT)
             console.log(
                 "🌐 POST → /api/v1/idea-domain-requests/",
                 requestId,
@@ -73,14 +70,14 @@ const UpdateDomainRequestModal: React.FC<UpdateDomainRequestModalProps> = ({
             const response = await fetch(
                 `/api/v1/idea-domain-requests/${requestId}`,
                 {
-                    method: "POST", // ✅ التعديل الوحيد هنا!
+                    method: "POST", //  التعديل الوحيد هنا!
                     credentials: "include",
                     headers: {
                         Accept: "application/json",
                         "X-Requested-With": "XMLHttpRequest",
                         "X-XSRF-TOKEN": csrfToken,
                     },
-                    body: formDataSubmit, // ✅ FormData فيه _method=PUT من الـ Hook
+                    body: formDataSubmit, //  FormData فيه _method=PUT من الـ Hook
                 },
             );
 
@@ -122,12 +119,12 @@ const UpdateDomainRequestModal: React.FC<UpdateDomainRequestModalProps> = ({
             }
 
             const result = await response.json();
-            console.log("✅ Update response:", result);
+            console.log(" Update response:", result);
 
             toast.success("تم تحديث طلب الدومين بنجاح! ✨");
             resetForm();
             onSuccess();
-            onClose(); // ✅ إضافة إغلاق الـ Modal
+            onClose(); //  إضافة إغلاق الـ Modal
         } catch (error: any) {
             console.error("💥 Update error:", error);
             toast.error(error.message || "حدث خطأ في التحديث");

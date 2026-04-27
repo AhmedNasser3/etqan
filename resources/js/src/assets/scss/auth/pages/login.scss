@@ -601,3 +601,8 @@ button {
         cursor: pointer;
     }
 }
+.inputs__submitBtn_red {
+    button {
+        background-color: rgba(184, 42, 42, 0.808) !important;
+    }
+}

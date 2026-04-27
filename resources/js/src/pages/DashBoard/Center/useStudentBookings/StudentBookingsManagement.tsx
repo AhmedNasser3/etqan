@@ -1,7 +1,7 @@
-import { useState, useCallback, useMemo } from "react";
-import toast from "react-hot-toast";
-import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood } from "react-icons/gr";
+// StudentBookingsManagement.tsx - مصحح مع نفس ديزاين StaffApproval + موحد 100%
+import React, { useState, useCallback, useMemo } from "react";
+import { ICO } from "../../icons";
+import { useToast } from "../../.../../../../../contexts/ToastContext";
 import {
     useStudentBookings,
     StudentBookingType,
@@ -19,9 +19,10 @@ const StudentBookingsManagement: React.FC = () => {
         refetch,
     } = useStudentBookings();
 
+    const { notifySuccess, notifyError } = useToast();
     const [search, setSearch] = useState("");
 
-    // ✅ البحث
+    // البحث
     const handleSearch = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const value = e.target.value;
@@ -31,10 +32,10 @@ const StudentBookingsManagement: React.FC = () => {
         [searchBookings],
     );
 
-    // ✅ قبول الطالب
+    // قبول الطالب
     const handleConfirm = async (booking: StudentBookingType) => {
         if (!booking.can_confirm) {
-            toast.error("عدد الطلاب مكتمل في هذه الحلقة");
+            notifyError("عدد الطلاب مكتمل في هذه الحلقة");
             return;
         }
 
@@ -52,17 +53,17 @@ const StudentBookingsManagement: React.FC = () => {
         try {
             const result = await confirmBooking(booking.id);
             if (result.success) {
-                toast.success(result.message);
+                notifySuccess(result.message);
                 refetch();
             } else {
-                toast.error(result.message || "فشل في قبول الطالب");
+                notifyError(result.message || "فشل في قبول الطالب");
             }
         } catch (error: any) {
-            toast.error(error.message || "حدث خطأ في قبول الطالب");
+            notifyError(error.message || "حدث خطأ في قبول الطالب");
         }
     };
 
-    // ✅ الإحصائيات
+    // الإحصائيات
     const stats = useMemo(
         () => ({
             total: pagination?.total || 0,
@@ -76,7 +77,7 @@ const StudentBookingsManagement: React.FC = () => {
     const hasPrev = currentPage > 1;
     const hasNext = currentPage < (pagination?.last_page || 1);
 
-    // ✅ شعار الطالب من الحروف الأولى
+    // شعار الطالب من الحروف الأولى
     const renderStudentLogo = useCallback((name: string) => {
         const initials = name
             .split(" ")
@@ -92,95 +93,31 @@ const StudentBookingsManagement: React.FC = () => {
         );
     }, []);
 
-    // ✅ حالة السعة
+    // حالة السعة
     const getCapacityStatus = useCallback((booking: StudentBookingType) => {
         if (booking.remaining_slots === null) return "غير محدود";
         return `${booking.remaining_slots} متاح`;
     }, []);
 
-    if (loading && bookings.length === 0) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px] p-8">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                    <div className="navbar">
-                        <div className="navbar__inner">
-                            <div className="navbar__loading">
-                                <div className="loading-spinner">
-                                    <div className="spinner-circle"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <>
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                {/* ✅ الإحصائيات */}
-                <div className="plan__stats mb-8">
-                    <div className="stat-card">
-                        <div className="stat-icon purpleColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>طلبات قيد الانتظار</h3>
-                            <p className="text-2xl font-bold text-purple-600">
-                                {stats.total}
-                            </p>
-                        </div>
+        <div className="content" id="contentArea">
+            <div className="widget">
+                <div className="wh">
+                    <div className="wh-l">
+                        إدارة طلبات الطلاب ({bookings.length} طلب)
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-icon blueColor">
-                            <i className="ri-time-line"></i>
-                        </div>
-                        <div>
-                            <h3>في الصفحة الحالية</h3>
-                            <p className="text-2xl font-bold text-blue-600">
-                                {stats.pending}
-                            </p>
-                        </div>
+                    <div className="flx">
+                        <input
+                            className="fi"
+                            placeholder="البحث بالطالب أو الخطة..."
+                            value={search}
+                            onChange={handleSearch}
+                            disabled={loading}
+                        />
                     </div>
                 </div>
 
-                {/* ✅ الهيدر */}
-                <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
-                >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            طلبات الطلاب للانضمام للخطط والحلقات • قيد الانتظار
-                            فقط
-                        </div>
-                        <div className="plan__current">
-                            <h2>إدارة طلبات الطلاب</h2>
-                            <div className="plan__date-range">
-                                <div className="date-picker to">
-                                    <input
-                                        type="search"
-                                        placeholder="البحث بالطالب أو الخطة..."
-                                        value={search}
-                                        onChange={handleSearch}
-                                        disabled={loading}
-                                        className="w-full max-w-md"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ✅ الجدول */}
-                <div className="plan__daily-table">
+                <div style={{ overflowX: "auto" }}>
                     <table>
                         <thead>
                             <tr>
@@ -198,35 +135,26 @@ const StudentBookingsManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {bookings.length === 0 && !loading ? (
+                            {bookings.length === 0 ? (
                                 <tr>
-                                    <td
-                                        colSpan={11}
-                                        className="text-center py-12 text-gray-500"
-                                    >
-                                        <div className="flex flex-col items-center gap-2">
-                                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <i className="ri-inbox-line text-2xl text-gray-400"></i>
-                                            </div>
-                                            <p className="text-lg">
+                                    <td colSpan={11}>
+                                        <div className="empty">
+                                            <p>
                                                 لا يوجد طلبات قيد الانتظار
                                                 حالياً
                                             </p>
-                                            <p className="text-sm text-gray-400">
+                                            <small>
                                                 سيتم عرض طلبات الطلاب الجديدة
                                                 هنا تلقائياً
-                                            </p>
+                                            </small>
                                         </div>
                                     </td>
                                 </tr>
                             ) : (
                                 bookings.map((booking) => (
-                                    <tr
-                                        key={booking.id}
-                                        className="plan__row active hover:bg-gray-50 transition-colors"
-                                    >
-                                        {/* ✅ شعار الطالب */}
-                                        <td className="teacherStudent__img">
+                                    <tr key={booking.id}>
+                                        {/* شعار الطالب */}
+                                        <td>
                                             <div className="w-12 h-12 rounded-lg overflow-hidden">
                                                 {renderStudentLogo(
                                                     booking.student_name,
@@ -234,71 +162,142 @@ const StudentBookingsManagement: React.FC = () => {
                                             </div>
                                         </td>
 
-                                        {/* ✅ بيانات الطالب */}
-                                        <td className="font-medium">
+                                        {/* بيانات الطالب */}
+                                        <td style={{ fontWeight: 600 }}>
                                             {booking.student_name}
                                         </td>
-                                        <td className="text-gray-600">
+                                        <td
+                                            style={{
+                                                fontSize: "13px",
+                                                color: "var(--n600)",
+                                            }}
+                                        >
                                             {booking.student_phone}
                                         </td>
 
-                                        {/* ✅ الخطة */}
+                                        {/* الخطة */}
                                         <td>
-                                            <div>
-                                                <div className="font-semibold text-sm">
+                                            <div style={{ fontSize: "13px" }}>
+                                                <div
+                                                    style={{
+                                                        fontWeight: 600,
+                                                        marginBottom: "2px",
+                                                    }}
+                                                >
                                                     {booking.plan_name}
                                                 </div>
-                                                <div className="text-xs text-gray-500">
+                                                <div
+                                                    style={{
+                                                        color: "var(--n500)",
+                                                        fontSize: "12px",
+                                                    }}
+                                                >
                                                     ({booking.plan_months} شهر)
                                                 </div>
                                             </div>
                                         </td>
 
-                                        {/* ✅ الحلقة والمدرس */}
-                                        <td className="font-medium">
+                                        {/* الحلقة والمدرس */}
+                                        <td style={{ fontWeight: 500 }}>
                                             {booking.circle_name}
                                         </td>
-                                        <td className="text-gray-600">
+                                        <td
+                                            style={{
+                                                fontSize: "13px",
+                                                color: "var(--n600)",
+                                            }}
+                                        >
                                             {booking.teacher_name}
                                         </td>
 
-                                        {/* ✅ التاريخ والوقت */}
-                                        <td className="text-sm">
+                                        {/* التاريخ والوقت */}
+                                        <td style={{ fontSize: "13px" }}>
                                             {new Date(
                                                 booking.schedule_date,
                                             ).toLocaleDateString("ar-EG")}
                                         </td>
-                                        <td className="text-sm font-mono">
-                                            {booking.time_range}
+                                        <td style={{ fontSize: "12px" }}>
+                                            <span
+                                                style={{
+                                                    padding: "4px 12px",
+                                                    background: "#eff6ff",
+                                                    color: "#1e40af",
+                                                    borderRadius: "20px",
+                                                    fontSize: "11px",
+                                                    fontWeight: 500,
+                                                    border: "1px solid #dbeafe",
+                                                }}
+                                            >
+                                                {(() => {
+                                                    const times =
+                                                        booking.time_range
+                                                            .split(" - ")
+                                                            .map((t) => {
+                                                                const [, time] =
+                                                                    t.split(
+                                                                        " ",
+                                                                    );
+                                                                const [h, m] =
+                                                                    time.split(
+                                                                        ":",
+                                                                    );
+                                                                const hour12 =
+                                                                    parseInt(
+                                                                        h,
+                                                                    ) % 12 ||
+                                                                    12;
+                                                                return `${hour12}:${m.padStart(2, "0")} ${parseInt(h) >= 12 ? "م" : "ص"}`;
+                                                            });
+                                                    return times.join(" - ");
+                                                })()}
+                                            </span>
                                         </td>
 
-                                        {/* ✅ حالة السعة */}
+                                        {/* حالة السعة */}
                                         <td>
                                             <span
-                                                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                                    booking.can_confirm
-                                                        ? "bg-green-100 text-green-800 border border-green-200"
-                                                        : "bg-red-100 text-red-800 border border-red-200"
-                                                }`}
+                                                style={{
+                                                    padding: "6px 12px",
+                                                    borderRadius: "20px",
+                                                    fontSize: "12px",
+                                                    fontWeight: 600,
+                                                    border: "1px solid",
+                                                    background:
+                                                        booking.can_confirm
+                                                            ? "#dcfce7"
+                                                            : "#fee2e2",
+                                                    color: booking.can_confirm
+                                                        ? "#166534"
+                                                        : "#991b1b",
+                                                    borderColor:
+                                                        booking.can_confirm
+                                                            ? "#bbf7d0"
+                                                            : "#fecaca",
+                                                }}
                                             >
                                                 {getCapacityStatus(booking)}
                                             </span>
                                         </td>
 
-                                        {/* ✅ تاريخ الطلب */}
-                                        <td className="text-sm text-gray-500">
+                                        {/* تاريخ الطلب */}
+                                        <td
+                                            style={{
+                                                fontSize: "12px",
+                                                color: "var(--n500)",
+                                            }}
+                                        >
                                             {new Date(
                                                 booking.booked_at,
                                             ).toLocaleDateString("ar-EG")}
                                         </td>
 
-                                        {/* ✅ زر القبول */}
+                                        {/* زر القبول */}
                                         <td>
                                             <button
-                                                className={`teacherStudent__status-btn p-3 rounded-xl border-2 font-semibold transition-all w-full max-w-[140px] ${
+                                                className={`btn bxs w-full ${
                                                     booking.can_confirm
-                                                        ? "bg-green-50 border-green-400 text-green-700 hover:bg-green-100 hover:border-green-500 hover:shadow-md shadow-sm"
-                                                        : "bg-gray-50 border-gray-300 text-gray-500 cursor-not-allowed opacity-60"
+                                                        ? "bp green"
+                                                        : "bd gray loading"
                                                 }`}
                                                 onClick={() =>
                                                     handleConfirm(booking)
@@ -307,6 +306,10 @@ const StudentBookingsManagement: React.FC = () => {
                                                     !booking.can_confirm ||
                                                     loading
                                                 }
+                                                style={{
+                                                    minHeight: "40px",
+                                                    fontSize: "13px",
+                                                }}
                                                 title={
                                                     booking.can_confirm
                                                         ? "قبول الطالب في الخطة"
@@ -325,14 +328,14 @@ const StudentBookingsManagement: React.FC = () => {
                     </table>
                 </div>
 
-                {/* ✅ Pagination */}
+                {/* Pagination */}
                 {pagination && pagination.last_page > 1 && (
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        style={{ width: "100%", marginTop: "2rem" }}
-                    >
-                        <div className="flex justify-between items-center p-6 bg-gray-50 rounded-xl">
-                            <div className="text-sm text-gray-600">
+                    <div className="pagination">
+                        <div className="flex justify-between items-center p-4 bg-n100 rounded-lg mt-4">
+                            <div
+                                className="text-sm"
+                                style={{ color: "var(--n600)" }}
+                            >
                                 عرض <strong>{bookings.length}</strong> من{" "}
                                 <strong>{pagination.total}</strong> طلب • الصفحة{" "}
                                 <strong>{currentPage}</strong> من{" "}
@@ -340,19 +343,19 @@ const StudentBookingsManagement: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
+                                    className="btn bs"
                                     onClick={() => goToPage(currentPage - 1)}
                                     disabled={!hasPrev || loading}
-                                    className="px-6 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                 >
                                     السابق
                                 </button>
-                                <span className="px-6 py-2 bg-purple-500 text-white rounded-lg font-bold min-w-[50px] text-center">
+                                <span className="px-4 py-2 bg-purple-500 text-white rounded-lg font-bold min-w-[50px] text-center">
                                     {currentPage}
                                 </span>
                                 <button
+                                    className="btn bs"
                                     onClick={() => goToPage(currentPage + 1)}
                                     disabled={!hasNext || loading}
-                                    className="px-6 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                 >
                                     التالي
                                 </button>
@@ -360,40 +363,8 @@ const StudentBookingsManagement: React.FC = () => {
                         </div>
                     </div>
                 )}
-
-                {/* ✅ Progress Bars */}
-                {bookings.length > 0 && (
-                    <div
-                        className="inputs__verifyOTPBirth mt-8"
-                        id="userProfile__verifyOTPBirth"
-                        style={{ width: "100%" }}
-                    >
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h3>معدل الطلبات المعالجة</h3>
-                            </div>
-                            <p>0% (جميع الطلبات قيد الانتظار)</p>
-                            <div className="userProfile__progressBar">
-                                <span style={{ width: "0%" }}></span>
-                            </div>
-                        </div>
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h3>عدد الطلبات</h3>
-                            </div>
-                            <p>{stats.total}</p>
-                            <div className="userProfile__progressBar">
-                                <span
-                                    style={{
-                                        width: `${Math.min((stats.total / 100) * 100, 100)}%`,
-                                    }}
-                                ></span>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
-        </>
+        </div>
     );
 };
 

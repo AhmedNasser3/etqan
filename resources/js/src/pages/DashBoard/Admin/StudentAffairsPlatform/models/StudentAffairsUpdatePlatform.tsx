@@ -1,4 +1,4 @@
-// pages/StudentAffairsUpdatePlatform.tsx - ✅ مُصحح كامل مع اسم المجمع
+// StudentAffairsUpdatePlatform.tsx - نفس تصميم UpdateSalaryRuleModal
 import { useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
@@ -26,14 +26,14 @@ const StudentAffairsUpdatePlatform: React.FC<
         loadStudentData,
     } = useStudentAffairsUpdatePlatform(studentId);
 
-    // ✅ تحميل البيانات تلقائياً عند تغيير studentId
+    // تحميل البيانات تلقائياً عند تغيير studentId
     useEffect(() => {
         if (studentId > 0) {
             loadStudentData();
         }
     }, [studentId, loadStudentData]);
 
-    // ✅ حفظ البيانات
+    // حفظ البيانات
     const handleSave = async () => {
         const success = await submitForm();
         if (success) {
@@ -42,60 +42,49 @@ const StudentAffairsUpdatePlatform: React.FC<
         }
     };
 
-    // ✅ إغلاق المودال مع تأكيد
+    // إغلاق المودال مع تأكيد
     const handleClose = () => {
         if (isSubmitting) return;
         onClose();
     };
 
-    // Loading State
-    if (loadingData) {
-        return (
-            <div className="ParentModel">
-                <div className="ParentModel__overlay">
-                    <div className="ParentModel__content">
-                        <div className="ParentModel__inner">
-                            <div className="flex justify-center items-center h-64">
-                                <div className="navbar">
-                                    <div className="navbar__inner">
-                                        <div className="navbar__loading">
-                                            <div className="loading-spinner">
-                                                <div className="spinner-circle"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     // Error State
     if (fetchError || (!studentData && !loadingData)) {
         return (
-            <div className="ParentModel">
-                <div className="ParentModel__overlay">
-                    <div className="ParentModel__content">
-                        <div className="ParentModel__inner">
-                            <div className="text-center p-8 space-y-4">
-                                <div className="text-4xl text-red-500">❌</div>
-                                <h3 className="text-xl font-semibold text-gray-800">
-                                    خطأ في تحميل بيانات الطالب
-                                </h3>
-                                <p className="text-gray-600">
-                                    {fetchError?.message || "الطالب غير موجود"}
-                                </p>
-                                <button
-                                    onClick={handleClose}
-                                    className="px-6 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-all"
+            <div className="ov on">
+                <div className="modal">
+                    <div className="mh">
+                        <span className="mh-t">خطأ في تحميل بيانات الطالب</span>
+                        <button className="mx" onClick={handleClose}>
+                            <span
+                                style={{
+                                    width: 12,
+                                    height: 12,
+                                    display: "inline-flex",
+                                }}
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
                                 >
-                                    إغلاق
-                                </button>
-                            </div>
-                        </div>
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
+                    <div className="mb">
+                        <p
+                            style={{
+                                textAlign: "center",
+                                color: "var(--red-600)",
+                                padding: "20px",
+                            }}
+                        >
+                            {fetchError?.message || "الطالب غير موجود"}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -104,256 +93,339 @@ const StudentAffairsUpdatePlatform: React.FC<
 
     // Main Form
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={handleClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        {/* Header */}
-                        <div className="ParentModel__header">
+        <>
+            <div className="ov on">
+                <div className="modal">
+                    <div className="mh">
+                        <span className="mh-t">تعديل بيانات الطالب</span>
+                        <button
+                            className="mx"
+                            onClick={handleClose}
+                            disabled={isSubmitting}
+                        >
+                            <span
+                                style={{
+                                    width: 12,
+                                    height: 12,
+                                    display: "inline-flex",
+                                }}
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                >
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
+
+                    <div className="mb">
+                        {/* معلومات الطالب الحالية */}
+                        <div
+                            style={{
+                                marginBottom: 20,
+                                padding: "16px",
+                                backgroundColor: "#f8fafc",
+                                borderRadius: "8px",
+                                border: "1px solid #e2e8f0",
+                            }}
+                        >
+                            <p
+                                style={{
+                                    fontSize: "12px",
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                البيانات الحالية:{" "}
+                                {studentData?.name || formData.id_number} -{" "}
+                                {studentData?.idNumber || formData.id_number}
+                            </p>
+                            {studentData?.center_name && (
+                                <p
+                                    style={{
+                                        fontSize: "11px",
+                                        color: "#3730a3",
+                                        fontWeight: 500,
+                                    }}
+                                >
+                                    📍 {studentData.center_name}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* رقم الهوية */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                رقم الهوية *
+                            </label>
+                            <input
+                                required
+                                type="text"
+                                name="id_number"
+                                value={formData.id_number || ""}
+                                onChange={handleInputChange}
+                                className={`fi2 ${
+                                    errors.id_number
+                                        ? "border-red-300 bg-red-50"
+                                        : "border-gray-200 hover:border-gray-300"
+                                }`}
+                                placeholder="أدخل رقم الهوية"
+                                disabled={isSubmitting}
+                            />
+                            {errors.id_number && (
+                                <p
+                                    style={{
+                                        fontSize: "10.5px",
+                                        color: "var(--red-600)",
+                                        margin: "2px 0 0 0",
+                                    }}
+                                >
+                                    {errors.id_number}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* الصف */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الصف *
+                            </label>
+                            <select
+                                required
+                                name="grade_level"
+                                value={formData.grade_level || ""}
+                                onChange={handleInputChange}
+                                className={`fi2 ${
+                                    errors.grade_level
+                                        ? "border-red-300 bg-red-50"
+                                        : "border-gray-200 hover:border-gray-300"
+                                }`}
+                                disabled={isSubmitting}
+                            >
+                                <option value="">اختر الصف</option>
+                                {grades.map((grade) => (
+                                    <option key={grade} value={grade}>
+                                        {grade}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.grade_level && (
+                                <p
+                                    style={{
+                                        fontSize: "10.5px",
+                                        color: "var(--red-600)",
+                                        margin: "2px 0 0 0",
+                                    }}
+                                >
+                                    {errors.grade_level}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* الحلقة */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الحلقة
+                            </label>
+                            <input
+                                type="text"
+                                name="circle"
+                                value={formData.circle || ""}
+                                onChange={handleInputChange}
+                                className="fi2 border-gray-200 hover:border-gray-300"
+                                placeholder="مثال: الحلقة الأولى"
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        {/* الحالة */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الحالة
+                            </label>
+                            <select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleInputChange}
+                                className="fi2 border-gray-200 hover:border-gray-300"
+                                disabled={isSubmitting}
+                            >
+                                <option value="نشط">نشط</option>
+                                <option value="معلق">معلق</option>
+                                <option value="موقوف">موقوف</option>
+                            </select>
+                        </div>
+
+                        {/* الحالة الصحية */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الحالة الصحية
+                            </label>
+                            <input
+                                type="text"
+                                name="health_status"
+                                value={formData.health_status || ""}
+                                onChange={handleInputChange}
+                                className="fi2 border-gray-200 hover:border-gray-300"
+                                placeholder="سليم / مريض / إعاقة..."
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        {/* مستوى القراءة */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                مستوى القراءة
+                            </label>
+                            <input
+                                type="text"
+                                name="reading_level"
+                                value={formData.reading_level || ""}
+                                onChange={handleInputChange}
+                                className="fi2 border-gray-200 hover:border-gray-300"
+                                placeholder="جزء ثالث / نص جزء..."
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        {/* وقت الحلقة */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                وقت الحلقة
+                            </label>
+                            <input
+                                type="text"
+                                name="session_time"
+                                value={formData.session_time || ""}
+                                onChange={handleInputChange}
+                                className="fi2 border-gray-200 hover:border-gray-300"
+                                placeholder="عصر / مغرب / ليل"
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        {/* الملاحظات */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                ملاحظات
+                            </label>
+                            <textarea
+                                name="notes"
+                                value={formData.notes || ""}
+                                onChange={handleInputChange}
+                                rows={3}
+                                className="fi2 resize-vertical border-gray-200 hover:border-gray-300"
+                                placeholder="أي ملاحظات إضافية حول الطالب..."
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        className="mf"
+                        style={{
+                            padding: "20px 20px 16px 20px",
+                            borderTop: "1px solid #e5e7eb",
+                            marginTop: "auto",
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: 12,
+                                justifyContent: "flex-end",
+                            }}
+                        >
                             <button
-                                className="ParentModel__close"
+                                className="btn bs"
                                 onClick={handleClose}
                                 disabled={isSubmitting}
-                                title="إغلاق"
                             >
-                                <FiX size={24} />
+                                إلغاء
                             </button>
-                        </div>
-
-                        {/* Title & Student Info */}
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>تعديل بيانات الطالب - المنصة الكاملة</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>تعديل بيانات الطالب</h1>
-                                <div className="space-y-1 mt-2">
-                                    <p className="text-sm text-gray-700">
-                                        البيانات الحالية محملة في الحقول أدناه
-                                    </p>
-                                    <span className="block text-sm text-green-600 font-medium">
-                                        {studentData?.name ||
-                                            formData.id_number}
-                                        -{" "}
-                                        {studentData?.idNumber ||
-                                            formData.id_number}
-                                    </span>
-                                    {studentData?.center_name && (
-                                        <span className="block text-sm text-indigo-600 font-medium">
-                                            📍 {studentData.center_name}
-                                        </span>
-                                    )}
-                                    {studentData?.center_id &&
-                                        !studentData.center_name && (
-                                            <span className="block text-sm text-indigo-500">
-                                                🆔 مجمع: {studentData.center_id}
-                                            </span>
-                                        )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Form Container */}
-                        <div className="ParentModel__container">
-                            {/* رقم الهوية */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label className="required">
-                                        رقم الهوية *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="id_number"
-                                        value={formData.id_number || ""}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.id_number
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="أدخل رقم الهوية"
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                    {errors.id_number && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.id_number}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* الصف */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label className="required">الصف *</label>
-                                    <select
-                                        name="grade_level"
-                                        value={formData.grade_level || ""}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.grade_level
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={isSubmitting || loadingData}
-                                    >
-                                        <option value="">اختر الصف</option>
-                                        {grades.map((grade) => (
-                                            <option key={grade} value={grade}>
-                                                {grade}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {errors.grade_level && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.grade_level}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* الحلقة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الحلقة</label>
-                                    <input
-                                        type="text"
-                                        name="circle"
-                                        value={formData.circle || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="مثال: الحلقة الأولى"
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* الحالة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الحالة</label>
-                                    <select
-                                        name="status"
-                                        value={formData.status}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        disabled={isSubmitting || loadingData}
-                                    >
-                                        <option value="نشط">نشط</option>
-                                        <option value="معلق">معلق</option>
-                                        <option value="موقوف">موقوف</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* الحالة الصحية */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الحالة الصحية</label>
-                                    <input
-                                        type="text"
-                                        name="health_status"
-                                        value={formData.health_status || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="سليم / مريض / إعاقة..."
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* مستوى القراءة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>مستوى القراءة</label>
-                                    <input
-                                        type="text"
-                                        name="reading_level"
-                                        value={formData.reading_level || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="جزء ثالث / نص جزء..."
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* وقت الحصة */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>وقت الحصة</label>
-                                    <input
-                                        type="text"
-                                        name="session_time"
-                                        value={formData.session_time || ""}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="عصر / مغرب / ليل"
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* الملاحظات */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>ملاحظات</label>
-                                    <textarea
-                                        name="notes"
-                                        value={formData.notes || ""}
-                                        onChange={handleInputChange}
-                                        rows={4}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="أي ملاحظات إضافية حول الطالب..."
-                                        disabled={isSubmitting || loadingData}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
+                            <button
+                                className="btn bp"
+                                onClick={handleSave}
+                                disabled={isSubmitting}
                             >
-                                <button
-                                    type="button"
-                                    onClick={handleSave}
-                                    disabled={isSubmitting || loadingData}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-xl transition-all flex items-center justify-center space-x-2 space-x-reverse"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            <span>جاري الحفظ...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span>حفظ التغييرات</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Cancel Button */}
-                            {!isSubmitting && (
-                                <div className="inputs__submitBtn">
-                                    <button
-                                        type="button"
-                                        onClick={handleClose}
-                                        className="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-xl transition-all"
-                                    >
-                                        إلغاء
-                                    </button>
-                                </div>
-                            )}
+                                {isSubmitting
+                                    ? "جاري الحفظ..."
+                                    : "حفظ التغييرات"}
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

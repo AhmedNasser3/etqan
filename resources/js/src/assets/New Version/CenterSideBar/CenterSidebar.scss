@@ -1,0 +1,739 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  إتقان — CenterSidebar Styles
+//  Namespace prefix: iq-sb  (itqan-sidebar)
+//  Direction: RTL
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+$iq-green-50: #f0faf5;
+$iq-green-100: #d6f0e3;
+$iq-green-200: #a8dfc5;
+$iq-green-300: #6cc49f;
+$iq-green-400: #38a879;
+$iq-green-500: #1e8f61;
+$iq-green-600: #15724e;
+$iq-green-700: #0f5439;
+$iq-green-800: #083524;
+$iq-green-900: #042214;
+
+$iq-neutral-0: #ffffff;
+$iq-neutral-50: #f8fafc;
+$iq-neutral-100: #f1f5f9;
+$iq-neutral-200: #e2e8f0;
+$iq-neutral-300: #cbd5e1;
+$iq-neutral-400: #94a3b8;
+$iq-neutral-500: #64748b;
+$iq-neutral-600: #475569;
+$iq-neutral-700: #334155;
+$iq-neutral-800: #1e293b;
+$iq-neutral-900: #0f172a;
+$iq-neutral-950: #060f1e;
+
+// Sidebar dimensions
+$iq-sb-width: 256px;
+$iq-sb-width-collapsed: 68px;
+$iq-sb-z: 400;
+$iq-transition: 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+$iq-transition-spring: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+// Breakpoints
+$iq-bp-mobile: 768px;
+$iq-bp-tablet: 1024px;
+
+// ─── Keyframes ─────────────────────────────────────────────────────────────
+@keyframes iq-fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes iq-pulse-dot {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
+@keyframes iq-skeleton-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes iq-submenu-open {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+// ─── Mobile Toggle Button ──────────────────────────────────────────────────
+.iq-sb-toggle {
+    display: none; // shown via media query below
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: $iq-sb-z + 10;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: none;
+    background: $iq-green-500;
+    color: $iq-neutral-0;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba($iq-green-500, 0.38);
+    transition:
+        transform $iq-transition-spring,
+        box-shadow $iq-transition;
+
+    svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    &:hover {
+        transform: scale(1.07);
+        box-shadow: 0 6px 20px rgba($iq-green-500, 0.5);
+    }
+
+    &:active {
+        transform: scale(0.94);
+    }
+
+    @media (max-width: $iq-bp-mobile) {
+        display: flex;
+    }
+}
+
+// ─── Overlay (mobile backdrop) ─────────────────────────────────────────────
+.iq-sb-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: $iq-sb-z - 1;
+    background: rgba($iq-neutral-950, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+
+    &--visible {
+        display: block;
+        animation: iq-fadeSlideIn 0.22s ease;
+    }
+}
+
+// ─── Sidebar Root ──────────────────────────────────────────────────────────
+.iq-sb {
+    position: fixed;
+    top: 0;
+    right: 0; // RTL: sidebar on the right
+    height: 100vh;
+    height: 100dvh;
+    width: $iq-sb-width;
+    z-index: $iq-sb-z;
+    direction: rtl;
+
+    // Background — deep gradient
+    background: linear-gradient(
+        180deg,
+        $iq-neutral-950 0%,
+        darken($iq-green-900, 4%) 60%,
+        $iq-neutral-950 100%
+    );
+
+    // Subtle radial glow at top
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+            ellipse 80% 40% at 50% 0%,
+            rgba($iq-green-500, 0.13) 0%,
+            transparent 70%
+        );
+        pointer-events: none;
+    }
+
+    border-left: 1px solid rgba($iq-neutral-0, 0.07);
+    box-shadow: -4px 0 32px rgba($iq-neutral-950, 0.35);
+    transition:
+        width $iq-transition,
+        transform $iq-transition;
+    overflow: hidden;
+
+    // ── Collapsed ──
+    &--collapsed {
+        width: $iq-sb-width-collapsed;
+
+        .iq-sb__brand-text,
+        .iq-sb__center-chip,
+        .iq-sb__link-label,
+        .iq-sb__chevron,
+        .iq-sb__collapse-label {
+            display: none;
+        }
+
+        .iq-sb__link {
+            justify-content: center;
+            padding: 10px 0;
+        }
+        .iq-sb__link-icon {
+            margin: 0;
+        }
+        .iq-sb__footer {
+            padding: 8px 0;
+            justify-content: center;
+        }
+        .iq-sb__collapse-btn {
+            justify-content: center;
+            width: 100%;
+        }
+    }
+
+    // ── Mobile: hidden by default, slides in ──
+    @media (max-width: $iq-bp-mobile) {
+        transform: translateX(100%); // hidden off-screen to the right
+
+        &--mobile-open {
+            transform: translateX(0);
+            box-shadow: -8px 0 40px rgba($iq-neutral-950, 0.5);
+        }
+    }
+
+    // ── Tablet: auto-collapse ──
+    @media (min-width: #{$iq-bp-mobile + 1px}) and (max-width: $iq-bp-tablet) {
+        width: $iq-sb-width-collapsed;
+
+        .iq-sb__brand-text,
+        .iq-sb__center-chip,
+        .iq-sb__link-label,
+        .iq-sb__chevron,
+        .iq-sb__collapse-label {
+            display: none;
+        }
+
+        .iq-sb__link {
+            justify-content: center;
+            padding: 10px 0;
+        }
+        .iq-sb__link-icon {
+            margin: 0;
+        }
+    }
+}
+
+// ─── Inner scroll wrapper ──────────────────────────────────────────────────
+.iq-sb__inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    // Thin scrollbar
+    scrollbar-width: thin;
+    scrollbar-color: rgba($iq-neutral-0, 0.1) transparent;
+
+    &::-webkit-scrollbar {
+        width: 3px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: rgba($iq-neutral-0, 0.12);
+        border-radius: 3px;
+    }
+}
+
+// ─── Brand / Header ───────────────────────────────────────────────────────
+.iq-sb__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 14px 14px;
+    border-bottom: 1px solid rgba($iq-neutral-0, 0.07);
+    flex-shrink: 0;
+    position: relative;
+}
+
+.iq-sb__logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, $iq-green-400, $iq-green-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba($iq-green-500, 0.38);
+}
+
+.iq-sb__logo-icon {
+    font-size: 17px;
+    font-weight: 900;
+    color: $iq-neutral-0;
+    font-family: "Tajawal", "Arial", sans-serif;
+    line-height: 1;
+}
+
+.iq-sb__brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+    animation: iq-fadeSlideIn 0.2s ease;
+}
+
+.iq-sb__brand-name {
+    font-size: 16px;
+    font-weight: 900;
+    color: $iq-neutral-0;
+    white-space: nowrap;
+    font-family: "Tajawal", "Arial", sans-serif;
+}
+
+.iq-sb__brand-sub {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba($iq-neutral-0, 0.38);
+    white-space: nowrap;
+}
+
+// Close button — mobile only
+.iq-sb__close {
+    display: none;
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    background: rgba($iq-neutral-0, 0.08);
+    color: rgba($iq-neutral-0, 0.6);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    transition: background $iq-transition;
+
+    svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    &:hover {
+        background: rgba($iq-neutral-0, 0.15);
+    }
+
+    @media (max-width: $iq-bp-mobile) {
+        display: flex;
+    }
+}
+
+// ─── Center chip ──────────────────────────────────────────────────────────
+.iq-sb__center-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 10px 12px 4px;
+    padding: 8px 11px;
+    background: rgba($iq-neutral-0, 0.05);
+    border: 1px solid rgba($iq-neutral-0, 0.08);
+    border-radius: 9px;
+    flex-shrink: 0;
+    animation: iq-fadeSlideIn 0.2s ease;
+}
+
+.iq-sb__center-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: $iq-green-400;
+    flex-shrink: 0;
+    animation: iq-pulse-dot 2.5s ease infinite;
+    box-shadow: 0 0 0 2px rgba($iq-green-400, 0.25);
+}
+
+.iq-sb__center-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: $iq-green-300;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: "Tajawal", "Arial", sans-serif;
+}
+
+// ─── Navigation list ──────────────────────────────────────────────────────
+.iq-sb__nav {
+    flex: 1;
+    padding: 8px 7px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+.iq-sb__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+// ─── Menu Item ────────────────────────────────────────────────────────────
+.iq-sb__item {
+    position: relative;
+    border-radius: 10px;
+    transition: background $iq-transition;
+
+    &--active > .iq-sb__link {
+        background: rgba($iq-green-400, 0.16);
+        color: $iq-green-300;
+
+        &::before {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 20%;
+            bottom: 20%;
+            width: 3px;
+            background: $iq-green-400;
+            border-radius: 3px 0 0 3px;
+        }
+
+        .iq-sb__link-icon {
+            color: $iq-green-400;
+        }
+    }
+}
+
+// ─── Main link ────────────────────────────────────────────────────────────
+.iq-sb__link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 11px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: rgba($iq-neutral-0, 0.5);
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: "Tajawal", "Arial", sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: right;
+
+    &:hover {
+        background: rgba($iq-neutral-0, 0.07);
+        color: rgba($iq-neutral-0, 0.88);
+        .iq-sb__link-icon {
+            color: $iq-green-400;
+        }
+    }
+
+    &:active {
+        transform: scale(0.97);
+    }
+
+    // Toggle button resets
+    &--toggle {
+        text-align: right;
+    }
+}
+
+.iq-sb__link-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: rgba($iq-neutral-0, 0.38);
+    transition: color $iq-transition;
+    font-size: 18px;
+
+    svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+.iq-sb__link-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation: iq-fadeSlideIn 0.18s ease;
+}
+
+// ─── Chevron ──────────────────────────────────────────────────────────────
+.iq-sb__chevron {
+    display: flex;
+    align-items: center;
+    margin-right: auto;
+    color: rgba($iq-neutral-0, 0.3);
+    transition: transform $iq-transition;
+    flex-shrink: 0;
+
+    svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    &--open {
+        transform: rotate(180deg);
+        color: $iq-green-400;
+    }
+}
+
+// ─── Badge ────────────────────────────────────────────────────────────────
+.iq-sb__badge {
+    margin-right: auto;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 100px;
+    background: rgba(239, 68, 68, 0.22);
+    color: #fca5a5;
+    font-size: 9.5px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: "Tajawal", "Arial", sans-serif;
+}
+
+// ─── Collapsed Tooltip ────────────────────────────────────────────────────
+.iq-sb__tooltip {
+    position: absolute;
+    right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: $iq-neutral-800;
+    color: $iq-neutral-0;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: "Tajawal", "Arial", sans-serif;
+    padding: 5px 10px;
+    border-radius: 7px;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba($iq-neutral-950, 0.3);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 10;
+
+    // Arrow pointing right
+    &::after {
+        content: "";
+        position: absolute;
+        right: -4px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-top: 4px solid transparent;
+        border-bottom: 4px solid transparent;
+        border-left: 4px solid $iq-neutral-800;
+    }
+}
+
+.iq-sb__item:hover .iq-sb__tooltip {
+    .iq-sb--collapsed & {
+        opacity: 1;
+    }
+}
+
+// ─── Sub-menu ─────────────────────────────────────────────────────────────
+.iq-sb__submenu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.28s ease;
+
+    &--open {
+        max-height: 400px; // large enough for any submenu
+        animation: iq-submenu-open 0.22s ease;
+    }
+}
+
+// ─── Sub-item ─────────────────────────────────────────────────────────────
+.iq-sb__subitem {
+    position: relative;
+
+    &--active .iq-sb__sublink {
+        color: $iq-green-300;
+        background: rgba($iq-green-500, 0.1);
+
+        .iq-sb__sublink-dot {
+            background: $iq-green-400;
+            box-shadow: 0 0 0 2px rgba($iq-green-400, 0.28);
+        }
+    }
+}
+
+.iq-sb__sublink {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 11px 8px 11px;
+    padding-right: 38px; // indent from icon of parent
+    font-size: 11.5px;
+    font-weight: 500;
+    font-family: "Tajawal", "Arial", sans-serif;
+    color: rgba($iq-neutral-0, 0.42);
+    text-decoration: none;
+    border-radius: 8px;
+    margin: 1px 4px;
+    transition: all 0.16s ease;
+    white-space: nowrap;
+
+    &:hover {
+        color: rgba($iq-neutral-0, 0.82);
+        background: rgba($iq-neutral-0, 0.06);
+
+        .iq-sb__sublink-dot {
+            background: $iq-green-300;
+        }
+    }
+
+    &:active {
+        transform: scale(0.97);
+    }
+}
+
+.iq-sb__sublink-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba($iq-neutral-0, 0.25);
+    flex-shrink: 0;
+    transition:
+        background $iq-transition,
+        box-shadow $iq-transition;
+}
+
+// ─── Footer / Collapse toggle ─────────────────────────────────────────────
+.iq-sb__footer {
+    padding: 10px 10px 16px;
+    border-top: 1px solid rgba($iq-neutral-0, 0.07);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.iq-sb__collapse-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: rgba($iq-neutral-0, 0.32);
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: "Tajawal", "Arial", sans-serif;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    text-align: right;
+
+    &:hover {
+        background: rgba($iq-neutral-0, 0.06);
+        color: rgba($iq-neutral-0, 0.7);
+    }
+
+    &:active {
+        transform: scale(0.96);
+    }
+
+    // Hide on mobile (mobile uses the X button instead)
+    @media (max-width: $iq-bp-mobile) {
+        display: none;
+    }
+}
+
+.iq-sb__collapse-label {
+    animation: iq-fadeSlideIn 0.18s ease;
+}
+
+.iq-sb__collapse-icon {
+    display: flex;
+    align-items: center;
+    transition: transform $iq-transition;
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    &--flipped {
+        transform: rotate(180deg);
+    }
+}
+
+// ─── Loading Skeleton ─────────────────────────────────────────────────────
+$skeleton-bg: linear-gradient(
+    90deg,
+    rgba($iq-neutral-0, 0.04) 0%,
+    rgba($iq-neutral-0, 0.09) 50%,
+    rgba($iq-neutral-0, 0.04) 100%
+);
+
+.iq-sb--loading {
+    background: linear-gradient(180deg, $iq-neutral-950 0%, $iq-green-900 100%);
+}
+
+.iq-sb__brand-skeleton {
+    height: 36px;
+    width: 140px;
+    border-radius: 9px;
+    background: $skeleton-bg;
+    background-size: 200% 100%;
+    animation: iq-skeleton-shimmer 1.5s infinite;
+    margin: 16px 14px;
+}
+
+.iq-sb__item-skeleton {
+    height: 40px;
+    border-radius: 9px;
+    background: $skeleton-bg;
+    background-size: 200% 100%;
+    animation: iq-skeleton-shimmer 1.5s infinite;
+    margin: 3px 10px;
+}
+
+// ─── Utility: hide when content area has right padding for sidebar ─────────
+// Add this class to your layout wrapper:
+//   .iq-layout { padding-right: $iq-sb-width; }
+// (already composable, not included here to avoid conflicts)

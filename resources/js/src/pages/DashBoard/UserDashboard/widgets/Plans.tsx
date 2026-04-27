@@ -3,11 +3,11 @@ import UserPlans from "../userPlans/UserPlans";
 
 const Plans: React.FC = () => {
     return (
-        <div className="userProfile__plans">
-            <div>
-                <UserPlans />
+        <div>
+            <div className="content">
                 <UserMeetCard />
             </div>
+            <UserPlans />
         </div>
     );
 };

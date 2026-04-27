@@ -41,7 +41,7 @@ export const useTeacherRoom = (scheduleId?: number) => {
                 const fullUrl =
                     data.jitsi_url || `https://meet.jit.si/${roomName}`;
 
-                console.log("✅ [TEACHER ROOM] Room URL ready:", fullUrl);
+                console.log(" [TEACHER ROOM] Room URL ready:", fullUrl);
                 setRoomUrl(fullUrl);
                 return fullUrl;
             } else {

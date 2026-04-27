@@ -1,4 +1,4 @@
-// modals/UpdateAchievementModal.tsx - ✅ كامل مع الطالب محدد
+// modals/UpdateAchievementModal.tsx -  كامل مع الطالب محدد
 import React from "react";
 import { FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
@@ -126,7 +126,7 @@ const UpdateAchievementModal: React.FC<UpdateAchievementModalProps> = ({
                                     )}
                                     {formData.user_id && !loadingData && (
                                         <span className="block text-sm text-green-600 mt-1">
-                                            ✅ الطالب محدد: {formData.user_id}
+                                            الطالب محدد: {formData.user_id}
                                         </span>
                                     )}
                                     {user?.center_id && (
@@ -139,7 +139,7 @@ const UpdateAchievementModal: React.FC<UpdateAchievementModalProps> = ({
                         </div>
 
                         <div className="ParentModel__container">
-                            {/* ✅ الطالب - محدد تلقائياً */}
+                            {/*  الطالب - محدد تلقائياً */}
                             <div className="inputs__verifyOTPBirth">
                                 <div className="inputs__email">
                                     <label>الطالب *</label>

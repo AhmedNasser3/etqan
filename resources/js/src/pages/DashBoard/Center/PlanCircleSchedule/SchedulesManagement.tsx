@@ -1,182 +1,186 @@
-// SchedulesManagement.tsx
-import { useState, useCallback, useMemo } from "react";
-import toast from "react-hot-toast";
-import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
-import { PiWhatsappLogoDuotone } from "react-icons/pi";
-import { FiEdit3, FiTrash2, FiLink2 } from "react-icons/fi";
-import { IoMdAdd, IoMdCopy } from "react-icons/io";
-import { usePlanSchedules, ScheduleType } from "./hooks/usePlanSchedules";
-import CreateSchedulePage from "./models/CreateSchedulePage";
+// SchedulesManagement.tsx - التصميم الجديد مع cards بدل table
+import React, { useState, useEffect, useCallback } from "react";
 import UpdateSchedulePage from "./models/UpdateSchedulePage";
+import CreateSchedulePage from "./models/CreateSchedulePage";
+import { usePlanSchedules, ScheduleType } from "./hooks/usePlanSchedules";
+import { ICO } from "../../icons";
+import { useToast } from "../../../../../contexts/ToastContext";
+
+interface ConfirmModalProps {
+    title: string;
+    desc?: string;
+    cb: () => void;
+}
 
 const SchedulesManagement: React.FC = () => {
     const {
-        schedules = [],
-        loading = false,
-        pagination,
-        currentPage,
-        searchSchedules,
-        goToPage,
+        schedules: schedulesFromHook,
+        loading,
         refetch,
     } = usePlanSchedules();
-
     const [search, setSearch] = useState("");
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [selectedSchedule, setSelectedSchedule] =
+        useState<ScheduleType | null>(null);
     const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(
         null,
     );
+    const [confirm, setConfirm] = useState<ConfirmModalProps | null>(null);
 
-    const handleSearch = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            const value = e.target.value;
-            setSearch(value);
-            searchSchedules(value);
-        },
-        [searchSchedules],
+    // نخلي المواعيد في الـ state هنا عشان نقدر نحذف فوري
+    const [schedules, setSchedules] = useState<ScheduleType[]>([]);
+
+    // أول ما يجي schedules من hook نخليهم في الـ state
+    useEffect(() => {
+        setSchedules(schedulesFromHook);
+    }, [schedulesFromHook]);
+
+    // دايمًا نفس الـ schedules لكن مفلترة عند الـ search
+    const filteredSchedules = schedules.filter(
+        (schedule) =>
+            schedule.plan.plan_name
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+            (schedule.circle?.name || "")
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+            (schedule.teacher?.name || "")
+                .toLowerCase()
+                .includes(search.toLowerCase()),
     );
 
-    const handleEdit = useCallback((schedule: ScheduleType) => {
-        setSelectedScheduleId(schedule.id);
-        setShowUpdateModal(true);
-    }, []);
+    const { notifySuccess, notifyError } = useToast();
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("هل أنت متأكد من حذف هذا الموعد؟")) return;
-
-        try {
-            const csrfToken =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute("content") || "";
-
-            const response = await fetch(`/api/v1/plans/schedules/${id}`, {
-                method: "DELETE",
-                credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRF-TOKEN": csrfToken,
-                },
-            });
-
-            if (response.ok) {
-                toast.success("تم حذف الموعد بنجاح ");
-                refetch();
-            } else {
-                const result = await response.json();
-                toast.error(result.message || "فشل في الحذف");
-            }
-        } catch {
-            toast.error("حدث خطأ في الحذف");
-        }
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearch(e.target.value);
     };
 
-    const handleCopyJitsiUrl = useCallback((url: string) => {
+    const handleEdit = (schedule: ScheduleType) => {
+        setSelectedSchedule(schedule);
+        setSelectedScheduleId(schedule.id);
+        setShowUpdateModal(true);
+    };
+
+    const handleDelete = async (id: number) => {
+        setConfirm({
+            title: "حذف الموعد",
+            desc: "هل أنت متأكد من حذف هذا الموعد؟ لا يمكن التراجع.",
+            cb: async () => {
+                try {
+                    const csrfToken = document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content");
+
+                    if (!csrfToken) {
+                        notifyError("فشل في جلب رمز الحماية");
+                        setConfirm(null);
+                        return;
+                    }
+
+                    const response = await fetch(
+                        `/api/v1/plans/schedules/${id}`,
+                        {
+                            method: "DELETE",
+                            credentials: "include",
+                            headers: {
+                                Accept: "application/json",
+                                "X-Requested-With": "XMLHttpRequest",
+                                "X-CSRF-TOKEN": csrfToken,
+                            },
+                        },
+                    );
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        notifySuccess("تم حذف الموعد بنجاح");
+                        // حذف فوري من الواجهة
+                        setSchedules((prev) => prev.filter((s) => s.id !== id));
+                    } else {
+                        notifyError(result.message || "فشل في حذف الموعد");
+                    }
+                } catch (error: any) {
+                    notifyError("حدث خطأ في الحذف");
+                } finally {
+                    setConfirm(null);
+                }
+            },
+        });
+    };
+
+    const handleCopyJitsiUrl = (url: string) => {
         navigator.clipboard.writeText(url);
-        toast.success("تم نسخ رابط الغرفة! ");
-    }, []);
+        notifySuccess("تم نسخ رابط الغرفة!");
+    };
 
-    const handleCloseUpdateModal = useCallback(() => {
+    const handleCloseUpdateModal = () => {
         setShowUpdateModal(false);
+        setSelectedSchedule(null);
         setSelectedScheduleId(null);
-    }, []);
+    };
 
-    const handleUpdateSuccess = useCallback(() => {
-        toast.success("تم تحديث الموعد بنجاح! ");
+    const handleUpdateSuccess = () => {
+        notifySuccess("تم تحديث الموعد بنجاح");
         refetch();
-        handleCloseUpdateModal();
-    }, [refetch, handleCloseUpdateModal]);
+    };
 
-    const handleCloseCreateModal = useCallback(() => {
+    const handleCloseCreateModal = () => {
         setShowCreateModal(false);
-    }, []);
+    };
 
-    const handleCreateSuccess = useCallback(() => {
-        toast.success("تم إضافة الموعد بنجاح! ");
+    const handleCreateSuccess = () => {
+        notifySuccess("تم إضافة الموعد بنجاح");
         refetch();
-        handleCloseCreateModal();
-    }, [refetch, handleCloseCreateModal]);
+    };
 
-    const handleAddNew = useCallback(() => {
+    const handleAddNew = () => {
         setShowCreateModal(true);
-    }, []);
+    };
 
-    const stats = useMemo(
-        () => ({
-            total: pagination?.total || 0,
-            available: schedules.filter((s) => s.is_available).length,
-            currentPage,
-            totalPages: pagination?.last_page || 1,
-        }),
-        [
-            pagination?.total,
-            schedules.length,
-            currentPage,
-            pagination?.last_page,
-        ],
-    );
-
-    const getTeacherName = useCallback((schedule: ScheduleType) => {
+    const getTeacherName = (schedule: ScheduleType) => {
         return schedule.teacher?.name || "غير محدد";
-    }, []);
+    };
 
-    const getCircleName = useCallback((schedule: ScheduleType) => {
+    const getCircleName = (schedule: ScheduleType) => {
         return schedule.circle?.name || "غير محدد";
-    }, []);
+    };
 
-    const getAvailabilityStatus = useCallback((schedule: ScheduleType) => {
+    const getAvailabilityStatus = (schedule: ScheduleType) => {
         if (!schedule.is_available) return "غير متاح";
         if (schedule.max_students === null) return "مفتوح";
         const remaining =
             (schedule.max_students || 0) - schedule.booked_students;
         return `${remaining}/${schedule.max_students}`;
-    }, []);
+    };
 
-    const renderLogo = useCallback((name: string) => {
-        const initials = name
-            .split(" ")
-            .slice(-2)
-            .map((n) => n[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase();
+    function Badge({ txt, cls }: { txt: string; cls: string }) {
+        const map: Record<string, React.CSSProperties> = {
+            "bg-g": { background: "var(--g100)", color: "var(--g700)" },
+            "bg-r": { background: "#fee2e2", color: "#ef4444" },
+        };
         return (
-            <div className="w-full h-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white rounded-lg">
-                {initials}
-            </div>
-        );
-    }, []);
-
-    const hasPrev = currentPage > 1;
-    const hasNext = currentPage < (pagination?.last_page || 1);
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px] p-8">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                    <div className="navbar">
-                        <div className="navbar__inner">
-                            <div className="navbar__loading">
-                                <div className="loading-spinner">
-                                    <div className="spinner-circle"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>{" "}
-                </div>
-            </div>
+            <span
+                className="badge px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                style={
+                    map[cls] || {
+                        background: "var(--n100)",
+                        color: "var(--n500)",
+                    }
+                }
+            >
+                {txt}
+            </span>
         );
     }
 
     return (
         <>
-            {showUpdateModal && selectedScheduleId && (
+            {/* المودالز */}
+            {showUpdateModal && selectedSchedule && selectedScheduleId && (
                 <UpdateSchedulePage
                     scheduleId={selectedScheduleId}
+                    initialSchedule={selectedSchedule}
                     onClose={handleCloseUpdateModal}
                     onSuccess={handleUpdateSuccess}
                 />
@@ -189,282 +193,175 @@ const SchedulesManagement: React.FC = () => {
                 />
             )}
 
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon purpleColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
+            {confirm && (
+                <div
+                    className="conf-ov on"
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <div className="conf-box">
+                        <div className="conf-ico">
+                            <span
+                                style={{
+                                    width: 22,
+                                    height: 22,
+                                    display: "inline-flex",
+                                    color: "var(--red)",
+                                }}
+                            >
+                                {ICO.trash}
+                            </span>
                         </div>
-                        <div>
-                            <h3>إجمالي المواعيد</h3>
-                            <p className="text-2xl font-bold text-purple-600">
-                                {stats.total}
-                            </p>
+                        <div className="conf-t">{confirm.title}</div>
+                        <div className="conf-d">
+                            {confirm.desc ||
+                                "هل أنت متأكد من هذا الإجراء؟ لا يمكن التراجع."}
                         </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon blueColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>متاحة حالياً</h3>
-                            <p className="text-2xl font-bold text-blue-600">
-                                {stats.available}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <PiWhatsappLogoDuotone />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>محجوزة</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {stats.total - stats.available}
-                            </p>
+                        <div className="conf-acts">
+                            <button className="btn bd" onClick={confirm.cb}>
+                                تأكيد
+                            </button>
+                            <button
+                                className="btn bs"
+                                onClick={() => setConfirm(null)}
+                            >
+                                إلغاء
+                            </button>
                         </div>
                     </div>
                 </div>
+            )}
 
-                <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
-                >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            مواعيد الحلقات للخطط الخاصة بمجمعك
-                        </div>
-                        <div className="plan__current">
-                            <h2>جدول المواعيد</h2>
-                            <div className="plan__date-range">
-                                <div className="date-picker to">
-                                    <input
-                                        type="search"
-                                        placeholder="البحث بالخطة أو الحلقة..."
-                                        value={search}
-                                        onChange={handleSearch}
-                                        disabled={loading}
-                                    />
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">مواعيد الحلقات</div>
+                        <button className="btn bp bsm" onClick={handleAddNew}>
+                            + موعد جديد
+                        </button>
+                    </div>
+
+                    {filteredSchedules.length > 0 ? (
+                        filteredSchedules.map((s: ScheduleType) => (
+                            <div
+                                key={s.id}
+                                style={{
+                                    display: "flex",
+                                    gap: 10,
+                                    alignItems: "center",
+                                    padding: "10px 14px",
+                                    borderBottom: "1px solid var(--n100)",
+                                }}
+                            >
+                                {/* وقت البداية والنهاية */}
+                                <div
+                                    style={{
+                                        minWidth: 55,
+                                        background: "var(--g50)",
+                                        border: "1px solid var(--g100)",
+                                        borderRadius: 9,
+                                        padding: 7,
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            fontSize: 14,
+                                            fontWeight: 900,
+                                            color: "var(--g700)",
+                                        }}
+                                    >
+                                        {s.start_time?.slice(0, 5)}
+                                    </div>
+                                    <div
+                                        style={{
+                                            fontSize: 9,
+                                            color: "var(--n400)",
+                                        }}
+                                    >
+                                        → {s.end_time?.slice(0, 5)}
+                                    </div>
                                 </div>
-                                <button
-                                    className="teacherStudent__status-btn add-btn p-3 rounded-xl border-2 bg-green-50 border-green-300 text-green-600 hover:bg-green-100 font-medium ml-3"
-                                    onClick={handleAddNew}
-                                    disabled={loading}
-                                >
-                                    <IoMdAdd
-                                        size={20}
-                                        className="inline mr-2"
-                                    />
-                                    موعد جديد
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div className="plan__daily-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>الشعار</th>
-                                <th>الخطة</th>
-                                <th>الحلقة</th>
-                                <th>المدرس</th>
-                                <th>التاريخ</th>
-                                <th>الوقت</th>
-                                <th>المدة</th>
-                                <th>الحالة</th>
-                                <th>رابط الغرفة</th> {/* ✅ عمود جديد */}
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {schedules.length === 0 && !loading ? (
-                                <tr>
-                                    <td
-                                        colSpan={10}
-                                        className="text-center py-8 text-gray-500"
+                                {/* اسم الحلقة والتفاصيل */}
+                                <div style={{ flex: 1 }}>
+                                    <div
+                                        style={{
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                        }}
                                     >
-                                        لا يوجد مواعيد حالياً
-                                    </td>
-                                </tr>
-                            ) : (
-                                schedules.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        className="plan__row active"
+                                        {getCircleName(s)}
+                                    </div>
+                                    <div
+                                        style={{
+                                            fontSize: "10.5px",
+                                            color: "var(--n400)",
+                                        }}
                                     >
-                                        <td className="teacherStudent__img">
-                                            <div className="w-12 h-12 rounded-lg overflow-hidden">
-                                                {renderLogo(item.circle.name)}
-                                            </div>
-                                        </td>
-                                        <td>{item.plan.plan_name}</td>
-                                        <td>{getCircleName(item)}</td>
-                                        <td>{getTeacherName(item)}</td>
-                                        <td>
-                                            {new Date(
-                                                item.schedule_date,
-                                            ).toLocaleDateString("ar-EG")}
-                                        </td>
-                                        <td>
-                                            {item.start_time} - {item.end_time}
-                                        </td>
-                                        <td>{item.duration_minutes} د</td>
-                                        <td>
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                                    item.is_available
-                                                        ? "bg-green-100 text-green-800"
-                                                        : "bg-red-100 text-red-800"
-                                                }`}
-                                            >
-                                                {getAvailabilityStatus(item)}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {/* ✅ عمود رابط Jitsi الجديد */}
-                                            <div className="flex items-center gap-1">
-                                                <a
-                                                    href={item.jitsi_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-600 hover:text-blue-800 text-xs font-medium underline truncate max-w-[120px]"
-                                                    title={item.jitsi_url}
-                                                >
-                                                    غرفة {item.jitsi_room_name}
-                                                </a>
-                                                <button
-                                                    onClick={() =>
-                                                        handleCopyJitsiUrl(
-                                                            item.jitsi_url,
-                                                        )
-                                                    }
-                                                    className="p-1 hover:bg-gray-100 rounded-full transition-all"
-                                                    title="نسخ الرابط"
-                                                >
-                                                    <IoMdCopy size={14} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="teacherStudent__btns">
-                                                <button
-                                                    className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
-                                                    onClick={() =>
-                                                        handleEdit(item)
-                                                    }
-                                                    disabled={loading}
-                                                    title="تعديل الموعد"
-                                                >
-                                                    <FiEdit3 />
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn delete-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
-                                                    onClick={() =>
-                                                        handleDelete(item.id)
-                                                    }
-                                                    disabled={loading}
-                                                    title="حذف الموعد"
-                                                >
-                                                    <FiTrash2 />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                        {s.plan.plan_name} · سعة:{" "}
+                                        {getAvailabilityStatus(s)}
+                                    </div>
+                                </div>
 
-                {pagination && pagination.last_page > 1 && (
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        style={{ width: "100%" }}
-                    >
-                        <div className="flex justify-between items-center p-4">
-                            <div className="text-sm text-gray-600">
-                                عرض {schedules.length} من {pagination.total}
-                                موعد • الصفحة <strong>{currentPage}</strong> من
-                                <strong>{pagination.last_page}</strong>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => goToPage(currentPage - 1)}
-                                    disabled={!hasPrev || loading}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
-                                >
-                                    السابق
-                                </button>
-                                <span className="px-4 py-2 bg-purple-500 text-white rounded-lg font-bold">
-                                    {currentPage}
-                                </span>
-                                <button
-                                    onClick={() => goToPage(currentPage + 1)}
-                                    disabled={!hasNext || loading}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
-                                >
-                                    التالي
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                                {/* حالة التوفر */}
+                                <Badge
+                                    txt={getAvailabilityStatus(s)}
+                                    cls="bg-g"
+                                />
 
-                <div
-                    className="inputs__verifyOTPBirth"
-                    id="userProfile__verifyOTPBirth"
-                    style={{ width: "100%" }}
-                >
-                    <div className="userProfile__progressContent">
-                        <div className="userProfile__progressTitle">
-                            <h1>معدل الإشغال</h1>
+                                {/* الأكشنز */}
+                                <div className="td-actions">
+                                    <button
+                                        className="btn bs bxs"
+                                        onClick={() => handleEdit(s)}
+                                    >
+                                        تعديل
+                                    </button>
+                                    <button
+                                        className="btn bd bxs"
+                                        onClick={() => handleDelete(s.id)}
+                                    >
+                                        حذف
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div
+                            style={{
+                                padding: "40px 20px",
+                                textAlign: "center",
+                                color: "var(--n400)",
+                            }}
+                        >
+                            <p style={{ marginBottom: 16 }}>
+                                {search
+                                    ? "لا توجد نتائج للبحث"
+                                    : "لا يوجد مواعيد"}
+                            </p>
+                            <button
+                                className="btn bp bsm"
+                                onClick={handleAddNew}
+                            >
+                                + إضافة موعد
+                            </button>
                         </div>
-                        <p>
-                            {Math.round(
-                                (1 -
-                                    stats.available /
-                                        Math.max(stats.total, 1)) *
-                                    100,
-                            )}
-                            %
-                        </p>
-                        <div className="userProfile__progressBar">
-                            <span
-                                style={{
-                                    width: `${Math.min(
-                                        (1 -
-                                            stats.available /
-                                                Math.max(stats.total, 1)) *
-                                            100,
-                                        100,
-                                    )}%`,
-                                }}
-                            ></span>
-                        </div>
-                    </div>
-                    <div className="userProfile__progressContent">
-                        <div className="userProfile__progressTitle">
-                            <h1>عدد المواعيد</h1>
-                        </div>
-                        <p>{schedules.length}</p>
-                        <div className="userProfile__progressBar">
-                            <span
-                                style={{
-                                    width: `${Math.min((schedules.length / 50) * 100, 100)}%`,
-                                }}
-                            ></span>
-                        </div>
+                    )}
+
+                    {/* زر إضافة في الأسفل */}
+                    <div style={{ padding: "12px 14px" }}>
+                        <button className="btn bp bsm" onClick={handleAddNew}>
+                            + إضافة موعد
+                        </button>
                     </div>
                 </div>
             </div>

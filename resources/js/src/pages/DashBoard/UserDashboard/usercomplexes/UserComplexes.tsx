@@ -41,7 +41,7 @@ const UserComplexes: React.FC = () => {
 
     const complex = data.complex;
 
-    // ✅ Map icons حسب الـ label
+    //  Map icons حسب الـ label
     const getIcon = (label: string) => {
         switch (label) {
             case "الطلاب":

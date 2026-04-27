@@ -43,7 +43,7 @@ export const usePlanDetailFormCreate = () => {
     const [existingDays, setExistingDays] = useState<PlanDetailType[]>([]);
     const [loadingDays, setLoadingDays] = useState(false);
 
-    // ✅ 1- جلب خطط المجمع الخاص بي - إصلاح 404
+    //  1- جلب خطط المجمع الخاص بي - إصلاح 404
     useEffect(() => {
         fetchAvailablePlans();
     }, []);
@@ -53,14 +53,14 @@ export const usePlanDetailFormCreate = () => {
             setLoadingPlans(true);
             console.log("📡 جاري تحميل خطط المجمع...");
 
-            // ✅ إصلاح 404 - استخدم الـ endpoint الصحيح
+            //  إصلاح 404 - استخدم الـ endpoint الصحيح
             const response = await fetch(`/api/v1/plans/my-center`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     Accept: "application/json",
                     "X-Requested-With": "XMLHttpRequest",
-                    // ✅ إزالة Content-Type للـ GET requests
+                    //  إزالة Content-Type للـ GET requests
                 },
             });
 
@@ -87,7 +87,7 @@ export const usePlanDetailFormCreate = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("✅ خطط المجمع:", data);
+                console.log(" خطط المجمع:", data);
                 setAvailablePlans(data.data || data || []);
             } else {
                 const errorText = await response.text();
@@ -108,7 +108,7 @@ export const usePlanDetailFormCreate = () => {
         }
     }, []);
 
-    // ✅ 2- جلب أيام الخطة المختارة
+    //  2- جلب أيام الخطة المختارة
     useEffect(() => {
         if (formData.plan_id > 0) {
             fetchExistingDays(formData.plan_id);
@@ -133,7 +133,7 @@ export const usePlanDetailFormCreate = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("✅ أيام الخطة:", data);
+                console.log(" أيام الخطة:", data);
                 setExistingDays(data.data || data || []);
             } else {
                 console.error("❌ خطأ تحميل أيام الخطة:", response.status);
@@ -147,7 +147,7 @@ export const usePlanDetailFormCreate = () => {
         }
     }, []);
 
-    // ✅ 3- تغيير الـ inputs
+    //  3- تغيير الـ inputs
     const handleInputChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
             const { name, value } = e.target;
@@ -159,7 +159,7 @@ export const usePlanDetailFormCreate = () => {
         [errors],
     );
 
-    // ✅ 4- التحقق من صحة النموذج
+    //  4- التحقق من صحة النموذج
     const validateForm = useCallback((): boolean => {
         const newErrors: FormErrors = {};
 
@@ -181,7 +181,7 @@ export const usePlanDetailFormCreate = () => {
         return Object.keys(newErrors).length === 0;
     }, [formData, existingDays]);
 
-    // ✅ 5- إرسال النموذج
+    //  5- إرسال النموذج
     const submitForm = useCallback(
         async (onSubmit: (formDataSubmit: FormData) => Promise<void>) => {
             console.log("🚀 بدء الإرسال...");

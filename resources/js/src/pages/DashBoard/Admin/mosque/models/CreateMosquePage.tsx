@@ -1,6 +1,7 @@
+// CreateMosquePage.tsx
 import toast from "react-hot-toast";
-import { FiX } from "react-icons/fi";
 import { useMosqueFormCreate } from "../hooks/useMosqueFormCreate";
+import { useEffect, useState, useCallback } from "react";
 
 interface CreateMosquePageProps {
     onClose: () => void;
@@ -16,329 +17,363 @@ const CreateMosquePage: React.FC<CreateMosquePageProps> = ({
         errors,
         isSubmitting,
         handleInputChange,
-        handleFileChange,
-        submitForm,
-        logoPreview,
         centersData,
         usersData,
         loadingData,
         user,
     } = useMosqueFormCreate();
 
-    const handleSubmit = async (formDataSubmit: FormData) => {
-        try {
-            console.log("🌐 POST → /api/v1/super/mosques");
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
+    // ✅ الحل النهائي - استخدم defaultValue بدل value
+    const hasCenters = centersData.length > 0;
+    const isDisabled = isSubmitting || loadingData || !hasCenters;
+
+    const isCenterOwner = user?.role?.id === 1;
+    const centerIsFixed = isCenterOwner && user?.center_id;
+    const selectedCenterId = formData.center_id
+        ? parseInt(formData.center_id)
+        : null;
+    const filteredSupervisors = selectedCenterId
+        ? usersData.filter((u: any) => u.center_id === selectedCenterId)
+        : [];
+
+    useEffect(() => {
+        console.log("MOSQUE PAGE DEBUG:", {
+            centers: centersData.length,
+            users: usersData.length,
+            formData,
+            logoPreview,
+        });
+    }, [centersData, usersData, formData, logoPreview]);
+    const ICO: Record<string, JSX.Element> = {
+        x: (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+            >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        ),
+    };
+
+    // ✅ FI مع defaultValue - هذا هو الحل النهائي!
+    function FI({
+        id,
+        type = "text",
+        placeholder = "",
+        name = "",
+        value = "",
+        required = false,
+    }: {
+        id: string;
+        type?: string;
+        placeholder?: string;
+        name: string;
+        value: string;
+        required?: boolean;
+    }) {
+        const hasError = errors[name as keyof typeof errors];
+        return (
+            <div>
+                <input
+                    id={id}
+                    type={type}
+                    name={name}
+                    defaultValue={value} // ✅ defaultValue بدل value
+                    placeholder={placeholder}
+                    className={`fi2 ${hasError ? "border-red-300 bg-red-50" : ""}`}
+                    onChange={handleInputChange}
+                    required={required}
+                    disabled={isSubmitting}
+                    autoComplete="off"
+                />
+                {hasError && (
+                    <p className="text-red-600 text-xs mt-1">{hasError}</p>
+                )}
+            </div>
+        );
+    }
+
+    function FSel({
+        id,
+        opts,
+        name = "",
+        value = "",
+        required = false,
+    }: {
+        id: string;
+        opts: any[];
+        name: string;
+        value: string;
+        required?: boolean;
+    }) {
+        const hasError = errors[name as keyof typeof errors];
+        return (
+            <div>
+                <select
+                    id={id}
+                    name={name}
+                    value={value}
+                    className={`fi2 ${hasError ? "border-red-300 bg-red-50" : ""}`}
+                    onChange={handleInputChange}
+                    required={required}
+                    disabled={isSubmitting}
+                >
+                    <option value="">اختر...</option>
+                    {opts.map((o: any) => (
+                        <option key={o.id} value={o.id}>
+                            {o.name || o.circle_name}
+                        </option>
+                    ))}
+                </select>
+                {hasError && (
+                    <p className="text-red-600 text-xs mt-1">{hasError}</p>
+                )}
+            </div>
+        );
+    }
+
+    function FG({
+        label,
+        children,
+    }: {
+        label: string;
+        children: React.ReactNode;
+    }) {
+        return (
+            <div style={{ marginBottom: 13 }}>
+                <label
+                    style={{
+                        display: "block",
+                        fontSize: "10.5px",
+                        fontWeight: 700,
+                        color: "var(--n700)",
+                        marginBottom: 4,
+                    }}
+                >
+                    {label}
+                </label>
+                {children}
+            </div>
+        );
+    }
+
+    function FR2({ children }: { children: React.ReactNode }) {
+        return (
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 11,
+                }}
+            >
+                {children}
+            </div>
+        );
+    }
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const preview = URL.createObjectURL(file);
+            setLogoPreview(preview);
+            handleInputChange({
+                target: { name: "logo", value: file } as any,
+            });
+        }
+    };
+
+    const addMosqueFn = async () => {
+        const formDataSubmit = new FormData();
+        formDataSubmit.append(
+            "mosque_name",
+            (document.getElementById("mqName") as HTMLInputElement)?.value ||
+                "",
+        );
+        formDataSubmit.append("center_id", formData.center_id || "");
+        formDataSubmit.append("supervisor_id", formData.supervisor_id || "");
+
+        const logoFileInput = document.getElementById(
+            "mqLogo",
+        ) as HTMLInputElement;
+        if (logoFileInput?.files?.[0]) {
+            formDataSubmit.append("logo", logoFileInput.files[0]);
+        }
+        formDataSubmit.append("notes", formData.notes || "");
+
+        console.log(
+            "MOSQUE SUBMIT FormData:",
+            Object.fromEntries(formDataSubmit),
+        );
+
+        try {
+            const csrfToken =
+                document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute("content") || "";
             const response = await fetch("/api/v1/super/mosques", {
                 method: "POST",
                 credentials: "include",
                 headers: {
                     Accept: "application/json",
                     "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRF-TOKEN": csrfToken,
                 },
                 body: formDataSubmit,
             });
 
-            console.log("📡 Status:", response.status);
-
             if (!response.ok) {
-                const errorData = await response
-                    .json()
-                    .catch(() => response.text());
-                console.error("❌ Error response:", errorData);
+                const errorText = await response.text();
+                console.error("SUBMIT ERROR:", errorText);
 
-                if (typeof errorData === "object" && errorData.errors) {
-                    const errorMessages = Object.values(
-                        errorData.errors,
-                    ).flat();
-                    toast.error(errorMessages[0] || "حدث خطأ في الإضافة");
+                try {
+                    const errorData = JSON.parse(errorText);
+                    if (errorData.errors) {
+                        const errorMessages = Object.values(
+                            errorData.errors,
+                        ).flat();
+                        toast.error(errorMessages[0] || "خطأ في البيانات");
+                        return;
+                    }
+                    toast.error(errorData.message || "حدث خطأ");
+                    return;
+                } catch (e) {
+                    toast.error(`خطأ ${response.status}`);
                     return;
                 }
-                throw new Error(`HTTP ${response.status}`);
             }
 
             const result = await response.json();
-            console.log(" Create response:", result);
-
-            toast;
             onSuccess();
         } catch (error: any) {
-            console.error("💥 Create error:", error);
-            toast.error(error.message || "حدث خطأ في الإضافة");
+            console.error("SUBMIT FAILED:", error);
+            toast.error(error.message || "حدث خطأ");
         }
     };
 
-    const isCenterOwner = user?.role?.id === 1;
-    const centerIsFixed = isCenterOwner && user?.center_id;
-
-    //  فلترة المشرفين على نفس الـ center_id
-    const selectedCenterId = formData.center_id
-        ? parseInt(formData.center_id)
-        : null;
-
-    const filteredSupervisors = selectedCenterId
-        ? usersData.filter((u: any) => u.center_id === selectedCenterId)
-        : [];
-
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={onClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        <div className="ParentModel__header">
+        <>
+            <div className="ov on">
+                <div className="modal">
+                    <div className="mh">
+                        <span className="mh-t">اضافة مسجد جديد</span>
+                        <button className="mx" onClick={onClose}>
+                            <span
+                                style={{
+                                    width: 12,
+                                    height: 12,
+                                    display: "inline-flex",
+                                }}
+                            >
+                                {ICO.x}
+                            </span>
+                        </button>
+                    </div>
+                    <div className="mb">
+                        <FG label="اسم المسجد *">
+                            <input
+                                id="mqName"
+                                name="mosque_name"
+                                className="fi2"
+                                required
+                            />
+                        </FG>
+
+                        <FR2>
+                            <FG label="المجمع *">
+                                {centerIsFixed ? (
+                                    <>
+                                        <input
+                                            id="mqCenter"
+                                            type="hidden"
+                                            name="center_id"
+                                            value={formData.center_id || ""}
+                                        />
+                                        <div className="fi2 bg-green-50 border-green-300 text-green-800 p-3 rounded">
+                                            {centersData[0]?.name ||
+                                                centersData[0]?.circle_name ||
+                                                "مجمعك"}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <FSel
+                                        id="mqCenter"
+                                        opts={centersData}
+                                        name="center_id"
+                                        value={formData.center_id || ""}
+                                        required
+                                    />
+                                )}
+                            </FG>
+
+                            <FG label="المشرف *">
+                                <FSel
+                                    id="mqSupervisor"
+                                    opts={filteredSupervisors}
+                                    name="supervisor_id"
+                                    value={formData.supervisor_id || ""}
+                                />
+                            </FG>
+                        </FR2>
+
+                        <FG label="شعار المسجد">
+                            <input
+                                id="mqLogo"
+                                name="logo"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="fi2"
+                                disabled={isSubmitting}
+                            />
+                            {logoPreview && (
+                                <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-800">
+                                    صورة محملة
+                                </div>
+                            )}
+                        </FG>
+
+                        <FG label="ملاحظات">
+                            <input
+                                id="mqNotes"
+                                className="fi2"
+                                name="notes"
+                                placeholder="أي ملاحظات..."
+                            />
+                        </FG>
+                    </div>
+                    <div className="mf">
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "12px",
+                                justifyContent: "flex-end",
+                                marginTop: "20px",
+                            }}
+                        >
                             <button
-                                className="ParentModel__close"
+                                className="btn bs"
                                 onClick={onClose}
                                 disabled={isSubmitting}
                             >
-                                <FiX size={24} />
+                                إلغاء
                             </button>
-                        </div>
-
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>مسجد جديد</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>إضافة مسجد جديد</h1>
-                                <p>
-                                    يرجى إدخال بيانات المسجد المعتمد بشكل صحيح
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="ParentModel__container">
-                            {/* اسم المسجد */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>اسم المسجد *</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        name="mosque_name"
-                                        value={formData.mosque_name}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.mosque_name
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="أدخل اسم المسجد"
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.mosque_name && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.mosque_name}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* المجمع */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>المجمع التابع له *</label>
-                                    {centerIsFixed ? (
-                                        <div className="w-full px-4 py-3 border border-green-300 bg-green-50 rounded-xl text-green-800 font-medium">
-                                            <span className="flex items-center gap-2">
-                                                {" "}
-                                                {centersData[0]?.name ||
-                                                    (centersData[0] as any)
-                                                        ?.circle_name ||
-                                                    "مجمعك"}
-                                                <span className="text-xs bg-green-100 px-2 py-1 rounded-full">
-                                                    <br /> محدد تلقائياً
-                                                </span>
-                                            </span>
-                                            <input
-                                                type="hidden"
-                                                name="center_id"
-                                                value={formData.center_id}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <select
-                                            required
-                                            name="center_id"
-                                            value={formData.center_id}
-                                            onChange={handleInputChange}
-                                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                                errors.center_id || loadingData
-                                                    ? "border-red-300 bg-red-50"
-                                                    : "border-gray-200 hover:border-gray-300"
-                                            }`}
-                                            disabled={
-                                                isSubmitting || loadingData
-                                            }
-                                        >
-                                            <option value="">
-                                                {loadingData
-                                                    ? "جاري التحميل..."
-                                                    : centersData.length === 0
-                                                      ? "لا توجد مجمعات"
-                                                      : "اختر المجمع"}
-                                            </option>
-                                            {centersData.map((center) => (
-                                                <option
-                                                    key={center.id}
-                                                    value={center.id}
-                                                >
-                                                    {(center as any)
-                                                        .circle_name ||
-                                                        center.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    )}
-                                    {errors.center_id && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.center_id}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* المشرف - فلترة حسب center_id */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>المشرف *</label>
-                                    <select
-                                        required
-                                        name="supervisor_id"
-                                        value={formData.supervisor_id}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                                            errors.supervisor_id || loadingData
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        disabled={
-                                            isSubmitting ||
-                                            loadingData ||
-                                            !formData.center_id
-                                        }
-                                    >
-                                        <option value="">
-                                            {loadingData
-                                                ? "جاري التحميل..."
-                                                : !formData.center_id
-                                                  ? "اختر المجمع أولاً"
-                                                  : filteredSupervisors.length ===
-                                                      0
-                                                    ? "لا يوجد مشرفين لهذا المجمع"
-                                                    : "اختر المشرف"}
-                                        </option>
-                                        {filteredSupervisors.map((u) => (
-                                            <option key={u.id} value={u.id}>
-                                                {u.name} - {u.email}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {errors.supervisor_id && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.supervisor_id}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* شعار المسجد */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>شعار المسجد</label>
-                                    <div className="space-y-3">
-                                        {logoPreview && (
-                                            <div className="text-center">
-                                                <img
-                                                    src={logoPreview}
-                                                    alt="معاينة الصورة الجديدة"
-                                                    className="w-24 h-24 object-cover rounded-2xl mx-auto border-2 border-blue-200"
-                                                />
-                                                <p className="text-sm text-blue-600 mt-1">
-                                                    صورة جديدة محملة
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-all bg-gray-50">
-                                            <input
-                                                name="logo"
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleFileChange}
-                                                className="hidden"
-                                                id="logo-upload"
-                                                disabled={isSubmitting}
-                                            />
-                                            <label
-                                                htmlFor="logo-upload"
-                                                className="cursor-pointer flex flex-col items-center gap-3"
-                                            >
-                                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white font-medium">
-                                                    +
-                                                </div>
-                                                <div>
-                                                    <p className="text-lg font-medium text-gray-900">
-                                                        {formData.logo instanceof
-                                                        File
-                                                            ? formData.logo.name
-                                                            : "اختر صورة جديدة (JPG, PNG)"}
-                                                    </p>
-                                                    <p className="text-sm text-gray-500">
-                                                        حد أقصى 2 ميجا بايت
-                                                    </p>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* ملاحظات */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>ملاحظات</label>
-                                    <textarea
-                                        name="notes"
-                                        value={formData.notes}
-                                        onChange={handleInputChange}
-                                        rows={3}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                        placeholder="أي ملاحظات إضافية..."
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* زر الإرسال */}
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
+                            <button
+                                className="btn bp"
+                                onClick={addMosqueFn}
+                                disabled={isDisabled}
                             >
-                                <button
-                                    type="button"
-                                    onClick={() => submitForm(handleSubmit)}
-                                    disabled={isSubmitting || loadingData}
-                                    className="w-full"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                                            جاري الإضافة...
-                                        </>
-                                    ) : (
-                                        <>إضافة المسجد الجديد</>
-                                    )}
-                                </button>
-                            </div>
+                                {isSubmitting ? "جاري الحفظ..." : "حفظ المسجد"}
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

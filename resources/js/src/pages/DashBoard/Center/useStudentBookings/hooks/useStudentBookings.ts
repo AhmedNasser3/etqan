@@ -69,12 +69,12 @@ export const useStudentBookings = (): UseStudentBookingsReturn => {
                     ...(search && { search }),
                 });
 
-                // ✅ الـ URL الجديد مع v1/plans
+                //  الـ URL الجديد مع v1/plans
                 const response = await fetch(
                     `/api/v1/plans/student-bookings?${params.toString() || ""}`,
                     {
                         method: "GET",
-                        credentials: "include", // ✅ مهم للـ session cookies مع web middleware
+                        credentials: "include", //  مهم للـ session cookies مع web middleware
                         headers: getCSRFHeaders(),
                     },
                 );
@@ -88,7 +88,7 @@ export const useStudentBookings = (): UseStudentBookingsReturn => {
 
                 const data = await response.json();
 
-                // ✅ Type assertion للتأكد من البيانات
+                //  Type assertion للتأكد من البيانات
                 const typedBookings: StudentBookingType[] = data.data || [];
                 setBookings(typedBookings);
 
@@ -131,7 +131,7 @@ export const useStudentBookings = (): UseStudentBookingsReturn => {
             bookingId: number,
         ): Promise<{ success: boolean; message: string }> => {
             try {
-                // ✅ الـ URL الجديد مع v1/plans
+                //  الـ URL الجديد مع v1/plans
                 const response = await fetch(
                     `/api/v1/plans/student-bookings/${bookingId}/confirm`,
                     {
@@ -160,7 +160,7 @@ export const useStudentBookings = (): UseStudentBookingsReturn => {
         fetchBookings(currentPage, searchValue);
     }, [fetchBookings, currentPage, searchValue]);
 
-    // ✅ تحميل البيانات عند بداية الـ component
+    //  تحميل البيانات عند بداية الـ component
     useEffect(() => {
         fetchBookings(1, "");
     }, []);

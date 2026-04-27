@@ -61,7 +61,7 @@ export const usePlans = () => {
                 }
 
                 const data = await response.json();
-                console.log("✅ Plans loaded:", data);
+                console.log(" Plans loaded:", data);
 
                 setPlans(Array.isArray(data.data) ? data.data : []);
                 setPagination({
@@ -114,12 +114,12 @@ export const usePlans = () => {
         fetchPlans(currentPage, searchTerm);
     }, [fetchPlans, currentPage, searchTerm]);
 
-    // ✅ Initial load - بس مرة واحدة
+    //  Initial load - بس مرة واحدة
     useEffect(() => {
         fetchPlans(1, "");
     }, [fetchPlans]);
 
-    // ✅ Cleanup timeout
+    //  Cleanup timeout
     useEffect(() => {
         return () => {
             if (searchTimeoutRef.current) {

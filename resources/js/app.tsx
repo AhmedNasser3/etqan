@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import {
     BrowserRouter,
@@ -6,6 +7,7 @@ import {
     Outlet,
     Navigate,
 } from "react-router-dom";
+import axios from "axios";
 import { Toaster } from "react-hot-toast";
 import "./src/assets/scss/main.scss";
 import Navbar from "./src/layouts/navbar";
@@ -78,48 +80,89 @@ import StudentTransferManagement from "./src/pages/DashBoard/Center/StudentTrans
 import StudentAffairsPlatform from "./src/pages/DashBoard/Admin/StudentAffairsPlatform/StudentAffairsPlatform";
 import PublicNavbar from "./src/layouts/PublicNavbar/PublicNavbar";
 import AdminSidebar from "./src/layouts/adminDashboard/AdminSidebar";
+import CertificatesManagement from "./src/pages/DashBoard/Center/Certificates/CertificatesManagement";
+import AdminRegister from "./src/pages/auth/pages/AdminRegister";
+import TeachersAffairsPlatform from "./src/pages/DashBoard/Admin/TeachersAffairsPlatform/TeachersAffairsPlatform";
+import DomainRequestsAdminManagement from "./src/pages/DashBoard/Admin/DomainRequestsAdminManagement/DomainRequestsAdminManagement";
+import ItqanApp from "./src/pages/DashBoard/Center/itqan-clean";
+import TopBar from "./src/layouts/centerDashboard/TopBar";
+import { ToastProvider } from "./contexts/ToastContext";
+import StudentDashboard from "./src/pages/DashBoard/StudentDashboardV2";
+import UserTopBar from "./src/layouts/userDashboard/UserTopBar";
+import StudentRoom from "./src/pages/DashBoard/UserDashboard/StudentRoom";
+import AdminTopBar from "./src/layouts/adminDashboard/AdminTopBar";
+import PortalEntry from "./src/pages/DashBoard/Admin/Portal/PortalEntry";
+import PortalDashboard from "./src/pages/DashBoard/Admin/Portal/PortalDashboard";
+import MosquePortalsManagement from "./src/pages/DashBoard/Admin/mosque/MosquePortalsManagement";
+import RewardsManagement from "./src/pages/DashBoard/Center/StudentAchievements/RewardsManagement";
+import StudentShop from "./src/pages/DashBoard/Center/StudentAchievements/StudentShop";
+import AIPlanGenerator from "./src/pages/DashBoard/Center/PlansDetails/AIPlanGenerator";
+import PlatformPlanDetailsManagement from "./src/pages/DashBoard/Center/PlansDetails/Platformplandetailsmanagement";
+import WorkSchedulePage from "./src/pages/DashBoard/Center/Attendance/Staff/WorkSchedulePage";
+import StaffAttendancePage from "./src/pages/DashBoard/Center/Attendance/Staff/StaffAttendancePage";
+// ✅ هنا - خارج أي function، أول ما الملف يتحمل// ✅ أول حاجة في الملف
+const _impSaved = localStorage.getItem("impersonated_center");
+if (_impSaved) {
+    try {
+        const { center_id } = JSON.parse(_impSaved);
+        axios.interceptors.request.use((config) => {
+            config.headers["X-Center-Id"] = String(center_id);
+            return config;
+        });
+        console.log("✅ Interceptor set for center_id:", center_id);
+    } catch (e) {
+        localStorage.removeItem("impersonated_center");
+    }
+}
 
 function UserLayout() {
+    const [mobileSB, setMobileSB] = useState(false);
+
     return (
-        <>
-            <UserNavbar />
-            <UserSidebar />
-            <main className="page">
-                <div className="page__container">
+        <ToastProvider>
+            <div className="app">
+                <UserSidebar mobileSB={mobileSB} setMobileSB={setMobileSB} />
+                <div className={`main-area${mobileSB ? " sb-open" : ""}`}>
+                    <UserTopBar mobileSB={mobileSB} setMobileSB={setMobileSB} />
                     <Outlet />
                 </div>
-            </main>
-        </>
+            </div>
+        </ToastProvider>
     );
 }
 
 function TeacherLayout() {
+    const [mobileSB, setMobileSB] = useState(false);
     return (
-        <>
-            <TeacherNavbar />
-            <TeacherSidebar />
-            <main className="page">
-                <div className="page__container">
+        <ToastProvider>
+            <div className="app">
+                <TeacherSidebar mobileSB={mobileSB} setMobileSB={setMobileSB} />
+                <div className={`main-area${mobileSB ? " sb-open" : ""}`}>
+                    <UserTopBar mobileSB={mobileSB} setMobileSB={setMobileSB} />
                     <Outlet />
                 </div>
-            </main>
-        </>
+            </div>
+        </ToastProvider>
     );
 }
 
 function CenterLayout() {
+    const [mobileSB, setMobileSB] = useState(false);
+
     return (
-        <>
-            <CenterNavbar />
-            <CenterSidebar />
-            <main className="page">
-                <div className="page__container">
+        <ToastProvider>
+            <div className="app">
+                <CenterSidebar mobileSB={mobileSB} setMobileSB={setMobileSB} />
+                <div className={`main-area${mobileSB ? " sb-open" : ""}`}>
+                    <TopBar mobileSB={mobileSB} setMobileSB={setMobileSB} />
                     <Outlet />
                 </div>
-            </main>
-        </>
+            </div>
+        </ToastProvider>
     );
 }
+
+export default CenterLayout;
 function PublicLayout() {
     return (
         <>
@@ -147,15 +190,25 @@ function DashLayout() {
     );
 }
 function AdminDashLayout() {
+    const [mobileSB, setMobileSB] = useState(false);
+
     return (
         <>
-            <CenterNavbar />
-            <AdminSidebar />
-            <main className="page">
-                <div className="page__container">
-                    <Outlet />
+            <ToastProvider>
+                <div className="app">
+                    <AdminSidebar
+                        mobileSB={mobileSB}
+                        setMobileSB={setMobileSB}
+                    />
+                    <div className={`main-area${mobileSB ? " sb-open" : ""}`}>
+                        <AdminTopBar
+                            mobileSB={mobileSB}
+                            setMobileSB={setMobileSB}
+                        />
+                        <Outlet />
+                    </div>
                 </div>
-            </main>
+            </ToastProvider>
         </>
     );
 }
@@ -166,6 +219,7 @@ function App() {
             <Routes>
                 <Route path="/" element={<DashLayout />}>
                     {" "}
+                    <Route path="account" element={<EditAccountPage />} />
                     {/* غيرت من /* لـ / */}
                     <Route index element={<Dashboard />} />
                     <Route path="teacher-view" element={<TestimonialsView />} />
@@ -177,6 +231,10 @@ function App() {
                         path="register/:centerSlug?"
                         element={<Register />}
                     />
+                    <Route
+                        path="admin-register/:centerSlug?"
+                        element={<AdminRegister />}
+                    />
                     <Route path=":centerSlug?/login" element={<Login />} />
                     <Route
                         path=":centerSlug?/teacher-register"
@@ -187,12 +245,27 @@ function App() {
                     <Route path=":centerSlug" element={<CenterPage />} />
                 </Route>
 
+                <Route path="/portal/:token" element={<PortalEntry />} />
+                <Route
+                    path="/portal/dashboard/:token"
+                    element={<PortalDashboard />}
+                />
                 <Route path="/:complexSlug?">
                     <Route path="center-dashboard/*" element={<CenterLayout />}>
                         <Route index element={<CenterDashboard />} />
+
                         <Route
-                            path="students/approval"
+                            path="portal/mosqou"
+                            element={<MosquePortalsManagement />}
+                        />
+                        <Route
+                            path="circle-manegment/approval"
                             element={<StudentApproval />}
+                        />
+
+                        <Route
+                            path="student-rewards"
+                            element={<RewardsManagement />}
                         />
 
                         <Route
@@ -257,6 +330,7 @@ function App() {
                             path="plans-details-manegment"
                             element={<PlanDetailsManagement />}
                         />
+                        <Route path="dassssh" element={<StudentDashboard />} />
                         <Route
                             path="shedule-manegment"
                             element={<SchedulesManagement />}
@@ -295,14 +369,34 @@ function App() {
                             element={<MeetingsManagement />}
                         />
                         <Route
+                            path="teachers-work-shedule"
+                            element={<WorkSchedulePage />}
+                        />
+                        <Route
+                            path="teachers-attendance"
+                            element={<StaffAttendancePage />}
+                        />
+                        <Route
+                            path="ai-plans-generator"
+                            element={<AIPlanGenerator />}
+                        />
+                        <Route
                             path="plan-transfer-management"
                             element={<StudentTransferManagement />}
+                        />
+                        <Route
+                            path="certificates-management"
+                            element={<CertificatesManagement />}
                         />
                         <Route
                             path="teachers-management"
                             element={<MyTeachersManagement />}
                         />
                         <Route path="audit-log" element={<AuditLogPage />} />
+                        <Route
+                            path="plandetails-management"
+                            element={<PlatformPlanDetailsManagement />}
+                        />
                     </Route>
 
                     <Route
@@ -326,7 +420,7 @@ function App() {
                     </Route>
 
                     <Route
-                        path="admin-dashboard*"
+                        path="admin-dashboard/*"
                         element={<AdminDashLayout />}
                     >
                         <Route index element={<AdminDashboard />} />
@@ -335,8 +429,16 @@ function App() {
                             element={<CentersMangement />}
                         />
                         <Route
+                            path="teacher-affairs"
+                            element={<TeachersAffairsPlatform />}
+                        />
+                        <Route
                             path="admin-centers-approval"
                             element={<PendingCentersApproval />}
+                        />
+                        <Route
+                            path="admin-dom-approval"
+                            element={<DomainRequestsAdminManagement />}
                         />
 
                         <Route
@@ -348,10 +450,14 @@ function App() {
                     <Route path="user-dashboard/*" element={<UserLayout />}>
                         <Route index element={<UserDashboard />} />
                         <Route path="plans" element={<Plans />} />
+                        <Route path="student-shop" element={<StudentShop />} />
+
                         <Route
                             path="user-progress"
                             element={<UserProgress />}
                         />
+                        <Route path="room" element={<StudentRoom />} />
+
                         <Route
                             path="user-setting"
                             element={<EditAccountPage />}
@@ -381,7 +487,7 @@ function App() {
 
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-            <Toaster
+            {/* <Toaster
                 position="top-right"
                 gutter={8}
                 toastOptions={{
@@ -392,7 +498,7 @@ function App() {
                         border: "1px solid hsl(var(--border))",
                     },
                 }}
-            />
+            /> */}
         </BrowserRouter>
     );
 }

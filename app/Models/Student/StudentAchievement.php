@@ -14,22 +14,12 @@ class StudentAchievement extends Model
 
     protected $table = 'student_achievements';
 
-    protected $fillable = [
-        'user_id',
-        'center_id', //  مضاف للتوافق مع Reports
-        'points',
-        'points_action',
-        'achievements',
-        'reason',
-        'achievement_type'
+   protected $fillable = [
+        'user_id', 'points', 'points_action', 'reason'
     ];
 
     protected $casts = [
-        'achievements' => 'array',
         'points' => 'integer',
-        'center_id' => 'integer',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime'
     ];
 
     /**

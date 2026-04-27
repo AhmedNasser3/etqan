@@ -133,12 +133,12 @@ export const useSuspendedTeachers = (
         setFilters((prev) => ({ ...prev, ...newFilters }));
     };
 
-    // ✅ تحميل البيانات عند الـ mount
+    //  تحميل البيانات عند الـ mount
     useEffect(() => {
         fetchSuspendedTeachers(filters.page, filters.search);
     }, []);
 
-    // ✅ إعادة تحميل عند تغيير search
+    //  إعادة تحميل عند تغيير search
     useEffect(() => {
         fetchSuspendedTeachers(1, filters.search);
     }, [filters.search, fetchSuspendedTeachers]);
@@ -146,7 +146,7 @@ export const useSuspendedTeachers = (
     return {
         teachers,
         loading,
-        actionLoading, // ✅ Loading لكل action منفصل
+        actionLoading, //  Loading لكل action منفصل
         error,
         pagination,
         filters,

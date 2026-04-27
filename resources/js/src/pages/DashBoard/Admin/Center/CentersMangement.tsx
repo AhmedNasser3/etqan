@@ -1,414 +1,407 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import toast from "react-hot-toast";
-import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
-import { PiWhatsappLogoDuotone } from "react-icons/pi";
-import { FiEdit3, FiTrash2 } from "react-icons/fi";
-import { IoMdAdd } from "react-icons/io";
-import UpdateCenterPage from "./models/UpdateCenterPage";
-import CreateCenterPage from "./models/CreateCenterPage";
-import { useCenters } from "./hooks/useCenters"; //  الـ Hook الجديد
+import { useImpersonate } from "./hooks/useImpersonate";
 
-//  Interface جديد - مجمعات مباشرة (مش nested)
 interface Center {
     id: number;
-    name: string;
-    subdomain: string;
+    circleName: string;
+    managerEmail: string;
+    managerPhone: string;
     domain: string;
-    center_url: string;
-    email: string;
-    phone: string;
+    circleLink: string;
     logo: string | null;
     is_active: boolean;
-    address: string;
     created_at: string;
-    students_count: number;
 }
 
 const CentersManagement: React.FC = () => {
-    const {
-        centers, //  من الـ Hook الجديد
-        loading, //  من الـ Hook
-        error, //  من الـ Hook
-        confirmCenter,
-        rejectCenter,
-        deleteCenter,
-        refetch,
-    } = useCenters();
-
+    const [centers, setCenters] = useState<Center[]>([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const [showUpdateModal, setShowUpdateModal] = useState(false);
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [selectedCenter, setSelectedCenter] = useState<Center | null>(null);
-    const [selectedCenterId, setSelectedCenterId] = useState<number | null>(
-        null,
-    );
+    const [filterStatus, setFilterStatus] = useState<
+        "all" | "active" | "inactive"
+    >("all");
+    const { enterCenter, loading: impersonateLoading } = useImpersonate();
 
-    //  البحث المحسن - مجمعات مباشرة
-    const filteredCenters = centers.filter(
-        (center) =>
-            center.name.toLowerCase().includes(search.toLowerCase()) ||
-            center.email.toLowerCase().includes(search.toLowerCase()) ||
-            center.subdomain.toLowerCase().includes(search.toLowerCase()) ||
-            center.phone.toLowerCase().includes(search.toLowerCase()),
-    );
+    const fetchCenters = async () => {
+        setLoading(true);
+        try {
+            const res = await axios.get("/api/v1/centers/all");
 
-    //  Delete مع الـ Hook الجديد
-    const handleDelete = async (centerId: number) => {
-        if (!confirm("هل أنت متأكد من حذف هذا المجمع؟")) {
-            return;
-        }
+            const mapped = (res.data.data || res.data).map((c: any) => ({
+                id: c.id,
+                circleName: c.circleName || c.name,
+                managerEmail: c.managerEmail || c.email,
+                managerPhone: c.managerPhone || c.phone || "",
+                domain: c.domain || c.subdomain, // ✅ يقبل الاتنين
+                circleLink: `/${c.domain || c.subdomain}/center-dashboard`,
+                logo: c.logo || null,
+                is_active: c.is_active,
+                created_at: c.created_at,
+            }));
 
-        const result = await deleteCenter(centerId);
-        if (result.success) {
-            toast.success(result.message);
-        } else {
-            toast.error(result.message);
-        }
-    };
-
-    //  تفعيل مجمع
-    const handleActivate = async (centerId: number) => {
-        const result = await confirmCenter(centerId);
-        if (result.success) {
-            toast.success(result.message);
-        } else {
-            toast.error(result.message);
+            setCenters(mapped);
+        } catch (e) {
+            console.error(e);
+            toast.error("فشل تحميل المجمعات");
+        } finally {
+            setLoading(false);
         }
     };
 
-    //  تعطيل مجمع
-    const handleDeactivate = async (centerId: number) => {
-        const result = await rejectCenter(centerId);
-        if (result.success) {
-            toast.success(result.message);
-        } else {
-            toast.error(result.message);
+    const toggleActive = async (center: Center) => {
+        const endpoint = center.is_active
+            ? `/api/v1/centers/${center.id}/deactivate`
+            : `/api/v1/centers/${center.id}/activate`;
+        try {
+            await axios.post(endpoint);
+            toast.success(
+                center.is_active ? "تم إيقاف المجمع" : "تم تفعيل المجمع",
+            );
+            fetchCenters();
+        } catch (e) {
+            toast.error("فشلت العملية");
         }
     };
 
-    //  Edit handler
-    const handleEdit = (center: Center) => {
-        setSelectedCenter(center);
-        setSelectedCenterId(center.id);
-        setShowUpdateModal(true);
-    };
+    const filtered = centers
+        .filter((c) => {
+            const q = search.toLowerCase();
+            return (
+                c.circleName?.toLowerCase().includes(q) ||
+                c.domain?.toLowerCase().includes(q) ||
+                c.managerEmail?.toLowerCase().includes(q)
+            );
+        })
+        .filter((c) => {
+            if (filterStatus === "active") return c.is_active;
+            if (filterStatus === "inactive") return !c.is_active;
+            return true;
+        });
 
-    const handleCloseUpdateModal = () => {
-        setShowUpdateModal(false);
-        setSelectedCenter(null);
-        setSelectedCenterId(null);
-    };
+    const activeCount = centers.filter((c) => c.is_active).length;
 
-    const handleUpdateSuccess = () => {
-        toast.success("تم تحديث بيانات المجمع بنجاح!");
-        refetch();
-        handleCloseUpdateModal();
-    };
+    const initials = (name: string) =>
+        name
+            ?.split(" ")
+            .slice(0, 2)
+            .map((w) => w[0])
+            .join("") ?? "?";
 
-    const handleCloseCreateModal = () => {
-        setShowCreateModal(false);
-    };
-
-    const handleCreateSuccess = () => {
-        toast.success("تم إضافة المجمع بنجاح!");
-        refetch();
-        handleCloseCreateModal();
-    };
-
-    //  Stats محسن - مجمعات مباشرة
-    const stats = {
-        total: centers.length,
-        active: centers.filter((c) => c.is_active).length,
-        inactive: centers.filter((c) => !c.is_active).length,
-    };
-
-    //  Error handling
     useEffect(() => {
-        if (error) {
-            toast.error(error);
-        }
-    }, [error]);
+        fetchCenters();
+    }, []);
 
     return (
-        <>
-            {/* Update Modal */}
-            {showUpdateModal && selectedCenter && (
-                <UpdateCenterPage
-                    initialCenter={selectedCenter}
-                    centerId={selectedCenterId!}
-                    onClose={handleCloseUpdateModal}
-                    onSuccess={handleUpdateSuccess}
-                />
-            )}
-
-            {/* Create Modal */}
-            {showCreateModal && (
-                <CreateCenterPage
-                    onClose={handleCloseCreateModal}
-                    onSuccess={handleCreateSuccess}
-                />
-            )}
-
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                {/* Stats Cards */}
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon redColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
+        <div className="content" id="contentArea" style={{ direction: "rtl" }}>
+            {/* إحصائيات */}
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))",
+                    gap: 10,
+                    marginBottom: 20,
+                }}
+            >
+                {[
+                    { label: "إجمالي المجمعات", val: centers.length },
+                    { label: "النشطة", val: activeCount },
+                    { label: "الموقوفة", val: centers.length - activeCount },
+                ].map((s) => (
+                    <div
+                        key={s.label}
+                        style={{
+                            background:
+                                "var(--color-background-secondary,#f5f5f5)",
+                            borderRadius: 8,
+                            padding: "12px 14px",
+                        }}
+                    >
+                        <div
+                            style={{
+                                fontSize: 12,
+                                color: "#888",
+                                marginBottom: 4,
+                            }}
+                        >
+                            {s.label}
                         </div>
-                        <div>
-                            <h3>إجمالي المجمعات</h3>
-                            <p className="text-2xl font-bold text-red-600">
-                                {stats.total}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>نشطة</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {stats.active}
-                            </p>
+                        <div style={{ fontSize: 22, fontWeight: 500 }}>
+                            {s.val}
                         </div>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-icon yellowColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>غير نشطة</h3>
-                            <p className="text-2xl font-bold text-yellow-600">
-                                {stats.inactive}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                ))}
+            </div>
 
-                {/* Header & Search */}
-                <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
-                >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            إدارة بيانات المجمعات المعتمدة
-                        </div>
-                        <div className="plan__current">
-                            <h2>قائمة المجمعات</h2>
-                            <div className="plan__date-range">
-                                <div className="date-picker to">
-                                    <input
-                                        type="search"
-                                        placeholder="البحث بالمجمع أو الإيميل أو الدومين أو التليفون..."
-                                        value={search}
-                                        onChange={(e) =>
-                                            setSearch(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        className="teacherStudent__status-btn add-btn p-3"
-                                        onClick={() => setShowCreateModal(true)}
-                                    >
-                                        <IoMdAdd
-                                            size={20}
-                                            className="inline mr-2"
-                                        />
-                                        مجمع جديد
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+            <div className="widget">
+                <div className="wh">
+                    <div className="wh-l">إدارة المجمعات</div>
+                    <div className="flx" style={{ gap: 8, flexWrap: "wrap" }}>
+                        <input
+                            className="fi"
+                            placeholder="بحث بالاسم أو الدومين..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                        <select
+                            value={filterStatus}
+                            onChange={(e) =>
+                                setFilterStatus(e.target.value as any)
+                            }
+                            style={{
+                                padding: "6px 10px",
+                                borderRadius: 6,
+                                border: "1px solid #ddd",
+                                fontSize: 13,
+                            }}
+                        >
+                            <option value="all">الكل</option>
+                            <option value="active">النشطة</option>
+                            <option value="inactive">الموقوفة</option>
+                        </select>
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="plan__daily-table">
-                    <table>
+                <div style={{ overflowX: "auto" }}>
+                    <table
+                        style={{
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            fontSize: 13,
+                        }}
+                    >
                         <thead>
-                            <tr>
-                                <th>شعار</th>
-                                <th>اسم المجمع</th>
-                                <th>الإيميل</th>
-                                <th>رقم الجوال</th>
-                                <th>العنوان</th>
-                                <th>رابط المجمع</th>
-                                <th>الدومين</th>
-                                <th>الحالة</th>
-                                <th>الإجراءات</th>
+                            <tr style={{ borderBottom: "1px solid #eee" }}>
+                                {[
+                                    "المجمع",
+                                    "الدومين",
+                                    "البريد",
+                                    "الجوال",
+                                    "الحالة",
+                                    "إجراءات",
+                                ].map((h) => (
+                                    <th
+                                        key={h}
+                                        style={{
+                                            padding: "10px 8px",
+                                            textAlign: "right",
+                                            fontWeight: 500,
+                                            color: "#666",
+                                        }}
+                                    >
+                                        {h}
+                                    </th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
                                     <td
-                                        colSpan={9}
-                                        className="text-center py-8"
+                                        colSpan={6}
+                                        style={{
+                                            textAlign: "center",
+                                            padding: 40,
+                                            color: "#aaa",
+                                        }}
                                     >
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                        <div className="navbar">
-                                            <div className="navbar__inner">
-                                                <div className="navbar__loading">
-                                                    <div className="loading-spinner">
-                                                        <div className="spinner-circle"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>{" "}
+                                        جاري التحميل...
                                     </td>
                                 </tr>
-                            ) : filteredCenters.length === 0 ? (
+                            ) : filtered.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan={9}
-                                        className="text-center py-8 text-gray-500"
+                                        colSpan={6}
+                                        style={{
+                                            textAlign: "center",
+                                            padding: 40,
+                                            color: "#aaa",
+                                        }}
                                     >
-                                        {error
-                                            ? "حدث خطأ في تحميل المجمعات"
-                                            : "لا توجد مجمعات"}
+                                        لا توجد نتائج
                                     </td>
                                 </tr>
                             ) : (
-                                filteredCenters.map((item) => (
+                                filtered.map((c) => (
                                     <tr
-                                        key={item.id}
-                                        className="plan__row active"
+                                        key={c.id}
+                                        style={{
+                                            borderBottom: "0.5px solid #f0f0f0",
+                                            opacity: c.is_active ? 1 : 0.6,
+                                        }}
                                     >
-                                        {/* Logo */}
-                                        <td className="teacherStudent__img">
-                                            <div className="w-12 h-12 rounded-lg overflow-hidden">
-                                                <img
-                                                    src={
-                                                        item.logo
-                                                            ? item.logo.startsWith(
-                                                                  "http",
-                                                              )
-                                                                ? item.logo
-                                                                : `/storage/${item.logo}`
-                                                            : "/images/default-logo.png"
-                                                    }
-                                                    alt={item.name}
-                                                    className="w-full h-12 object-cover"
-                                                    onError={(e) => {
-                                                        e.currentTarget.src =
-                                                            "/images/default-logo.png";
-                                                    }}
-                                                />
+                                        {/* المجمع */}
+                                        <td style={{ padding: "10px 8px" }}>
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 8,
+                                                }}
+                                            >
+                                                {c.logo ? (
+                                                    <img
+                                                        src={c.logo}
+                                                        alt=""
+                                                        style={{
+                                                            width: 32,
+                                                            height: 32,
+                                                            borderRadius: "50%",
+                                                            objectFit: "cover",
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div
+                                                        style={{
+                                                            width: 32,
+                                                            height: 32,
+                                                            borderRadius: "50%",
+                                                            background:
+                                                                "#EEEDFE",
+                                                            display: "flex",
+                                                            alignItems:
+                                                                "center",
+                                                            justifyContent:
+                                                                "center",
+                                                            fontSize: 11,
+                                                            fontWeight: 500,
+                                                            color: "#534AB7",
+                                                            flexShrink: 0,
+                                                        }}
+                                                    >
+                                                        {initials(c.circleName)}
+                                                    </div>
+                                                )}
+                                                <span
+                                                    style={{ fontWeight: 500 }}
+                                                >
+                                                    {c.circleName}
+                                                </span>
                                             </div>
                                         </td>
 
-                                        {/* Center Name */}
-                                        <td>{item.name}</td>
-
-                                        {/* Email */}
-                                        <td>{item.email}</td>
-
-                                        {/* Phone */}
-                                        <td>
-                                            <span className="font-mono text-sm">
-                                                {item.phone}
-                                            </span>
-                                        </td>
-
-                                        {/* Address */}
-                                        <td>{item.address}</td>
-
-                                        {/* Center Link */}
-                                        <td>
-                                            <a
-                                                href={item.center_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-600 hover:underline"
-                                            >
-                                                🔗 رابط
-                                            </a>
-                                        </td>
-
-                                        {/* Domain */}
-                                        <td>
-                                            <span className="font-mono text-sm">
-                                                {item.subdomain}
-                                            </span>
-                                        </td>
-
-                                        {/* Status */}
-                                        <td>
+                                        {/* الدومين */}
+                                        <td style={{ padding: "10px 8px" }}>
                                             <span
-                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    item.is_active
-                                                        ? "bg-green-100 text-green-800"
-                                                        : "bg-red-100 text-red-800"
-                                                }`}
+                                                style={{
+                                                    fontFamily: "monospace",
+                                                    fontSize: 12,
+                                                    color: "#185FA5",
+                                                }}
                                             >
-                                                {item.is_active
-                                                    ? "نشط"
-                                                    : "غير نشط"}
+                                                {c.domain}
                                             </span>
                                         </td>
 
-                                        {/* Actions */}
-                                        <td>
-                                            <div className="teacherStudent__btns">
-                                                {/* Edit */}
+                                        {/* البريد */}
+                                        <td
+                                            style={{
+                                                padding: "10px 8px",
+                                                fontSize: 12,
+                                                color: "#555",
+                                            }}
+                                        >
+                                            {c.managerEmail}
+                                        </td>
+
+                                        {/* الجوال */}
+                                        <td
+                                            style={{
+                                                padding: "10px 8px",
+                                                fontSize: 12,
+                                            }}
+                                        >
+                                            {c.managerPhone}
+                                        </td>
+
+                                        {/* الحالة */}
+                                        <td style={{ padding: "10px 8px" }}>
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: 4,
+                                                    padding: "2px 8px",
+                                                    borderRadius: 20,
+                                                    fontSize: 11,
+                                                    fontWeight: 500,
+                                                    background: c.is_active
+                                                        ? "#EAF3DE"
+                                                        : "#FCEBEB",
+                                                    color: c.is_active
+                                                        ? "#3B6D11"
+                                                        : "#A32D2D",
+                                                }}
+                                            >
+                                                <span
+                                                    style={{
+                                                        width: 6,
+                                                        height: 6,
+                                                        borderRadius: "50%",
+                                                        background: c.is_active
+                                                            ? "#639922"
+                                                            : "#E24B4A",
+                                                    }}
+                                                />
+                                                {c.is_active ? "نشط" : "موقوف"}
+                                            </span>
+                                        </td>
+
+                                        {/* إجراءات */}
+                                        <td style={{ padding: "10px 8px" }}>
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    gap: 5,
+                                                }}
+                                            >
+                                                {/* ✅ زر الدخول - بيبعت الـ domain */}
                                                 <button
-                                                    className="teacherStudent__status-btn edit-btn p-2"
                                                     onClick={() =>
-                                                        handleEdit(item)
+                                                        enterCenter(
+                                                            c.id,
+                                                            c.circleName,
+                                                            c.domain,
+                                                        )
                                                     }
-                                                    title="تعديل بيانات المجمع"
+                                                    disabled={
+                                                        impersonateLoading
+                                                    }
+                                                    style={{
+                                                        padding: "5px 12px",
+                                                        borderRadius: 6,
+                                                        fontSize: 11,
+                                                        fontWeight: 500,
+                                                        border: "0.5px solid #185FA5",
+                                                        background: "#E6F1FB",
+                                                        color: "#0C447C",
+                                                        cursor: "pointer",
+                                                        whiteSpace: "nowrap",
+                                                    }}
                                                 >
-                                                    <FiEdit3 />
+                                                    {impersonateLoading
+                                                        ? "..."
+                                                        : "دخول ←"}
                                                 </button>
 
-                                                {/* Activate/Deactivate */}
                                                 <button
-                                                    className={`p-2 rounded ${
-                                                        item.is_active
-                                                            ? "bg-red-100 hover:bg-red-200 text-red-600"
-                                                            : "bg-green-100 hover:bg-green-200 text-green-600"
-                                                    }`}
                                                     onClick={() =>
-                                                        item.is_active
-                                                            ? handleDeactivate(
-                                                                  item.id,
-                                                              )
-                                                            : handleActivate(
-                                                                  item.id,
-                                                              )
+                                                        toggleActive(c)
                                                     }
-                                                    title={
-                                                        item.is_active
-                                                            ? "تعطيل"
-                                                            : "تفعيل"
-                                                    }
+                                                    style={{
+                                                        padding: "5px 10px",
+                                                        borderRadius: 6,
+                                                        fontSize: 11,
+                                                        border: "0.5px solid #ddd",
+                                                        background: "#f9f9f9",
+                                                        color: "#555",
+                                                        cursor: "pointer",
+                                                    }}
                                                 >
-                                                    {item.is_active ? "⛔" : ""}
-                                                </button>
-
-                                                {/* Delete */}
-                                                <button
-                                                    className="teacherStudent__status-btn delete-btn p-2 ml-1"
-                                                    onClick={() =>
-                                                        handleDelete(item.id)
-                                                    }
-                                                    title="حذف المجمع"
-                                                >
-                                                    <FiTrash2 />
+                                                    {c.is_active
+                                                        ? "إيقاف"
+                                                        : "تفعيل"}
                                                 </button>
                                             </div>
                                         </td>
@@ -418,47 +411,8 @@ const CentersManagement: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
-
-                {/* Progress Bars */}
-                <div
-                    className="inputs__verifyOTPBirth"
-                    id="userProfile__verifyOTPBirth"
-                    style={{ width: "100%" }}
-                >
-                    <div className="userProfile__progressContent">
-                        <div className="userProfile__progressTitle">
-                            <h1>معدل النشاط</h1>
-                        </div>
-                        <p>
-                            {Math.round(
-                                (stats.active / Math.max(stats.total, 1)) * 100,
-                            )}
-                            %
-                        </p>
-                        <div className="userProfile__progressBar">
-                            <span
-                                style={{
-                                    width: `${Math.min((stats.active / Math.max(stats.total, 1)) * 100, 100)}%`,
-                                }}
-                            ></span>
-                        </div>
-                    </div>
-                    <div className="userProfile__progressContent">
-                        <div className="userProfile__progressTitle">
-                            <h1>عدد المجمعات</h1>
-                        </div>
-                        <p>{stats.total}</p>
-                        <div className="userProfile__progressBar">
-                            <span
-                                style={{
-                                    width: `${Math.min((stats.total / 50) * 100, 100)}%`,
-                                }}
-                            ></span>
-                        </div>
-                    </div>
-                </div>
             </div>
-        </>
+        </div>
     );
 };
 

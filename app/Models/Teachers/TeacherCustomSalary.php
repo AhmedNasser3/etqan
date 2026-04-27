@@ -22,6 +22,8 @@ class TeacherCustomSalary extends Model
         'is_active',
         'valid_from',
         'valid_until',
+            'currency', // ✅ أضفها هنا
+
     ];
 
     protected $casts = [
@@ -30,6 +32,8 @@ class TeacherCustomSalary extends Model
         'is_active' => 'boolean',
         'valid_from' => 'date',
         'valid_until' => 'date',
+    'currency'     => 'string', // ✅ أضفها هنا
+
     ];
 
     //  العلاقات

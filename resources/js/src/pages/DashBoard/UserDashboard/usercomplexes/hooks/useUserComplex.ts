@@ -30,13 +30,13 @@ export const useUserComplex = () => {
                 setLoading(true);
                 setError(null);
 
-                // ✅ CSRF Cookie
+                //  CSRF Cookie
                 await fetch("/sanctum/csrf-cookie", {
                     method: "GET",
                     credentials: "include",
                 });
 
-                // ✅ CSRF Token
+                //  CSRF Token
                 const metaToken = document
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content");
@@ -52,7 +52,7 @@ export const useUserComplex = () => {
                     getCookie("XSRF-TOKEN") ||
                     getCookie("csrf-token");
 
-                // ✅ جلب بيانات المجمع
+                //  جلب بيانات المجمع
                 const response = await fetch("/api/v1/user/complex", {
                     method: "GET",
                     credentials: "include",

@@ -1,4 +1,4 @@
-// hooks/useStaffAttendance.ts - نهائي  CSRF Token مُصحح
+// hooks/useStaffAttendance.ts
 import { useState, useEffect, useCallback, useMemo } from "react";
 import toast from "react-hot-toast";
 
@@ -7,10 +7,11 @@ export interface StaffAttendance {
     teacher_id: number;
     teacher_name: string;
     role: string;
-    circle_name?: string;
+    center_name: string;
     status: "present" | "late" | "absent";
     notes: string;
     date: string;
+    checkin_time: string;
     delay_minutes: number;
 }
 
@@ -31,43 +32,43 @@ interface UseStaffAttendanceReturn {
     dateFilter: "today" | "yesterday" | "week" | "month";
     error: string | null;
     isEmpty: boolean;
-    setSearch: (search: string) => void;
-    setDateFilter: (filter: "today" | "yesterday" | "week" | "month") => void;
+    setSearch: (s: string) => void;
+    setDateFilter: (f: "today" | "yesterday" | "week" | "month") => void;
     fetchAttendance: () => Promise<void>;
     markAttendance: (
         id: number,
         status: "present" | "late" | "absent",
+        reason?: string,
+        delayMinutes?: number,
     ) => Promise<boolean>;
 }
 
-//  CSRF Token Helper
+// ── CSRF ──────────────────────────────────────────────────────────────────────
 const getCsrfToken = (): string => {
     if (typeof document === "undefined") return "";
-
     return (
         document.cookie
             .split("; ")
             .find((row) => row.startsWith("XSRF-TOKEN"))
-            ?.split("=")[1] || ""
+            ?.split("=")[1] ?? ""
     );
 };
 
 const initializeCsrf = async (): Promise<void> => {
-    console.log("🔐 Initializing CSRF...");
     try {
-        const response = await fetch("/sanctum/csrf-cookie", {
+        await fetch("/sanctum/csrf-cookie", {
             credentials: "include",
             headers: {
                 Accept: "application/json",
                 "X-Requested-With": "XMLHttpRequest",
             },
         });
-        console.log(" CSRF Status:", response.status);
-    } catch (error) {
-        console.error("❌ CSRF Error:", error);
+    } catch (e) {
+        console.error("CSRF Error:", e);
     }
 };
 
+// ── Hook ──────────────────────────────────────────────────────────────────────
 export const useStaffAttendance = (): UseStaffAttendanceReturn => {
     const [staff, setStaff] = useState<StaffAttendance[]>([]);
     const [filteredStaff, setFilteredStaff] = useState<StaffAttendance[]>([]);
@@ -87,24 +88,19 @@ export const useStaffAttendance = (): UseStaffAttendanceReturn => {
     const [isInitialized, setIsInitialized] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const initializeAuth = useCallback(async () => {
-        if (!isInitialized) {
-            await initializeCsrf();
-            setIsInitialized(true);
-            console.log(" Auth initialized");
-        }
-    }, [isInitialized]);
-
+    // ── fetch ─────────────────────────────────────────────────────────────────
     const fetchAttendance = useCallback(async () => {
-        console.log("📊 Fetching:", dateFilter);
         setLoading(true);
         setStaff([]);
         setError(null);
 
         try {
-            if (!isInitialized) await initializeCsrf();
+            if (!isInitialized) {
+                await initializeCsrf();
+                setIsInitialized(true);
+            }
 
-            const response = await fetch(
+            const res = await fetch(
                 `/api/v1/attendance/staff-list?date_filter=${dateFilter}`,
                 {
                     credentials: "include",
@@ -115,92 +111,81 @@ export const useStaffAttendance = (): UseStaffAttendanceReturn => {
                 },
             );
 
-            console.log("🌐 Status:", response.status);
-
-            if (!response.ok) {
-                const errorData = await response
-                    .json()
-                    .catch(() => ({}) as any);
-                const errorMsg = errorData.message || `HTTP ${response.status}`;
-                throw new Error(errorMsg);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message ?? `HTTP ${res.status}`);
             }
 
-            const contentType = response.headers.get("content-type");
-            if (!contentType?.includes("application/json")) {
-                throw new Error("Server returned HTML");
+            const ct = res.headers.get("content-type");
+            if (!ct?.includes("application/json")) {
+                throw new Error("الخادم لم يُرجع JSON");
             }
 
-            const data = await response.json();
-            console.log(" Data:", data);
+            const data = await res.json();
 
-            const attendanceData: StaffAttendance[] = Array.isArray(data)
-                ? data
-                : data?.data || [];
+            const raw: any[] = Array.isArray(data.data)
+                ? data.data
+                : Array.isArray(data)
+                  ? data
+                  : [];
 
-            const safeStaff = attendanceData.filter(
-                (item): item is StaffAttendance => {
-                    return (
-                        item &&
-                        typeof item === "object" &&
-                        "id" in item &&
-                        typeof (item as any).id === "number" &&
-                        (item as any).id > 0 &&
-                        ["present", "late", "absent"].includes(
-                            (item as any).status || "",
-                        )
-                    );
-                },
-            );
+            const safe: StaffAttendance[] = raw
+                .filter((i) => i && typeof i === "object" && i.id > 0)
+                .map((i) => ({
+                    id: i.id,
+                    teacher_id: i.teacher_id ?? 0,
+                    teacher_name: i.teacher_name ?? i.name ?? "غير معروف",
+                    role: i.role ?? "موظف",
+                    center_name: i.center_name ?? i.circle_name ?? "-",
+                    status: ["present", "late", "absent"].includes(i.status)
+                        ? i.status
+                        : "absent",
+                    notes: i.notes ?? "-",
+                    date: i.date ?? "",
+                    checkin_time: i.checkin_time ?? "",
+                    delay_minutes: i.delay_minutes ?? 0,
+                }));
 
-            setStaff(safeStaff);
-
+            setStaff(safe);
             setStats({
-                total: data.stats?.total ?? safeStaff.length ?? 0,
+                total: data.stats?.total ?? safe.length,
                 present: data.stats?.present ?? 0,
                 late: data.stats?.late ?? 0,
                 absent: data.stats?.absent ?? 0,
                 monthlyAttendanceRate: data.stats?.monthly_rate ?? 0,
-                avgDelay: data.stats?.avg_delay ?? data.stats?.avgDelay ?? 0,
+                avgDelay: data.stats?.avg_delay ?? 0,
             });
-
-            console.log(" Loaded:", safeStaff.length, "records");
         } catch (err: any) {
-            console.error("❌ Error:", err);
-            const msg = err.message || "فشل في تحميل الحضور";
+            const msg = err.message ?? "فشل في تحميل الحضور";
             setError(msg);
             toast.error(msg);
-
             setStaff([]);
-            setStats({
-                total: 0,
-                present: 0,
-                late: 0,
-                absent: 0,
-                monthlyAttendanceRate: 0,
-                avgDelay: 0,
-            });
         } finally {
             setLoading(false);
         }
     }, [dateFilter, isInitialized]);
 
-    // 🔥 MARK ATTENDANCE - CSRF مُصحح 100%
+    // ── markAttendance ────────────────────────────────────────────────────────
     const markAttendance = useCallback(
         async (
             attendanceId: number,
             status: "present" | "late" | "absent",
+            reason?: string,
+            delayMinutes?: number,
         ): Promise<boolean> => {
             try {
-                console.log("✏️ Marking:", attendanceId, status);
-
-                //  1. Refresh CSRF token قبل PUT
                 await initializeCsrf();
+                const xsrf = getCsrfToken();
 
-                //  2. خد XSRF-TOKEN من cookies و decode
-                const xsrfToken = getCsrfToken();
-                console.log("🔑 CSRF Token:", xsrfToken ? "Found" : "Missing");
+                // بناء الملاحظة مع السبب لو متأخر
+                const notes =
+                    status === "present"
+                        ? "حضور يدوي"
+                        : status === "late"
+                          ? `تأخير يدوي${reason ? ` - السبب: ${reason}` : ""}`
+                          : "غياب يدوي";
 
-                const response = await fetch(
+                const res = await fetch(
                     `/api/v1/attendance/staff/${attendanceId}/mark`,
                     {
                         method: "PUT",
@@ -209,31 +194,24 @@ export const useStaffAttendance = (): UseStaffAttendanceReturn => {
                             "Content-Type": "application/json",
                             Accept: "application/json",
                             "X-Requested-With": "XMLHttpRequest",
-                            // 🔥 X-XSRF-TOKEN header - الحل الأساسي للـ CSRF
-                            "X-XSRF-TOKEN": xsrfToken
-                                ? decodeURIComponent(xsrfToken)
+                            "X-XSRF-TOKEN": xsrf
+                                ? decodeURIComponent(xsrf)
                                 : "",
                         },
                         body: JSON.stringify({
                             status,
-                            notes:
-                                status === "present"
-                                    ? "حضور يدوي"
-                                    : "غياب يدوي",
+                            notes,
+                            // ✅ بعّت delay_minutes لو متأخر
+                            ...(status === "late" && delayMinutes
+                                ? { delay_minutes: delayMinutes }
+                                : {}),
                         }),
                     },
                 );
 
-                console.log("🌐 Mark Status:", response.status);
-
-                if (!response.ok) {
-                    const errorData = await response
-                        .json()
-                        .catch(() => ({}) as any);
-                    console.error("❌ Server Error:", errorData);
-                    throw new Error(
-                        errorData.message || `HTTP ${response.status}`,
-                    );
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message ?? `HTTP ${res.status}`);
                 }
 
                 // Optimistic update
@@ -243,53 +221,52 @@ export const useStaffAttendance = (): UseStaffAttendanceReturn => {
                             ? {
                                   ...item,
                                   status,
-                                  notes:
-                                      status === "present"
-                                          ? "حضور يدوي"
-                                          : "غياب يدوي",
+                                  notes,
+                                  delay_minutes:
+                                      status === "late"
+                                          ? (delayMinutes ?? item.delay_minutes)
+                                          : 0,
                               }
                             : item,
                     ),
                 );
 
-                toast.success("تم تحديث الحضور بنجاح ");
                 return true;
             } catch (err: any) {
-                console.error("❌ Mark Error:", err);
-                toast.error(err.message || "فشل في التحديث");
+                toast.error(err.message ?? "فشل في التحديث");
                 return false;
             }
         },
         [],
     );
 
-    // Filter staff
+    // ── فلترة محلية ───────────────────────────────────────────────────────────
     useEffect(() => {
-        const filtered = staff.filter(
-            (employee) =>
-                employee.teacher_name
-                    .toLowerCase()
-                    .includes(search.toLowerCase()) ||
-                employee.role.toLowerCase().includes(search.toLowerCase()) ||
-                employee.circle_name
-                    ?.toLowerCase()
-                    .includes(search.toLowerCase()),
+        const q = search.toLowerCase();
+        setFilteredStaff(
+            !q
+                ? staff
+                : staff.filter(
+                      (e) =>
+                          e.teacher_name.toLowerCase().includes(q) ||
+                          e.role.toLowerCase().includes(q) ||
+                          e.center_name.toLowerCase().includes(q),
+                  ),
         );
-        setFilteredStaff(filtered);
-        console.log("📋 Filtered:", filtered.length);
     }, [staff, search]);
 
-    // Initial load
+    // ── initial load ──────────────────────────────────────────────────────────
     useEffect(() => {
-        initializeAuth().then(fetchAttendance);
+        initializeCsrf().then(() => {
+            setIsInitialized(true);
+            fetchAttendance();
+        });
     }, []);
 
-    // Date filter change
+    // ── date filter change ────────────────────────────────────────────────────
     useEffect(() => {
-        if (isInitialized) {
-            fetchAttendance();
-        }
-    }, [dateFilter, isInitialized, fetchAttendance]);
+        if (isInitialized) fetchAttendance();
+    }, [dateFilter]);
 
     const isEmpty = useMemo(
         () => staff.length === 0 && !loading,

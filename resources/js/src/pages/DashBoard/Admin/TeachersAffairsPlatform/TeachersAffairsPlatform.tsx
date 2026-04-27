@@ -1,10 +1,10 @@
-// TeachersAffairsPlatform.tsx - صفحة شؤون المعلمين للمنصة الكاملة
-import React, { useState, useCallback } from "react";
+// TeachersAffairsPlatform.tsx - نفس تصميم جدول CentersManagement & StudentAffairsPlatform
+import React, { useState, useCallback, useMemo } from "react";
 import toast from "react-hot-toast";
 import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical, GrDocumentText } from "react-icons/gr";
+import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
 import { PiWhatsappLogoDuotone, PiUserCircle } from "react-icons/pi";
-import { FiEdit2, FiPrinter } from "react-icons/fi";
+import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import { useTeachersAffairsPlatform } from "./hooks/useTeachersAffairsPlatform";
 import TeachersAffairsUpdatePlatform from "./models/TeachersAffairsUpdatePlatform";
 
@@ -23,13 +23,38 @@ const TeachersAffairsPlatform: React.FC = () => {
         printCard,
     } = useTeachersAffairsPlatform();
 
-    // ✅ States للـ Modal
+    // States للـ Modal
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(
         null,
     );
 
-    const filteredTeachersCount = teachers.length;
+    // فلترة المعلمين
+    const filteredTeachers = useMemo(() => {
+        return teachers.filter((teacher) => {
+            const matchesSearch =
+                !search ||
+                teacher.name.toLowerCase().includes(search.toLowerCase()) ||
+                teacher.phone_formatted
+                    .toLowerCase()
+                    .includes(search.toLowerCase()) ||
+                teacher.email.toLowerCase().includes(search.toLowerCase());
+
+            const matchesRole =
+                !filterRole ||
+                filterRole === "الكل" ||
+                teacher.role === filterRole;
+
+            const matchesStatus =
+                !filterStatus ||
+                filterStatus === "الكل" ||
+                teacher.status === filterStatus;
+
+            return matchesSearch && matchesRole && matchesStatus;
+        });
+    }, [teachers, search, filterRole, filterStatus]);
+
+    const filteredTeachersCount = filteredTeachers.length;
 
     const handleWhatsappReminder = async (id: number, phone: string) => {
         const success = await sendWhatsappReminder(id, phone);
@@ -42,19 +67,19 @@ const TeachersAffairsPlatform: React.FC = () => {
         printCard(id);
     };
 
-    // ✅ فتح Modal التعديل
+    // فتح Modal التعديل
     const handleEdit = useCallback((teacherId: number) => {
         setSelectedTeacherId(teacherId);
         setShowUpdateModal(true);
     }, []);
 
-    // ✅ إغلاق Modal
+    // إغلاق Modal
     const handleCloseUpdateModal = useCallback(() => {
         setShowUpdateModal(false);
         setSelectedTeacherId(null);
     }, []);
 
-    // ✅ نجاح التعديل
+    // نجاح التعديل
     const handleUpdateSuccess = useCallback(() => {
         toast.success("تم تحديث بيانات المعلم بنجاح! ✨");
         handleCloseUpdateModal();
@@ -86,34 +111,9 @@ const TeachersAffairsPlatform: React.FC = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div
-                className="teacherMotivate"
-                style={{
-                    padding: "0 15%",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    height: "400px",
-                }}
-            >
-                <div className="navbar">
-                    <div className="navbar__inner">
-                        <div className="navbar__loading">
-                            <div className="loading-spinner">
-                                <div className="spinner-circle"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <>
-            {/* ✅ Modal التعديل للمنصة */}
+            {/* Modal التعديل للمنصة */}
             {showUpdateModal && selectedTeacherId && (
                 <TeachersAffairsUpdatePlatform
                     teacherId={selectedTeacherId}
@@ -122,140 +122,174 @@ const TeachersAffairsPlatform: React.FC = () => {
                 />
             )}
 
-            <div className="teacherMotivate" style={{ padding: "0 15%" }}>
-                <div className="teacherMotivate__inner">
-                    <div
-                        className="userProfile__plan"
-                        style={{ paddingBottom: "24px", padding: "0" }}
-                    >
-                        <div className="userProfile__planTitle">
-                            <h1>
-                                شؤون المعلمين - المنصة الكاملة{" "}
-                                <span>{filteredTeachersCount} معلم</span>
-                            </h1>
+            {/* ✅ نفس التصميم: content / widget / wh / table */}
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">
+                            شؤون المعلمين - المنصة الكاملة
+                            <span className="filter-form text-sm text-gray-600 ml-2">
+                                ({filteredTeachersCount})
+                            </span>
                         </div>
-
-                        <div className="plan__header">
-                            <div className="plan__ai-suggestion">
-                                <i>
-                                    <RiRobot2Fill />
-                                </i>
-                                إدارة جميع المعلمين في جميع المجامع بضغطة واحدة
-                            </div>
-                            <div className="plan__current">
-                                <h2>إدارة بيانات المعلمين والرواتب - المنصة</h2>
-                                <div
-                                    className="plan__date-range"
-                                    style={{
-                                        display: "flex",
-                                        gap: "10px",
-                                        alignItems: "center",
-                                    }}
+                        <div className="flx">
+                            <div
+                                style={{
+                                    display: "flex",
+                                    gap: "10px",
+                                    alignItems: "center",
+                                    minWidth: "400px",
+                                }}
+                            >
+                                <select
+                                    value={filterRole}
+                                    onChange={(e) =>
+                                        setFilterRole(e.target.value)
+                                    }
+                                    className="fi"
+                                    style={{ minWidth: "120px" }}
                                 >
-                                    <select
-                                        value={filterRole}
-                                        onChange={(e) =>
-                                            setFilterRole(e.target.value)
-                                        }
-                                        className="p-2 border rounded"
-                                        disabled={loading}
-                                    >
-                                        <option>الكل</option>
-                                        {/* هتحتاج تجيب الـ roles من الـ API */}
-                                        <option>مدير</option>
-                                        <option>معلم</option>
-                                        <option>مشرف</option>
-                                    </select>
-                                    <select
-                                        value={filterStatus}
-                                        onChange={(e) =>
-                                            setFilterStatus(e.target.value)
-                                        }
-                                        className="p-2 border rounded"
-                                        disabled={loading}
-                                    >
-                                        <option>الكل</option>
-                                        <option>نشط</option>
-                                        <option>معلق</option>
-                                    </select>
-                                    <input
-                                        type="search"
-                                        placeholder="البحث بالاسم أو الهاتف أو الإيميل..."
-                                        value={search}
-                                        onChange={(e) =>
-                                            setSearch(e.target.value)
-                                        }
-                                        className="p-2 border rounded flex-1"
-                                        disabled={loading}
-                                    />
-                                </div>
+                                    <option value="">الكل</option>
+                                    <option value="مدير">مدير</option>
+                                    <option value="معلم">معلم</option>
+                                    <option value="مشرف">مشرف</option>
+                                </select>
+                                <select
+                                    value={filterStatus}
+                                    onChange={(e) =>
+                                        setFilterStatus(e.target.value)
+                                    }
+                                    className="fi"
+                                    style={{ minWidth: "120px" }}
+                                >
+                                    <option value="">الكل</option>
+                                    <option value="نشط">نشط</option>
+                                    <option value="معلق">معلق</option>
+                                </select>
+                                <input
+                                    type="search"
+                                    className="fi"
+                                    placeholder="البحث بالاسم أو الهاتف أو الإيميل..."
+                                    value={search || ""}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
                             </div>
                         </div>
+                    </div>
 
-                        <div className="plan__daily-table">
-                            <table>
-                                <thead>
+                    <div style={{ overflowX: "auto" }}>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>المجمع</th>
+                                    <th>الصورة</th>
+                                    <th>الاسم</th>
+                                    <th>رقم المعلم</th>
+                                    <th>العمر</th>
+                                    <th>الوظيفة</th>
+                                    <th>الهاتف</th>
+                                    <th>الحضور</th>
+                                    <th>الراتب</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
                                     <tr>
-                                        <th>المجمع</th>
-                                        <th>الصورة</th>
-                                        <th>الاسم</th>
-                                        <th>رقم المعلم</th>
-                                        <th>العمر</th>
-                                        <th>الوظيفة</th>
-                                        <th>الهاتف</th>
-                                        <th>الحضور</th>
-                                        <th>الراتب</th>
-                                        <th>الحالة</th>
-                                        <th>الإجراءات</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {teachers.map((item) => (
-                                        <tr
-                                            key={item.id}
-                                            className={`plan__row ${item.status}`}
+                                        <td
+                                            colSpan={11}
+                                            className="text-center py-8 text-gray-500"
                                         >
+                                            جاري تحميل المعلمين...
+                                        </td>
+                                    </tr>
+                                ) : filteredTeachers.length === 0 ? (
+                                    <tr>
+                                        <td
+                                            colSpan={11}
+                                            className="text-center py-8 text-gray-500"
+                                        >
+                                            لا توجد بيانات معلمين لهذا الفلتر
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredTeachers.map((item) => (
+                                        <tr key={item.id}>
+                                            {/* المجمع */}
                                             <td>
-                                                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs">
+                                                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-semibold">
                                                     {item.center_name}
                                                 </span>
                                             </td>
-                                            <td className="teacherStudent__img">
-                                                <div className="w-12 h-12 rounded-full overflow-hidden">
+
+                                            {/* الصورة */}
+                                            <td>
+                                                <div className="w-12 h-12 rounded-full overflow-hidden mx-auto">
                                                     <img
+                                                        style={{
+                                                            width: "36px",
+                                                            borderRadius:
+                                                                "100px",
+                                                        }}
                                                         src={item.img}
                                                         alt={item.name}
                                                         className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.currentTarget.src =
+                                                                "/default-avatar.png";
+                                                        }}
                                                     />
                                                 </div>
                                             </td>
-                                            <td>{item.name}</td>
+
+                                            {/* الاسم */}
+                                            <td className="font-semibold">
+                                                {item.name}
+                                            </td>
+
+                                            {/* رقم المعلم */}
                                             <td>
-                                                <span className="font-mono text-sm">
+                                                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
                                                     #{item.teacherId}
                                                 </span>
                                             </td>
-                                            <td>{item.age}</td>
+
+                                            {/* العمر */}
+                                            <td className="text-sm">
+                                                {item.age}
+                                            </td>
+
+                                            {/* الوظيفة */}
                                             <td>
-                                                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                                                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
                                                     {item.role}
                                                 </span>
                                             </td>
+
+                                            {/* الهاتف */}
                                             <td>
                                                 <div className="text-sm">
                                                     <div>
                                                         {item.phone_formatted}
                                                     </div>
-                                                    <div className="text-blue-600 text-xs">
+                                                    <a
+                                                        href={`mailto:${item.email}`}
+                                                        className="text-blue-600 text-xs hover:underline block mt-1"
+                                                    >
                                                         {item.email}
-                                                    </div>
+                                                    </a>
                                                 </div>
                                             </td>
+
+                                            {/* الحضور */}
                                             <td>
-                                                <span className="text-green-600 font-bold">
-                                                    {item.attendanceRate}
+                                                <span className="text-green-600 font-bold text-sm">
+                                                    {item.attendanceRate}%
                                                 </span>
                                             </td>
+
+                                            {/* الراتب */}
                                             <td>
                                                 <span
                                                     className={`px-2 py-1 rounded-full text-xs font-bold ${getSalaryStatusColor(
@@ -265,6 +299,8 @@ const TeachersAffairsPlatform: React.FC = () => {
                                                     {item.salaryStatus}
                                                 </span>
                                             </td>
+
+                                            {/* الحالة */}
                                             <td>
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(
@@ -274,111 +310,66 @@ const TeachersAffairsPlatform: React.FC = () => {
                                                     {item.status}
                                                 </span>
                                             </td>
+
+                                            {/* الإجراءات */}
                                             <td>
-                                                <div className="teacherStudent__btns">
+                                                <div className="td-actions">
                                                     <button
-                                                        className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 border-blue-300 text-blue-600 hover:bg-blue-50 w-12 h-12"
+                                                        className="btn bs bxs"
                                                         onClick={() =>
                                                             handleEdit(item.id)
                                                         }
-                                                        title="تعديل البيانات"
+                                                        title="تعديل بيانات المعلم"
                                                     >
-                                                        <FiEdit2 />
+                                                        تعديل
+                                                    </button>
+                                                    <button
+                                                        className="btn bd bxs"
+                                                        onClick={() => {
+                                                            if (
+                                                                confirm(
+                                                                    "هل أنت متأكد من حذف هذا المعلم؟",
+                                                                )
+                                                            ) {
+                                                                toast.error(
+                                                                    "عذراً، خاصية الحذف غير متاحة حالياً",
+                                                                );
+                                                            }
+                                                        }}
+                                                        title="حذف المعلم"
+                                                    >
+                                                        حذف
+                                                    </button>
+                                                    <button
+                                                        className="btn bp bxs"
+                                                        onClick={() =>
+                                                            handleWhatsappReminder(
+                                                                item.id,
+                                                                item.phone_formatted,
+                                                            )
+                                                        }
+                                                        title="إرسال تذكير واتساب"
+                                                    >
+                                                        واتساب
+                                                    </button>
+                                                    <button
+                                                        className="btn bg bxs"
+                                                        onClick={() =>
+                                                            handlePrintCard(
+                                                                item.id,
+                                                            )
+                                                        }
+                                                        title="طباعة البطاقة"
+                                                    >
+                                                        طباعة
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
-                                    {teachers.length === 0 && (
-                                        <tr>
-                                            <td
-                                                colSpan={11}
-                                                className="text-center py-8 text-gray-500"
-                                            >
-                                                لا توجد بيانات معلمين لهذا
-                                                الفلتر
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* ✅ الـ Stats الخاصة بالمعلمين */}
-                        <div className="plan__stats">
-                            <div className="stat-card">
-                                <div className="stat-icon greenColor">
-                                    <i>
-                                        <PiUserCircle />
-                                    </i>
-                                </div>
-                                <div>
-                                    <h3>إجمالي المعلمين في المنصة</h3>
-                                    <p className="text-2xl font-bold text-green-600">
-                                        {stats.totalTeachers || 0}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-icon yellowColor">
-                                    <i>
-                                        <GrStatusGood />
-                                    </i>
-                                </div>
-                                <div>
-                                    <h3>المعلمين النشطين</h3>
-                                    <p className="text-2xl font-bold text-yellow-600">
-                                        {stats.activeTeachers || 0}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-icon redColor">
-                                    <i>
-                                        <GrStatusCritical />
-                                    </i>
-                                </div>
-                                <div>
-                                    <h3>المعلمين المعلقين</h3>
-                                    <p className="text-2xl font-bold text-red-600">
-                                        {stats.pendingTeachers || 0}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="inputs__verifyOTPBirth">
-                            <div className="userProfile__progressContent">
-                                <div className="userProfile__progressTitle">
-                                    <h1>نسبة دفع الرواتب في المنصة</h1>
-                                </div>
-                                <p>{stats.paymentRate || 0}%</p>
-                                <div className="userProfile__progressBar">
-                                    <span
-                                        style={{
-                                            width: `${stats.paymentRate || 0}%`,
-                                        }}
-                                    ></span>
-                                </div>
-                            </div>
-                            <div className="userProfile__progressContent">
-                                <div className="userProfile__progressTitle">
-                                    <h1>المعلمين النشطين</h1>
-                                </div>
-                                <p>
-                                    {stats.activeTeachers}/{stats.totalTeachers}
-                                </p>
-                                <div className="userProfile__progressBar">
-                                    <span
-                                        style={{
-                                            width: stats.totalTeachers
-                                                ? `${(stats.activeTeachers / stats.totalTeachers) * 100}%`
-                                                : "0%",
-                                        }}
-                                    ></span>
-                                </div>
-                            </div>
-                        </div>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

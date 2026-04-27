@@ -1,9 +1,11 @@
 // hooks/useSalaryRuleFormCreate.ts
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
+import { CurrencyCode } from "../SalaryRulesManagement";
 
 export interface FormData {
     role: string;
+    currency: CurrencyCode;
     base_salary: string;
     working_days: string;
     daily_rate: string;
@@ -13,6 +15,7 @@ export interface FormData {
 interface SalaryRule {
     id: number;
     role: string;
+    currency?: CurrencyCode;
     base_salary: number;
     working_days: number;
     daily_rate?: number;
@@ -28,6 +31,7 @@ interface FormErrors {
 export const useSalaryRuleFormCreate = () => {
     const [formData, setFormData] = useState<FormData>({
         role: "",
+        currency: "SAR",
         base_salary: "",
         working_days: "",
         daily_rate: "",
@@ -39,7 +43,6 @@ export const useSalaryRuleFormCreate = () => {
     const [existingRules, setExistingRules] = useState<SalaryRule[]>([]);
     const [loadingRules, setLoadingRules] = useState(true);
 
-    // تحميل القواعد الموجودة
     useEffect(() => {
         fetchExistingRules();
     }, []);
@@ -73,7 +76,6 @@ export const useSalaryRuleFormCreate = () => {
         }
     }, []);
 
-    // التحقق من صحة البيانات
     const validateForm = useCallback((data: FormData): FormErrors => {
         const newErrors: FormErrors = {};
 
@@ -99,7 +101,6 @@ export const useSalaryRuleFormCreate = () => {
         return newErrors;
     }, []);
 
-    // حساب الراتب اليومي
     const calculateDailyRate = useCallback(
         (baseSalary: string, workingDays: string) => {
             const base = parseFloat(baseSalary);
@@ -113,7 +114,6 @@ export const useSalaryRuleFormCreate = () => {
         [],
     );
 
-    // تغيير البيانات
     const handleInputChange = useCallback(
         (
             e: React.ChangeEvent<
@@ -125,7 +125,6 @@ export const useSalaryRuleFormCreate = () => {
             setFormData((prev) => {
                 const newData = { ...prev, [name]: value };
 
-                // حساب الراتب اليومي عند تغيير الراتب الأساسي أو أيام العمل
                 if (name === "base_salary" || name === "working_days") {
                     calculateDailyRate(
                         newData.base_salary,
@@ -136,7 +135,6 @@ export const useSalaryRuleFormCreate = () => {
                 return newData;
             });
 
-            // مسح الخطأ الخاص بالحقل
             setErrors((prev) => {
                 const newErrors = { ...prev };
                 delete newErrors[name as keyof FormErrors];
@@ -146,7 +144,6 @@ export const useSalaryRuleFormCreate = () => {
         [calculateDailyRate],
     );
 
-    // ✅ إرسال JSON object مباشرة
     const submitForm = useCallback(async () => {
         const validationErrors = validateForm(formData);
 
@@ -156,7 +153,6 @@ export const useSalaryRuleFormCreate = () => {
             return false;
         }
 
-        // التحقق من وجود الدور مسبقاً
         const roleExists = existingRules.some(
             (rule) => rule.role === formData.role,
         );
@@ -174,9 +170,9 @@ export const useSalaryRuleFormCreate = () => {
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content") || "";
 
-            // ✅ تحويل لـ JSON object نظيف
             const submitData = {
                 role: formData.role,
+                currency: formData.currency,
                 base_salary: parseFloat(formData.base_salary),
                 working_days: parseInt(formData.working_days),
                 ...(formData.daily_rate && {
@@ -196,10 +192,8 @@ export const useSalaryRuleFormCreate = () => {
                     "X-Requested-With": "XMLHttpRequest",
                     "X-CSRF-TOKEN": csrfToken,
                 },
-                body: JSON.stringify(submitData), // ✅ JSON مباشرة بدون FormData
+                body: JSON.stringify(submitData),
             });
-
-            console.log("📡 Response status:", response.status);
 
             if (!response.ok) {
                 const errorData = await response
@@ -211,7 +205,9 @@ export const useSalaryRuleFormCreate = () => {
                     const errorMessages = Object.values(
                         errorData.errors,
                     ).flat();
-                    toast.error(errorMessages[0] || "حدث خطأ في الإضافة");
+                    toast.error(
+                        (errorMessages[0] as string) || "حدث خطأ في الإضافة",
+                    );
                     return false;
                 }
                 if (response.status === 401) {
@@ -245,6 +241,6 @@ export const useSalaryRuleFormCreate = () => {
         existingRules,
         loadingRules,
         handleInputChange,
-        submitForm, // ✅ بيرجع Promise<boolean>
+        submitForm,
     };
 };

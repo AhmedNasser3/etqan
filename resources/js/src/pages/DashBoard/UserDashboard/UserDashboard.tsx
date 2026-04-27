@@ -6,7 +6,7 @@ const UserDashboard: React.FC = () => {
         <div className="userDashboard">
             <div className="userDashboard__features">
                 <UserProfile />
-                <UserPlans />
+                {/* <UserPlans /> */}
             </div>
         </div>
     );

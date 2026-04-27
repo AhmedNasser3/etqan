@@ -1,3 +1,5 @@
+// UserPlans.tsx - ديزاين معتدل يشبه CirclesManagement
+import React from "react";
 import { RiRobot2Fill } from "react-icons/ri";
 import { GrStatusGood } from "react-icons/gr";
 import { PiTimerDuotone } from "react-icons/pi";
@@ -44,12 +46,10 @@ const UserPlans: React.FC = () => {
         return dateString.split("-").reverse().join("/");
     };
 
-    // 🔥 Filter داخل الـ Component
     const filteredData = planData.filter(
         (item) => item.date >= dateFrom && item.date <= dateTo,
     );
 
-    // 🔥 Format الوقت
     const formatSessionTime = (time: string | undefined): string => {
         if (!time) return "غير محدد";
         try {
@@ -65,173 +65,126 @@ const UserPlans: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="loading flex items-center justify-center py-12">
-                <div className="navbar">
-                    <div className="navbar__inner">
-                        <div className="navbar__loading">
-                            <div className="loading-spinner">
-                                <div className="spinner-circle"></div>
-                            </div>
-                        </div>
+            <div className="content">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">تحميل الخطط...</div>
                     </div>
-                </div>{" "}
+                    <div className="text-center py-12">
+                        <div className="ld">جـاري التحميل...</div>
+                    </div>
+                </div>
             </div>
         );
     }
 
-    return (
-        <div className="userProfile__plan">
-            <div className="userProfile__planTitle">
-                <h1>
-                    خطتك الدراسية <span>{stats?.total_days || 0} يوم</span>
-                </h1>
-            </div>
+    const getStatusBadgeClass = (status: string) => {
+        switch (status) {
+            case "completed":
+                return "bg-g";
+            case "retry":
+                return "bg-a";
+            default:
+                return "bg-r";
+        }
+    };
 
-            <div className="plan__header">
-                <div className="plan__ai-suggestion">
-                    <i>
-                        <RiRobot2Fill />
-                    </i>
-                    راجع {stats?.today_goal?.hifz || "الدرس اليومي"}
-                </div>
-                <div className="plan__current">
-                    <h2>خطتك اليومية</h2>
-                    <div className="plan__date-range">
-                        <div className="date-picker to">
+    function BadgeStatus({ status }: { status: string }) {
+        const map: Record<string, React.CSSProperties> = {
+            "bg-g": { background: "var(--g100)", color: "var(--g700)" },
+            "bg-r": { background: "#fee2e2", color: "#ef4444" },
+            "bg-a": { background: "#fef3c7", color: "#92400e" },
+            "bg-n": { background: "var(--n100)", color: "var(--n500)" },
+        };
+        const value = map[getStatusBadgeClass(status)] || map["bg-n"];
+        const text =
+            status === "completed"
+                ? "مكتمل"
+                : status === "retry"
+                  ? "إعادة"
+                  : "قيد الانتظار";
+        return (
+            <span
+                className="badge px-2 py-1 rounded-full text-xs font-medium"
+                style={value}
+            >
+                {text}
+            </span>
+        );
+    }
+
+    return (
+        <div className="content">
+            <div className="widget">
+                <div className="wh">
+                    <div className="wh-l">الخطط الدراسية</div>
+                    <div className="flx" style={{ display: "flex" }}>
+                        <div
+                            className="date-picker to"
+                            style={{ margin: "0 6px" }}
+                        >
                             <label>إلى</label>
                             <input
                                 type="date"
+                                className="fi"
                                 value={dateTo}
                                 onChange={(e) => setDateTo(e.target.value)}
                             />
                         </div>
-                        <div className="date-picker from">
+                        <div
+                            className="date-picker from"
+                            style={{ margin: "0 6px" }}
+                        >
                             <label>من</label>
                             <input
                                 type="date"
+                                className="fi"
                                 value={dateFrom}
                                 onChange={(e) => setDateFrom(e.target.value)}
                             />
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* 🔥 Empty State */}
-            {filteredData.length === 0 ? (
-                <div className="empty-state text-center py-16">
-                    <SiBookstack className="mx-auto text-6xl text-gray-300 mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                        لا توجد خطط دراسية
-                    </h3>
-                    <p className="text-gray-500 mb-8">
-                        قم بالحجز في حلقة لتبدأ خطتك الدراسية
-                    </p>
-                </div>
-            ) : (
-                <div className="plan__daily-table">
-                    <div className="table-header flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold">
-                            {filteredData.length} يوم في النطاق المحدد
-                        </h3>
+                {filteredData.length === 0 ? (
+                    <div className="empty text-center py-16">
+                        <SiBookstack className="mx-auto text-4xl text-gray-300 mb-2" />
+                        <p>لا توجد خطط دراسية في الفترة المحددة</p>
                     </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>التاريخ</th>
-                                <th>اليوم</th>
-                                <th>الحفظ الجديد</th>
-                                <th>المراجعة</th>
-                                <th>الوقت</th>
-                                <th>الحالة</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredData.map((item) => (
-                                <tr
-                                    key={item.id}
-                                    className={`plan__row ${item.status}`}
-                                >
-                                    <td>{formatDate(item.date)}</td>
-                                    <td>{item.day}</td>
-                                    <td>{item.hifz}</td>
-                                    <td>{item.review}</td>
-                                    <td>
-                                        {formatSessionTime(item.session_time)}
-                                    </td>
-                                    <td>
-                                        <span className="status-badge">
-                                            <i>
-                                                {item.status === "completed" ? (
-                                                    <GrStatusGood />
-                                                ) : (
-                                                    <PiTimerDuotone />
-                                                )}
-                                            </i>
-                                            {item.status === "completed"
-                                                ? "مكتمل"
-                                                : item.status === "retry"
-                                                  ? "إعادة"
-                                                  : "قيد الانتظار"}
-                                        </span>
-                                    </td>
+                ) : (
+                    <div style={{ overflowX: "auto" }}>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>اليوم</th>
+                                    <th>الحفظ الجديد</th>
+                                    <th>المراجعة</th>
+                                    <th>الوقت</th>
+                                    <th>الحالة</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            <div className="plan__stats">
-                <div className="stat-card">
-                    <div className="stat-icon redColor">
-                        <i>
-                            <GoGoal />
-                        </i>
+                            </thead>
+                            <tbody>
+                                {filteredData.map((item) => (
+                                    <tr key={item.id}>
+                                        <td>{formatDate(item.date)}</td>
+                                        <td>{getArabicDayName(item.date)}</td>
+                                        <td>{item.hifz}</td>
+                                        <td>{item.review}</td>
+                                        <td>
+                                            {formatSessionTime(
+                                                item.session_time,
+                                            )}
+                                        </td>
+                                        <td>
+                                            <BadgeStatus status={item.status} />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                    <div>
-                        <h3>هدف اليوم</h3>
-                        <p>{stats?.today_goal?.hifz || "لا يوجد"}</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon yellowColor">
-                        <i>
-                            <FaStar />
-                        </i>
-                    </div>
-                    <div>
-                        <h3>نقاطك</h3>
-                        <p>{stats?.points || "0/0"}</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon greenColor">
-                        <i>
-                            <PiWhatsappLogoDuotone />
-                        </i>
-                    </div>
-                    <div>
-                        <h3>التقدم</h3>
-                        <p>{stats?.progress_percentage || 0}%</p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="inputs__verifyOTPBirth">
-                <div className="userProfile__progressContent">
-                    <div className="userProfile__progressTitle">
-                        <h1>القرآن كامل</h1>
-                    </div>
-                    <p>{stats?.progress_percentage || 0}%</p>
-                    <div className="userProfile__progressBar">
-                        <span
-                            style={{
-                                width: `${stats?.progress_percentage || 0}%`,
-                            }}
-                        ></span>
-                    </div>
-                </div>
+                )}
             </div>
         </div>
     );

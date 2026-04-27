@@ -1,6 +1,7 @@
 <?php
 
 // app/Http/Controllers/Teachers/TeacherPlanSchedulesController.php
+// نفس الكود بالضبط + إضافة jitsi_room_name فقط
 
 namespace App\Http\Controllers\Teachers;
 
@@ -55,6 +56,7 @@ class TeacherPlanSchedulesController extends Controller
                     'remaining_slots' => $schedule->max_students - $schedule->booked_students,
                     'is_available' => $schedule->is_available,
                     'notes' => $schedule->notes,
+                    'jitsi_room_name' => $schedule->jitsi_room_name,  //  إضافة الغرفة
                     'created_at_formatted' => $schedule->created_at->format('Y-m-d H:i'),
                 ];
             }),
@@ -97,6 +99,7 @@ class TeacherPlanSchedulesController extends Controller
                 'remaining_slots' => $schedule->max_students - $schedule->booked_students,
                 'is_available' => $schedule->is_available,
                 'notes' => $schedule->notes,
+                'jitsi_room_name' => $schedule->jitsi_room_name,  //  إضافة الغرفة
             ]
         ]);
     }
@@ -136,6 +139,7 @@ class TeacherPlanSchedulesController extends Controller
                     'end_time' => $schedule->end_time,
                     'remaining_slots' => $schedule->max_students - $schedule->booked_students,
                     'is_available' => $schedule->is_available,
+                    'jitsi_room_name' => $schedule->jitsi_room_name,  //  إضافة الغرفة
                 ];
             }),
             'total_available' => $schedules->count()
@@ -174,44 +178,46 @@ class TeacherPlanSchedulesController extends Controller
         ]);
     }
 
-public function getTeacherPlanSchedules(Request $request)
-{
-    $user = auth()->user();
+    public function getTeacherPlanSchedules(Request $request)
+    {
+        $user = auth()->user();
 
-    if (!$user) {
-        return response()->json(['error' => 'غير مصرح'], 401);
+        if (!$user) {
+            return response()->json(['error' => 'غير مصرح'], 401);
+        }
+
+        $teacherId = $user->id;
+
+        // 🔥 الـ Query الجديد: **كل الحلقات المتاحة فقط** (بدون شرط التاريخ)
+        $schedules = DB::table('plan_circle_schedules as pcs')
+            ->leftJoin('circle_student_bookings as csb', 'pcs.id', '=', 'csb.plan_circle_schedule_id')
+            ->where('pcs.teacher_id', $teacherId)                    // شرط 1️⃣: حلقات المعلم
+            ->where('pcs.is_available', true)                       // شرط 2️⃣: متاحة للحجز
+            //  شيلنا: ->where('pcs.schedule_date', '>=', now()->format('Y-m-d'))
+            ->select(
+                'pcs.id',
+                'pcs.schedule_date',
+                'pcs.day_of_week',
+                'pcs.start_time',
+                'pcs.end_time',
+                'pcs.jitsi_room_name',                              //  إضافة الغرفة
+                DB::raw('COALESCE(COUNT(DISTINCT csb.user_id), 0) as booked_students'),
+                'pcs.max_students'
+            )
+            ->groupBy(
+                'pcs.id',
+                'pcs.schedule_date',
+                'pcs.day_of_week',
+                'pcs.start_time',
+                'pcs.end_time',
+                'pcs.jitsi_room_name',                              //  إضافة الغرفة
+                'pcs.max_students'
+            )
+            ->orderBy('pcs.schedule_date', 'desc')  // الأحدث الأول
+            ->orderBy('pcs.start_time')
+            ->limit(10)
+            ->get();
+
+        return response()->json($schedules);
     }
-
-    $teacherId = $user->id;
-
-    // 🔥 الـ Query الجديد: **كل الحلقات المتاحة فقط** (بدون شرط التاريخ)
-    $schedules = DB::table('plan_circle_schedules as pcs')
-        ->leftJoin('circle_student_bookings as csb', 'pcs.id', '=', 'csb.plan_circle_schedule_id')
-        ->where('pcs.teacher_id', $teacherId)                    // شرط 1️⃣: حلقات المعلم
-        ->where('pcs.is_available', true)                        // شرط 2️⃣: متاحة للحجز
-        //  شيلنا: ->where('pcs.schedule_date', '>=', now()->format('Y-m-d'))
-        ->select(
-            'pcs.id',
-            'pcs.schedule_date',
-            'pcs.day_of_week',
-            'pcs.start_time',
-            'pcs.end_time',
-            DB::raw('COALESCE(COUNT(DISTINCT csb.user_id), 0) as booked_students'),
-            'pcs.max_students'
-        )
-        ->groupBy(
-            'pcs.id',
-            'pcs.schedule_date',
-            'pcs.day_of_week',
-            'pcs.start_time',
-            'pcs.end_time',
-            'pcs.max_students'
-        )
-        ->orderBy('pcs.schedule_date', 'desc')  // الأحدث الأول
-        ->orderBy('pcs.start_time')
-        ->limit(10)
-        ->get();
-
-    return response()->json($schedules);
-}
 }

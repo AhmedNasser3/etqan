@@ -1,9 +1,9 @@
+// CreateCenterPage.tsx
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { FiX } from "react-icons/fi";
 import { useCenterFormCreate } from "../hooks/useCenterFormCreate";
 
-//  CSRF Token Helper
 const getCsrfToken = (): string => {
     const cookies = document.cookie.split(";");
     const csrfCookie = cookies.find((cookie) =>
@@ -32,19 +32,13 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
         resetForm,
     } = useCenterFormCreate();
 
-    //  الـ Route الصحيح من ملف routes/api.php بتاعك
     const handleSubmit = async (formDataSubmit: FormData) => {
         try {
-            //  CSRF Token أولاً
             if (!document.cookie.includes("XSRF-TOKEN=")) {
                 await fetch("/sanctum/csrf-cookie", {
                     credentials: "include",
                 });
             }
-
-            console.log(
-                "🌐 POST → /api/v1/super/centers/register ← الـ Route الصحيح",
-            );
 
             const response = await fetch("/api/v1/super/centers/register", {
                 method: "POST",
@@ -57,14 +51,10 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                 body: formDataSubmit,
             });
 
-            console.log("📡 Status:", response.status);
-
             if (!response.ok) {
                 const errorData = await response
                     .json()
                     .catch(() => response.text());
-                console.error("❌ Error response:", errorData);
-
                 if (typeof errorData === "object" && errorData.errors) {
                     const errorMessages = Object.values(
                         errorData.errors,
@@ -76,8 +66,6 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
             }
 
             const result = await response.json();
-            console.log(" Create response:", result);
-
             if (result.success) {
                 toast.success("تم إضافة المجمع بنجاح!");
                 resetForm();
@@ -86,284 +74,451 @@ const CreateCenterPage: React.FC<CreateCenterPageProps> = ({
                 toast.error(result.message || "فشل في الإضافة");
             }
         } catch (error: any) {
-            console.error("💥 Create error:", error);
             toast.error(error.message || "حدث خطأ في الإضافة");
         }
     };
 
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={onClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        <div className="ParentModel__header">
+        <>
+            <div className="ov on">
+                <div className="modal">
+                    <div className="mh">
+                        <span className="mh-t">مجمع جديد</span>
+                        <button
+                            className="mx"
+                            onClick={onClose}
+                            disabled={isSubmitting}
+                        >
+                            <span
+                                style={{
+                                    width: 12,
+                                    height: 12,
+                                    display: "inline-flex",
+                                }}
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                >
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
+
+                    <div className="mb">
+                        {/* اسم المجمع */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                اسم المجمع *
+                            </label>
+                            <input
+                                required
+                                type="text"
+                                name="circle_name"
+                                value={formData.circle_name}
+                                onChange={handleInputChange}
+                                className={`fi2 ${
+                                    errors.circle_name
+                                        ? "border-red-300 bg-red-50"
+                                        : "border-gray-200 hover:border-gray-300"
+                                }`}
+                                placeholder="أدخل اسم المجمع"
+                                disabled={isSubmitting}
+                            />
+                            {errors.circle_name && (
+                                <p
+                                    style={{
+                                        fontSize: "10.5px",
+                                        color: "var(--red-600)",
+                                        margin: "2px 0 0 0",
+                                    }}
+                                >
+                                    {errors.circle_name}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* اسم المدير */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                اسم المدير *
+                            </label>
+                            <input
+                                required
+                                type="text"
+                                name="manager_name"
+                                value={formData.manager_name}
+                                onChange={handleInputChange}
+                                className={`fi2 ${
+                                    errors.manager_name
+                                        ? "border-red-300 bg-red-50"
+                                        : "border-gray-200 hover:border-gray-300"
+                                }`}
+                                placeholder="أدخل اسم المدير"
+                                disabled={isSubmitting}
+                            />
+                            {errors.manager_name && (
+                                <p
+                                    style={{
+                                        fontSize: "10.5px",
+                                        color: "var(--red-600)",
+                                        margin: "2px 0 0 0",
+                                    }}
+                                >
+                                    {errors.manager_name}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* بريد المدير */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                بريد المدير *
+                            </label>
+                            <input
+                                required
+                                type="email"
+                                name="manager_email"
+                                value={formData.manager_email}
+                                onChange={handleInputChange}
+                                className={`fi2 ${
+                                    errors.manager_email
+                                        ? "border-red-300 bg-red-50"
+                                        : "border-gray-200 hover:border-gray-300"
+                                }`}
+                                placeholder="example@email.com"
+                                disabled={isSubmitting}
+                            />
+                            {errors.manager_email && (
+                                <p
+                                    style={{
+                                        fontSize: "10.5px",
+                                        color: "var(--red-600)",
+                                        margin: "2px 0 0 0",
+                                    }}
+                                >
+                                    {errors.manager_email}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* رقم الجوال */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                رقم الجوال *
+                            </label>
+                            <div style={{ display: "flex" }}>
+                                <select
+                                    name="country_code"
+                                    value={formData.country_code}
+                                    onChange={handleInputChange}
+                                    className="fi2" // مُعدّل لـ CSS عام بنفس أسلوب modal
+                                    style={{
+                                        width: 70,
+                                        borderRight: "none",
+                                        borderRadius: "0.5rem 0 0 0.5rem",
+                                        marginRight: -1,
+                                    }}
+                                    disabled={isSubmitting}
+                                >
+                                    <option value="966">966+</option>
+                                    <option value="20">20+</option>
+                                    <option value="971">971+</option>
+                                </select>
+                                <input
+                                    name="manager_phone"
+                                    value={formData.manager_phone}
+                                    onChange={handleInputChange}
+                                    className={`fi2 ${
+                                        errors.manager_phone
+                                            ? "border-red-300 bg-red-50"
+                                            : "border-gray-200 hover:border-gray-300"
+                                    }`}
+                                    style={{
+                                        borderTopLeftRadius: 0,
+                                        borderBottomLeftRadius: 0,
+                                        borderLeft: "none",
+                                    }}
+                                    placeholder="0551234567"
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                            {errors.manager_phone && (
+                                <p
+                                    style={{
+                                        fontSize: "10.5px",
+                                        color: "var(--red-600)",
+                                        margin: "2px 0 0 0",
+                                    }}
+                                >
+                                    {errors.manager_phone}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* الدومين */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الدومين
+                            </label>
+                            <input
+                                type="text"
+                                name="domain"
+                                value={formData.domain}
+                                onChange={handleInputChange}
+                                className="fi2 border-gray-200 hover:border-gray-300"
+                                placeholder="test-center"
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        {/* رابط المجمع */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                رابط المجمع
+                            </label>
+                            <input
+                                type="url"
+                                name="circle_link"
+                                value={formData.circle_link}
+                                onChange={handleInputChange}
+                                className="fi2 border-gray-200 hover:border-gray-300"
+                                placeholder="https://test.yourapp.com"
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        {/* شعار المجمع */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                شعار المجمع
+                            </label>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                    gap: 12,
+                                }}
+                            >
+                                {logoPreview && (
+                                    <div
+                                        style={{
+                                            width: 50,
+                                            height: 50,
+                                            borderRadius: 12,
+                                            overflow: "hidden",
+                                            border: "2px solid #bfdbfe",
+                                            display: "flex",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            backgroundColor: "#f0f9ff",
+                                        }}
+                                    >
+                                        <img
+                                            src={logoPreview}
+                                            alt="معاينة الصورة الجديدة"
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
+                                                objectFit: "cover",
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                                <div
+                                    style={{
+                                        flex: 1,
+                                        border: "2px dashed #cbd5e1",
+                                        borderRadius: "0.75rem",
+                                        padding: "12px",
+                                        textAlign: "center",
+                                        cursor: "pointer",
+                                        backgroundColor: "#f8fafc",
+                                        position: "relative",
+                                        overflow: "hidden",
+                                    }}
+                                >
+                                    <input
+                                        name="logo"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                        className="hidden"
+                                        id="logo-upload-center"
+                                        disabled={isSubmitting}
+                                    />
+                                    <label
+                                        htmlFor="logo-upload-center"
+                                        style={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "center",
+                                            gap: 6,
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: 16,
+                                                background:
+                                                    "linear-gradient(135deg, #3b82f6, #2563eb)",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                color: "#fff",
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            +
+                                        </span>
+                                        <p
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                margin: 0,
+                                                lineHeight: 1.2,
+                                                color: "var(--n700)",
+                                            }}
+                                        >
+                                            {formData.logo instanceof File
+                                                ? formData.logo.name
+                                                : "اختر صورة جديدة (JPG, PNG)"}
+                                        </p>
+                                        <span
+                                            style={{
+                                                fontSize: "0.65rem",
+                                                color: "var(--n500)",
+                                            }}
+                                        >
+                                            حد أقصى 2 ميجا بايت
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ملاحظات */}
+                        <div style={{ marginBottom: 13 }}>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "10.5px",
+                                    fontWeight: 700,
+                                    color: "var(--n700)",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                ملاحظات
+                            </label>
+                            <textarea
+                                name="notes"
+                                value={formData.notes}
+                                onChange={handleInputChange}
+                                rows={3}
+                                className="fi2 resize-vertical border-gray-200 hover:border-gray-300"
+                                placeholder="أي ملاحظات إضافية..."
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        className="mf"
+                        style={{
+                            padding: "20px 20px 16px 20px",
+                            borderTop: "1px solid #e5e7eb",
+                            marginTop: "auto",
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: 12,
+                                justifyContent: "flex-end",
+                            }}
+                        >
                             <button
-                                className="ParentModel__close"
+                                className="btn bs"
                                 onClick={onClose}
                                 disabled={isSubmitting}
                             >
-                                <FiX size={24} />
+                                إلغاء
                             </button>
-                        </div>
-
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>مجمع جديد</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>إضافة مجمع جديد</h1>
-                                <p>
-                                    يرجى إدخال بيانات المجمع المعتمد بشكل صحيح
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="ParentModel__container">
-                            {/* اسم المجمع */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>اسم المجمع *</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        name="circle_name"
-                                        value={formData.circle_name}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black ${
-                                            errors.circle_name
-                                                ? "border-red-300 bg-red-50 text-red-900"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="أدخل اسم المجمع"
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.circle_name && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.circle_name}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* اسم المدير */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>اسم المدير *</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        name="manager_name"
-                                        value={formData.manager_name}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black ${
-                                            errors.manager_name
-                                                ? "border-red-300 bg-red-50 text-red-900"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="أدخل اسم المدير"
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.manager_name && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.manager_name}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* بريد المدير */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>بريد المدير *</label>
-                                    <input
-                                        required
-                                        type="email"
-                                        name="manager_email"
-                                        value={formData.manager_email}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black ${
-                                            errors.manager_email
-                                                ? "border-red-300 bg-red-50 text-red-900"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="example@email.com"
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.manager_email && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.manager_email}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* رقم الجوال */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>رقم الجوال *</label>
-                                    <div className="flex">
-                                        <select
-                                            name="country_code"
-                                            value={formData.country_code}
-                                            onChange={handleInputChange}
-                                            className="w-24 px-3 py-3 border-r-0 border rounded-l-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-black font-medium text-base"
-                                            disabled={isSubmitting}
-                                        >
-                                            <option value="966">966+</option>
-                                            <option value="20">20+</option>
-                                            <option value="971">971+</option>
-                                            <option value="966">966+</option>
-                                        </select>
-                                        <input
-                                            name="manager_phone"
-                                            value={formData.manager_phone}
-                                            onChange={handleInputChange}
-                                            className={`flex-1 px-4 py-3 border rounded-r-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black ${
-                                                errors.manager_phone
-                                                    ? "border-red-300 bg-red-50 text-red-900"
-                                                    : "border-gray-200 hover:border-gray-300 border-l-0"
-                                            }`}
-                                            placeholder="0551234567"
-                                            disabled={isSubmitting}
-                                        />
-                                    </div>
-                                    {errors.manager_phone && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.manager_phone}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* الدومين */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الدومين</label>
-                                    <input
-                                        type="text"
-                                        name="domain"
-                                        value={formData.domain}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black"
-                                        placeholder="test-center"
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* رابط المجمع */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>رابط المجمع</label>
-                                    <input
-                                        type="url"
-                                        name="circle_link"
-                                        value={formData.circle_link}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black"
-                                        placeholder="https://test.yourapp.com"
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* شعار المجمع */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>شعار المجمع</label>
-                                    <div className="space-y-3">
-                                        {logoPreview && (
-                                            <div className="text-center">
-                                                <img
-                                                    src={logoPreview}
-                                                    alt="معاينة الصورة الجديدة"
-                                                    className="w-24 h-24 object-cover rounded-2xl mx-auto border-2 border-blue-200"
-                                                />
-                                                <p className="text-sm text-blue-600 mt-1">
-                                                    صورة جديدة محملة
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-all bg-gray-50">
-                                            <input
-                                                name="logo"
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleFileChange}
-                                                className="hidden"
-                                                id="logo-upload"
-                                                disabled={isSubmitting}
-                                            />
-                                            <label
-                                                htmlFor="logo-upload"
-                                                className="cursor-pointer flex flex-col items-center gap-3"
-                                            >
-                                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white font-medium">
-                                                    +
-                                                </div>
-                                                <div>
-                                                    <p className="text-lg font-medium text-gray-900">
-                                                        {formData.logo instanceof
-                                                        File
-                                                            ? formData.logo.name
-                                                            : "اختر صورة جديدة (JPG, PNG)"}
-                                                    </p>
-                                                    <p className="text-sm text-gray-500">
-                                                        حد أقصى 2 ميجا بايت
-                                                    </p>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* ملاحظات */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>ملاحظات</label>
-                                    <textarea
-                                        name="notes"
-                                        value={formData.notes}
-                                        onChange={handleInputChange}
-                                        rows={3}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-black"
-                                        placeholder="أي ملاحظات إضافية..."
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* زر الإضافة */}
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
+                            <button
+                                className="btn bp"
+                                onClick={() => submitForm(handleSubmit)}
+                                disabled={isSubmitting}
                             >
-                                <button
-                                    type="button"
-                                    onClick={() => submitForm(handleSubmit)}
-                                    disabled={isSubmitting}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 px-6 rounded-xl transition-all focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                            جاري الإضافة...
-                                        </>
-                                    ) : (
-                                        <>إضافة المجمع الجديد</>
-                                    )}
-                                </button>
-                            </div>
+                                {isSubmitting
+                                    ? "جاري الإضافة..."
+                                    : "إضافة المجمع الجديد"}
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

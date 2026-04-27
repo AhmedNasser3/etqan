@@ -10,8 +10,8 @@ const AdminDashboard: React.FC = () => {
         <div className="dashboard">
             <div className="dashboard__features">
                 <CentersManagement />
-                <StudentAffairsPlatform />
-                <TeachersAffairsPlatform />
+                {/* <StudentAffairsPlatform />
+                <TeachersAffairsPlatform /> */}
                 <DomainRequestsAdminManagement />
                 <PendingCentersApproval />
             </div>

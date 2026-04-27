@@ -115,6 +115,53 @@ export const useTeacherAchievements = () => {
         fetchAchievements(currentPage, searchTerm);
     }, [fetchAchievements, currentPage, searchTerm]);
 
+    // ✅ إضافة deleteAchievement المفقود
+    const deleteAchievement = useCallback(
+        async (id: number): Promise<boolean> => {
+            try {
+                console.log("🗑️ Deleting achievement:", id);
+
+                const csrfToken =
+                    document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content") || "";
+
+                const response = await fetch(
+                    `/api/v1/teacher/achievements/${id}`,
+                    {
+                        method: "DELETE",
+                        credentials: "include",
+                        headers: {
+                            Accept: "application/json",
+                            "X-Requested-With": "XMLHttpRequest",
+                            "X-CSRF-TOKEN": csrfToken,
+                        },
+                    },
+                );
+
+                console.log("🗑️ Delete response:", {
+                    status: response.status,
+                    statusText: response.statusText,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error("❌ Delete error:", errorData);
+                    toast.error(errorData.message || `خطأ ${response.status}`);
+                    return false;
+                }
+
+                toast.success("تم حذف الإنجاز بنجاح!");
+                return true;
+            } catch (error: any) {
+                console.error("❌ Delete failed:", error);
+                toast.error(error.message || "فشل في حذف الإنجاز");
+                return false;
+            }
+        },
+        [],
+    );
+
     const createAchievement = useCallback(
         async (achievementData: {
             user_id: number;
@@ -144,7 +191,7 @@ export const useTeacherAchievements = () => {
 
                 if (response.ok) {
                     const result = await response.json();
-                    toast.success("تم إضافة الإنجاز بنجاح ✅");
+                    toast.success("تم إضافة الإنجاز بنجاح!");
                     refetch();
                     return result.data;
                 } else {
@@ -227,6 +274,7 @@ export const useTeacherAchievements = () => {
         searchAchievements,
         goToPage,
         refetch,
+        deleteAchievement, // ✅ مضاف الآن!
         createAchievement,
         fetchTeacherStudents,
         fetchStudentPoints,

@@ -1,180 +1,147 @@
-import React from "react";
+// TeacherMeetCard.tsx
+import React, { useState } from "react";
 import Profile from "./widgets/dashboard/profile";
 import { SiGoogledisplayandvideo360 } from "react-icons/si";
 import { IoCopy } from "react-icons/io5";
-import TeacherTodayCircle from "./widgets/TeacherTodayCircle/TeacherTodayCircle";
-import { useTeacherTodayMeet } from "./widgets/TeahcerRoom/hooks/useTeacherTodayMeet"; // ✅ المسار الصحيح
+import { useTeacherTodayMeet } from "./widgets/TeahcerRoom/hooks/useTeacherTodayMeet"; //  المسار الصحيح
 import { useNavigate } from "react-router-dom";
-import TeacherSessionsTable from "./widgets/TeahcerRoom/models/TeacherSessionsTable";
+
+import toast from "react-hot-toast";
+import { ICO } from "../icons";
+import TeacherPlan from "./widgets/teacherPlan/TeacherPlan";
+import TeacherAttendance from "./widgets/TeacherAttendance/TeacherAttendance";
 import QuickCheckinPage from "./widgets/QuickCheckin/QuickCheckinPage";
 
-const TeacherDashboard: React.FC = () => {
-    const { meetData, loading, error } = useTeacherTodayMeet();
+const TeacherMeetCard: React.FC = () => {
+    const { meetData, loading, error, refetch } = useTeacherTodayMeet();
     const navigate = useNavigate();
+    const [copied, setCopied] = useState(false);
 
-    const copyRoomLink = () => {
-        if (meetData?.jitsi_url) {
-            navigator.clipboard.writeText(meetData.jitsi_url);
-        }
-    };
-
-    // ✅ زر دخول الحصة يفتح TeacherRoom مع schedule_id
-    const joinMeeting = () => {
-        if (meetData?.id) {
-            // ينتقل لصفحة TeacherRoom مع schedule_id في URL
-            navigate(`/teacher-dashboard/room?schedule=${meetData.id}`);
-        }
-    };
-
-    if (loading) {
+    if (loading || error || !meetData) {
         return (
-            <div className="teacherDashboard">
-                <div className="teacherDashboard__inner">
-                    <Profile />
-                    <div className="userProfile__plan">
-                        <div
-                            className="testimonials__mainTitle"
-                            style={{ marginBottom: "0" }}
-                        >
-                            <h1>حلقتي اليوم</h1>
-                        </div>
-                        <div
-                            className="userProfile__meet"
-                            style={{ padding: "0" }}
-                        >
-                            <div
-                                className="userProfile__inner"
-                                style={{ width: "100%" }}
-                            >
-                                <div
-                                    style={{
-                                        textAlign: "center",
-                                        padding: "2rem",
-                                        color: "#666",
-                                    }}
-                                >
-                                    <div className="navbar">
-                                        <div className="navbar__inner">
-                                            <div className="navbar__loading">
-                                                <div className="loading-spinner">
-                                                    <div className="spinner-circle"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>{" "}
-                                </div>
-                            </div>
-                        </div>
+            <div className="sc">
+                <div className="sc-strip">
+                    <div className="sc-live-badge">
+                        <div className="sc-live-dot" />
+                        لا توجد حصص اليوم
                     </div>
-                    <TeacherTodayCircle />
                 </div>
             </div>
         );
     }
 
+    const copyRoomLink = async () => {
+        try {
+            await navigator.clipboard.writeText(meetData.jitsi_url);
+            setCopied(true);
+            toast.success("تم نسخ رابط الحصة!");
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error("فشل في نسخ الرابط:", err);
+            toast.error("❌ فشل في نسخ الرابط");
+        }
+    };
+
+    const joinMeeting = () => {
+        if (meetData.id) {
+            navigate(`/teacher-dashboard/room?schedule=${meetData.id}`);
+        } else {
+            toast.error("❌ لا يمكن الدخول - معرف الحصة مفقود");
+        }
+    };
+
+    const NEXT_SESSION = {
+        date: meetData.schedule_date,
+        time: meetData.start_time,
+        studentName: meetData.student_name,
+        studentTitle: meetData.circle_name || "طالب الحلقة",
+        subject: meetData.jitsi_room_name || "حصة قرآنية",
+        duration: "",
+    };
+
     return (
-        <div className="teacherDashboard">
-            <div className="teacherDashboard__inner">
-                <Profile />
-                <div className="userProfile__plan">
+        <div className="content" id="contentArea">
+            <div className="sc">
+                <div className="sc-strip">
+                    <div className="sc-live-badge">
+                        <div className="sc-live-dot" />
+                        حلقتي اليوم
+                    </div>
                     <div
-                        className="testimonials__mainTitle"
-                        style={{ marginBottom: "0" }}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 5,
+                            fontSize: 11.5,
+                            color: "rgba(255,255,255,.4)",
+                            fontWeight: 600,
+                        }}
                     >
-                        <h1>حلقتي اليوم</h1>
+                        {ICO.clock}
+                        <span>
+                            {NEXT_SESSION.date} · {NEXT_SESSION.time}
+                        </span>
+                    </div>
+                </div>
+                <div className="sc-body">
+                    {/* Student */}
+                    <div className="sc-teacher">
+                        <div className="sc-tav">
+                            <span className="sc-tinit">
+                                {meetData.student_name?.charAt(0) || "ط"}
+                            </span>
+                            <div className="sc-online" />
+                        </div>
+                        <div>
+                            <div className="sc-tname">
+                                {NEXT_SESSION.studentName}
+                            </div>
+                            <div className="sc-ttitle">
+                                {NEXT_SESSION.studentTitle}
+                            </div>
+                        </div>
                     </div>
 
-                    {error || !meetData ? (
+                    {/* Subject */}
+                    <div className="sc-subject">
+                        <div className="sc-slbl">موضوع الحصة</div>
+                        <div className="sc-sval">{NEXT_SESSION.subject}</div>
                         <div
-                            className="userProfile__meet"
-                            style={{ padding: "0" }}
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 5,
+                                fontSize: 11.5,
+                                color: "var(--n400)",
+                                marginTop: 4,
+                            }}
                         >
-                            <div
-                                className="userProfile__inner"
-                                style={{ width: "100%" }}
-                            >
-                                <div
-                                    style={{
-                                        textAlign: "center",
-                                        padding: "2rem",
-                                        color: "#999",
-                                        background: "#f8f9fa",
-                                        borderRadius: "8px",
-                                    }}
-                                >
-                                    لا توجد حصص اليوم
-                                </div>
-                            </div>
+                            {ICO.clock}
+                            <span>{NEXT_SESSION.duration}</span>
                         </div>
-                    ) : (
-                        <div
-                            className="userProfile__meet"
-                            style={{ padding: "0" }}
-                        >
-                            <div
-                                className="userProfile__inner"
-                                style={{ width: "100%" }}
-                            >
-                                <div className="userProfile__meetContainer">
-                                    {/* صورة الطالب */}
-                                    <div className="userProfile__meet">
-                                        <div className="userProfile__meetImg">
-                                            <img
-                                                src={
-                                                    meetData.student_image ||
-                                                    "https://png.pngtree.com/png-vector/20250705/ourmid/pngtree-a-saudi-man-traditional-attire-middle-aged-wearing-white-thobe-and-png-image_16610073.webp"
-                                                }
-                                                alt={meetData.student_name}
-                                            />
-                                        </div>
-                                        <div className="userProfile__meetContent">
-                                            <div className="userProfile__meetName">
-                                                <h1>{meetData.student_name}</h1>
-                                            </div>
-                                        </div>
-                                    </div>
+                    </div>
 
-                                    {/* أزرار الحصة */}
-                                    <div className="userProfile__meetBtn">
-                                        <div
-                                            className="userProfile__meetBtnUrl"
-                                            onClick={copyRoomLink}
-                                        >
-                                            <i>
-                                                <IoCopy />
-                                            </i>
-                                            <h1>{meetData.jitsi_room_name}</h1>
-                                        </div>
-                                        {/* ✅ زر دخول الحصة يفتح TeacherRoom */}
-                                        <button
-                                            className="userProfile__button"
-                                            onClick={joinMeeting}
-                                            style={{
-                                                background: "#007bff",
-                                                color: "white",
-                                                border: "none",
-                                                padding: "12px 24px",
-                                                borderRadius: "8px",
-                                                cursor: "pointer",
-                                                fontSize: "16px",
-                                                fontWeight: "bold",
-                                            }}
-                                        >
-                                            دخول الحصة
-                                            <i>
-                                                <SiGoogledisplayandvideo360 />
-                                            </i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {/* Actions */}
+                    <div className="sc-acts">
+                        <button className="enter-btn" onClick={joinMeeting}>
+                            {ICO.video || <SiGoogledisplayandvideo360 />} دخول
+                            الحصة
+                        </button>
+                        <button className="copy-btn" onClick={copyRoomLink}>
+                            {copied ? (
+                                <>{ICO.check} تم!</>
+                            ) : (
+                                <>{ICO.copy || <IoCopy />} نسخ الرابط</>
+                            )}
+                        </button>
+                    </div>
                 </div>
-                <QuickCheckinPage />
             </div>
+            <TeacherPlan />
+            <TeacherAttendance />
+            <QuickCheckinPage />
         </div>
     );
 };
 
-export default TeacherDashboard;
+export default TeacherMeetCard;

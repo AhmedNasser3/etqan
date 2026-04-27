@@ -11,7 +11,7 @@ import {
 import axios from "axios";
 import toast from "react-hot-toast";
 
-// ✅ Mock Students data لحفظ الوظائف الموجودة
+//  Mock Students data لحفظ الوظائف الموجودة
 interface Student {
     id: number;
     name: string;
@@ -54,7 +54,7 @@ const TeacherTodayCircle: React.FC = () => {
     const [quickRecitationModal, setQuickRecitationModal] = useState(false);
     const [aiReport, setAiReport] = useState("");
 
-    // ✅ جلب بيانات الخطط الحقيقية
+    //  جلب بيانات الخطط الحقيقية
     const { schedules, stats, loading } = useTeacherSchedules();
 
     const getAttendanceIcon = (status: string) => {
@@ -118,7 +118,7 @@ const TeacherTodayCircle: React.FC = () => {
 
     const addPoints = async (studentId: number, points: number) => {
         try {
-            // ✅ حفظ النقاط في API
+            //  حفظ النقاط في API
             await axios.post("/api/v1/teacher/achievements", {
                 user_id: studentId,
                 points,
@@ -148,14 +148,14 @@ const TeacherTodayCircle: React.FC = () => {
         ).length;
         const totalPoints = students.reduce((sum, s) => sum + s.points, 0);
 
-        const report = `✅ جميع حصص اليوم مكتملة بنجاح (${presentCount}/${students.length} حضور).
+        const report = ` جميع حصص اليوم مكتملة بنجاح (${presentCount}/${students.length} حضور).
     إجمالي النقاط: ${totalPoints}.
     ${stats ? `الحصص القادمة: ${stats.future_schedules}` : ""} أحسنت! الطلاب جاهزين للغد.`;
 
         setAiReport(report);
     };
 
-    // ✅ تحديث التقرير عند تحميل الإحصائيات
+    //  تحديث التقرير عند تحميل الإحصائيات
     useEffect(() => {
         if (stats) {
             generateAIReport(stats);
@@ -218,12 +218,12 @@ const TeacherTodayCircle: React.FC = () => {
                     <i>
                         <RiRobot2Fill />
                     </i>
-                    ✅ جميع حصص الأمس مكتملة بنجاح
+                    جميع حصص الأمس مكتملة بنجاح
                 </div>
                 <div className="plan__current"></div>
             </div>
 
-            {/* ✅ جدول الطلاب (يبقى زي ما هو) */}
+            {/*  جدول الطلاب (يبقى زي ما هو) */}
             <div className="plan__daily-table">
                 <table>
                     <thead>
@@ -231,7 +231,7 @@ const TeacherTodayCircle: React.FC = () => {
                             <th>#</th>
                             <th>الاسم</th>
                             <th>التاريخ</th>
-                            <th>وقت الحصة</th>
+                            <th>وقت الحلقة</th>
                             <th>الحضور</th>
                             <th>التسميع</th>
                             <th>نقاط</th>
@@ -300,7 +300,7 @@ const TeacherTodayCircle: React.FC = () => {
                 </table>
             </div>
 
-            {/* ✅ إحصائيات حقيقية من API */}
+            {/*  إحصائيات حقيقية من API */}
             <div className="plan__stats">
                 <div className="stat-card">
                     <div className="stat-icon greenColor">
@@ -353,7 +353,7 @@ const TeacherTodayCircle: React.FC = () => {
                 </div>
             </div>
 
-            {/* ✅ جدول الحلقات القادمة من API */}
+            {/*  جدول الحلقات القادمة من API */}
             <div className="testimonials__mainTitle">
                 <h1>حلقاتك القادمة</h1>
             </div>
@@ -364,7 +364,7 @@ const TeacherTodayCircle: React.FC = () => {
                             <th>#</th>
                             <th>التاريخ</th>
                             <th>اليوم</th>
-                            <th>وقت الحصة</th>
+                            <th>وقت الحلقة</th>
                             <th>عدد الطلاب</th>
                             <th>الخطة / الحلقة</th>
                             <th>الحالة</th>
@@ -418,7 +418,7 @@ const TeacherTodayCircle: React.FC = () => {
                 </table>
             </div>
 
-            {/* ✅ نفس Modal الخاص بالتسميع */}
+            {/*  نفس Modal الخاص بالتسميع */}
             {quickRecitationModal && selectedStudent && (
                 <div
                     className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"

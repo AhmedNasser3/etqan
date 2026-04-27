@@ -1,13 +1,11 @@
-import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
-import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood, GrStatusCritical } from "react-icons/gr";
-import { PiWhatsappLogoDuotone } from "react-icons/pi";
-import { FiEdit3, FiTrash2 } from "react-icons/fi";
-import { IoMdAdd } from "react-icons/io";
+// MosquesManagement.tsx
+import React, { useState, useRef } from "react";
 import UpdateMosquePage from "./models/UpdateMosquePage";
 import CreateMosquePage from "./models/CreateMosquePage";
 import { useMosques } from "./hooks/useMosques";
+import { ICO } from "../../icons";
+import { useToast } from "../../../../../contexts/ToastContext";
+import * as XLSX from "xlsx";
 
 interface MosqueType {
     id: number;
@@ -21,6 +19,26 @@ interface MosqueType {
     created_at: string;
 }
 
+interface ConfirmModalProps {
+    title: string;
+    desc?: string;
+    cb: () => void;
+}
+
+interface ImportRow {
+    "اسم المسجد": string;
+    "مركز ID": string; // أو number
+    المشرف: string;
+    ملاحظات?: string;
+    "الحالة (نشط/معلق)"?: string;
+}
+
+interface ImportResult {
+    success: number;
+    failed: number;
+    errors: string[];
+}
+
 const MosquesManagement: React.FC = () => {
     const { mosques, loading, refetch } = useMosques();
     const [search, setSearch] = useState("");
@@ -32,37 +50,311 @@ const MosquesManagement: React.FC = () => {
     const [selectedMosqueId, setSelectedMosqueId] = useState<number | null>(
         null,
     );
+    const [confirm, setConfirm] = useState<ConfirmModalProps | null>(null);
+    const [importing, setImporting] = useState(false);
+    const [importResult, setImportResult] = useState<ImportResult | null>(null);
+    const importInputRef = useRef<HTMLInputElement>(null);
+
+    const { notifySuccess, notifyError } = useToast();
 
     const filteredMosques = mosques.filter(
         (mosque) =>
-            mosque.name.includes(search) ||
-            mosque.circle.includes(search) ||
-            mosque.supervisor.includes(search),
+            mosque.name.toLowerCase().includes(search.toLowerCase()) ||
+            mosque.circle.toLowerCase().includes(search.toLowerCase()) ||
+            mosque.supervisor.toLowerCase().includes(search.toLowerCase()),
     );
+
+    // ─── Export ───────────────────────────────────────────────────────────────
+    const handleExport = () => {
+        if (mosques.length === 0) {
+            notifyError("لا توجد بيانات للتصدير");
+            return;
+        }
+
+        const rows = mosques.map((m) => ({
+            "اسم المسجد": m.name,
+            "المركز/الحلقة": m.circle,
+            المشرف: m.supervisor,
+            ملاحظات: "",
+            "الحالة (نشط/معلق)": m.is_active ? "نشط" : "معلق",
+        }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows, { skipHeader: false });
+
+        // Column widths
+        ws["!cols"] = [
+            { wch: 30 },
+            { wch: 25 },
+            { wch: 25 },
+            { wch: 30 },
+            { wch: 20 },
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, "المساجد");
+
+        // Instructions sheet
+        const instrData = [
+            ["تعليمات الاستخدام"],
+            [""],
+            ["1. احتفظ بنفس ترتيب الأعمدة"],
+            ["2. اسم المسجد: مطلوب"],
+            ["3. المركز/الحلقة: اكتب الاسم كما هو في النظام"],
+            ["4. المشرف: اكتب الاسم كما هو في النظام"],
+            ["5. الملاحظات: اختياري"],
+            ["6. الحالة: اكتب (نشط) أو (معلق) فقط"],
+            [""],
+            ["يمكنك استخدام هذا الملف مباشرة كقالب للاستيراد"],
+        ];
+        const wsInstr = XLSX.utils.aoa_to_sheet(instrData);
+        wsInstr["!cols"] = [{ wch: 60 }];
+        XLSX.utils.book_append_sheet(wb, wsInstr, "تعليمات الاستخدام");
+
+        XLSX.writeFile(
+            wb,
+            `المساجد_${new Date().toLocaleDateString("ar-EG").replace(/\//g, "-")}.xlsx`,
+        );
+        notifySuccess(`تم تصدير ${mosques.length} مسجد بنجاح`);
+    };
+
+    // ─── Download blank template ──────────────────────────────────────────────
+    const handleDownloadTemplate = () => {
+        const rows: ImportRow[] = [
+            {
+                "اسم المسجد": "مسجد النور",
+                "المركز/الحلقة": "1",
+                المشرف: "احمد ناصر مصطفي",
+                ملاحظات: "بجوار السوق",
+                "الحالة (نشط/معلق)": "نشط",
+            },
+            {
+                "اسم المسجد": "مسجد السلام",
+                "المركز/الحلقة": "1",
+                المشرف: "احمد ناصر مصطفي",
+                ملاحظات: "",
+                "الحالة (نشط/معلق)": "نشط",
+            },
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws["!cols"] = [
+            { wch: 30 },
+            { wch: 25 },
+            { wch: 25 },
+            { wch: 30 },
+            { wch: 20 },
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, "المساجد");
+
+        const instrData = [
+            ["تعليمات الاستخدام"],
+            ["1. احتفظ بنفس ترتيب الأعمدة"],
+            ["2. اسم المسجد: مطلوب"],
+            ["3. المركز/الحلقة: اكتب الاسم كما هو في النظام"],
+            ["4. المشرف: اكتب الاسم كما هو في النظام"],
+            ["5. الملاحظات: اختياري"],
+            ["6. الحالة: اكتب (نشط) أو (معلق) فقط"],
+        ];
+        const wsInstr = XLSX.utils.aoa_to_sheet(instrData);
+        wsInstr["!cols"] = [{ wch: 60 }];
+        XLSX.utils.book_append_sheet(wb, wsInstr, "تعليمات الاستخدام");
+
+        XLSX.writeFile(wb, "قالب_استيراد_المساجد.xlsx");
+        notifySuccess("تم تحميل القالب بنجاح");
+    };
+
+    // ─── Import ───────────────────────────────────────────────────────────────
+    const handleImportClick = () => {
+        importInputRef.current?.click();
+    };
+
+    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Reset input so same file can be re-uploaded
+        e.target.value = "";
+
+        setImporting(true);
+        setImportResult(null);
+
+        try {
+            const buffer = await file.arrayBuffer();
+            const wb = XLSX.read(buffer, { type: "array" });
+
+            // Read first sheet (المساجد)
+            const sheetName = wb.SheetNames[0];
+            const ws = wb.Sheets[sheetName];
+            const rows: ImportRow[] = XLSX.utils.sheet_to_json(ws, {
+                defval: "",
+            });
+
+            if (rows.length === 0) {
+                notifyError("الملف فارغ أو لا يحتوي على بيانات");
+                setImporting(false);
+                return;
+            }
+
+            // Validate required columns
+            const firstRow = rows[0];
+            if (!("اسم المسجد" in firstRow)) {
+                notifyError('تأكد من أن الملف يحتوي على عمود "اسم المسجد"');
+                setImporting(false);
+                return;
+            }
+
+            const csrfToken = document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content");
+
+            if (!csrfToken) {
+                notifyError("فشل في جلب رمز الحماية");
+                setImporting(false);
+                return;
+            }
+
+            let successCount = 0;
+            let failedCount = 0;
+            const errors: string[] = [];
+
+            // Send rows one by one (or batch if your API supports it)
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const rowNum = i + 2; // +2 because row 1 is header
+
+                const mosqueName = String(row["اسم المسجد"] || "").trim();
+                if (!mosqueName) {
+                    errors.push(`سطر ${rowNum}: اسم المسجد مطلوب`);
+                    failedCount++;
+                    continue;
+                }
+
+                // center_id من الـ Excel (مثلاً عمود "مركز ID" يُستخدم هنا)
+                // لو اسمه في الـ Excel هو "مركز ID" أو "center_id" أو "المركز/الحلقة" كـ رقم
+                const centerId = String(row["المركز/الحلقة"] || "").trim();
+
+                const supervisorName = String(row["المشرف"] || "").trim();
+                if (!supervisorName) {
+                    errors.push(`سطر ${rowNum}: اسم المشرف مطلوب`);
+                    failedCount++;
+                    continue;
+                }
+
+                const formData = new FormData();
+                formData.append("mosque_name", mosqueName);
+                formData.append("center_id", centerId); // ← هنا center_id بدل circle_name
+                formData.append("supervisor_name", supervisorName);
+                formData.append("notes", String(row["ملاحظات"] || "").trim());
+                formData.append(
+                    "is_active",
+                    (row["الحالة (نشط/معلق)"] || "نشط") === "نشط" ? "1" : "0",
+                );
+
+                try {
+                    const res = await fetch(
+                        "/api/v1/super/mosques/import-row",
+                        {
+                            method: "POST",
+                            credentials: "include",
+                            headers: {
+                                Accept: "application/json",
+                                "X-Requested-With": "XMLHttpRequest",
+                                "X-CSRF-TOKEN": csrfToken,
+                            },
+                            body: formData,
+                        },
+                    );
+
+                    const result = await res.json();
+
+                    if (res.ok && result.success) {
+                        successCount++;
+                    } else {
+                        failedCount++;
+                        errors.push(
+                            `سطر ${rowNum} (${mosqueName}): ${result.message || "فشل"}`,
+                        );
+                    }
+                } catch (err) {
+                    failedCount++;
+                    errors.push(
+                        `سطر ${rowNum} (${mosqueName}): خطأ في الاتصال`,
+                    );
+                }
+            }
+
+            setImportResult({
+                success: successCount,
+                failedCount,
+                errors,
+            });
+
+            if (successCount > 0) {
+                notifySuccess(`تم استيراد ${successCount} مسجد بنجاح`);
+                refetch();
+            }
+            if (failedCount > 0) {
+                notifyError(`فشل استيراد ${failedCount} مسجد`);
+            }
+        } catch (err) {
+            notifyError("حدث خطأ في قراءة الملف");
+        } finally {
+            setImporting(false);
+        }
+    };
+
+    // ─── Delete ───────────────────────────────────────────────────────────────
+    const handleDelete = (id: number) => {
+        setConfirm({
+            title: "حذف المسجد",
+            desc: "هل أنت متأكد من حذف هذا المسجد؟ لا يمكن التراجع.",
+            cb: async () => {
+                try {
+                    const csrfToken = document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content");
+
+                    if (!csrfToken) {
+                        notifyError("فشل في جلب رمز الحماية");
+                        setConfirm(null);
+                        return;
+                    }
+
+                    const response = await fetch(
+                        `/api/v1/super/mosques/${id}`,
+                        {
+                            method: "DELETE",
+                            credentials: "include",
+                            headers: {
+                                Accept: "application/json",
+                                "X-Requested-With": "XMLHttpRequest",
+                                "X-CSRF-TOKEN": csrfToken,
+                            },
+                        },
+                    );
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        notifySuccess("تم حذف المسجد بنجاح");
+                        refetch();
+                    } else {
+                        notifyError(result.message || "فشل في حذف المسجد");
+                    }
+                } catch {
+                    notifyError("حدث خطأ في الحذف");
+                } finally {
+                    setConfirm(null);
+                }
+            },
+        });
+    };
 
     const handleEdit = (mosque: MosqueType) => {
         setSelectedMosque(mosque);
         setSelectedMosqueId(mosque.id);
         setShowUpdateModal(true);
-    };
-
-    const handleDelete = async (id: number) => {
-        try {
-            const response = await fetch(`/api/v1/super/mosques/${id}`, {
-                method: "DELETE",
-                headers: { Accept: "application/json" },
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                toast.success("تم حذف المسجد بنجاح");
-                refetch();
-            } else {
-                toast.error(result.message || "فشل في الحذف");
-            }
-        } catch {
-            toast.error("حدث خطأ في الحذف");
-        }
     };
 
     const handleCloseUpdateModal = () => {
@@ -72,59 +364,51 @@ const MosquesManagement: React.FC = () => {
     };
 
     const handleUpdateSuccess = () => {
-        toast.success("تم تحديث بيانات المسجد بنجاح!");
+        notifySuccess("تم تحديث بيانات المسجد بنجاح");
         refetch();
         handleCloseUpdateModal();
     };
 
-    const handleCloseCreateModal = () => {
-        setShowCreateModal(false);
-    };
+    const handleCloseCreateModal = () => setShowCreateModal(false);
 
     const handleCreateSuccess = () => {
-        toast.success("تم إضافة المسجد بنجاح!");
+        notifySuccess("تم إضافة المسجد بنجاح");
         refetch();
         handleCloseCreateModal();
     };
 
-    const handleAddNew = () => {
-        setShowCreateModal(true);
-    };
-
-    const stats = {
-        total: mosques.length,
-        active: mosques.filter((m) => m.is_active).length,
-    };
-
-    const renderLogo = (logo: string | null, name: string) => {
-        if (logo) {
-            return (
-                <img
-                    src={logo.startsWith("http") ? logo : `/storage/${logo}`}
-                    alt="شعار"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                        e.currentTarget.src =
-                            "https://via.placeholder.com/40x40/4F46E5/FFFFFF?text=م";
-                    }}
-                />
-            );
-        }
-        const initials = name
-            .split(" ")
-            .slice(-2)
-            .map((n) => n[0])
-            .join("")
-            .slice(0, 2);
+    function BadgeStatus({ s }: { s: string }) {
+        const map: Record<string, React.CSSProperties> = {
+            "bg-g": { background: "var(--g100)", color: "var(--g700)" },
+            "bg-r": { background: "#fee2e2", color: "#ef4444" },
+            "bg-a": { background: "#fef3c7", color: "#92400e" },
+            "bg-n": { background: "var(--n100)", color: "var(--n500)" },
+        };
         return (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-700">
-                {initials}
-            </div>
+            <span
+                className="badge px-2 py-1 rounded-full text-xs font-medium"
+                style={
+                    map[
+                        s === "نشط" ? "bg-g" : s === "معلق" ? "bg-a" : "bg-r"
+                    ] || map["bg-n"]
+                }
+            >
+                {s}
+            </span>
         );
-    };
+    }
 
     return (
         <>
+            {/* Hidden file input for import */}
+            <input
+                ref={importInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                style={{ display: "none" }}
+                onChange={handleImportFile}
+            />
+
             {showUpdateModal && selectedMosque && (
                 <UpdateMosquePage
                     initialMosque={selectedMosque}
@@ -141,197 +425,279 @@ const MosquesManagement: React.FC = () => {
                 />
             )}
 
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon redColor">
-                            <i>
-                                <GrStatusGood />
-                            </i>
+            {confirm && (
+                <div
+                    className="conf-ov on"
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <div className="conf-box">
+                        <div className="conf-ico">
+                            <span
+                                style={{
+                                    width: 22,
+                                    height: 22,
+                                    display: "inline-flex",
+                                    color: "var(--red)",
+                                }}
+                            >
+                                {ICO.trash}
+                            </span>
                         </div>
-                        <div>
-                            <h3>إجمالي المساجد</h3>
-                            <p className="text-2xl font-bold text-red-600">
-                                {stats.total}
-                            </p>
+                        <div className="conf-t">{confirm.title}</div>
+                        <div className="conf-d">
+                            {confirm.desc || "هل أنت متأكد من هذا الإجراء؟"}
                         </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon yellowColor">
-                            <i>
-                                <GrStatusCritical />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>نشطة</h3>
-                            <p className="text-2xl font-bold text-yellow-600">
-                                {stats.active}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>
-                                <PiWhatsappLogoDuotone />
-                            </i>
-                        </div>
-                        <div>
-                            <h3>مساجد معتمدة</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                28
-                            </p>
+                        <div className="conf-acts">
+                            <button className="btn bd" onClick={confirm.cb}>
+                                تأكيد
+                            </button>
+                            <button
+                                className="btn bs"
+                                onClick={() => setConfirm(null)}
+                            >
+                                إلغاء
+                            </button>
                         </div>
                     </div>
                 </div>
+            )}
 
+            {/* Import Result Modal */}
+            {importResult && (
                 <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
                 >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>
-                                <RiRobot2Fill />
-                            </i>
-                            المساجد الجديدة تخضع لفحص ميداني قبل الاعتماد الرسمي
-                        </div>
-                        <div className="plan__current">
-                            <h2>قائمة المساجد</h2>
-                            <div className="plan__date-range">
-                                <div className="date-picker to">
-                                    <input
-                                        type="search"
-                                        placeholder="البحث بالمسجد أو المجمع أو المشرف..."
-                                        value={search}
-                                        onChange={(e) =>
-                                            setSearch(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <button
-                                    className="teacherStudent__status-btn add-btn p-3 rounded-xl border-2 bg-green-50 border-green-300 text-green-600 hover:bg-green-100 font-medium ml-3"
-                                    onClick={handleAddNew}
-                                    disabled={loading}
+                    <div
+                        className="conf-box"
+                        style={{ maxWidth: 480, width: "90%" }}
+                    >
+                        <div className="conf-t">نتيجة الاستيراد</div>
+                        <div
+                            style={{
+                                margin: "12px 0",
+                                display: "flex",
+                                gap: 12,
+                                justifyContent: "center",
+                            }}
+                        >
+                            <span
+                                style={{
+                                    background: "var(--g100)",
+                                    color: "var(--g700)",
+                                    padding: "6px 16px",
+                                    borderRadius: 8,
+                                    fontWeight: 700,
+                                }}
+                            >
+                                ✓ نجح: {importResult.success}
+                            </span>
+                            {importResult.failed > 0 && (
+                                <span
+                                    style={{
+                                        background: "#fee2e2",
+                                        color: "#ef4444",
+                                        padding: "6px 16px",
+                                        borderRadius: 8,
+                                        fontWeight: 700,
+                                    }}
                                 >
-                                    <IoMdAdd
-                                        size={20}
-                                        className="inline mr-2"
-                                    />
-                                    مسجد جديد
-                                </button>
+                                    ✗ فشل: {importResult.failed}
+                                </span>
+                            )}
+                        </div>
+                        {importResult.errors.length > 0 && (
+                            <div
+                                style={{
+                                    background: "#fff8f8",
+                                    border: "1px solid #fecaca",
+                                    borderRadius: 8,
+                                    padding: 12,
+                                    maxHeight: 200,
+                                    overflowY: "auto",
+                                    textAlign: "right",
+                                    fontSize: 13,
+                                    margin: "8px 0",
+                                }}
+                            >
+                                {importResult.errors.map((err, i) => (
+                                    <div
+                                        key={i}
+                                        style={{
+                                            padding: "2px 0",
+                                            color: "#b91c1c",
+                                        }}
+                                    >
+                                        • {err}
+                                    </div>
+                                ))}
                             </div>
+                        )}
+                        <div className="conf-acts">
+                            <button
+                                className="btn bs"
+                                onClick={() => setImportResult(null)}
+                            >
+                                إغلاق
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">إدارة المساجد</div>
+                        <div
+                            className="flx"
+                            style={{ gap: 6, flexWrap: "wrap" }}
+                        >
+                            <input
+                                className="fi"
+                                style={{ margin: "0 3px" }}
+                                placeholder="البحث بالمسجد أو المشرف أو الحلقة..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            {/* Import */}
+                            <button
+                                style={{ margin: "0 3px" }}
+                                className="btn bs bsm"
+                                onClick={handleImportClick}
+                                disabled={importing}
+                                title="استيراد من Excel"
+                            >
+                                {importing
+                                    ? "جاري الاستيراد..."
+                                    : "↑ استيراد Excel"}
+                            </button>
+                            {/* Export */}
+                            <button
+                                style={{ margin: "0 3px" }}
+                                className="btn bs bsm"
+                                onClick={handleExport}
+                                title="تصدير إلى Excel"
+                            >
+                                ↓ تصدير Excel
+                            </button>
+                            {/* Download template */}
+                            <button
+                                style={{ margin: "0 3px" }}
+                                className="btn bs bsm"
+                                onClick={handleDownloadTemplate}
+                                title="تحميل قالب الاستيراد"
+                            >
+                                ⬇ قالب الاستيراد
+                            </button>
+                            <button
+                                className="btn bp bsm"
+                                onClick={() => setShowCreateModal(true)}
+                            >
+                                + مسجد جديد
+                            </button>
                         </div>
                     </div>
 
-                    <div className="plan__daily-table">
+                    <div style={{ overflowX: "auto" }}>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>الشعار</th>
-                                    <th>اسم المسجد</th>
-                                    <th>المجمع التابع له</th>
-                                    <th>المشرف الخاص به</th>
+                                    <th>المسجد</th>
+                                    <th>المشرف</th>
+                                    <th>الحلقة</th>
                                     <th>الحالة</th>
                                     <th>الإجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredMosques.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        className="plan__row active"
-                                    >
-                                        <td className="teacherStudent__img">
-                                            <div className="w-12 h-12 rounded-lg overflow-hidden">
-                                                {renderLogo(
-                                                    item.logo,
-                                                    item.name,
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td>{item.name}</td>
-                                        <td>{item.circle}</td>
-                                        <td>{item.supervisor}</td>
-                                        <td>
-                                            <span
-                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    item.is_active
-                                                        ? "bg-green-100 text-green-800"
-                                                        : "bg-red-100 text-red-800"
-                                                }`}
-                                            >
-                                                {item.is_active
-                                                    ? "نشط"
-                                                    : "غير نشط"}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div className="teacherStudent__btns">
-                                                <button
-                                                    className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
-                                                    onClick={() =>
-                                                        handleEdit(item)
-                                                    }
-                                                    disabled={loading}
-                                                    title="تعديل بيانات المسجد"
-                                                >
-                                                    <FiEdit3 />
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn delete-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
-                                                    onClick={() =>
-                                                        handleDelete(item.id)
-                                                    }
-                                                    disabled={loading}
-                                                    title="حذف المسجد"
-                                                >
-                                                    <FiTrash2 />
-                                                </button>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={5}>
+                                            <div className="empty">
+                                                <p>جاري التحميل...</p>
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
-                                {filteredMosques.length === 0 && !loading && (
+                                ) : filteredMosques.length > 0 ? (
+                                    filteredMosques.map((m) => (
+                                        <tr key={m.id}>
+                                            <td style={{ fontWeight: 700 }}>
+                                                {m.name}
+                                            </td>
+                                            <td>{m.supervisor}</td>
+                                            <td>{m.circle}</td>
+                                            <td>
+                                                <BadgeStatus
+                                                    s={
+                                                        m.is_active
+                                                            ? "نشط"
+                                                            : "معلق"
+                                                    }
+                                                />
+                                            </td>
+                                            <td>
+                                                <div className="td-actions">
+                                                    <button
+                                                        className="btn bd bxs"
+                                                        onClick={() =>
+                                                            handleDelete(m.id)
+                                                        }
+                                                    >
+                                                        حذف
+                                                    </button>
+                                                    <button
+                                                        className="btn bs bxs"
+                                                        onClick={() =>
+                                                            handleEdit(m)
+                                                        }
+                                                    >
+                                                        تعديل
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
                                     <tr>
-                                        <td
-                                            colSpan={6}
-                                            className="text-center py-8 text-gray-500"
-                                        >
-                                            لا يوجد مساجد حالياً
+                                        <td colSpan={5}>
+                                            <div className="empty">
+                                                <p>
+                                                    {search
+                                                        ? "لا توجد نتائج للبحث"
+                                                        : "لا يوجد مساجد"}
+                                                </p>
+                                                <button
+                                                    className="btn bp bsm"
+                                                    onClick={() =>
+                                                        setShowCreateModal(true)
+                                                    }
+                                                >
+                                                    إضافة مسجد
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 )}
                             </tbody>
                         </table>
-                    </div>
-
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        id="userProfile__verifyOTPBirth"
-                        style={{ width: "100%" }}
-                    >
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h1>معدل النشاط</h1>
-                            </div>
-                            <p>94%</p>
-                            <div className="userProfile__progressBar">
-                                <span style={{ width: "94%" }}></span>
-                            </div>
-                        </div>
-                        <div className="userProfile__progressContent">
-                            <div className="userProfile__progressTitle">
-                                <h1>عدد المساجد</h1>
-                            </div>
-                            <p>{mosques.length}</p>
-                            <div className="userProfile__progressBar">
-                                <span
-                                    style={{
-                                        width: `${Math.min((mosques.length / 50) * 100, 100)}%`,
-                                    }}
-                                ></span>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

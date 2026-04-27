@@ -67,9 +67,9 @@ export const useScheduleFormCreate = () => {
 
                 if (response.ok) {
                     const userData = await response.json();
-                    console.log("🔍 [STEP 1 RAW] FULL userData:", userData); // ✅ كامل
+                    console.log("🔍 [STEP 1 RAW] FULL userData:", userData); //  كامل
 
-                    // ✅ جرب كل الاحتمالات للـ center_id
+                    //  جرب كل الاحتمالات للـ center_id
                     let centerId = null;
                     if (userData.center_id) centerId = userData.center_id;
                     else if (userData.user?.center_id)
@@ -85,12 +85,12 @@ export const useScheduleFormCreate = () => {
                     const fixedUser = {
                         ...userData,
                         center_id: centerId,
-                        raw_data: userData, // ✅ احتفظ بالأصلي
+                        raw_data: userData, //  احتفظ بالأصلي
                     };
 
                     setUser(fixedUser);
                     console.log(
-                        "✅ [STEP 1 SUCCESS] User set with center_id:",
+                        " [STEP 1 SUCCESS] User set with center_id:",
                         centerId,
                     );
                 } else {
@@ -125,13 +125,13 @@ export const useScheduleFormCreate = () => {
                 const data = await response.json();
                 console.log("📋 [STEP 2 RAW] Response:", data);
 
-                // ✅ Parse كل الاحتمالات
+                //  Parse كل الاحتمالات
                 let plans: PlanType[] = [];
                 if (Array.isArray(data)) plans = data;
                 else if (Array.isArray(data.data)) plans = data.data;
                 else if (Array.isArray(data.plans)) plans = data.plans;
 
-                // ✅ Fix field names
+                //  Fix field names
                 plans = plans.map((plan) => ({
                     id: plan.id,
                     plan_name:
@@ -141,7 +141,7 @@ export const useScheduleFormCreate = () => {
                 }));
 
                 console.log(
-                    "✅ [STEP 2 SUCCESS] Plans loaded:",
+                    " [STEP 2 SUCCESS] Plans loaded:",
                     plans.length,
                     plans,
                 );
@@ -163,7 +163,7 @@ export const useScheduleFormCreate = () => {
         }
     }, [user]);
 
-    // ✅ Trigger plans بعد user
+    //  Trigger plans بعد user
     useEffect(() => {
         if (user?.center_id) {
             console.log("🚀 [TRIGGER] User ready → fetching plans");
@@ -172,7 +172,7 @@ export const useScheduleFormCreate = () => {
             console.log(
                 "⚠️ [WARNING] User loaded but no center_id → try direct fetch",
             );
-            fetchPlans(); // ✅ جرب حتى لو مفيش center_id
+            fetchPlans(); //  جرب حتى لو مفيش center_id
         }
     }, [user, fetchPlans]);
 
@@ -193,7 +193,7 @@ export const useScheduleFormCreate = () => {
                 const circles: CircleType[] = Array.isArray(data)
                     ? data
                     : data.data || [];
-                console.log("✅ [STEP 3 SUCCESS] Circles:", circles.length);
+                console.log(" [STEP 3 SUCCESS] Circles:", circles.length);
                 setCirclesData(circles);
             }
         } catch (error) {
@@ -218,7 +218,7 @@ export const useScheduleFormCreate = () => {
                 const teachers: TeacherType[] = Array.isArray(data)
                     ? data
                     : data.data || [];
-                console.log("✅ [STEP 4 SUCCESS] Teachers:", teachers.length);
+                console.log(" [STEP 4 SUCCESS] Teachers:", teachers.length);
                 setTeachersData(teachers);
             }
         } catch (error) {
@@ -226,7 +226,7 @@ export const useScheduleFormCreate = () => {
         }
     }, []);
 
-    // ✅ Fetch circles & teachers after ANY data loads
+    //  Fetch circles & teachers after ANY data loads
     useEffect(() => {
         if (!loadingData && (plansData.length > 0 || user)) {
             console.log("🚀 [STEP 5] Data ready → circles + teachers");
@@ -319,7 +319,7 @@ export const useScheduleFormCreate = () => {
         [formData, validateForm],
     );
 
-    // ✅ Debug كل render
+    //  Debug كل render
     console.log("📊 FINAL STATE:", {
         userCenterId: user?.center_id,
         plansCount: plansData.length,

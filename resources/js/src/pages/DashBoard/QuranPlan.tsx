@@ -1,6 +1,6 @@
 // QuranPlan.tsx - الكامل والمحدث
 import React, { useState } from "react";
-import './QuranPlan.scss';
+import "./QuranPlan.scss";
 
 interface Surah {
     id: number;
@@ -48,27 +48,30 @@ const QuranPlan: React.FC = () => {
         { id: 78, name: "النبأ", ayat: 40, pages: 4 },
         { id: 112, name: "الإخلاص", ayat: 4, pages: 1 },
         { id: 113, name: "الفلق", ayat: 5, pages: 1 },
-        { id: 114, name: "الناس", ayat: 6, pages: 1 }
+        { id: 114, name: "الناس", ayat: 6, pages: 1 },
     ];
 
     const FULL_QURAN: Surah = {
         id: 0,
         name: "ختم القرآن الكريم",
         ayat: 6236,
-        pages: 604
+        pages: 604,
     };
 
     const findSurahs = (input: string): Surah[] => {
         if (!input.trim()) return [];
-        
-        const parts = input.trim().split(/[\s,\n]+/).filter(Boolean);
+
+        const parts = input
+            .trim()
+            .split(/[\s,\n]+/)
+            .filter(Boolean);
         const found: Surah[] = [];
 
-        parts.forEach(part => {
-            let surah = quranData.find(s => 
-                s.name.toLowerCase().includes(part.toLowerCase())
+        parts.forEach((part) => {
+            let surah = quranData.find((s) =>
+                s.name.toLowerCase().includes(part.toLowerCase()),
             );
-            
+
             if (surah) {
                 found.push(surah);
                 return;
@@ -76,7 +79,7 @@ const QuranPlan: React.FC = () => {
 
             const id = parseInt(part);
             if (!isNaN(id)) {
-                surah = quranData.find(s => s.id === id);
+                surah = quranData.find((s) => s.id === id);
                 if (surah) found.push(surah);
             }
         });
@@ -88,16 +91,16 @@ const QuranPlan: React.FC = () => {
         const base = Math.ceil(totalPages / (targetMonths * 30));
         return [
             0.5, // نصف وجه
-            base, 
+            base,
             Math.ceil(base * 1.2),
-            Math.ceil(base * 1.5)
+            Math.ceil(base * 1.5),
         ];
     };
 
     const calculateKhattamPlan = () => {
         const totalDays = targetMonths * 30;
         const suggestions = generateSuggestions(FULL_QURAN.pages);
-        
+
         setResult({
             mode: "khattam",
             surahs: [FULL_QURAN],
@@ -108,14 +111,16 @@ const QuranPlan: React.FC = () => {
             weeks: Math.ceil(totalDays / 7),
             dailyTarget: suggestions[1],
             dailyReview: suggestions[1] / 2,
-            suggestions
+            suggestions,
         });
     };
 
     const calculateSurahPlan = () => {
         const surahs = findSurahs(surahInput);
         if (surahs.length === 0) {
-            setError("لم يتم العثور على السور. جرب: الفاتحة، البقرة، الكهف، 18");
+            setError(
+                "لم يتم العثور على السور. جرب: الفاتحة، البقرة، الكهف، 18",
+            );
             return;
         }
 
@@ -129,11 +134,11 @@ const QuranPlan: React.FC = () => {
             totalAyat,
             totalPages,
             totalDays: Math.ceil(totalPages / suggestions[1]),
-            months: Math.ceil((totalPages / suggestions[1]) / 30),
-            weeks: Math.ceil((totalPages / suggestions[1]) / 7),
+            months: Math.ceil(totalPages / suggestions[1] / 30),
+            weeks: Math.ceil(totalPages / suggestions[1] / 7),
             dailyTarget: suggestions[1],
             dailyReview: suggestions[1] / 2,
-            suggestions
+            suggestions,
         });
     };
 
@@ -158,7 +163,7 @@ const QuranPlan: React.FC = () => {
 
     const selectDailyTarget = (target: number) => {
         if (!result) return;
-        
+
         const totalDays = Math.ceil(result.totalPages / target);
         const months = Math.ceil(totalDays / 30);
         const weeks = Math.ceil(totalDays / 7);
@@ -169,7 +174,7 @@ const QuranPlan: React.FC = () => {
             dailyReview: target / 2,
             totalDays,
             months,
-            weeks
+            weeks,
         });
     };
 
@@ -180,7 +185,7 @@ const QuranPlan: React.FC = () => {
 
                 {/* Mode Selector */}
                 <div className="mode-selector">
-                    <button 
+                    <button
                         className={`mode-btn ${mode === "khattam" ? "active" : ""}`}
                         onClick={() => {
                             setMode("khattam");
@@ -190,7 +195,7 @@ const QuranPlan: React.FC = () => {
                     >
                         🎯 ختم القرآن
                     </button>
-                    <button 
+                    <button
                         className={`mode-btn ${mode === "surah" ? "active" : ""}`}
                         onClick={() => {
                             setMode("surah");
@@ -214,7 +219,9 @@ const QuranPlan: React.FC = () => {
                                     min="1"
                                     max="24"
                                     value={targetMonths}
-                                    onChange={(e) => setTargetMonths(Number(e.target.value))}
+                                    onChange={(e) =>
+                                        setTargetMonths(Number(e.target.value))
+                                    }
                                 />
                                 <span>شهر</span>
                             </div>
@@ -228,10 +235,13 @@ const QuranPlan: React.FC = () => {
                                 value={surahInput}
                                 onChange={(e) => setSurahInput(e.target.value)}
                             />
-                            <small>اكتب أسماء السور أو أرقامها مفصولة بمسافة أو فاصلة</small>
+                            <small>
+                                اكتب أسماء السور أو أرقامها مفصولة بمسافة أو
+                                فاصلة
+                            </small>
                         </div>
                     )}
-                    
+
                     <button
                         className="calculate-btn"
                         onClick={calculatePlan}
@@ -253,36 +263,51 @@ const QuranPlan: React.FC = () => {
                         <div className="info-section">
                             <div className="total-stats">
                                 <div className="stat">
-                                    <span className="stat-number">{result.totalPages.toLocaleString()}</span>
+                                    <span className="stat-number">
+                                        {result.totalPages.toLocaleString()}
+                                    </span>
                                     <span>صفحة كلية</span>
                                 </div>
                                 <div className="stat">
-                                    <span className="stat-number">{result.totalDays}</span>
+                                    <span className="stat-number">
+                                        {result.totalDays}
+                                    </span>
                                     <span>أيام</span>
                                 </div>
                                 <div className="stat">
-                                    <span className="stat-number">{result.months}</span>
+                                    <span className="stat-number">
+                                        {result.months}
+                                    </span>
                                     <span>شهور</span>
                                 </div>
                                 <div className="stat">
-                                    <span className="stat-number">{result.totalAyat.toLocaleString()}</span>
+                                    <span className="stat-number">
+                                        {result.totalAyat.toLocaleString()}
+                                    </span>
                                     <span>آية</span>
                                 </div>
                             </div>
 
-                            {result.mode === "surah" && result.surahs.length > 0 && (
-                                <div className="surahs-preview">
-                                    <h4>السور المختارة:</h4>
-                                    <div className="surahs-list">
-                                        {result.surahs.map(s => (
-                                            <div key={s.id} className="surah-item">
-                                                <strong>{s.name}</strong>
-                                                <span>{s.pages} صفحة • {s.ayat} آية</span>
-                                            </div>
-                                        ))}
+                            {result.mode === "surah" &&
+                                result.surahs.length > 0 && (
+                                    <div className="surahs-preview">
+                                        <h4>السور المختارة:</h4>
+                                        <div className="surahs-list">
+                                            {result.surahs.map((s) => (
+                                                <div
+                                                    key={s.id}
+                                                    className="surah-item"
+                                                >
+                                                    <strong>{s.name}</strong>
+                                                    <span>
+                                                        {s.pages} صفحة •{" "}
+                                                        {s.ayat} آية
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
                         </div>
 
                         {/* Suggestions */}
@@ -292,10 +317,14 @@ const QuranPlan: React.FC = () => {
                                 {result.suggestions.map((suggestion, index) => (
                                     <button
                                         key={index}
-                                        className={`suggestion-btn ${Math.abs(result.dailyTarget - suggestion) < 0.1 ? 'active' : ''}`}
-                                        onClick={() => selectDailyTarget(suggestion)}
+                                        className={`suggestion-btn ${Math.abs(result.dailyTarget - suggestion) < 0.1 ? "active" : ""}`}
+                                        onClick={() =>
+                                            selectDailyTarget(suggestion)
+                                        }
                                     >
-                                        {suggestion === 0.5 ? 'نصف صفحة' : `${suggestion} صفحة`}
+                                        {suggestion === 0.5
+                                            ? "نصف صفحة"
+                                            : `${suggestion} صفحة`}
                                     </button>
                                 ))}
                             </div>
@@ -304,15 +333,23 @@ const QuranPlan: React.FC = () => {
                         {/* Final Plan */}
                         <div className="final-plan">
                             <div className="plan-header">
-                                <h3>✅ خطتك اليومية النهائية</h3>
+                                <h3> خطتك اليومية النهائية</h3>
                             </div>
                             <div className="daily-target-display">
                                 <div className="target-main">
-                                    <span className="target-number">{result.dailyTarget} صفحة</span>
-                                    <span className="target-label">حفظ يومي</span>
+                                    <span className="target-number">
+                                        {result.dailyTarget} صفحة
+                                    </span>
+                                    <span className="target-label">
+                                        حفظ يومي
+                                    </span>
                                 </div>
                                 <div className="review-target">
-                                    + <span className="review-number">{result.dailyReview} صفحة</span> مراجعة
+                                    +{" "}
+                                    <span className="review-number">
+                                        {result.dailyReview} صفحة
+                                    </span>{" "}
+                                    مراجعة
                                 </div>
                             </div>
                             <div className="plan-details">
@@ -326,7 +363,9 @@ const QuranPlan: React.FC = () => {
                                 </div>
                                 <div className="detail-item">
                                     <span>📖 المراجعة:</span>
-                                    <strong>ابدأ من اليوم الثاني + راجع يومياً</strong>
+                                    <strong>
+                                        ابدأ من اليوم الثاني + راجع يومياً
+                                    </strong>
                                 </div>
                             </div>
                         </div>

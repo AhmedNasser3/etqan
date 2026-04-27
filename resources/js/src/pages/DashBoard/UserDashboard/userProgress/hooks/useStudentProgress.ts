@@ -5,7 +5,7 @@ interface LessonNote {
     id: number;
     attendance_date: string;
     note: string;
-    rating: number; // ✅ من student_attendance.rating (0-5)
+    rating: number; //  من student_attendance.rating (0-5)
     surah_name: string;
     new_memorization: string | null;
     review_memorization: string | null;
@@ -30,13 +30,13 @@ export const useStudentProgress = () => {
 
                 console.log("🚀 بداية جلب بيانات التقدم...");
 
-                // ✅ 1. CSRF Cookie
+                //  1. CSRF Cookie
                 await fetch("/sanctum/csrf-cookie", {
                     method: "GET",
                     credentials: "include",
                 });
 
-                // ✅ 2. CSRF Token
+                //  2. CSRF Token
                 const metaToken = document
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content");
@@ -52,7 +52,7 @@ export const useStudentProgress = () => {
                     getCookie("XSRF-TOKEN") ||
                     getCookie("csrf-token");
 
-                // ✅ 3. User session
+                //  3. User session
                 const sessionResponse = await fetch("/api/user", {
                     method: "GET",
                     credentials: "include",
@@ -72,7 +72,7 @@ export const useStudentProgress = () => {
                     throw new Error("غير مسجل دخول");
                 }
 
-                // ✅ 4. بيانات التقدم
+                //  4. بيانات التقدم
                 const response = await fetch("/api/v1/user/progress", {
                     method: "GET",
                     credentials: "include",
@@ -93,9 +93,9 @@ export const useStudentProgress = () => {
                 }
 
                 const result = await response.json();
-                console.log("✅ Result lessons:", result.lessons);
+                console.log(" Result lessons:", result.lessons);
 
-                // ✅ Debug الـ rating values
+                //  Debug الـ rating values
                 result.lessons?.forEach((lesson: any, index: number) => {
                     console.log(
                         `درس ${index + 1} - Rating:`,

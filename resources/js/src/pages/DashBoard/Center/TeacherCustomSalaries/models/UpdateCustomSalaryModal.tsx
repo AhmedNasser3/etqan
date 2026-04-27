@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
-import { FiX } from "react-icons/fi";
+import { useToast } from "../../../../../../contexts/ToastContext";
 import {
     useTeacherCustomSalaryFormUpdate,
-    FormData,
     TeacherOption,
 } from "../hooks/useTeacherCustomSalaryFormUpdate";
+import { ICO } from "../../../icons";
+import {
+    CURRENCIES,
+    CurrencyCode,
+} from "../../SalaryRules/SalaryRulesManagement";
 
 interface UpdateCustomSalaryModalProps {
     salaryId: number;
@@ -29,7 +32,9 @@ const UpdateCustomSalaryModal: React.FC<UpdateCustomSalaryModalProps> = ({
         submitForm,
     } = useTeacherCustomSalaryFormUpdate(salaryId);
 
-    const handleSubmitForm = async () => {
+    const { notifySuccess, notifyError } = useToast();
+
+    const handleSubmit = async () => {
         const success = await submitForm();
         if (success) {
             onSuccess();
@@ -37,13 +42,60 @@ const UpdateCustomSalaryModal: React.FC<UpdateCustomSalaryModalProps> = ({
         }
     };
 
+    function FG({
+        label,
+        children,
+        required = false,
+    }: {
+        label: string;
+        children: React.ReactNode;
+        required?: boolean;
+    }) {
+        return (
+            <div style={{ marginBottom: 13 }}>
+                <label
+                    style={{
+                        display: "block",
+                        fontSize: "10.5px",
+                        fontWeight: 700,
+                        color: "var(--n700)",
+                        marginBottom: 4,
+                    }}
+                >
+                    {label}{" "}
+                    {required && <span style={{ color: "var(--red)" }}>*</span>}
+                </label>
+                {children}
+            </div>
+        );
+    }
+
     if (loadingDetail) {
         return (
-            <div className="ParentModel">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <div className="text-center">
-                        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                        <p>جاري تحميل بيانات الراتب المخصص...</p>
+            <div className="ov on">
+                <div className="modal">
+                    <div className="mh">
+                        <span className="mh-t">جاري التحميل...</span>
+                    </div>
+                    <div
+                        className="mb"
+                        style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            minHeight: "200px",
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: 40,
+                                height: 40,
+                                border: "4px solid var(--blue-200)",
+                                borderTop: "4px solid var(--blue)",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                            }}
+                        />
                     </div>
                 </div>
             </div>
@@ -51,119 +103,133 @@ const UpdateCustomSalaryModal: React.FC<UpdateCustomSalaryModalProps> = ({
     }
 
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={onClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        <div className="ParentModel__header">
-                            <button
-                                className="ParentModel__close"
-                                onClick={onClose}
-                                disabled={isSubmitting}
+        <div className="ov on">
+            <div className="modal">
+                <div className="mh">
+                    <span className="mh-t">تعديل راتب مخصص</span>
+                    <button className="mx" onClick={onClose}>
+                        <span
+                            style={{
+                                width: 12,
+                                height: 12,
+                                display: "inline-flex",
+                            }}
+                        >
+                            {ICO.x}
+                        </span>
+                    </button>
+                </div>
+
+                <div className="mb">
+                    {/* المعلم (للعرض فقط) */}
+                    <FG label="المعلم">
+                        <input
+                            type="text"
+                            value={
+                                teachers.find(
+                                    (t) => t.id === formData.teacher_id,
+                                )?.name || ""
+                            }
+                            className="fi2"
+                            style={{
+                                backgroundColor: "var(--gray-50)",
+                                cursor: "not-allowed",
+                            }}
+                            disabled
+                        />
+                    </FG>
+
+                    {/* العملة */}
+                    <FG label="العملة" required>
+                        <select
+                            name="currency"
+                            value={formData.currency}
+                            onChange={handleInputChange}
+                            className="fi2"
+                        >
+                            {(Object.keys(CURRENCIES) as CurrencyCode[]).map(
+                                (code) => (
+                                    <option key={code} value={code}>
+                                        {CURRENCIES[code].label}
+                                    </option>
+                                ),
+                            )}
+                        </select>
+                    </FG>
+
+                    {/* الراتب المخصص */}
+                    <FG label="الراتب المخصص" required>
+                        <input
+                            type="number"
+                            name="custom_base_salary"
+                            value={formData.custom_base_salary}
+                            onChange={handleInputChange}
+                            min="0"
+                            step="0.01"
+                            placeholder="5000"
+                            className={`fi2 ${errors.custom_base_salary ? "border-red-300 bg-red-50" : ""}`}
+                        />
+                        {errors.custom_base_salary && (
+                            <p
+                                style={{
+                                    marginTop: 4,
+                                    fontSize: "11px",
+                                    color: "var(--red)",
+                                }}
                             >
-                                <FiX size={24} />
-                            </button>
-                        </div>
+                                {errors.custom_base_salary}
+                            </p>
+                        )}
+                    </FG>
 
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>تعديل راتب مخصص</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>تعديل بيانات الراتب المخصص</h1>
-                                <p>
-                                    قم بتعديل الراتب المخصص أو الملاحظات. سيظل
-                                    هذا الراتب نشطاً ما لم تقم بإلغاء تفعيله.
-                                </p>
-                            </div>
-                        </div>
+                    {/* الملاحظات */}
+                    <FG label="ملاحظات">
+                        <textarea
+                            name="notes"
+                            value={formData.notes || ""}
+                            onChange={handleInputChange}
+                            rows={3}
+                            className="fi2"
+                            placeholder="ملاحظات إضافية..."
+                        />
+                    </FG>
+                </div>
 
-                        <div className="ParentModel__container">
-                            {/* المعلم (للعرض فقط - غير قابل للتعديل) */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>المعلم</label>
-                                    <input
-                                        type="text"
-                                        value={`${teachers.find((t) => t.id === formData.teacher_id)?.name || ""} - ${teachers.find((t) => t.id === formData.teacher_id)?.role || ""}`}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed"
-                                        disabled
-                                    />
-                                </div>
-                            </div>
-
-                            {/* الراتب المخصص */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الراتب المخصص (ر.س) *</label>
-                                    <input
-                                        required
-                                        type="number"
-                                        name="custom_base_salary"
-                                        value={formData.custom_base_salary}
-                                        onChange={handleInputChange}
-                                        min="1000"
-                                        step="0.01"
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all ${
-                                            errors.custom_base_salary
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                        placeholder="5000"
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.custom_base_salary && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.custom_base_salary}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* الملاحظات */}
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>ملاحظات (اختياري)</label>
-                                    <textarea
-                                        name="notes"
-                                        value={formData.notes}
-                                        onChange={handleInputChange}
-                                        rows={3}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all resize-vertical"
-                                        placeholder="ملاحظات إضافية..."
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* زر الإرسال */}
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
-                            >
-                                <button
-                                    type="button"
-                                    onClick={handleSubmitForm}
-                                    disabled={isSubmitting || loadingTeachers}
-                                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                                            جاري التحديث...
-                                        </>
-                                    ) : (
-                                        <>تحديث الراتب المخصص</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                <div className="mf">
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "12px",
+                            justifyContent: "flex-end",
+                            marginTop: "20px",
+                        }}
+                    >
+                        <button className="btn bs" onClick={onClose}>
+                            إلغاء
+                        </button>
+                        <button
+                            className="btn bp"
+                            onClick={handleSubmit}
+                            disabled={
+                                loadingTeachers ||
+                                isSubmitting ||
+                                !formData.custom_base_salary
+                            }
+                        >
+                            {isSubmitting
+                                ? "جاري التحديث..."
+                                : "تحديث الراتب المخصص"}
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <style>{`
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 };

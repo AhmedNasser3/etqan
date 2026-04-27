@@ -17,7 +17,7 @@ export const useAuthUser = () => {
                 headers: {
                     Accept: "application/json",
                     "X-Requested-With": "XMLHttpRequest",
-                    // ✅ Content-Type مش محتاج هنا لـ GET request
+                    //  Content-Type مش محتاج هنا لـ GET request
                 },
             });
 
@@ -41,12 +41,12 @@ export const useAuthUser = () => {
         fetchUser();
     }, [fetchUser]);
 
-    // ✅ Refresh function للـ manual refresh
+    //  Refresh function للـ manual refresh
     const refetch = useCallback(() => {
         fetchUser();
     }, [fetchUser]);
 
-    // ✅ Logout function
+    //  Logout function
     const logout = useCallback(async () => {
         try {
             await fetch("/api/logout", {

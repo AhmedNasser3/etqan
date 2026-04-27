@@ -45,7 +45,7 @@ export const usePlanFormCreate = () => {
             if (response.ok) {
                 const responseData = await response.json();
                 const actualUser = responseData.user || responseData;
-                console.log("✅ ACTUAL USER:", actualUser);
+                console.log(" ACTUAL USER:", actualUser);
                 setUser(actualUser);
             }
         } catch (error) {
@@ -110,7 +110,7 @@ export const usePlanFormCreate = () => {
             toast.error("فشل في تحميل المراكز");
             setCentersData([]);
         } finally {
-            console.log("✅ Centers loading finished");
+            console.log(" Centers loading finished");
             setLoadingData(false);
         }
     }, [user]);

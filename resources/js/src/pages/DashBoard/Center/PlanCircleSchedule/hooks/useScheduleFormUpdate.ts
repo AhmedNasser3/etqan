@@ -87,7 +87,7 @@ export const useScheduleFormUpdate = ({
         null,
     );
 
-    // 🔍 STEP 1: Fetch User ✅
+    // 🔍 STEP 1: Fetch User
     useEffect(() => {
         console.log("🔍 [UPDATE HOOK STEP 1] Fetching user...");
         const fetchUser = async () => {
@@ -119,7 +119,7 @@ export const useScheduleFormUpdate = ({
 
                     setUser(fixedUser);
                     console.log(
-                        "✅ [STEP 1 SUCCESS] User set with center_id:",
+                        " [STEP 1 SUCCESS] User set with center_id:",
                         centerId,
                     );
                 }
@@ -130,7 +130,7 @@ export const useScheduleFormUpdate = ({
         fetchUser();
     }, []);
 
-    // 🔍 STEP 2: Fetch Current Schedule - ✅ الإصلاح الكامل
+    // 🔍 STEP 2: Fetch Current Schedule -  الإصلاح الكامل
     const fetchCurrentSchedule = useCallback(async () => {
         console.log("🔍 [UPDATE HOOK STEP 2] Fetching schedule:", scheduleId);
         try {
@@ -153,15 +153,12 @@ export const useScheduleFormUpdate = ({
 
                 let schedule: ScheduleType | null = null;
 
-                // ✅ 1️⃣ Single object مباشرة (الأساسي)
+                //  1️⃣ Single object مباشرة (الأساسي)
                 if (responseData.id) {
                     schedule = responseData;
-                    console.log(
-                        "✅ [STEP 2] Single schedule object:",
-                        schedule,
-                    );
+                    console.log(" [STEP 2] Single schedule object:", schedule);
                 }
-                // ✅ 2️⃣ Pagination مع data[0] و id موجود
+                //  2️⃣ Pagination مع data[0] و id موجود
                 else if (
                     responseData.data &&
                     Array.isArray(responseData.data) &&
@@ -169,11 +166,11 @@ export const useScheduleFormUpdate = ({
                 ) {
                     schedule = responseData.data[0];
                     console.log(
-                        "✅ [STEP 2] Schedule from pagination data[0]:",
+                        " [STEP 2] Schedule from pagination data[0]:",
                         schedule,
                     );
                 }
-                // ✅ 3️⃣ Pagination مع data غير فارغ
+                //  3️⃣ Pagination مع data غير فارغ
                 else if (
                     responseData.data &&
                     Array.isArray(responseData.data) &&
@@ -181,7 +178,7 @@ export const useScheduleFormUpdate = ({
                 ) {
                     schedule = responseData.data[0];
                     console.log(
-                        "✅ [STEP 2] Schedule from pagination (first item):",
+                        " [STEP 2] Schedule from pagination (first item):",
                         schedule,
                     );
                 }
@@ -198,7 +195,7 @@ export const useScheduleFormUpdate = ({
 
                 setCurrentSchedule(schedule);
                 console.log(
-                    "✅ [STEP 2 SUCCESS] Schedule loaded:",
+                    " [STEP 2 SUCCESS] Schedule loaded:",
                     schedule.id,
                     "Jitsi:",
                     schedule.jitsi_room_name,
@@ -225,7 +222,7 @@ export const useScheduleFormUpdate = ({
         }
     }, [scheduleId]);
 
-    // 🔍 STEP 3: Fetch Plans ✅
+    // 🔍 STEP 3: Fetch Plans
     const fetchPlans = useCallback(async () => {
         console.log("🔍 [UPDATE HOOK STEP 3] Fetching plans...");
         try {
@@ -252,7 +249,7 @@ export const useScheduleFormUpdate = ({
                     center_id: plan.center_id || user?.center_id,
                 }));
 
-                console.log("✅ [STEP 3 SUCCESS] Plans loaded:", plans.length);
+                console.log(" [STEP 3 SUCCESS] Plans loaded:", plans.length);
                 setPlansData(plans);
             } else {
                 toast.error("فشل في تحميل الخطط");
@@ -265,7 +262,7 @@ export const useScheduleFormUpdate = ({
         }
     }, [user?.center_id]);
 
-    // 🔍 STEP 4: Fetch Circles ✅
+    // 🔍 STEP 4: Fetch Circles
     const fetchCircles = useCallback(async () => {
         console.log("🔍 [UPDATE HOOK STEP 4] Fetching circles...");
         try {
@@ -278,7 +275,7 @@ export const useScheduleFormUpdate = ({
                 const circles: CircleType[] = Array.isArray(data)
                     ? data
                     : data.data || [];
-                console.log("✅ [STEP 4 SUCCESS] Circles:", circles.length);
+                console.log(" [STEP 4 SUCCESS] Circles:", circles.length);
                 setCirclesData(circles);
             }
         } catch (error) {
@@ -286,7 +283,7 @@ export const useScheduleFormUpdate = ({
         }
     }, []);
 
-    // 🔍 STEP 5: Fetch Teachers ✅
+    // 🔍 STEP 5: Fetch Teachers
     const fetchTeachers = useCallback(async () => {
         console.log("🔍 [UPDATE HOOK STEP 5] Fetching teachers...");
         try {
@@ -303,7 +300,7 @@ export const useScheduleFormUpdate = ({
                 const teachers: TeacherType[] = Array.isArray(data)
                     ? data
                     : data.data || [];
-                console.log("✅ [STEP 5 SUCCESS] Teachers:", teachers.length);
+                console.log(" [STEP 5 SUCCESS] Teachers:", teachers.length);
                 setTeachersData(teachers);
             } else {
                 console.error("❌ [STEP 5] Teachers failed:", response.status);
@@ -313,7 +310,7 @@ export const useScheduleFormUpdate = ({
         }
     }, []);
 
-    // ✅ Load sequence ✅
+    //  Load sequence
     useEffect(() => {
         if (user?.center_id) {
             console.log("🚀 [UPDATE SEQUENCE] User ready → fetch plans");
@@ -338,7 +335,7 @@ export const useScheduleFormUpdate = ({
         fetchCurrentSchedule,
     ]);
 
-    // ✅ Fill form with current schedule data مع Jitsi ✅
+    //  Fill form with current schedule data مع Jitsi
     useEffect(() => {
         if (currentSchedule && plansData.length > 0 && circlesData.length > 0) {
             console.log(
@@ -363,7 +360,7 @@ export const useScheduleFormUpdate = ({
 
             setFormData(safeScheduleData);
             console.log(
-                "✅ [FILL FORM] Safe data مع Jitsi applied:",
+                " [FILL FORM] Safe data مع Jitsi applied:",
                 safeScheduleData,
             );
         }
@@ -433,7 +430,7 @@ export const useScheduleFormUpdate = ({
                     formData.duration_minutes,
                 );
 
-                // ✅ إرسال Jitsi room name لو اتغير
+                //  إرسال Jitsi room name لو اتغير
                 if (formData.jitsi_room_name) {
                     formDataSubmit.append(
                         "jitsi_room_name",
@@ -463,7 +460,7 @@ export const useScheduleFormUpdate = ({
         [formData, validateForm],
     );
 
-    // ✅ وظيفة إعادة توليد Jitsi room جديد
+    //  وظيفة إعادة توليد Jitsi room جديد
     const regenerateJitsiRoom = useCallback(async () => {
         try {
             const response = await fetch(
@@ -480,7 +477,7 @@ export const useScheduleFormUpdate = ({
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("✅ Jitsi room regenerated:", data);
+                console.log(" Jitsi room regenerated:", data);
                 toast.success("تم إنشاء رابط Jitsi جديد بنجاح! 🎉");
                 setFormData((prev) => ({
                     ...prev,

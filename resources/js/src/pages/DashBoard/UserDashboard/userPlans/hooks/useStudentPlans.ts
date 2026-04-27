@@ -67,7 +67,7 @@ export const useStudentPlans = (): UseStudentPlansReturn => {
         };
 
         console.log("🔍 [DEBUG] CSRF Headers:", {
-            token: token ? "✅ Found" : "❌ Missing",
+            token: token ? " Found" : "❌ Missing",
             headers,
         });
         setDebugInfo((prev) => ({ ...prev, csrfToken: token }));
@@ -107,7 +107,7 @@ export const useStudentPlans = (): UseStudentPlansReturn => {
                 throw new Error("Invalid JSON response");
             }
 
-            console.log("✅ [DEBUG] Parsed data:", data);
+            console.log(" [DEBUG] Parsed data:", data);
             setDebugInfo((prev) => ({ ...prev, rawResponse: data }));
 
             if (!response.ok) {
@@ -231,7 +231,7 @@ export const useStudentPlans = (): UseStudentPlansReturn => {
     });
 
     return {
-        planData, // ✅ return raw planData (filtered in component if needed)
+        planData, //  return raw planData (filtered in component if needed)
         stats,
         loading,
         dateFrom,

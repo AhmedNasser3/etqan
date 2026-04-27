@@ -220,7 +220,7 @@ $gradient-bg: linear-gradient(135deg, #2d5a3a 0%, #5c4033 50%, #3a6b47 100%);
     }
 }
 .answer-content {
-    // ✅ الحل المهم - white-space: pre-wrap
+    //  الحل المهم - white-space: pre-wrap
     white-space: pre-wrap; // يحافظ على المسافات والأسطر
     word-wrap: break-word; // كسر الأسطر الطويلة
     overflow-wrap: break-word;

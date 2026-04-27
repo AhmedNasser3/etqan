@@ -1,0 +1,1307 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  إتقان — CenterNavbar Styles
+//  Namespace prefix: iq-nav  (itqan-navbar)
+//  Direction: RTL
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+$iq-g50: #f0faf5;
+$iq-g100: #d6f0e3;
+$iq-g200: #a8dfc5;
+$iq-g300: #6cc49f;
+$iq-g400: #38a879;
+$iq-g500: #1e8f61;
+$iq-g600: #15724e;
+$iq-g700: #0f5439;
+
+$iq-n0: #ffffff;
+$iq-n50: #f8fafc;
+$iq-n100: #f1f5f9;
+$iq-n200: #e2e8f0;
+$iq-n300: #cbd5e1;
+$iq-n400: #94a3b8;
+$iq-n500: #64748b;
+$iq-n600: #475569;
+$iq-n700: #334155;
+$iq-n800: #1e293b;
+$iq-n900: #0f172a;
+$iq-n950: #060f1e;
+
+$iq-red: #ef4444;
+$iq-amber: #f59e0b;
+$iq-blue: #3b82f6;
+$iq-purp: #8b5cf6;
+
+// Dimensions
+$iq-nav-h: 60px;
+$iq-nav-z: 500;
+$iq-drop-z: 510;
+$iq-tour-z: 9000;
+$iq-ease: cubic-bezier(0.4, 0, 0.2, 1);
+$iq-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+$iq-trans: 0.22s;
+
+// Chat panel width
+$iq-chat-w: 360px;
+$iq-notif-w: 340px;
+$iq-profile-w: 240px;
+
+// ─── Keyframes ─────────────────────────────────────────────────────────────
+@keyframes iq-nav-fade-down {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes iq-nav-bounce-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    60% {
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes iq-nav-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes iq-nav-pulse-ring {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba($iq-g400, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 5px rgba($iq-g400, 0);
+    }
+}
+
+// ─── Navbar Root ──────────────────────────────────────────────────────────
+.iq-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: $iq-nav-h;
+    z-index: $iq-nav-z;
+    direction: rtl;
+
+    background: rgba($iq-n0, 0.97);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid $iq-n200;
+    box-shadow: 0 1px 12px rgba($iq-n950, 0.06);
+
+    &--loading {
+        pointer-events: none;
+    }
+}
+
+.iq-nav__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 0 20px;
+    gap: 12px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+// ─── Brand ────────────────────────────────────────────────────────────────
+.iq-nav__brand {
+    flex-shrink: 0;
+}
+
+.iq-nav__brand-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.iq-nav__brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, $iq-g400, $iq-g700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 900;
+    color: $iq-n0;
+    box-shadow: 0 4px 10px rgba($iq-g500, 0.35);
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-nav__brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.iq-nav__brand-name {
+    font-size: 16px;
+    font-weight: 900;
+    color: $iq-n900;
+    font-family: "Tajawal", sans-serif;
+    line-height: 1.1;
+}
+
+.iq-nav__brand-sub {
+    font-size: 10px;
+    font-weight: 500;
+    color: $iq-n400;
+    font-family: "Tajawal", sans-serif;
+}
+
+// ─── Actions row ──────────────────────────────────────────────────────────
+.iq-nav__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+// ─── Icon button ──────────────────────────────────────────────────────────
+.iq-nav__icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1.5px solid $iq-n200;
+    background: $iq-n50;
+    color: $iq-n600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all $iq-trans $iq-ease;
+    flex-shrink: 0;
+
+    svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    &:hover {
+        background: $iq-g50;
+        border-color: $iq-g200;
+        color: $iq-g600;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba($iq-g500, 0.12);
+    }
+
+    &:active {
+        transform: scale(0.92);
+    }
+
+    &--on {
+        background: $iq-g50;
+        border-color: $iq-g300;
+        color: $iq-g600;
+    }
+
+    &--sm {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        svg {
+            width: 15px;
+            height: 15px;
+        }
+    }
+}
+
+// ─── Badge (notification count) ───────────────────────────────────────────
+.iq-nav__badge {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 100px;
+    background: $iq-red;
+    border: 2px solid $iq-n0;
+    font-size: 9px;
+    font-weight: 800;
+    color: $iq-n0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Tajawal", sans-serif;
+    animation: iq-nav-bounce-in 0.28s $iq-spring;
+    pointer-events: none;
+}
+
+// ─── Profile button ───────────────────────────────────────────────────────
+.iq-nav__profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px 5px 8px;
+    border-radius: 10px;
+    border: 1.5px solid $iq-n200;
+    background: $iq-n50;
+    cursor: pointer;
+    transition: all $iq-trans $iq-ease;
+    font-family: "Tajawal", sans-serif;
+
+    &:hover {
+        background: $iq-g50;
+        border-color: $iq-g200;
+        transform: translateY(-1px);
+    }
+
+    &:active {
+        transform: scale(0.96);
+    }
+
+    &--on {
+        background: $iq-g50;
+        border-color: $iq-g300;
+    }
+}
+
+.iq-nav__av {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $iq-g400, $iq-g600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: $iq-n0;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba($iq-g500, 0.28);
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-nav__user-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: $iq-n800;
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-nav__chevron {
+    width: 14px;
+    height: 14px;
+    color: $iq-n400;
+    transition: transform $iq-trans $iq-ease;
+    flex-shrink: 0;
+
+    &--open {
+        transform: rotate(180deg);
+        color: $iq-g500;
+    }
+}
+
+// ─── Text button ──────────────────────────────────────────────────────────
+.iq-nav__text-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    background: none;
+    color: $iq-g600;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: "Tajawal", sans-serif;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 7px;
+    transition: background $iq-trans;
+
+    svg {
+        width: 15px;
+        height: 15px;
+    }
+    &:hover {
+        background: $iq-g100;
+    }
+}
+
+// ─── Buttons ──────────────────────────────────────────────────────────────
+.iq-nav__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 9px;
+    border: none;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: "Tajawal", sans-serif;
+    cursor: pointer;
+    transition: all $iq-trans $iq-ease;
+    white-space: nowrap;
+
+    svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    &--primary {
+        background: linear-gradient(135deg, $iq-g500, $iq-g600);
+        color: $iq-n0;
+        box-shadow: 0 3px 10px rgba($iq-g500, 0.28);
+        &:hover {
+            box-shadow: 0 5px 16px rgba($iq-g500, 0.4);
+            transform: translateY(-1px);
+        }
+    }
+
+    &--ghost {
+        background: $iq-n100;
+        color: $iq-n700;
+        border: 1px solid $iq-n200;
+        &:hover {
+            background: $iq-n200;
+        }
+    }
+
+    &--sm {
+        padding: 5px 10px;
+        font-size: 11.5px;
+        border-radius: 7px;
+    }
+
+    &:active {
+        transform: scale(0.94);
+    }
+}
+
+// ─── Drop-down wrapper ────────────────────────────────────────────────────
+.iq-nav__drop-wrap {
+    position: relative;
+}
+
+// ─── Drop-down panel (shared base) ───────────────────────────────────────
+.iq-nav__drop {
+    position: absolute;
+    top: calc(100% + 10px);
+    z-index: $iq-drop-z;
+    background: $iq-n0;
+    border: 1px solid $iq-n200;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba($iq-n950, 0.12);
+    overflow: hidden;
+    animation: iq-nav-fade-down 0.2s $iq-ease;
+
+    // RTL: panels open to the left (towards center of page)
+    right: 0;
+
+    &--notif {
+        width: $iq-notif-w;
+    }
+    &--chat {
+        width: $iq-chat-w;
+    }
+    &--profile {
+        width: $iq-profile-w;
+    }
+}
+
+// ─── Panel head ───────────────────────────────────────────────────────────
+.iq-nav__drop-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 15px 11px;
+    border-bottom: 1px solid $iq-n100;
+    flex-shrink: 0;
+}
+
+.iq-nav__drop-title {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: $iq-n900;
+    font-family: "Tajawal", sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+// ─── Notifications panel ──────────────────────────────────────────────────
+.iq-notif__list {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    max-height: 360px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: $iq-n200 transparent;
+}
+
+.iq-notif__empty {
+    text-align: center;
+    padding: 28px;
+    font-size: 12.5px;
+    color: $iq-n400;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-notif__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background $iq-trans;
+    margin-bottom: 2px;
+
+    &:hover {
+        background: $iq-n50;
+    }
+
+    &--unread {
+        background: $iq-g50;
+    }
+
+    &--info .iq-notif__icon {
+        background: #dbeafe;
+        color: $iq-blue;
+    }
+    &--success .iq-notif__icon {
+        background: $iq-g100;
+        color: $iq-g600;
+    }
+    &--warning .iq-notif__icon {
+        background: #fef3c7;
+        color: #d97706;
+    }
+    &--error .iq-notif__icon {
+        background: #fee2e2;
+        color: $iq-red;
+    }
+}
+
+.iq-notif__icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+.iq-notif__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.iq-notif__title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: $iq-n900;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-notif__text {
+    font-size: 11.5px;
+    color: $iq-n500;
+    line-height: 1.4;
+    font-family: "Tajawal", sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.iq-notif__time {
+    font-size: 10.5px;
+    color: $iq-n400;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-family: "Tajawal", sans-serif;
+    svg {
+        width: 12px;
+        height: 12px;
+    }
+}
+
+.iq-notif__new-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $iq-g500;
+    flex-shrink: 0;
+    margin-top: 4px;
+    animation: iq-nav-pulse-ring 2.5s infinite;
+}
+
+// ─── Chat panel ───────────────────────────────────────────────────────────
+.iq-chat__back-btn {
+    border: none;
+    background: none;
+    color: $iq-g600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 3px 6px 3px 0;
+    transition: transform $iq-trans;
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+    &:hover {
+        transform: translateX(3px);
+    }
+}
+
+.iq-chat__new-group {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid $iq-n100;
+    align-items: center;
+    animation: iq-nav-fade-down 0.18s $iq-ease;
+}
+
+.iq-chat__group-inp {
+    flex: 1;
+    padding: 7px 11px;
+    border: 1.5px solid $iq-n200;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-family: "Tajawal", sans-serif;
+    background: $iq-n0;
+    direction: rtl;
+    outline: none;
+    transition: border-color $iq-trans;
+
+    &:focus {
+        border-color: $iq-g400;
+        box-shadow: 0 0 0 3px rgba($iq-g400, 0.1);
+    }
+    &::placeholder {
+        color: $iq-n300;
+    }
+}
+
+.iq-chat__search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid $iq-n100;
+    background: $iq-n50;
+
+    svg {
+        width: 14px;
+        height: 14px;
+        color: $iq-n400;
+        flex-shrink: 0;
+    }
+
+    input {
+        flex: 1;
+        border: none;
+        background: none;
+        font-size: 12.5px;
+        font-family: "Tajawal", sans-serif;
+        color: $iq-n800;
+        direction: rtl;
+        outline: none;
+        &::placeholder {
+            color: $iq-n400;
+        }
+    }
+}
+
+.iq-chat__rooms {
+    list-style: none;
+    margin: 0;
+    padding: 5px;
+    max-height: 340px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: $iq-n200 transparent;
+}
+
+.iq-chat__sec-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 10px 3px;
+    font-size: 10px;
+    font-weight: 700;
+    color: $iq-n400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: "Tajawal", sans-serif;
+    svg {
+        width: 13px;
+        height: 13px;
+    }
+}
+
+.iq-chat__empty {
+    text-align: center;
+    padding: 22px;
+    font-size: 12.5px;
+    color: $iq-n400;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-chat__room-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all $iq-trans $iq-ease;
+
+    &:hover {
+        background: $iq-n50;
+    }
+    &:active {
+        transform: scale(0.98);
+    }
+}
+
+// Avatar
+.iq-chat__av {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 800;
+    color: $iq-n0;
+    font-family: "Tajawal", sans-serif;
+    flex-shrink: 0;
+    position: relative;
+
+    &--sm {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+    &--md {
+        width: 36px;
+        height: 36px;
+        font-size: 13px;
+    }
+}
+
+.iq-chat__online-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #4ade80;
+    border: 2px solid $iq-n0;
+    animation: iq-nav-pulse-ring 2.5s infinite;
+}
+
+.iq-chat__room-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.iq-chat__room-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: $iq-n900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-chat__room-preview {
+    font-size: 11px;
+    color: $iq-n400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-chat__room-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.iq-chat__room-time {
+    font-size: 10px;
+    color: $iq-n400;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-chat__unread-badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 100px;
+    background: $iq-g500;
+    color: $iq-n0;
+    font-size: 9.5px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Tajawal", sans-serif;
+    animation: iq-nav-bounce-in 0.25s $iq-spring;
+}
+
+// ─ Room header (in messages view)
+.iq-chat__room-hd {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 13px;
+    border-bottom: 1px solid $iq-n200;
+    background: $iq-n0;
+    flex-shrink: 0;
+}
+
+.iq-chat__room-hd-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: $iq-n900;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-chat__room-hd-status {
+    font-size: 11px;
+    color: $iq-n400;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-chat__green-dot {
+    color: #4ade80;
+    width: 10px;
+    height: 10px;
+}
+
+// ─ Messages list
+.iq-chat__msgs {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-height: 260px;
+    max-height: 310px;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: $iq-n200 transparent;
+}
+
+.iq-chat__msgs-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: $iq-n400;
+    padding: 30px;
+
+    svg {
+        width: 36px;
+        height: 36px;
+        color: $iq-n300;
+    }
+    p {
+        font-size: 12.5px;
+        font-family: "Tajawal", sans-serif;
+        text-align: center;
+    }
+}
+
+// ─ Single message
+.iq-chat__msg {
+    display: flex;
+    align-items: flex-end;
+    gap: 7px;
+    animation: iq-nav-fade-down 0.14s $iq-ease;
+
+    &--mine {
+        flex-direction: row-reverse;
+        .iq-chat__bubble {
+            background: linear-gradient(135deg, $iq-g500, $iq-g600);
+            color: $iq-n0;
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 14px;
+            box-shadow: 0 2px 8px rgba($iq-g500, 0.22);
+        }
+        .iq-chat__msg-meta {
+            justify-content: flex-end;
+            color: rgba($iq-g500, 0.6);
+        }
+        .iq-chat__msg-sender {
+            display: none;
+        }
+    }
+}
+
+.iq-chat__msg-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 82%;
+}
+
+.iq-chat__msg-sender {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: $iq-n500;
+    margin-bottom: 2px;
+    padding: 0 4px;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-chat__bubble {
+    background: $iq-n100;
+    color: $iq-n800;
+    padding: 8px 12px;
+    border-radius: 14px 14px 14px 5px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    word-break: break-word;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-chat__msg-meta {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: $iq-n400;
+    padding: 0 4px;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-chat__ticks {
+    width: 14px;
+    height: 14px;
+    color: $iq-n300;
+}
+.iq-chat__ticks--read {
+    width: 14px;
+    height: 14px;
+    color: $iq-g400;
+}
+
+// ─ Input bar
+.iq-chat__input-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid $iq-n200;
+    background: $iq-n0;
+    flex-shrink: 0;
+}
+
+.iq-chat__input-box {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    background: $iq-n100;
+    border: 1.5px solid $iq-n200;
+    border-radius: 18px;
+    padding: 6px 10px;
+    transition:
+        border-color $iq-trans,
+        background $iq-trans;
+
+    &:focus-within {
+        border-color: $iq-g400;
+        background: $iq-n0;
+        box-shadow: 0 0 0 3px rgba($iq-g400, 0.08);
+    }
+}
+
+.iq-chat__inp-action {
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: none;
+    color: $iq-n400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all $iq-trans;
+    padding-bottom: 2px;
+
+    svg {
+        width: 15px;
+        height: 15px;
+    }
+    &:hover {
+        color: $iq-g500;
+        background: $iq-g50;
+    }
+}
+
+.iq-chat__textarea {
+    flex: 1;
+    border: none;
+    background: none;
+    resize: none;
+    font-size: 12.5px;
+    font-family: "Tajawal", sans-serif;
+    color: $iq-n800;
+    direction: rtl;
+    outline: none;
+    min-height: 22px;
+    max-height: 100px;
+    line-height: 1.5;
+    padding: 2px 0;
+
+    &::placeholder {
+        color: $iq-n400;
+    }
+}
+
+.iq-chat__send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, $iq-g500, $iq-g600);
+    color: $iq-n0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba($iq-g500, 0.32);
+    transition: all $iq-trans $iq-spring;
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    &:hover {
+        transform: scale(1.1);
+        box-shadow: 0 5px 16px rgba($iq-g500, 0.44);
+    }
+    &:active {
+        transform: scale(0.9);
+    }
+
+    &--disabled {
+        background: $iq-n200;
+        color: $iq-n400;
+        box-shadow: none;
+        cursor: not-allowed;
+        &:hover {
+            transform: none;
+        }
+    }
+}
+
+// ─── Profile dropdown ─────────────────────────────────────────────────────
+.iq-nav__profile-hd {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 14px 15px 12px;
+    border-bottom: 1px solid $iq-n100;
+    background: linear-gradient(135deg, $iq-g700, $iq-n950);
+
+    // fallback if variable not found:
+    background: linear-gradient(135deg, $iq-g700, darken($iq-g700, 6%));
+}
+
+.iq-nav__profile-av {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $iq-g400, $iq-g600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 900;
+    color: $iq-n0;
+    flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba($iq-g500, 0.32);
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-nav__profile-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: $iq-n0;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-nav__profile-role {
+    font-size: 10.5px;
+    color: rgba($iq-n0, 0.55);
+    font-family: "Tajawal", sans-serif;
+    margin-top: 1px;
+}
+
+.iq-nav__profile-list {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+}
+
+.iq-nav__profile-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 11px;
+    border-radius: 9px;
+    border: none;
+    background: none;
+    color: $iq-n700;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: "Tajawal", sans-serif;
+    cursor: pointer;
+    transition: all $iq-trans $iq-ease;
+    text-decoration: none;
+    text-align: right;
+
+    svg {
+        width: 16px;
+        height: 16px;
+        color: $iq-n400;
+        flex-shrink: 0;
+    }
+
+    &:hover {
+        background: $iq-g50;
+        color: $iq-g700;
+        svg {
+            color: $iq-g500;
+        }
+    }
+
+    &:active {
+        transform: scale(0.97);
+    }
+
+    &--danger {
+        color: $iq-red;
+        svg {
+            color: $iq-red;
+        }
+        &:hover {
+            background: #fee2e2;
+        }
+    }
+}
+
+.iq-nav__profile-sep {
+    height: 1px;
+    background: $iq-n200;
+    margin: 4px 6px;
+}
+
+// ─── Onboarding Tour ──────────────────────────────────────────────────────
+.iq-tour {
+    position: fixed;
+    inset: 0;
+    z-index: $iq-tour-z;
+    pointer-events: none;
+}
+
+.iq-tour__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba($iq-n950, 0.7);
+    backdrop-filter: blur(2px);
+    pointer-events: all;
+}
+
+.iq-tour__spotlight {
+    position: absolute;
+    border-radius: 12px;
+    box-shadow: 0 0 0 9999px rgba($iq-n950, 0.7);
+    border: 2px solid $iq-g400;
+    transition: all 0.38s $iq-ease;
+    pointer-events: none;
+}
+
+.iq-tour__card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 310px;
+    background: $iq-n0;
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 20px 60px rgba($iq-n950, 0.22);
+    pointer-events: all;
+    animation: iq-nav-bounce-in 0.24s $iq-spring;
+    direction: rtl;
+}
+
+.iq-tour__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: $iq-g100;
+    color: $iq-g700;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-bottom: 11px;
+    font-family: "Tajawal", sans-serif;
+    svg {
+        width: 12px;
+        height: 12px;
+    }
+}
+
+.iq-tour__title {
+    font-size: 15px;
+    font-weight: 900;
+    color: $iq-n900;
+    margin-bottom: 7px;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-tour__desc {
+    font-size: 12.5px;
+    color: $iq-n500;
+    line-height: 1.7;
+    margin-bottom: 16px;
+    font-family: "Tajawal", sans-serif;
+}
+
+.iq-tour__dots {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 16px;
+}
+
+.iq-tour__dot {
+    flex: 1;
+    height: 4px;
+    border-radius: 100px;
+    background: $iq-n200;
+    transition: background 0.28s;
+
+    &--active {
+        background: $iq-g500;
+    }
+}
+
+.iq-tour__actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.iq-tour__skip {
+    border: none;
+    background: none;
+    color: $iq-n400;
+    font-size: 11.5px;
+    font-family: "Tajawal", sans-serif;
+    cursor: pointer;
+    margin-left: auto;
+    padding: 4px;
+    transition: color $iq-trans;
+    &:hover {
+        color: $iq-n700;
+    }
+}
+
+// ─── Loading skeleton ─────────────────────────────────────────────────────
+$skel: linear-gradient(90deg, $iq-n100 0%, $iq-n200 50%, $iq-n100 100%);
+
+.iq-nav__skel {
+    border-radius: 9px;
+    background: $skel;
+    background-size: 200% 100%;
+    animation: iq-nav-shimmer 1.4s infinite;
+
+    &--logo {
+        width: 130px;
+        height: 32px;
+    }
+    &--actions {
+        width: 180px;
+        height: 32px;
+    }
+}
+
+// ─── Responsive ────────────────────────────────────────────────────────────
+@media (max-width: 640px) {
+    .iq-nav__brand-text {
+        display: none;
+    }
+    .iq-nav__user-name {
+        display: none;
+    }
+
+    .iq-nav__drop--chat,
+    .iq-nav__drop--notif {
+        position: fixed;
+        top: $iq-nav-h + 6px;
+        right: 6px;
+        left: 6px;
+        width: auto;
+        border-radius: 14px;
+    }
+
+    .iq-nav__drop--profile {
+        right: 6px;
+        width: calc(100vw - 12px);
+    }
+}

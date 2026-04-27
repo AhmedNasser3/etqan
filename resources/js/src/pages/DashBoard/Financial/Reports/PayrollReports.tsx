@@ -238,7 +238,7 @@ const PayrollReports: React.FC = () => {
                                                 className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(item.status)}`}
                                             >
                                                 {item.status === "calculated"
-                                                    ? "✅ محسوب"
+                                                    ? " محسوب"
                                                     : " معلق"}
                                             </span>
                                         </td>

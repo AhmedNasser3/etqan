@@ -41,7 +41,7 @@ const useCenters = () => {
     const hasShownDemoToast = useRef(false);
     const hasShownApiToast = useRef(false);
 
-    // ✅ Demo Data جاهز
+    //  Demo Data جاهز
     const demoCenters: CenterComplex[] = [
         {
             id: 1,
@@ -89,7 +89,7 @@ const useCenters = () => {
         },
     ];
 
-    // ✅ جلب من API الجديد /api/v1/super/all-centers
+    //  جلب من API الجديد /api/v1/super/all-centers
     const fetchFromApi = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -143,12 +143,12 @@ const useCenters = () => {
         }
     }, []);
 
-    // ✅ جلب البيانات الرئيسي
+    //  جلب البيانات الرئيسي
     const fetchCenters = useCallback(async () => {
         if (useDemoData) {
             setCenters(demoCenters);
             if (isInitialLoad.current && !hasShownDemoToast.current) {
-                toast.success("✅ بيانات تجريبية");
+                toast.success(" بيانات تجريبية");
                 hasShownDemoToast.current = true;
             }
             setLoading(false);
@@ -158,18 +158,18 @@ const useCenters = () => {
         try {
             await fetchFromApi();
         } catch {
-            // ✅ Fallback لـ Demo تلقائي
+            //  Fallback لـ Demo تلقائي
             setCenters(demoCenters);
             setUseDemoData(true);
             if (isInitialLoad.current && !hasShownDemoToast.current) {
-                toast.success("✅ بيانات تجريبية (API غير متاح)");
+                toast.success(" بيانات تجريبية (API غير متاح)");
                 hasShownDemoToast.current = true;
             }
             setLoading(false);
         }
     }, [useDemoData, fetchFromApi]);
 
-    // ✅ useEffect مرة واحدة فقط
+    //  useEffect مرة واحدة فقط
     useEffect(() => {
         isInitialLoad.current = true;
         fetchCenters();
@@ -189,7 +189,7 @@ const useCenters = () => {
             hasShownApiToast.current = false;
             return !prev;
         });
-        // ✅ Refetch بعد التبديل
+        //  Refetch بعد التبديل
         setTimeout(() => fetchCenters(), 100);
     }, [fetchCenters]);
 

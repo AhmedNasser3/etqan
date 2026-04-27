@@ -1,15 +1,12 @@
-// components/FeaturedPlansCards.tsx - النسخة المُصححة
-import React, { useState, useEffect, useRef, useCallback } from "react";
+// components/FeaturedPlansCards.tsx
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
     BuildingOfficeIcon,
     DocumentTextIcon,
-    ChevronDownIcon,
-    ChevronUpIcon,
     InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useParams } from "react-router-dom";
 
-// ✅ Props بسيطة - مش معقدة
 interface SimplePlanCardProps {
     id: number;
     plan_name: string;
@@ -35,80 +32,59 @@ const PlanCard: React.FC<SimplePlanCardProps> = ({
     type,
     centerSlug,
 }) => {
-    const [isHovered, setIsHovered] = useState(false);
-
     const handleRegisterClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (centerSlug) {
-            window.location.href = `/register/${centerSlug}`;
-        }
+        if (centerSlug) window.location.href = `/register/${centerSlug}`;
     };
 
     return (
-        <div className="plan-card-container">
+        <div className="qplan-card-wrap">
             <div
-                className={`plan-card ${isHovered ? "plan-card--hover" : ""}`}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
+                className={`qplan-card${isExpanded ? " qplan-card--open" : ""}`}
                 onClick={onToggle}
             >
-                <div className="plan-card__header">
-                    <div className="plan-card__duration">
+                <div className="qplan-card__top">
+                    <span className="qplan-card__months">
                         {total_months} شهر
-                    </div>
-                    <div className="plan-card__expand-icon">
-                        {isExpanded ? (
-                            <ChevronUpIcon className="w-6 h-6" />
-                        ) : (
-                            <ChevronDownIcon className="w-6 h-6" />
-                        )}
-                    </div>
-                    <div className="plan-card__schedules-badge">
+                    </span>
+                    <span className="qplan-card__slots">
                         {totalSchedules} موعد
-                    </div>
+                    </span>
                 </div>
-
-                <div className="plan-card__body">
-                    <h3 className="plan-card__title">{plan_name}</h3>
-                    <div className="plan-card__details">
-                        <span className="plan-card__detail-item">
-                            <DocumentTextIcon className="w-5 h-5" />
-                            {details_count} يوم دراسي
-                        </span>
-                        <span className="plan-card__detail-item">
-                            <BuildingOfficeIcon className="w-5 h-5" />
-                            {center_name}
-                        </span>
-                    </div>
+                <h3 className="qplan-card__name">{plan_name}</h3>
+                <div className="qplan-card__meta">
+                    <span className="qplan-card__meta-item">
+                        {details_count} يوم دراسي
+                    </span>
+                    <span className="qplan-card__meta-item">{center_name}</span>
                 </div>
-
-                <div className="plan-card__footer">
-                    <span className="plan-card__cta">
+                <div className="qplan-card__cta">
+                    <span>
                         {type === "available" ? "احجز الآن" : "عرض التفاصيل"}
+                    </span>
+                    <span className="qplan-card__arrow">
+                        {isExpanded ? "▲" : "▼"}
                     </span>
                 </div>
             </div>
 
             {isExpanded && (
-                <div className="plan-card-expanded">
-                    <div className="plan-card-expanded__header">
+                <div className="qplan-expanded">
+                    <div className="qplan-expanded__title">
                         خطط مميزة متاحة
-                        <span className="plan-card-expanded__count">
-                            ({totalSchedules} موعد)
-                        </span>
+                        <span>({totalSchedules} موعد)</span>
                     </div>
-                    <div className="plan-card-expanded__empty">
-                        <div className="empty-icon">
-                            <InformationCircleIcon className="w-16 h-16" />
-                        </div>
-                        <div className="empty-title">ابدأ رحلتك التعليمية</div>
-                        <div className="empty-subtitle">
+                    <div className="qplan-expanded__empty">
+                        <p className="qplan-expanded__empty-title">
+                            ابدأ رحلتك التعليمية
+                        </p>
+                        <p className="qplan-expanded__empty-sub">
                             اضغط على الزر أسفل للتسجيل في المركز
                             <br />
                             متاح في {center_name}
-                        </div>
+                        </p>
                         <button
-                            className="plan-card-expanded__cta"
+                            className="qplan-expanded__register-btn"
                             onClick={handleRegisterClick}
                         >
                             ابدأ التسجيل الآن
@@ -137,7 +113,6 @@ const FeaturedPlansCards: React.FC<FeaturedPlansCardsProps> = ({
         ? `${centerSlug.charAt(0).toUpperCase() + centerSlug.slice(1)}`
         : "المركز التعليمي";
 
-    // ✅ خطط بسيطة - بدون complex interfaces
     const dummyPlans = [
         {
             id: 1,
@@ -185,32 +160,34 @@ const FeaturedPlansCards: React.FC<FeaturedPlansCardsProps> = ({
                 expandedCard?.scrollIntoView({
                     behavior: "smooth",
                     block: "center",
-                    inline: "nearest",
                 });
             });
         }
     }, [localExpandedPlans]);
 
     return (
-        <div ref={containerRef} className="plan-cards-container">
-            <header className="plan-cards-header">
-                <h1 className="plan-cards-title">
+        <div
+            ref={containerRef}
+            className="qplans-container"
+            id="plan-cards-container"
+        >
+            <header className="qplans-header">
+                <h1 className="qplans-header__title">
                     {type === "available"
                         ? "حلقات متاحة للحجز"
                         : `خططي (${dummyPlans.length})`}
                 </h1>
-                <div className="plan-cards-center">
-                    <BuildingOfficeIcon className="w-5 h-5 inline mr-2" />
+                <div className="qplans-header__center">
+                    <BuildingOfficeIcon className="w-4 h-4" />
                     {centerName}
                 </div>
             </header>
-
-            <div className="plans-grid">
+            <div className="qplans-grid">
                 {dummyPlans.map((plan) => (
                     <div
                         key={plan.id}
                         data-plan-id={plan.id}
-                        className="plan-wrapper"
+                        className="qplans-grid__item"
                     >
                         <PlanCard
                             id={plan.id}

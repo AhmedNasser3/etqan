@@ -1,320 +1,367 @@
-import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
-import { FiEdit3, FiTrash2, FiPlus } from "react-icons/fi";
-import { useSalaryRules, SalaryRuleType } from "./hooks/useSalaryRules";
+// SalaryRulesManagement.tsx
+import React, { useState, useEffect, useCallback } from "react";
 import CreateSalaryRuleModal from "./models/CreateSalaryRuleModal";
 import UpdateSalaryRuleModal from "./models/UpdateSalaryRuleModal";
+import { useSalaryRules, SalaryRuleType } from "./hooks/useSalaryRules";
+import { ICO } from "../../icons";
+import { useToast } from "../../../../../contexts/ToastContext";
+
+export type CurrencyCode = "SAR" | "EGP" | "USD";
+
+export const CURRENCIES: Record<
+    CurrencyCode,
+    { label: string; locale: string; symbol: string }
+> = {
+    SAR: { label: "ريال سعودي (ر.س)", locale: "ar-SA", symbol: "ر.س" },
+    EGP: { label: "جنيه مصري (ج.م)", locale: "ar-EG", symbol: "ج.م" },
+    USD: { label: "دولار أمريكي ($)", locale: "en-US", symbol: "$" },
+};
+
+export function formatCurrency(
+    amount: number,
+    currency: CurrencyCode = "SAR",
+): string {
+    const { locale } = CURRENCIES[currency];
+    return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency,
+        minimumFractionDigits: 0,
+    }).format(amount);
+}
+
+interface SalaryRuleType {
+    id: number;
+    role: string;
+    role_ar?: string;
+    base_salary: number;
+    working_days: number;
+    daily_rate: number;
+    mosque_id?: number | null;
+    notes?: string | null;
+    currency?: CurrencyCode;
+}
+
+interface ConfirmModalProps {
+    title: string;
+    desc?: string;
+    cb: () => void;
+}
 
 const SalaryRulesManagement: React.FC = () => {
-    const {
-        salaries,
-        loading,
-        pagination,
-        currentPage,
-        goToPage,
-        refetch,
-        isEmpty,
-        stats,
-    } = useSalaryRules();
-
+    const { salaries, loading, refetch, isEmpty, stats } = useSalaryRules();
+    const [search, setSearch] = useState("");
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
+    const [selectedSalary, setSelectedSalary] = useState<SalaryRuleType | null>(
+        null,
+    );
     const [selectedSalaryId, setSelectedSalaryId] = useState<number | null>(
         null,
     );
+    const [confirm, setConfirm] = useState<ConfirmModalProps | null>(null);
+    const [filteredSalaries, setFilteredSalaries] = useState<SalaryRuleType[]>(
+        [],
+    );
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat("ar-EG", {
-            style: "currency",
-            currency: "SAR",
-            minimumFractionDigits: 0,
-        }).format(amount);
+    const { notifySuccess, notifyError } = useToast();
+
+    useEffect(() => {
+        setFilteredSalaries(salaries);
+    }, [salaries]);
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearch(value);
+        const filtered = salaries.filter(
+            (salary) =>
+                (salary.role_ar || salary.role || "")
+                    .toLowerCase()
+                    .includes(value.toLowerCase()) ||
+                (salary.mosque_id?.toString() || "").includes(
+                    value.toLowerCase(),
+                ),
+        );
+        setFilteredSalaries(filtered);
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("هل أنت متأكد من حذف قاعدة هذا الراتب؟")) return;
-
-        try {
-            const csrfToken =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute("content") || "";
-
-            const response = await fetch(`/api/v1/teacher-salaries/${id}`, {
-                method: "DELETE",
-                credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRF-TOKEN": csrfToken,
-                },
-            });
-
-            console.log("🗑️ DELETE Response:", {
-                status: response.status,
-                ok: response.ok,
-            });
-
-            if (response.ok) {
-                toast.success("تم حذف قاعدة الراتب بنجاح ✅");
-                refetch();
-            } else {
-                const errorData = await response.json().catch(() => ({}));
-                console.error("❌ DELETE Error:", response.status, errorData);
-                toast.error(errorData.message || "حدث خطأ في الحذف");
-            }
-        } catch (error) {
-            console.error("💥 DELETE Network Error:", error);
-            toast.error("حدث خطأ في الاتصال");
-        }
-    };
-
-    const handleEdit = (salaryId: number) => {
-        setSelectedSalaryId(salaryId);
+    const handleEdit = (salary: SalaryRuleType) => {
+        setSelectedSalary(salary);
+        setSelectedSalaryId(salary.id);
         setShowUpdateModal(true);
     };
 
-    const handleCloseCreateModal = () => {
-        setShowCreateModal(false);
-        refetch();
+    const handleDelete = async (id: number) => {
+        setConfirm({
+            title: "حذف قاعدة الراتب",
+            desc: "هل أنت متأكد من حذف قاعدة هذا الراتب؟ لا يمكن التراجع.",
+            cb: async () => {
+                try {
+                    const csrfToken = document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content");
+
+                    if (!csrfToken) {
+                        notifyError("فشل في جلب رمز الحماية");
+                        setConfirm(null);
+                        return;
+                    }
+
+                    const response = await fetch(
+                        `/api/v1/teacher-salaries/${id}`,
+                        {
+                            method: "DELETE",
+                            credentials: "include",
+                            headers: {
+                                Accept: "application/json",
+                                "X-Requested-With": "XMLHttpRequest",
+                                "X-CSRF-TOKEN": csrfToken,
+                            },
+                        },
+                    );
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        notifySuccess("تم حذف قاعدة الراتب بنجاح");
+                        setFilteredSalaries((prev) =>
+                            prev.filter((s) => s.id !== id),
+                        );
+                        refetch();
+                    } else {
+                        notifyError(
+                            result.message || "فشل في حذف قاعدة الراتب",
+                        );
+                    }
+                } catch (error: any) {
+                    notifyError("حدث خطأ في الحذف");
+                } finally {
+                    setConfirm(null);
+                }
+            },
+        });
     };
 
     const handleCloseUpdateModal = () => {
         setShowUpdateModal(false);
+        setSelectedSalary(null);
         setSelectedSalaryId(null);
+    };
+
+    const handleUpdateSuccess = () => {
+        notifySuccess("تم تحديث قاعدة الراتب بنجاح");
         refetch();
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px] p-8">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                    <p className="text-gray-600">
-                        <div className="navbar">
-                            <div className="navbar__inner">
-                                <div className="navbar__loading">
-                                    <div className="loading-spinner">
-                                        <div className="spinner-circle"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>{" "}
-                    </p>
-                </div>
-            </div>
-        );
-    }
+    const handleCloseCreateModal = () => setShowCreateModal(false);
 
-    const hasPrev = currentPage > 1;
-    const hasNext = pagination && currentPage < pagination.last_page;
+    const handleCreateSuccess = () => {
+        notifySuccess("تم إضافة قاعدة راتب جديدة بنجاح");
+        refetch();
+    };
+
+    const handleAddNew = () => setShowCreateModal(true);
 
     return (
         <>
+            {showUpdateModal && selectedSalary && (
+                <UpdateSalaryRuleModal
+                    salaryRuleId={selectedSalaryId!}
+                    onClose={handleCloseUpdateModal}
+                    onSuccess={handleUpdateSuccess}
+                />
+            )}
+
             {showCreateModal && (
                 <CreateSalaryRuleModal
                     onClose={handleCloseCreateModal}
-                    onSuccess={handleCloseCreateModal}
+                    onSuccess={handleCreateSuccess}
                 />
             )}
 
-            {showUpdateModal && selectedSalaryId && (
-                <UpdateSalaryRuleModal
-                    salaryRuleId={selectedSalaryId}
-                    onClose={handleCloseUpdateModal}
-                    onSuccess={handleCloseUpdateModal}
-                />
-            )}
-
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon purpleColor">
-                            <i>📊</i>
-                        </div>
-                        <div>
-                            <h3>إجمالي الأدوار</h3>
-                            <p className="text-2xl font-bold text-purple-600">
-                                {stats.total}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>💰</i>
-                        </div>
-                        <div>
-                            <h3>إجمالي الرواتب</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {formatCurrency(stats.totalSalary)}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon blueColor">
-                            <i>📈</i>
-                        </div>
-                        <div>
-                            <h3>متوسط الراتب</h3>
-                            <p className="text-2xl font-bold text-blue-600">
-                                {formatCurrency(stats.avgSalary)}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
+            {confirm && (
                 <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
+                    className="conf-ov on"
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
                 >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>⚖️</i>قوانين الرواتب لجميع الأدوار في مجمعك
+                    <div className="conf-box">
+                        <div className="conf-ico">
+                            <span
+                                style={{
+                                    width: 22,
+                                    height: 22,
+                                    display: "inline-flex",
+                                    color: "var(--red)",
+                                }}
+                            >
+                                {ICO.trash}
+                            </span>
                         </div>
-                        <div className="plan__current">
-                            <h2>قوانين الرواتب</h2>
-                            <div className="plan__date-range">
-                                <button
-                                    className="teacherStudent__status-btn add-btn p-3 rounded-xl border-2 bg-green-50 border-green-300 text-green-600 hover:bg-green-100 font-medium"
-                                    onClick={() => setShowCreateModal(true)}
-                                >
-                                    <FiPlus size={20} className="inline mr-2" />
-                                    قاعدة راتب جديدة
-                                </button>
-                            </div>
+                        <div className="conf-t">{confirm.title}</div>
+                        <div className="conf-d">
+                            {confirm.desc ||
+                                "هل أنت متأكد من هذا الإجراء؟ لا يمكن التراجع."}
+                        </div>
+                        <div className="conf-acts">
+                            <button className="btn bd" onClick={confirm.cb}>
+                                تأكيد
+                            </button>
+                            <button
+                                className="btn bs"
+                                onClick={() => setConfirm(null)}
+                            >
+                                إلغاء
+                            </button>
                         </div>
                     </div>
                 </div>
+            )}
 
-                <div className="plan__daily-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>الدور</th>
-                                <th>الراتب الأساسي</th>
-                                <th>أيام العمل</th>
-                                <th>اليومي</th>
-                                <th>المسجد</th>
-                                <th>الملاحظات</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isEmpty ? (
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">إدارة قوانين الرواتب</div>
+                        <div className="flx">
+                            <input
+                                className="fi"
+                                style={{ margin: "0 6px" }}
+                                placeholder="البحث بالدور أو المسجد..."
+                                value={search}
+                                onChange={handleSearch}
+                            />
+                            <button
+                                className="btn bp bsm"
+                                onClick={handleAddNew}
+                            >
+                                + قاعدة راتب جديدة
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style={{ overflowX: "auto" }}>
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td
-                                        colSpan={7}
-                                        className="text-center py-8 text-gray-500"
-                                    >
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
-                                                💰
-                                            </div>
-                                            <div>
-                                                <p className="text-xl font-semibold mb-2">
-                                                    لا توجد قوانين رواتب
-                                                </p>
-                                                <p className="text-gray-400">
-                                                    ابدأ بإضافة قاعدة راتب لأول
-                                                    دور
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </td>
+                                    <th>الدور</th>
+                                    <th>الراتب الأساسي</th>
+                                    <th>العملة</th>
+                                    <th>أيام العمل</th>
+                                    <th>اليومي</th>
+                                    <th>المسجد</th>
+                                    <th>الملاحظات</th>
+                                    <th>الإجراءات</th>
                                 </tr>
-                            ) : (
-                                salaries.map((salary) => (
-                                    <tr
-                                        key={salary.id}
-                                        className="plan__row active"
-                                    >
-                                        <td className="font-bold text-xl">
-                                            {salary.role_ar ||
-                                                salary.role ||
-                                                "غير محدد"}
-                                        </td>
-                                        <td className="font-semibold text-green-600">
-                                            {formatCurrency(
-                                                salary.base_salary || 0,
-                                            )}
-                                        </td>
-                                        <td>{salary.working_days || 0}</td>
-                                        <td>
-                                            {formatCurrency(
-                                                salary.daily_rate || 0,
-                                            )}
-                                        </td>
-                                        <td>
-                                            {salary.mosque_id || "جميع المساجد"}
-                                        </td>
-                                        <td
-                                            className="max-w-xs truncate"
-                                            title={salary.notes || ""}
-                                        >
-                                            {salary.notes || "-"}
-                                        </td>
-                                        <td>
-                                            <div className="teacherStudent__btns">
-                                                <button
-                                                    className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
-                                                    onClick={() =>
-                                                        handleEdit(salary.id)
-                                                    }
-                                                    title="تعديل قاعدة الراتب"
+                            </thead>
+                            <tbody>
+                                {filteredSalaries.length > 0 ? (
+                                    filteredSalaries.map((salary) => {
+                                        const currency =
+                                            (salary.currency as CurrencyCode) ||
+                                            "SAR";
+                                        return (
+                                            <tr key={salary.id}>
+                                                <td style={{ fontWeight: 700 }}>
+                                                    {salary.role_ar ||
+                                                        salary.role ||
+                                                        "غير محدد"}
+                                                </td>
+                                                <td className="font-semibold text-green-600">
+                                                    {formatCurrency(
+                                                        salary.base_salary || 0,
+                                                        currency,
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <span
+                                                        className="badge px-2 py-1 rounded-full text-xs font-medium"
+                                                        style={{
+                                                            background:
+                                                                "var(--n100)",
+                                                            color: "var(--n700)",
+                                                        }}
+                                                    >
+                                                        {CURRENCIES[currency]
+                                                            ?.symbol ||
+                                                            currency}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {salary.working_days || 0}
+                                                </td>
+                                                <td>
+                                                    {formatCurrency(
+                                                        salary.daily_rate || 0,
+                                                        currency,
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {salary.mosque_id ||
+                                                        "جميع المساجد"}
+                                                </td>
+                                                <td
+                                                    className="max-w-xs truncate"
+                                                    title={salary.notes || ""}
                                                 >
-                                                    <FiEdit3 />
-                                                </button>
+                                                    {salary.notes || "-"}
+                                                </td>
+                                                <td>
+                                                    <div className="td-actions">
+                                                        <button
+                                                            className="btn bd bxs"
+                                                            onClick={() =>
+                                                                handleDelete(
+                                                                    salary.id,
+                                                                )
+                                                            }
+                                                        >
+                                                            حذف
+                                                        </button>
+                                                        <button
+                                                            className="btn bs bxs"
+                                                            onClick={() =>
+                                                                handleEdit(
+                                                                    salary,
+                                                                )
+                                                            }
+                                                        >
+                                                            تعديل
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan={8}>
+                                            <div className="empty">
+                                                <p>
+                                                    {search
+                                                        ? "لا توجد نتائج للبحث"
+                                                        : "لا توجد قوانين رواتب"}
+                                                </p>
                                                 <button
-                                                    className="teacherStudent__status-btn delete-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
-                                                    onClick={() =>
-                                                        handleDelete(salary.id)
-                                                    }
-                                                    title="حذف قاعدة الراتب"
+                                                    className="btn bp bsm"
+                                                    onClick={handleAddNew}
                                                 >
-                                                    <FiTrash2 />
+                                                    إضافة قاعدة راتب
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {pagination && pagination.last_page > 1 && (
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        style={{ width: "100%" }}
-                    >
-                        <div className="flex justify-between items-center p-4">
-                            <div className="text-sm text-gray-600">
-                                عرض {salaries.length} من {pagination.total}{" "}
-                                قاعدة • الصفحة <strong>{currentPage}</strong> من{" "}
-                                <strong>{pagination.last_page}</strong>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => goToPage(currentPage - 1)}
-                                    disabled={!hasPrev}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
-                                >
-                                    السابق
-                                </button>
-                                <span className="px-4 py-2 bg-purple-500 text-white rounded-lg font-bold">
-                                    {currentPage}
-                                </span>
-                                <button
-                                    onClick={() => goToPage(currentPage + 1)}
-                                    disabled={!hasNext}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
-                                >
-                                    التالي
-                                </button>
-                            </div>
-                        </div>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                )}
+                </div>
             </div>
         </>
     );

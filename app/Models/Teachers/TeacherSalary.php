@@ -15,23 +15,24 @@ class TeacherSalary extends Model
 
     protected $table = 'teacher_salaries';
 
-    protected $fillable = [
-        'role',                     //  enum جديد
-        'center_id',
-        'mosque_id',
-        'base_salary',
-        'working_days',
-        'daily_rate',
-        'notes',
-    ];
+protected $fillable = [
+    'role',
+    'center_id',
+    'mosque_id',
+    'base_salary',
+    'working_days',
+    'daily_rate',
+    'currency', // ✅ أضفها هنا
+    'notes',
+];
 
-    protected $casts = [
-        'base_salary' => 'decimal:2',
-        'daily_rate' => 'decimal:2',
-        'center_id' => 'integer',
-        'working_days' => 'integer',
-    ];
-
+protected $casts = [
+    'base_salary'  => 'decimal:2',
+    'daily_rate'   => 'decimal:2',
+    'center_id'    => 'integer',
+    'working_days' => 'integer',
+    'currency'     => 'string', // ✅ أضفها هنا
+];
     /**
      * علاقة مع المعلم (اختيارية)
      */

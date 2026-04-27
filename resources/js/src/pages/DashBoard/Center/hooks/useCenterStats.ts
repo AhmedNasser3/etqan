@@ -1,185 +1,64 @@
-// src/hooks/useCenterStats.ts
-import { useState, useEffect, useCallback } from "react";
-import toast from "react-hot-toast";
+import { useState, useEffect } from "react";
 
-interface RoleStats {
-    count: number;
+interface DashboardStats {
+    center_id: number;
+    center_name: string;
+    user_name: string;
+    user_role: string;
+    students: { total: number; diff: number; trend: "up" | "down" | "flat" };
+    circles: { total: number; diff: number; trend: "up" | "down" | "flat" };
+    mosques: number;
+    teachers: number;
+    pending_bookings: number;
+    total_balance: number;
+}
+
+interface RecentCircle {
+    id: number;
     name: string;
+    mosque_name: string;
+    teacher_name: string;
 }
 
-interface TeachersStats {
-    teacher: RoleStats;
-    supervisor: RoleStats;
-    motivator: RoleStats;
-    student_affairs: RoleStats;
-    financial: RoleStats;
-}
-
-interface StudentsStats {
-    total: number;
-    by_grade: Record<string, number>;
-    by_circle: Record<string, number>;
-    by_session: Record<string, number>;
-}
-
-interface PlansStats {
-    total: number;
-    by_plan: Record<string, number>;
-}
-
-interface SummaryStats {
-    total_teachers: number;
-    total_students: number;
-    total_plans: number;
-    teacher_student_ratio: number;
-}
-
-interface StatsResponse {
-    success: boolean;
-    data: {
-        teachers_stats: TeachersStats;
-        students_stats: StudentsStats;
-        plans_stats: PlansStats;
-        summary: SummaryStats;
-    };
-}
-
-export const useCenterStats = () => {
-    const [stats, setStats] = useState<StatsResponse["data"] | null>(null);
-    const [loading, setLoading] = useState(false);
+export const useCenterDashboard = () => {
+    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [recentCircles, setRecentCircles] = useState<RecentCircle[]>([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchStats = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+    const fetchStats = async () => {
         try {
-            //  الرابط الصحيح حسب الـ routes بتاعتك
-            const response = await fetch("/api/v1/reports/stats", {
+            const res = await fetch("/api/v1/center/dashboard/stats", {
                 credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                    "X-Requested-With": "XMLHttpRequest",
-                },
+                headers: { Accept: "application/json" },
             });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`HTTP ${response.status}: ${errorData}`);
-            }
-
-            const result: StatsResponse = await response.json();
-
-            if (result.success && result.data) {
-                setStats(result.data);
-            } else {
-                throw new Error(
-                    result.data?.message || "خطأ في استجابة الخادم",
-                );
-            }
-        } catch (err: any) {
-            console.error("❌ خطأ في جلب الإحصائيات:", err);
-            setError(err.message || "فشل في تحميل الإحصائيات");
-            toast.error("❌ فشل في تحميل الإحصائيات");
-            setStats(null);
-        } finally {
-            setLoading(false);
+            const json = await res.json();
+            if (json.success) setStats(json.data);
+            else setError(json.message);
+        } catch {
+            setError("فشل في جلب الإحصائيات");
         }
-    }, []);
+    };
+
+    const fetchRecentCircles = async () => {
+        try {
+            const res = await fetch("/api/v1/center/dashboard/recent-circles", {
+                credentials: "include",
+                headers: { Accept: "application/json" },
+            });
+            const json = await res.json();
+            if (json.success) setRecentCircles(json.data);
+        } catch {
+            // silent
+        }
+    };
 
     useEffect(() => {
-        fetchStats();
-    }, [fetchStats]);
+        setLoading(true);
+        Promise.all([fetchStats(), fetchRecentCircles()]).finally(() =>
+            setLoading(false),
+        );
+    }, []);
 
-    // 🔥 Helper functions - بيانات حقيقية فقط
-    const getTotalTeachers = () => stats?.summary?.total_teachers || 0;
-    const getTotalStudents = () => stats?.summary?.total_students || 0;
-    const getTotalPlans = () => stats?.summary?.total_plans || 0;
-    const getTeacherStudentRatio = () =>
-        stats?.summary?.teacher_student_ratio || 0;
-
-    // 🔥 تفصيلة كل role في مربع منفصل
-    const getTeacherCount = () => stats?.teachers_stats?.teacher?.count || 0;
-    const getSupervisorCount = () =>
-        stats?.teachers_stats?.supervisor?.count || 0;
-    const getMotivatorCount = () =>
-        stats?.teachers_stats?.motivator?.count || 0;
-    const getStudentAffairsCount = () =>
-        stats?.teachers_stats?.student_affairs?.count || 0;
-    const getFinancialCount = () =>
-        stats?.teachers_stats?.financial?.count || 0;
-
-    // 🔥 أسماء الـ roles بالعربي
-    const getRoleName = (role: keyof TeachersStats): string => {
-        const names: Record<keyof TeachersStats, string> = {
-            teacher: "المعلمين",
-            supervisor: "المشرفين",
-            motivator: "المحفزين",
-            student_affairs: "شؤون الطلاب",
-            financial: "الإدارة المالية",
-        };
-        return names[role] || role;
-    };
-
-    const getRoleCount = (role: keyof TeachersStats) => {
-        return stats?.teachers_stats?.[role]?.count || 0;
-    };
-
-    // 🔥 جميع الـ roles كـ array
-    const getAllRoles = () => {
-        const roles: Array<{
-            key: keyof TeachersStats;
-            count: number;
-            name: string;
-        }> = [
-            {
-                key: "teacher",
-                count: getTeacherCount(),
-                name: getRoleName("teacher"),
-            },
-            {
-                key: "supervisor",
-                count: getSupervisorCount(),
-                name: getRoleName("supervisor"),
-            },
-            {
-                key: "motivator",
-                count: getMotivatorCount(),
-                name: getRoleName("motivator"),
-            },
-            {
-                key: "student_affairs",
-                count: getStudentAffairsCount(),
-                name: getRoleName("student_affairs"),
-            },
-            {
-                key: "financial",
-                count: getFinancialCount(),
-                name: getRoleName("financial"),
-            },
-        ];
-        return roles.filter((role) => role.count > 0); // بس اللي عندهم أرقام
-    };
-
-    return {
-        stats,
-        loading,
-        error,
-        fetchStats,
-
-        // 🔥 الإجماليات
-        getTotalTeachers,
-        getTotalStudents,
-        getTotalPlans,
-        getTeacherStudentRatio,
-
-        // 🔥 تفصيلة كل role
-        getTeacherCount,
-        getSupervisorCount,
-        getMotivatorCount,
-        getStudentAffairsCount,
-        getFinancialCount,
-        getRoleName,
-        getRoleCount,
-        getAllRoles,
-    };
+    return { stats, recentCircles, loading, error, refetch: fetchStats };
 };

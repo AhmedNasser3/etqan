@@ -141,7 +141,9 @@
         .plan__daily-table {
             overflow-x: auto;
             margin-bottom: 24px;
-            border-radius: 20px !important;
+            // border-radius: 20px !important;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
 
             table {
                 width: 100%;
@@ -155,7 +157,12 @@
                     padding: 12px 8px;
                     text-align: center;
                     font-size: $xs-font;
+
                     border-bottom: 1px solid rgba($light-gray, 0.2);
+                }
+                td {
+                    border-left: 2px dashed rgba($dark-gray, 0.2);
+                    border-right: 2px dashed rgba($dark-gray, 0.2);
                 }
                 th {
                     font-size: $xs-font;
@@ -282,24 +289,26 @@
             }
         }
         .plan__date-range {
+            direction: rtl;
             display: flex;
             align-items: center;
             gap: 12px;
         }
     }
     &__meet {
+        margin: 24px 0;
         margin-top: 48px;
         padding: 24px 15%;
         display: flex;
         justify-content: center;
-        align-items: center;
         gap: 12px;
     }
     &__inner {
         padding: 12px;
         border-radius: 10px;
         width: 800px;
-        border: 1px solid rgba($light-gray, 0.2);
+        border: 1px solid rgba($light-gray, 0.4);
+        background-color: rgba($dark-gray, 0.02);
     }
     &__meetImg {
         width: 150px;

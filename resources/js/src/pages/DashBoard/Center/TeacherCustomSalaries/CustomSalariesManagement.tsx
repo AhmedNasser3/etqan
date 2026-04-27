@@ -1,6 +1,5 @@
-import { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
-import { FiEdit3, FiTrash2, FiPlus, FiCheckCircle } from "react-icons/fi";
 import {
     useTeacherCustomSalaries,
     CustomSalaryItem,
@@ -8,10 +7,23 @@ import {
 } from "./hooks/useTeacherCustomSalaries";
 import CreateCustomSalaryModal from "./models/CreateCustomSalaryModal";
 import UpdateCustomSalaryModal from "./models/UpdateCustomSalaryModal";
+import { ICO } from "../../icons";
+import { useToast } from "../../../../../contexts/ToastContext";
+import {
+    CURRENCIES,
+    CurrencyCode,
+    formatCurrency,
+} from "../SalaryRules/SalaryRulesManagement";
+
+interface ConfirmModalProps {
+    title: string;
+    desc?: string;
+    cb: () => void;
+}
 
 const CustomSalariesManagement: React.FC = () => {
     const {
-        salaries,
+        salaries: salariesFromHook,
         stats,
         loading,
         pagination,
@@ -21,59 +33,98 @@ const CustomSalariesManagement: React.FC = () => {
         isEmpty,
     } = useTeacherCustomSalaries();
 
+    const [search, setSearch] = useState("");
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [selectedSalaryId, setSelectedSalaryId] = useState<number | null>(
         null,
     );
+    const [confirm, setConfirm] = useState<ConfirmModalProps | null>(null);
+    const [salaries, setSalaries] = useState<CustomSalaryItem[]>([]);
 
-    const formatCurrency = (amount: string | number) => {
-        return new Intl.NumberFormat("ar-EG", {
-            style: "currency",
-            currency: "SAR",
-            minimumFractionDigits: 0,
-        }).format(Number(amount));
+    useEffect(() => {
+        setSalaries(salariesFromHook);
+    }, [salariesFromHook]);
+
+    const filteredSalaries = salaries.filter(
+        (salary) =>
+            (
+                salary.teacher?.user?.name ||
+                salary.teacher?.name ||
+                salary.user?.name ||
+                ""
+            )
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+            (salary.notes || "").toLowerCase().includes(search.toLowerCase()),
+    );
+
+    const { notifySuccess, notifyError } = useToast();
+
+    const translateRole = (role: string | undefined): string => {
+        if (!role) return "غير محدد";
+        const roleTranslations: { [key: string]: string } = {
+            teacher: "معلم",
+            supervisor: "مشرف",
+            motivator: "محفز",
+            student_affairs: "شؤون الطلاب",
+            financial: "مالي",
+            admin: "مدير النظام",
+            center_manager: "مدير المركز",
+        };
+        return roleTranslations[role.toLowerCase()] || role;
+    };
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearch(e.target.value);
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("هل أنت متأكد من حذف هذا الراتب المخصص؟")) return;
+        setConfirm({
+            title: "حذف الراتب المخصص",
+            desc: "هل أنت متأكد من حذف هذا الراتب المخصص؟ لا يمكن التراجع.",
+            cb: async () => {
+                try {
+                    const csrfToken = document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content");
 
-        try {
-            const csrfToken =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute("content") || "";
+                    if (!csrfToken) {
+                        notifyError("فشل في جلب رمز الحماية");
+                        setConfirm(null);
+                        return;
+                    }
 
-            const response = await fetch(
-                `/api/v1/teacher/custom-salaries/${id}`,
-                {
-                    method: "DELETE",
-                    credentials: "include",
-                    headers: {
-                        Accept: "application/json",
-                        "X-Requested-With": "XMLHttpRequest",
-                        "X-CSRF-TOKEN": csrfToken,
-                    },
-                },
-            );
+                    const response = await fetch(
+                        `/api/v1/teacher/custom-salaries/${id}`,
+                        {
+                            method: "DELETE",
+                            credentials: "include",
+                            headers: {
+                                Accept: "application/json",
+                                "X-Requested-With": "XMLHttpRequest",
+                                "X-CSRF-TOKEN": csrfToken,
+                            },
+                        },
+                    );
 
-            console.log("🗑️ DELETE Custom Salary Response:", {
-                status: response.status,
-                ok: response.ok,
-            });
+                    const result = await response.json();
 
-            if (response.ok) {
-                toast.success("تم حذف الراتب المخصص بنجاح ✅");
-                refetch();
-            } else {
-                const errorData = await response.json().catch(() => ({}));
-                console.error("❌ DELETE Error:", response.status, errorData);
-                toast.error(errorData.message || "حدث خطأ في الحذف");
-            }
-        } catch (error) {
-            console.error("💥 DELETE Network Error:", error);
-            toast.error("حدث خطأ في الاتصال");
-        }
+                    if (response.ok && result.success) {
+                        notifySuccess("تم حذف الراتب المخصص بنجاح");
+                        setSalaries((prev) => prev.filter((s) => s.id !== id));
+                    } else {
+                        notifyError(
+                            result.message || "فشل في حذف الراتب المخصص",
+                        );
+                    }
+                } catch (error: any) {
+                    notifyError("حدث خطأ في الحذف");
+                } finally {
+                    setConfirm(null);
+                }
+            },
+        });
     };
 
     const handleEdit = (salaryId: number) => {
@@ -81,39 +132,41 @@ const CustomSalariesManagement: React.FC = () => {
         setShowUpdateModal(true);
     };
 
-    const handleCloseCreateModal = () => {
-        setShowCreateModal(false);
+    const handleCloseCreateModal = () => setShowCreateModal(false);
+    const handleCreateSuccess = () => {
+        notifySuccess("تم إضافة الراتب المخصص بنجاح");
         refetch();
     };
 
     const handleCloseUpdateModal = () => {
         setShowUpdateModal(false);
         setSelectedSalaryId(null);
+    };
+    const handleUpdateSuccess = () => {
+        notifySuccess("تم تحديث الراتب المخصص بنجاح");
         refetch();
     };
 
+    const handleAddNew = () => setShowCreateModal(true);
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px] p-8">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                    <p className="text-gray-600">
-                        جاري تحميل المرتبات المخصصة...
-                    </p>
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="empty">
+                        <p>جاري تحميل المرتبات المخصصة...</p>
+                    </div>
                 </div>
             </div>
         );
     }
-
-    const hasPrev = currentPage > 1;
-    const hasNext = pagination && currentPage < pagination.last_page;
 
     return (
         <>
             {showCreateModal && (
                 <CreateCustomSalaryModal
                     onClose={handleCloseCreateModal}
-                    onSuccess={handleCloseCreateModal}
+                    onSuccess={handleCreateSuccess}
                 />
             )}
 
@@ -121,209 +174,393 @@ const CustomSalariesManagement: React.FC = () => {
                 <UpdateCustomSalaryModal
                     salaryId={selectedSalaryId}
                     onClose={handleCloseUpdateModal}
-                    onSuccess={handleCloseUpdateModal}
+                    onSuccess={handleUpdateSuccess}
                 />
             )}
 
-            <div className="userProfile__plan" style={{ padding: "0 15%" }}>
-                <div className="plan__stats">
-                    <div className="stat-card">
-                        <div className="stat-icon purpleColor">
-                            <i>📊</i>
+            {confirm && (
+                <div
+                    className="conf-ov on"
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 3000,
+                        background: "rgba(0,0,0,.5)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <div className="conf-box">
+                        <div className="conf-ico">
+                            <span
+                                style={{
+                                    width: 22,
+                                    height: 22,
+                                    display: "inline-flex",
+                                    color: "var(--red)",
+                                }}
+                            >
+                                {ICO.trash}
+                            </span>
                         </div>
-                        <div>
-                            <h3>إجمالي المرتبات المخصصة</h3>
-                            <p className="text-2xl font-bold text-purple-600">
-                                {stats.total_custom || 0}
-                            </p>
+                        <div className="conf-t">{confirm.title}</div>
+                        <div className="conf-d">
+                            {confirm.desc ||
+                                "هل أنت متأكد من هذا الإجراء؟ لا يمكن التراجع."}
                         </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon greenColor">
-                            <i>✅</i>
-                        </div>
-                        <div>
-                            <h3>المرتبات النشطة</h3>
-                            <p className="text-2xl font-bold text-green-600">
-                                {stats.active_custom || 0}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon blueColor">
-                            <i>👥</i>
-                        </div>
-                        <div>
-                            <h3>عدد المعلمين في المركز</h3>
-                            <p className="text-2xl font-bold text-blue-600">
-                                {stats.your_center_teachers_count || 0}
-                            </p>
+                        <div className="conf-acts">
+                            <button className="btn bd" onClick={confirm.cb}>
+                                تأكيد
+                            </button>
+                            <button
+                                className="btn bs"
+                                onClick={() => setConfirm(null)}
+                            >
+                                إلغاء
+                            </button>
                         </div>
                     </div>
                 </div>
+            )}
 
-                <div
-                    className="userProfile__plan"
-                    style={{ paddingBottom: "24px", padding: "0" }}
-                >
-                    <div className="plan__header">
-                        <div className="plan__ai-suggestion">
-                            <i>⭐</i>المرتبات المخصصة للمعلمين في مجمعك
+            <div className="content" id="contentArea">
+                <div className="widget">
+                    <div className="wh">
+                        <div className="wh-l">المرتبات المخصصة</div>
+                        <div className="flx">
+                            <input
+                                className="fi"
+                                style={{ margin: "0 6px" }}
+                                placeholder="البحث بالمعلم أو الملاحظات..."
+                                value={search}
+                                onChange={handleSearch}
+                            />
+                            <button
+                                className="btn bp bsm"
+                                onClick={handleAddNew}
+                            >
+                                + راتب مخصص جديد
+                            </button>
                         </div>
-                        <div className="plan__current">
-                            <h2>المرتبات المخصصة</h2>
-                            <div className="plan__date-range">
-                                <button
-                                    className="teacherStudent__status-btn add-btn p-3 rounded-xl border-2 bg-green-50 border-green-300 text-green-600 hover:bg-green-100 font-medium"
-                                    onClick={() => setShowCreateModal(true)}
+                    </div>
+
+                    {/* الإحصائيات */}
+                    <div className="wh" style={{ marginBottom: "20px" }}>
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "15px",
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    padding: "15px 20px",
+                                    background: "var(--g50)",
+                                    borderRadius: "8px",
+                                    border: "1px solid var(--g200)",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontSize: "12px",
+                                        color: "var(--g600)",
+                                        marginBottom: "5px",
+                                    }}
                                 >
-                                    <FiPlus size={20} className="inline mr-2" />
-                                    راتب مخصص جديد
-                                </button>
+                                    إجمالي المرتبات المخصصة
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: "24px",
+                                        fontWeight: "bold",
+                                        color: "var(--purple)",
+                                    }}
+                                >
+                                    {stats.total_custom || 0}
+                                </div>
+                            </div>
+                            <div
+                                style={{
+                                    padding: "15px 20px",
+                                    background: "#f0fdf4",
+                                    borderRadius: "8px",
+                                    border: "1px solid #bbf7d0",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontSize: "12px",
+                                        color: "#166534",
+                                        marginBottom: "5px",
+                                    }}
+                                >
+                                    المرتبات النشطة
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: "24px",
+                                        fontWeight: "bold",
+                                        color: "#15803d",
+                                    }}
+                                >
+                                    {stats.active_custom || 0}
+                                </div>
+                            </div>
+                            <div
+                                style={{
+                                    padding: "15px 20px",
+                                    background: "#eff6ff",
+                                    borderRadius: "8px",
+                                    border: "1px solid #bfdbfe",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontSize: "12px",
+                                        color: "#1e40af",
+                                        marginBottom: "5px",
+                                    }}
+                                >
+                                    عدد المعلمين في المركز
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: "24px",
+                                        fontWeight: "bold",
+                                        color: "#1d4ed8",
+                                    }}
+                                >
+                                    {stats.your_center_teachers_count || 0}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="plan__daily-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>المعلم</th>
-                                <th>الراتب المخصص</th>
-                                <th>الدور</th>
-                                <th>الحالة</th>
-                                <th>الملاحظات</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isEmpty ? (
+                    <div style={{ overflowX: "auto" }}>
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td
-                                        colSpan={6}
-                                        className="text-center py-8 text-gray-500"
-                                    >
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
-                                                ⭐
-                                            </div>
-                                            <div>
-                                                <p className="text-xl font-semibold mb-2">
-                                                    لا توجد مرتبات مخصصة
-                                                </p>
-                                                <p className="text-gray-400">
-                                                    ابدأ بإضافة راتب مخصص لأول
-                                                    معلم
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </td>
+                                    <th>المعلم</th>
+                                    <th>الراتب المخصص</th>
+                                    <th>العملة</th>
+                                    <th>الدور</th>
+                                    <th>الحالة</th>
+                                    <th>الملاحظات</th>
+                                    <th>الإجراءات</th>
                                 </tr>
-                            ) : (
-                                salaries.map((salary: CustomSalaryItem) => (
-                                    <tr
-                                        key={salary.id}
-                                        className="plan__row active"
-                                    >
-                                        {/* ✅ إصلاح الخطأ هنا */}
-                                        <td className="font-bold text-xl">
-                                            {salary.teacher?.user?.name ||
-                                                salary.teacher?.name ||
-                                                salary.user?.name ||
-                                                "غير محدد"}
-                                        </td>
-                                        <td className="font-semibold text-green-600">
-                                            {formatCurrency(
-                                                salary.custom_base_salary,
-                                            )}
-                                        </td>
-                                        {/* ✅ Safe access */}
-                                        <td>
-                                            {salary.teacher?.role || "غير محدد"}
-                                        </td>
-                                        <td>
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                                    salary.is_active
-                                                        ? "bg-green-100 text-green-800"
-                                                        : "bg-gray-100 text-gray-800"
-                                                }`}
-                                            >
-                                                {salary.is_active
-                                                    ? "نشط"
-                                                    : "غير نشط"}
-                                            </span>
-                                        </td>
-                                        <td
-                                            className="max-w-xs truncate"
-                                            title={salary.notes || ""}
-                                        >
-                                            {salary.notes || "-"}
-                                        </td>
-                                        <td>
-                                            <div className="teacherStudent__btns">
-                                                <button
-                                                    className="teacherStudent__status-btn edit-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 mr-1 bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
-                                                    onClick={() =>
-                                                        handleEdit(salary.id)
-                                                    }
-                                                    title="تعديل الراتب المخصص"
+                            </thead>
+                            <tbody>
+                                {filteredSalaries.length > 0 ? (
+                                    filteredSalaries.map((salary) => {
+                                        const currency =
+                                            (salary.currency as CurrencyCode) ||
+                                            "SAR";
+                                        return (
+                                            <tr key={salary.id}>
+                                                <td style={{ fontWeight: 700 }}>
+                                                    {salary.teacher?.user
+                                                        ?.name ||
+                                                        salary.teacher?.name ||
+                                                        salary.user?.name ||
+                                                        "غير محدد"}
+                                                </td>
+                                                <td
+                                                    style={{
+                                                        fontWeight: 600,
+                                                        color: "var(--green)",
+                                                    }}
                                                 >
-                                                    <FiEdit3 />
-                                                </button>
-                                                <button
-                                                    className="teacherStudent__status-btn delete-btn p-2 rounded-full border-2 transition-all flex items-center justify-center w-12 h-12 bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
-                                                    onClick={() =>
-                                                        handleDelete(salary.id)
-                                                    }
-                                                    title="حذف الراتب المخصص"
+                                                    {formatCurrency(
+                                                        Number(
+                                                            salary.custom_base_salary,
+                                                        ),
+                                                        currency,
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <span
+                                                        className="badge px-2 py-1 rounded-full text-xs font-medium"
+                                                        style={{
+                                                            background:
+                                                                "var(--n100)",
+                                                            color: "var(--n700)",
+                                                        }}
+                                                    >
+                                                        {CURRENCIES[currency]
+                                                            ?.symbol ||
+                                                            currency}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {translateRole(
+                                                        salary.teacher?.role,
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <span
+                                                        className="badge px-2 py-1 rounded-full text-xs font-medium"
+                                                        style={
+                                                            salary.is_active
+                                                                ? {
+                                                                      background:
+                                                                          "var(--g100)",
+                                                                      color: "var(--g700)",
+                                                                  }
+                                                                : {
+                                                                      background:
+                                                                          "var(--n100)",
+                                                                      color: "var(--n500)",
+                                                                  }
+                                                        }
+                                                    >
+                                                        {salary.is_active
+                                                            ? "نشط"
+                                                            : "غير نشط"}
+                                                    </span>
+                                                </td>
+                                                <td
+                                                    style={{
+                                                        maxWidth: "150px",
+                                                        overflow: "hidden",
+                                                        textOverflow:
+                                                            "ellipsis",
+                                                        whiteSpace: "nowrap",
+                                                    }}
                                                 >
-                                                    <FiTrash2 />
+                                                    {salary.notes || "لا يوجد"}
+                                                </td>
+                                                <td>
+                                                    <div className="td-actions">
+                                                        <button
+                                                            className="btn bd bxs"
+                                                            onClick={() =>
+                                                                handleDelete(
+                                                                    salary.id,
+                                                                )
+                                                            }
+                                                        >
+                                                            حذف
+                                                        </button>
+                                                        <button
+                                                            className="btn bs bxs"
+                                                            onClick={() =>
+                                                                handleEdit(
+                                                                    salary.id,
+                                                                )
+                                                            }
+                                                        >
+                                                            تعديل
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : !loading ? (
+                                    <tr>
+                                        <td colSpan={7}>
+                                            <div className="empty">
+                                                <p>
+                                                    {search
+                                                        ? "لا توجد نتائج للبحث"
+                                                        : "لا توجد مرتبات مخصصة"}
+                                                </p>
+                                                <button
+                                                    className="btn bp bsm"
+                                                    onClick={handleAddNew}
+                                                >
+                                                    إضافة راتب مخصص
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                ) : null}
+                            </tbody>
+                        </table>
+                    </div>
 
-                {pagination && pagination.last_page > 1 && (
-                    <div
-                        className="inputs__verifyOTPBirth"
-                        style={{ width: "100%" }}
-                    >
-                        <div className="flex justify-between items-center p-4">
-                            <div className="text-sm text-gray-600">
-                                عرض {salaries.length} من {pagination.total || 0}{" "}
-                                راتب مخصص • الصفحة{" "}
-                                <strong>{currentPage}</strong> من{" "}
-                                <strong>{pagination.last_page}</strong>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => goToPage(currentPage - 1)}
-                                    disabled={!hasPrev}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
+                    {pagination && pagination.last_page > 1 && (
+                        <div
+                            className="wh"
+                            style={{ marginTop: "20px", padding: "15px" }}
+                        >
+                            <div
+                                style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontSize: "14px",
+                                        color: "var(--n500)",
+                                    }}
                                 >
-                                    السابق
-                                </button>
-                                <span className="px-4 py-2 bg-purple-500 text-white rounded-lg font-bold">
-                                    {currentPage}
-                                </span>
-                                <button
-                                    onClick={() => goToPage(currentPage + 1)}
-                                    disabled={!hasNext}
-                                    className="px-4 py-2 border rounded-lg disabled:opacity-50"
-                                >
-                                    التالي
-                                </button>
+                                    عرض {filteredSalaries.length} من{" "}
+                                    {pagination.total || 0} راتب مخصص • الصفحة{" "}
+                                    <strong>{currentPage}</strong> من{" "}
+                                    <strong>{pagination.last_page}</strong>
+                                </div>
+                                <div style={{ display: "flex", gap: "10px" }}>
+                                    <button
+                                        className="btn bd"
+                                        onClick={() =>
+                                            goToPage(currentPage - 1)
+                                        }
+                                        disabled={currentPage <= 1}
+                                        style={{
+                                            opacity: currentPage <= 1 ? 0.5 : 1,
+                                            cursor:
+                                                currentPage <= 1
+                                                    ? "not-allowed"
+                                                    : "pointer",
+                                        }}
+                                    >
+                                        السابق
+                                    </button>
+                                    <span
+                                        style={{
+                                            padding: "8px 12px",
+                                            background: "var(--purple)",
+                                            color: "white",
+                                            borderRadius: "6px",
+                                            fontWeight: "bold",
+                                        }}
+                                    >
+                                        {currentPage}
+                                    </span>
+                                    <button
+                                        className="btn bd"
+                                        onClick={() =>
+                                            goToPage(currentPage + 1)
+                                        }
+                                        disabled={
+                                            currentPage >= pagination.last_page
+                                        }
+                                        style={{
+                                            opacity:
+                                                currentPage >=
+                                                pagination.last_page
+                                                    ? 0.5
+                                                    : 1,
+                                            cursor:
+                                                currentPage >=
+                                                pagination.last_page
+                                                    ? "not-allowed"
+                                                    : "pointer",
+                                        }}
+                                    >
+                                        التالي
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </>
     );

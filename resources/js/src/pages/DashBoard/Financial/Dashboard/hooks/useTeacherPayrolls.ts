@@ -127,7 +127,7 @@ export const useTeacherPayrolls = (): UseTeacherPayrollsReturn => {
                 `\n🔄 [${totalChecked}/${activeTeachers.length}] ${teacher.name}`,
             );
             console.log(
-                `👤 user_id: ${userId} ✅ | ✅ teacher_id: ${correctTeacherId}`,
+                `👤 user_id: ${userId}  |  teacher_id: ${correctTeacherId}`,
             );
 
             if (!correctTeacherId) {
@@ -190,7 +190,7 @@ export const useTeacherPayrolls = (): UseTeacherPayrollsReturn => {
                     if (createResponse.ok) {
                         totalCreated++;
                         console.log(
-                            `   🎉 ${teacher.name}: ✅ جدول جديد لـ ${currentMonth}`,
+                            `   🎉 ${teacher.name}:  جدول جديد لـ ${currentMonth}`,
                         );
                     } else {
                         const status = createResponse.status;
@@ -243,7 +243,7 @@ export const useTeacherPayrolls = (): UseTeacherPayrollsReturn => {
                     if (createResponse.ok) {
                         totalCreated++;
                         console.log(
-                            `   🎉 ${teacher.name}: ✅ جدول جديد لـ ${nextMonthStr}`,
+                            `   🎉 ${teacher.name}:  جدول جديد لـ ${nextMonthStr}`,
                         );
                     } else {
                         console.log(
@@ -253,7 +253,7 @@ export const useTeacherPayrolls = (): UseTeacherPayrollsReturn => {
                     await new Promise((r) => setTimeout(r, 500));
                 } else {
                     console.log(
-                        `   ✅ ${teacher.name}: مش محتاج (${daysFromPeriod} < 30 يوم)`,
+                        `    ${teacher.name}: مش محتاج (${daysFromPeriod} < 30 يوم)`,
                     );
                 }
             } catch (error) {
@@ -262,9 +262,7 @@ export const useTeacherPayrolls = (): UseTeacherPayrollsReturn => {
         }
 
         console.log(`\n🎉 **التقرير النهائي**`);
-        console.log(
-            `📊 تم فحص: ${totalChecked} | ✅ تم إنشاء: ${totalCreated}`,
-        );
+        console.log(`📊 تم فحص: ${totalChecked} |  تم إنشاء: ${totalCreated}`);
         return totalCreated;
     }, [fetchActiveTeachers, getHeaders, daysSincePeriodStart]);
 
@@ -340,7 +338,7 @@ export const useTeacherPayrolls = (): UseTeacherPayrollsReturn => {
         const init = async () => {
             console.log("🚀 **بدء التحميل مع النظام المُصحح...**");
             const createdCount = await smartPayrollRotation();
-            console.log(`✅ تم إنشاء ${createdCount} جدول تلقائياً`);
+            console.log(` تم إنشاء ${createdCount} جدول تلقائياً`);
             setTimeout(() => fetchPayrolls(search, filterStatus), 2000);
         };
         init();

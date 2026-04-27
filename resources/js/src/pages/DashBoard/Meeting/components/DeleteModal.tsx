@@ -6,7 +6,7 @@ interface DeleteModalProps {
     title?: string;
     message: string;
     onClose: () => void;
-    onConfirm: () => void; // ✅ مطلوب للحذف
+    onConfirm: () => void; //  مطلوب للحذف
     confirmText?: string;
     cancelText?: string;
     loading?: boolean;
@@ -26,13 +26,13 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
 
     return (
         <>
-            {/* ✅ Backdrop */}
+            {/*  Backdrop */}
             <div
                 className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
                 onClick={onClose}
             />
 
-            {/* ✅ Modal Content */}
+            {/*  Modal Content */}
             <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="p-6 border-b border-gray-200">

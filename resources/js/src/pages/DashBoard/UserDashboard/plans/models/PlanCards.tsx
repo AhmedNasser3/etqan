@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+// UserDashboard/plans/models/PlanCards.tsx
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
     CalendarIcon,
     ClockIcon,
@@ -7,13 +8,9 @@ import {
     UserIcon,
     CheckCircleIcon,
     XCircleIcon,
-    ChevronDownIcon,
-    ChevronUpIcon,
     InformationCircleIcon,
     ArrowLeftIcon,
     ArrowRightIcon,
-    ExclamationTriangleIcon,
-    ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { useStudentPlans } from "./hooks/useStudentPlans";
 
@@ -74,7 +71,6 @@ const PlanCard: React.FC<PlanCardProps> = ({
     type,
     onBookSchedule,
 }) => {
-    const [isHovered, setIsHovered] = useState(false);
     const [bookingScheduleId, setBookingScheduleId] = useState<number | null>(
         null,
     );
@@ -87,29 +83,15 @@ const PlanCard: React.FC<PlanCardProps> = ({
     const scheduleItems = safeSummary.schedule_items || [];
     const totalSchedules = safeSummary.total_schedules || 0;
 
-    console.log(
-        `🔍 [PlanCard ${id}] Details:`,
-        details?.map((d: any) => d.id) || [],
-    );
-
     const handleBookSchedule = async (
         scheduleId: number,
         planDetailsId: number,
         e: React.MouseEvent,
     ) => {
         e.stopPropagation();
-
-        if (
-            !scheduleItems.find((item) => item.id === scheduleId)?.is_available
-        ) {
+        if (!scheduleItems.find((item) => item.id === scheduleId)?.is_available)
             return;
-        }
-
         try {
-            console.log(`🚀 [PlanCard ${id}] Booking schedule:`, {
-                scheduleId,
-                planDetailsId,
-            });
             setBookingScheduleId(scheduleId);
             await onBookSchedule(scheduleId, id, planDetailsId);
         } catch (error: any) {
@@ -120,149 +102,112 @@ const PlanCard: React.FC<PlanCardProps> = ({
     };
 
     return (
-        <div className="plan-card-container">
+        <div className="qplan-card-wrap">
             <div
-                className={`plan-card ${isHovered ? "plan-card--hover" : ""}`}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
+                className={`qplan-card${isExpanded ? " qplan-card--open" : ""}`}
                 onClick={onToggle}
             >
-                <div className="plan-card__header">
-                    <div className="plan-card__duration">
+                <div className="qplan-card__top">
+                    <span className="qplan-card__months">
                         {total_months} شهر
-                    </div>
-                    <div className="plan-card__expand-icon">
-                        {isExpanded ? (
-                            <ChevronUpIcon className="w-6 h-6" />
-                        ) : (
-                            <ChevronDownIcon className="w-6 h-6" />
-                        )}
-                    </div>
-                    <div className="plan-card__schedules-badge">
+                    </span>
+                    <span className="qplan-card__slots">
                         {totalSchedules} موعد
-                    </div>
+                    </span>
                 </div>
-
-                <div className="plan-card__body">
-                    <h3 className="plan-card__title">{plan_name}</h3>
-                    <div className="plan-card__details">
-                        <span className="plan-card__detail-item">
-                            <DocumentTextIcon className="w-5 h-5" />
-                            {details_count} يوم دراسي
-                        </span>
-                        <span className="plan-card__detail-item">
-                            <BuildingOfficeIcon className="w-5 h-5" />
-                            {center.name}
-                        </span>
-                    </div>
+                <h3 className="qplan-card__name">{plan_name}</h3>
+                <div className="qplan-card__meta">
+                    <span className="qplan-card__meta-item">
+                        {details_count} يوم دراسي
+                    </span>
+                    <span className="qplan-card__meta-item">{center.name}</span>
                 </div>
-
-                <div className="plan-card__footer">
-                    <span className="plan-card__cta">
+                <div className="qplan-card__cta">
+                    <span>
                         {type === "available" ? "احجز الآن" : "عرض التفاصيل"}
+                    </span>
+                    <span className="qplan-card__arrow">
+                        {isExpanded ? "▲" : "▼"}
                     </span>
                 </div>
             </div>
 
             {isExpanded && (
-                <div className="plan-card-expanded">
-                    <div className="plan-card-expanded__header">
+                <div className="qplan-expanded">
+                    <div className="qplan-expanded__title">
                         حلقات الخطة المتاحة
-                        <span className="plan-card-expanded__count">
-                            ({totalSchedules} موعد)
-                        </span>
+                        <span>({totalSchedules} موعد)</span>
                     </div>
-
                     {scheduleItems.length > 0 ? (
-                        <div className="plan-card-expanded__grid">
+                        <div className="qplan-expanded__grid">
                             {scheduleItems
                                 .slice(0, 3)
-                                .map(
-                                    (schedule: ScheduleItem, index: number) => (
-                                        <div
-                                            key={`${id}-${schedule.id}-${index}`}
-                                            className="schedule-item-card"
-                                        >
-                                            <div className="schedule-item__mosque">
-                                                <BuildingOfficeIcon className="w-4 h-4" />
-                                                {schedule.mosque_name}
-                                            </div>
-                                            <h4 className="schedule-item__circle">
-                                                {schedule.circle_name}
-                                            </h4>
-                                            <div className="schedule-item__teacher">
-                                                <UserIcon className="w-5 h-5" />
-                                                {schedule.teacher_name}
-                                            </div>
-
-                                            <div className="schedule-item__time">
-                                                <ClockIcon className="w-4 h-4" />
-                                                {schedule.time_range}
-                                            </div>
-
-                                            <div
-                                                className={`schedule-item__status ${
-                                                    schedule.is_available
-                                                        ? "available"
-                                                        : "full"
-                                                }`}
-                                            >
-                                                {schedule.is_available ? (
-                                                    <CheckCircleIcon className="w-5 h-5 inline mr-2" />
-                                                ) : (
-                                                    <XCircleIcon className="w-5 h-5 inline mr-2" />
-                                                )}
-                                                {schedule.is_available
-                                                    ? "متاح"
-                                                    : "ممتلئ"}
-                                            </div>
-
-                                            <button
-                                                className={`schedule-item__book-btn w-full mt-3 ${
-                                                    schedule.is_available
-                                                        ? bookingScheduleId ===
-                                                          schedule.id
-                                                            ? "loading"
-                                                            : "available"
-                                                        : "disabled"
-                                                }`}
-                                                onClick={(e) =>
-                                                    handleBookSchedule(
-                                                        schedule.id,
-                                                        1, // هنا تقدر تبدلها بالـ planDetailsId الصح
-                                                        e,
-                                                    )
-                                                }
-                                                disabled={
-                                                    !schedule.is_available ||
-                                                    bookingScheduleId ===
-                                                        schedule.id
-                                                }
-                                            >
-                                                {bookingScheduleId ===
-                                                schedule.id ? (
-                                                    <>
-                                                        <div className="loading-spinner-small" />
-                                                        جاري الحجز...
-                                                    </>
-                                                ) : schedule.is_available ? (
-                                                    "اشتراك الآن"
-                                                ) : (
-                                                    "ممتلئ"
-                                                )}
-                                            </button>
+                                .map((schedule, index) => (
+                                    <div
+                                        key={`${id}-${schedule.id}-${index}`}
+                                        className="qschedule-card"
+                                    >
+                                        <div className="qschedule-card__mosque">
+                                            {schedule.mosque_name}
                                         </div>
-                                    ),
-                                )}
+                                        <h4 className="qschedule-card__circle">
+                                            {schedule.circle_name}
+                                        </h4>
+                                        <div className="qschedule-card__teacher">
+                                            المعلم : {schedule.teacher_name}
+                                        </div>
+                                        <div className="qschedule-card__time">
+                                            {schedule.time_range}
+                                        </div>
+                                        <div
+                                            className={`qschedule-card__status ${schedule.is_available ? "qschedule-card__status--ok" : "qschedule-card__status--full"}`}
+                                        >
+                                            {schedule.is_available ? (
+                                                <>
+                                                    <CheckCircleIcon className="w-4 h-4" />{" "}
+                                                    متاح
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <XCircleIcon className="w-4 h-4" />{" "}
+                                                    ممتلئ
+                                                </>
+                                            )}
+                                        </div>
+                                        <button
+                                            className={`qschedule-card__btn ${schedule.is_available ? (bookingScheduleId === schedule.id ? "qschedule-card__btn--loading" : "qschedule-card__btn--ok") : "qschedule-card__btn--disabled"}`}
+                                            onClick={(e) =>
+                                                handleBookSchedule(
+                                                    schedule.id,
+                                                    1,
+                                                    e,
+                                                )
+                                            }
+                                            disabled={
+                                                !schedule.is_available ||
+                                                bookingScheduleId ===
+                                                    schedule.id
+                                            }
+                                        >
+                                            {bookingScheduleId ===
+                                            schedule.id ? (
+                                                <>
+                                                    <span className="qschedule-card__spinner" />
+                                                    جاري الحجز...
+                                                </>
+                                            ) : schedule.is_available ? (
+                                                "اشتراك الآن"
+                                            ) : (
+                                                "ممتلئ"
+                                            )}
+                                        </button>
+                                    </div>
+                                ))}
                         </div>
                     ) : (
-                        <div className="plan-card-expanded__empty">
-                            <div className="empty-icon">
-                                <InformationCircleIcon className="w-16 h-16" />
-                            </div>
-                            <div className="empty-title">
-                                لا توجد حلقات متاحة
-                            </div>
+                        <div className="qplan-expanded__empty">
+                            <InformationCircleIcon className="w-12 h-12" />
+                            <p>لا توجد حلقات متاحة</p>
                         </div>
                     )}
                 </div>
@@ -280,7 +225,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         new Set(),
     );
     const containerRef = useRef<HTMLDivElement>(null);
-
     const {
         plans,
         loading,
@@ -296,12 +240,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         planId: number,
         planDetailsId: number,
     ) => {
-        console.log(`🎯 [PlanCards] Booking:`, {
-            scheduleId,
-            planId,
-            planDetailsId,
-        });
-
         try {
             const result = await bookSchedule(
                 scheduleId,
@@ -309,13 +247,12 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
                 planDetailsId,
             );
             if (result.success) {
-                alert(` ${result.message}`);
+                alert(result.message);
                 await refetch();
             } else {
                 alert(`❌ ${result.message}`);
             }
-        } catch (error: any) {
-            console.error("❌ [PlanCards] Booking error:", error);
+        } catch {
             alert("حدث خطأ في الحجز");
         }
     };
@@ -343,7 +280,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
                 expandedCard?.scrollIntoView({
                     behavior: "smooth",
                     block: "center",
-                    inline: "nearest",
                 });
             });
         }
@@ -351,40 +287,27 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
 
     if (loading) {
         return (
-            <div className="loading-container">
-                <div className="loading-spinner" />
-                <div className="navbar">
-                    <div className="navbar__inner">
-                        <div className="navbar__loading">
-                            <div className="loading-spinner">
-                                <div className="spinner-circle"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>{" "}
+            <div className="qplans-loading">
+                <div className="qplans-loading__spinner" />
             </div>
         );
     }
 
-    if (error) {
-        return <div className="error-container"></div>;
-    }
+    if (error) return <div className="qplans-error" />;
 
-    // هنا الشرط الأساسي: لو مفيش خطط أو مفيش ولا موعد في كل الخطط
     const hasAnySchedules =
         plans &&
         plans.some(
             (plan: any) =>
-                plan.schedule_summary &&
-                plan.schedule_summary.length > 0 &&
+                plan.schedule_summary?.length > 0 &&
                 plan.schedule_summary[0]?.total_schedules > 0,
         );
 
     if (!plans || plans.length === 0 || !hasAnySchedules) {
         return (
-            <div className="plan-cards-container" id="plan-cards-container">
-                <div className="plan-card-expanded__empty global-empty">
-                    <div className="empty-title">لا توجد حلقات متاحة</div>
+            <div className="qplans-container" id="plan-cards-container">
+                <div className="qplans-empty">
+                    <p>لا توجد حلقات متاحة</p>
                 </div>
             </div>
         );
@@ -393,23 +316,23 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
     return (
         <div
             ref={containerRef}
-            className="plan-cards-container"
+            className="qplans-container"
             id="plan-cards-container"
         >
-            <header className="plan-cards-header">
-                <h1 className="plan-cards-title">
+            <header className="qplans-header">
+                <h1 className="qplans-header__title">
                     {type === "available"
                         ? "حلقات متاحة للحجز"
                         : `خططي (${plans.length})`}
                 </h1>
             </header>
 
-            <div className="plans-grid">
+            <div className="qplans-grid">
                 {plans.map((plan: any) => (
                     <div
                         key={plan.id}
                         data-plan-id={plan.id}
-                        className="plan-wrapper"
+                        className="qplans-grid__item"
                     >
                         <PlanCard
                             id={plan.id}
@@ -432,30 +355,28 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
             </div>
 
             {pagination && (
-                <div className="pagination-container">
+                <div className="qplans-pagination">
                     <button
                         onClick={() => fetchPlans(pagination.currentPage - 1)}
                         disabled={pagination.currentPage === 1}
-                        className="pagination-btn pagination-prev"
+                        className="qplans-pagination__btn"
                     >
-                        <ArrowLeftIcon className="w-5 h-5" />
+                        <ArrowLeftIcon className="w-4 h-4" />
                         السابق
                     </button>
-                    <span className="pagination-info">
+                    <span className="qplans-pagination__info">
                         صفحة {pagination.currentPage} من {pagination.lastPage}
-                        <span className="pagination-total">
-                            ({pagination.total} خطة)
-                        </span>
+                        <span>({pagination.total} خطة)</span>
                     </span>
                     <button
                         onClick={() => fetchPlans(pagination.currentPage + 1)}
                         disabled={
                             pagination.currentPage === pagination.lastPage
                         }
-                        className="pagination-btn pagination-next"
+                        className="qplans-pagination__btn"
                     >
                         التالي
-                        <ArrowRightIcon className="w-5 h-5" />
+                        <ArrowRightIcon className="w-4 h-4" />
                     </button>
                 </div>
             )}

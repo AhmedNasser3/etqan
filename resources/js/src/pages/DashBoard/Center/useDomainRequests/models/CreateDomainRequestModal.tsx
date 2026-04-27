@@ -34,19 +34,16 @@ const CreateDomainRequestModal: React.FC<CreateDomainRequestModalProps> = ({
         console.log("🎯 MODAL HANDLE SUBMIT START");
 
         try {
-            // ✅ CSRF Cookie أولاً دايماً
+            //  CSRF Cookie أولاً دايماً
             console.log("🍪 Getting CSRF Cookie...");
             await fetch("/sanctum/csrf-cookie", {
                 credentials: "include",
             });
 
             const csrfToken = getCsrfToken();
-            console.log(
-                "🔐 CSRF Token:",
-                csrfToken ? "✅ موجود" : "❌ مش موجود",
-            );
+            console.log("🔐 CSRF Token:", csrfToken ? " موجود" : "❌ مش موجود");
 
-            // ✅ URL صحيح مع /api/
+            //  URL صحيح مع /api/
             console.log(
                 "🌐 POST → /api/v1/idea-domain-requests ← Route موجود في route:list",
             );
@@ -100,7 +97,7 @@ const CreateDomainRequestModal: React.FC<CreateDomainRequestModalProps> = ({
             }
 
             const result = await response.json();
-            console.log("✅ Create response:", result);
+            console.log(" Create response:", result);
 
             toast.success("تم إرسال طلب الدومين بنجاح! 🎉");
             resetForm();

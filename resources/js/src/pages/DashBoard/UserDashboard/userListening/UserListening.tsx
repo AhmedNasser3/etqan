@@ -19,10 +19,9 @@ const UserListening: React.FC = () => {
     const [dateTo, setDateTo] = useState(today.toISOString().split("T")[0]);
 
     return (
-        <div>
-            <UserMeetCard />
-            <UserPlans />
+        <div className="content">
             <UserProgress />
+            <UserPlans />
         </div>
     );
 };

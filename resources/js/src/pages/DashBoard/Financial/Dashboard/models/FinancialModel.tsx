@@ -25,7 +25,7 @@ const FinancialModel: React.FC<FinancialModelProps> = ({
 
         const formData = new FormData(e.currentTarget);
 
-        // ✅ تحويل البيانات للـ API format الصحيح
+        //  تحويل البيانات للـ API format الصحيح
         const updateData: any = {
             base_salary: formData.get("base_salary") as string,
             attendance_days: parseInt(
@@ -42,11 +42,11 @@ const FinancialModel: React.FC<FinancialModelProps> = ({
                     .querySelector('meta[name="csrf-token"]')
                     ?.getAttribute("content") || "";
 
-            // ✅ PUT بدلاً من PATCH ليطابق الـ route الجديد
+            //  PUT بدلاً من PATCH ليطابق الـ route الجديد
             const response = await fetch(
                 `/api/v1/teacher/payrolls/${payroll.id}`,
                 {
-                    method: "PUT", // ✅ تغيير من PATCH إلى PUT
+                    method: "PUT", //  تغيير من PATCH إلى PUT
                     credentials: "include",
                     headers: {
                         Accept: "application/json",
@@ -59,7 +59,7 @@ const FinancialModel: React.FC<FinancialModelProps> = ({
             );
 
             if (response.ok) {
-                // ✅ نجح التحديث - نفّذ الـ callback
+                //  نجح التحديث - نفّذ الـ callback
                 onSubmit?.(formData);
             } else {
                 const errorData = await response.json().catch(() => ({}));
@@ -68,7 +68,7 @@ const FinancialModel: React.FC<FinancialModelProps> = ({
         } catch (error: any) {
             console.error("خطأ في التحديث:", error);
             alert(`خطأ: ${error.message || "حدث خطأ في حفظ التعديلات"}`);
-            return; // ✅ لا تغلق المودل في حالة الخطأ
+            return; //  لا تغلق المودل في حالة الخطأ
         }
 
         onClose();
@@ -77,169 +77,236 @@ const FinancialModel: React.FC<FinancialModelProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={onClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        <div className="ParentModel__header">
-                            <button
-                                className="ParentModel__close"
-                                onClick={onClose}
+        <div className="ov on">
+            <div className="modal">
+                <div className="mh">
+                    <span className="mh-t">
+                        <span
+                            style={{
+                                width: 32,
+                                height: 32,
+                                display: "inline-flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                borderRadius: 8,
+                                background: "var(--blue-100)",
+                                color: "var(--blue-700)",
+                                fontSize: "18px",
+                            }}
+                        >
+                            💰
+                        </span>{" "}
+                        تعديل بيانات الراتب
+                    </span>
+                    <button className="mx" onClick={onClose}>
+                        <span
+                            style={{
+                                width: 12,
+                                height: 12,
+                                display: "inline-flex",
+                            }}
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2.5}
                             >
-                                <FiX size={24} />
-                            </button>
-                        </div>
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>تعديل بيانات الموظف</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>تعديل بيانات الراتب</h1>
-                                <p>يرجي تعديل البيانات المطلوبة بدقة</p>
-                            </div>
-                        </div>
-                        <div className="ParentModel__container">
-                            <form onSubmit={handleSubmit} id="financialForm">
-                                {/* ✅ الاسم read-only */}
-                                <div className="inputs__verifyOTPBirth">
-                                    <div className="inputs__email">
-                                        <label>الاسم</label>
-                                        <input
-                                            name="name"
-                                            value={
-                                                payroll?.teacher?.user?.name ||
-                                                "غير معروف"
-                                            }
-                                            type="text"
-                                            className="bg-gray-100 cursor-not-allowed border border-gray-300"
-                                            readOnly
-                                        />
-                                    </div>
-                                </div>
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </span>
+                    </button>
+                </div>
 
-                                {/* ✅ الدور read-only */}
-                                <div className="inputs__verifyOTPBirth">
-                                    <div className="inputs__email">
-                                        <label>الدور</label>
-                                        <input
-                                            name="role"
-                                            value={payroll?.teacher?.role || ""}
-                                            type="text"
-                                            className="bg-gray-100 cursor-not-allowed border border-gray-300"
-                                            readOnly
-                                        />
-                                    </div>
-                                </div>
+                <div className="mb">
+                    {/* الاسم read-only */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            الاسم:
+                        </label>
+                        <input
+                            name="name"
+                            value={payroll?.teacher?.user?.name || "غير معروف"}
+                            type="text"
+                            className="fi2 bg-gray-100 cursor-not-allowed border border-gray-300"
+                            readOnly
+                        />
+                    </div>
 
-                                {/* ✅ الراتب الأساسي */}
-                                <div className="inputs__verifyOTPBirth">
-                                    <div className="inputs__email">
-                                        <label>الراتب الأساسي *</label>
-                                        <input
-                                            name="base_salary"
-                                            defaultValue={
-                                                payroll?.base_salary || ""
-                                            }
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            className="border border-gray-300 rounded p-2"
-                                            required
-                                        />
-                                    </div>
-                                </div>
+                    {/* الدور read-only */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            الدور:
+                        </label>
+                        <input
+                            name="role"
+                            value={payroll?.teacher?.role || ""}
+                            type="text"
+                            className="fi2 bg-gray-100 cursor-not-allowed border border-gray-300"
+                            readOnly
+                        />
+                    </div>
 
-                                {/* ✅ أيام الدوام */}
-                                <div className="inputs__verifyOTPBirth">
-                                    <div className="inputs__email">
-                                        <label>أيام الدوام</label>
-                                        <input
-                                            name="attendance_days"
-                                            defaultValue={
-                                                payroll?.attendance_days?.toString() ||
-                                                ""
-                                            }
-                                            type="number"
-                                            min="0"
-                                            max="31"
-                                            className="border border-gray-300 rounded p-2"
-                                        />
-                                    </div>
-                                </div>
+                    {/* الراتب الأساسي */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            الراتب الأساسي *
+                        </label>
+                        <input
+                            name="base_salary"
+                            defaultValue={payroll?.base_salary || ""}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="fi2"
+                            required
+                        />
+                    </div>
 
-                                {/* ✅ الخصومات */}
-                                <div className="inputs__verifyOTPBirth">
-                                    <div className="inputs__email">
-                                        <label>الخصومات</label>
-                                        <input
-                                            name="deductions"
-                                            defaultValue={
-                                                payroll?.deductions || ""
-                                            }
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            className="border border-gray-300 rounded p-2"
-                                        />
-                                    </div>
-                                </div>
+                    {/* أيام الدوام */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            أيام الدوام
+                        </label>
+                        <input
+                            name="attendance_days"
+                            defaultValue={
+                                payroll?.attendance_days?.toString() || ""
+                            }
+                            type="number"
+                            min="0"
+                            max="31"
+                            className="fi2"
+                        />
+                    </div>
 
-                                {/* ✅ المستحق */}
-                                <div className="inputs__verifyOTPBirth">
-                                    <div className="inputs__email">
-                                        <label>المستحق *</label>
-                                        <input
-                                            name="total_due"
-                                            defaultValue={
-                                                payroll?.total_due || ""
-                                            }
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            className="border border-gray-300 rounded p-2"
-                                            required
-                                        />
-                                    </div>
-                                </div>
+                    {/* الخصومات */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            الخصومات
+                        </label>
+                        <input
+                            name="deductions"
+                            defaultValue={payroll?.deductions || ""}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="fi2"
+                        />
+                    </div>
 
-                                {/* ✅ الحالة */}
-                                <div className="inputs__verifyOTPBirth">
-                                    <div className="inputs__email">
-                                        <label>الحالة</label>
-                                        <select
-                                            name="status"
-                                            defaultValue={
-                                                payroll?.status || "pending"
-                                            }
-                                            className="border border-gray-300 rounded p-2 w-full"
-                                        >
-                                            <option value="pending">
-                                                معلق
-                                            </option>
-                                            <option value="paid">
-                                                ✅ مدفوع
-                                            </option>
-                                        </select>
-                                    </div>
-                                </div>
+                    {/* المستحق */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            المستحق *
+                        </label>
+                        <input
+                            name="total_due"
+                            defaultValue={payroll?.total_due || ""}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="fi2"
+                            required
+                        />
+                    </div>
 
-                                <div
-                                    className="inputs__submitBtn"
-                                    id="ParentModel__btn"
-                                >
-                                    <button
-                                        type="submit"
-                                        form="financialForm"
-                                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-                                    >
-                                        حفظ التعديلات
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                    {/* الحالة */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            الحالة
+                        </label>
+                        <select
+                            name="status"
+                            defaultValue={payroll?.status || "pending"}
+                            className="fi2"
+                        >
+                            <option value="pending">معلق</option>
+                            <option value="paid">مدفوع</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="mf">
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "12px",
+                            justifyContent: "flex-end",
+                            marginTop: "16px",
+                        }}
+                    >
+                        <button
+                            className="btn bs"
+                            onClick={onClose}
+                            type="button"
+                        >
+                            إلغاء
+                        </button>
+                        <button
+                            className="btn bp"
+                            type="submit"
+                            form="financialForm"
+                        >
+                            حفظ التعديلات
+                        </button>
                     </div>
                 </div>
             </div>

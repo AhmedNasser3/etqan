@@ -1,4 +1,4 @@
-// components/GuardianChildrenPage.tsx - ✅ مُصحح نهائي 100% مع مسافات ونسب صحيحة
+// components/GuardianChildrenPage.tsx -  مُصحح نهائي 100% مع مسافات ونسب صحيحة
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,7 +38,7 @@ const GuardianChildrenPage: React.FC = () => {
             : 0;
     };
 
-    // ✅ دالة نهائية مُصححة 100% - النسب دايماً = 100%
+    //  دالة نهائية مُصححة 100% - النسب دايماً = 100%
     const getAttendanceStatus = (child: ChildData) => {
         const {
             present_days = 0,
@@ -58,7 +58,7 @@ const GuardianChildrenPage: React.FC = () => {
         let absentRate = Math.round((absent / totalDays) * 100);
         let pendingRate = Math.round((pending / totalDays) * 100);
 
-        // ✅ تصحيح التقريب العشري - ضمان المجموع = 100%
+        //  تصحيح التقريب العشري - ضمان المجموع = 100%
         const currentSum = presentRate + absentRate + pendingRate;
         if (currentSum !== 100) {
             pendingRate += 100 - currentSum;
@@ -75,7 +75,7 @@ const GuardianChildrenPage: React.FC = () => {
         };
     };
 
-    // ✅ دالة تنسيق الأرقام بمسافات
+    //  دالة تنسيق الأرقام بمسافات
     const formatNumber = (num: number) => {
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     };
@@ -438,7 +438,7 @@ const GuardianChildrenPage: React.FC = () => {
                                                             }
                                                         />
 
-                                                        {/* ✅ جدول الحضور المُصحح مع مسافات */}
+                                                        {/*  جدول الحضور المُصحح مع مسافات */}
                                                         <div className="attendance-table">
                                                             <h4>
                                                                 تفاصيل الحضور
@@ -456,7 +456,7 @@ const GuardianChildrenPage: React.FC = () => {
                                                             </div>
                                                             <div className="table-row present">
                                                                 <span>
-                                                                    ✅ حاضر
+                                                                    حاضر
                                                                 </span>
                                                                 <span>
                                                                     {formatNumber(

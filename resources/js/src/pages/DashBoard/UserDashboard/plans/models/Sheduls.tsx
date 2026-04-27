@@ -1,7 +1,7 @@
 // Schedules.tsx - مواعيد الخطة بدون Tailwind (CSS Classes + SCSS)
 import React, { useState, useEffect } from "react";
 
-// ✅ Props interface
+//  Props interface
 interface ScheduleCardProps {
     id: number;
     planId: number;
@@ -15,7 +15,7 @@ interface ScheduleCardProps {
     onBook: (scheduleId: number) => void;
 }
 
-// ✅ Single Schedule Card Component
+//  Single Schedule Card Component
 const ScheduleCard: React.FC<ScheduleCardProps> = ({
     id,
     dayName,
@@ -85,7 +85,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
     );
 };
 
-// ✅ Mock Schedules Data - واقعية لخطة 12 شهر (جزء شهري)
+//  Mock Schedules Data - واقعية لخطة 12 شهر (جزء شهري)
 const mockSchedules = [
     {
         id: 1,
@@ -189,7 +189,7 @@ const mockSchedules = [
     },
 ];
 
-// ✅ Main Schedules Component
+//  Main Schedules Component
 const Schedules: React.FC = () => {
     const [selectedSchedule, setSelectedSchedule] = useState<number | null>(
         null,
@@ -228,11 +228,11 @@ const Schedules: React.FC = () => {
 
             {selectedSchedule && (
                 <div className="schedules-selected-info">
-                    <p>✅ تم حجز الموعد رقم {selectedSchedule} بنجاح!</p>
+                    <p> تم حجز الموعد رقم {selectedSchedule} بنجاح!</p>
                 </div>
             )}
 
-            {/* ✅ إشعار مهم */}
+            {/*  إشعار مهم */}
             <div className="schedules-notice">
                 <div className="schedules-notice__icon">ℹ️</div>
                 <div className="schedules-notice__content">

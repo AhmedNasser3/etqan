@@ -1,3 +1,4 @@
+// UpdatePlanDetailPage.tsx - مع تطبيق الـ CSS Classes من CreateCertificatePage
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { FiX } from "react-icons/fi";
@@ -65,11 +66,15 @@ const UpdatePlanDetailPage: React.FC<UpdatePlanDetailPageProps> = ({
 
     if (loadingDetail) {
         return (
-            <div className="ParentModel">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <div className="text-center">
-                        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                        <p>جاري تحميل بيانات اليوم...</p>
+            <div className="ov on">
+                <div className="modal">
+                    <div className="flex items-center justify-center min-h-[400px] p-8">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                            <p className="text-gray-600">
+                                جاري تحميل بيانات اليوم...
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -77,129 +82,211 @@ const UpdatePlanDetailPage: React.FC<UpdatePlanDetailPageProps> = ({
     }
 
     return (
-        <div className="ParentModel">
-            <div className="ParentModel__overlay" onClick={onClose}>
-                <div
-                    className="ParentModel__content"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="ParentModel__inner">
-                        <div className="ParentModel__header">
-                            <button
-                                className="ParentModel__close"
-                                onClick={onClose}
-                                disabled={isSubmitting}
+        <div className="ov on">
+            <div className="modal">
+                {/* Header مطابق تماماً */}
+                <div className="mh">
+                    <span className="mh-t">
+                        <span
+                            style={{
+                                width: 32,
+                                height: 32,
+                                display: "inline-flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                borderRadius: 8,
+                                background: "var(--blue-100)",
+                                color: "var(--blue-700)",
+                                fontSize: "18px",
+                            }}
+                        ></span>{" "}
+                        تعديل بيانات اليوم
+                    </span>
+                    <button
+                        className="mx"
+                        onClick={onClose}
+                        disabled={isSubmitting}
+                    >
+                        <span
+                            style={{
+                                width: 12,
+                                height: 12,
+                                display: "inline-flex",
+                            }}
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2.5}
                             >
-                                <FiX size={24} />
-                            </button>
-                        </div>
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </span>
+                    </button>
+                </div>
 
-                        <div className="ParentModel__main">
-                            <div className="ParentModel__date">
-                                <p>تعديل يوم الخطة</p>
-                            </div>
-                            <div className="ParentModel__innerTitle">
-                                <h1>تعديل بيانات اليوم</h1>
-                                <p>قم بتعديل تفاصيل الحفظ والمراجعة</p>
-                            </div>
-                        </div>
-
-                        <div className="ParentModel__container">
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>رقم اليوم *</label>
-                                    <input
-                                        required
-                                        type="number"
-                                        name="day_number"
-                                        value={formData.day_number}
-                                        onChange={handleInputChange}
-                                        min="1"
-                                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 ${
-                                            errors.day_number
-                                                ? "border-red-300 bg-red-50"
-                                                : "border-gray-200"
-                                        }`}
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.day_number && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {errors.day_number}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الحفظ الجديد</label>
-                                    <input
-                                        type="text"
-                                        name="new_memorization"
-                                        value={formData.new_memorization}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500"
-                                        placeholder="البقرة ٤٦-٥٠"
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>المراجعة</label>
-                                    <input
-                                        type="text"
-                                        name="review_memorization"
-                                        value={formData.review_memorization}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-                                        placeholder="البقرة ١-١٠"
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="inputs__verifyOTPBirth">
-                                <div className="inputs__email">
-                                    <label>الحالة</label>
-                                    <select
-                                        name="status"
-                                        value={formData.status}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
-                                        disabled={isSubmitting}
-                                    >
-                                        <option value="pending">
-                                            قيد الانتظار
-                                        </option>
-                                        <option value="current">حالي</option>
-                                        <option value="completed">مكتمل</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div
-                                className="inputs__submitBtn"
-                                id="ParentModel__btn"
+                {/* Body مطابق تماماً */}
+                <div className="mb">
+                    {/* رقم اليوم */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            رقم اليوم *
+                        </label>
+                        <input
+                            required
+                            type="number"
+                            name="day_number"
+                            value={formData.day_number}
+                            onChange={handleInputChange}
+                            min="1"
+                            className={`fi2 ${
+                                errors.day_number
+                                    ? "border-red-300 bg-red-50"
+                                    : "border-gray-200 hover:border-gray-300"
+                            }`}
+                            disabled={isSubmitting}
+                        />
+                        {errors.day_number && (
+                            <p
+                                style={{
+                                    fontSize: "10px",
+                                    color: "var(--red-600)",
+                                    margin: "2px 0 0 0",
+                                }}
                             >
-                                <button
-                                    type="button"
-                                    onClick={() => submitForm(handleSubmit)}
-                                    disabled={isSubmitting}
-                                    className="w-full"
+                                {errors.day_number}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* الحفظ الجديد */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            الحفظ الجديد
+                        </label>
+                        <input
+                            type="text"
+                            name="new_memorization"
+                            value={formData.new_memorization}
+                            onChange={handleInputChange}
+                            className="fi2 border-gray-200 hover:border-gray-300"
+                            placeholder="البقرة ٤٦-٥٠"
+                            disabled={isSubmitting}
+                        />
+                    </div>
+
+                    {/* المراجعة */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            المراجعة
+                        </label>
+                        <input
+                            type="text"
+                            name="review_memorization"
+                            value={formData.review_memorization}
+                            onChange={handleInputChange}
+                            className="fi2 border-gray-200 hover:border-gray-300"
+                            placeholder="البقرة ١-١٠"
+                            disabled={isSubmitting}
+                        />
+                    </div>
+
+                    {/* الحالة */}
+                    <div style={{ marginBottom: 12 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                color: "var(--n700)",
+                                marginBottom: 4,
+                            }}
+                        >
+                            الحالة
+                        </label>
+                        <select
+                            name="status"
+                            value={formData.status}
+                            onChange={handleInputChange}
+                            className="fi2 border-gray-200 hover:border-gray-300"
+                            disabled={isSubmitting}
+                        >
+                            <option value="pending">قيد الانتظار</option>
+                            <option value="current">حالي</option>
+                            <option value="completed">مكتمل</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Footer مطابق تماماً */}
+                <div className="mf">
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "12px",
+                            justifyContent: "flex-end",
+                            marginTop: "16px",
+                        }}
+                    >
+                        <button
+                            className="btn bs"
+                            onClick={onClose}
+                            disabled={isSubmitting}
+                        >
+                            إلغاء
+                        </button>
+                        <button
+                            className="btn bp"
+                            onClick={() => submitForm(handleSubmit)}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? (
+                                <span
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 6,
+                                    }}
                                 >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block mr-2"></div>
-                                            جاري التحديث...
-                                        </>
-                                    ) : (
-                                        <>تحديث التفاصيل</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                                    <div
+                                        className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+                                        style={{
+                                            width: 14,
+                                            height: 14,
+                                        }}
+                                    ></div>
+                                    <span>جاري التحديث...</span>
+                                </span>
+                            ) : (
+                                "تحديث التفاصيل"
+                            )}
+                        </button>
                     </div>
                 </div>
             </div>

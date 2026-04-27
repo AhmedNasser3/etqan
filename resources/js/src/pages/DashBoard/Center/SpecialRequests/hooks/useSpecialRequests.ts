@@ -7,7 +7,7 @@ export interface SpecialRequestType {
     whatsapp_number: string;
     name: string;
     age?: number | null;
-    available_schedule?: Record<string, any> | string | null; // ✅ مرن أكتر
+    available_schedule?: Record<string, any> | string | null; //  مرن أكتر
     memorized_parts?: (string | null)[] | string | null;
     parts_to_memorize?: (string | null)[] | string | null;
     daily_memorization: "وجه" | "وجهين" | "أكثر";
@@ -44,7 +44,7 @@ export const useSpecialRequests = () => {
             try {
                 const url = new URLSearchParams({ page: pageNum.toString() });
 
-                // ✅ إصلاح البحث - مش JSON.parse
+                //  إصلاح البحث - مش JSON.parse
                 Object.entries(searchParams).forEach(([key, value]) => {
                     if (value !== null && value !== undefined && value !== "") {
                         url.append(key, value.toString());
@@ -71,7 +71,7 @@ export const useSpecialRequests = () => {
                 const data = await response.json();
                 let requestData: any[] = [];
 
-                // ✅ معالجة البيانات بأمان
+                //  معالجة البيانات بأمان
                 if (Array.isArray(data)) {
                     requestData = data;
                 } else if (data?.data && Array.isArray(data.data)) {
@@ -80,7 +80,7 @@ export const useSpecialRequests = () => {
                     requestData = [];
                 }
 
-                // ✅ فلترة آمنة
+                //  فلترة آمنة
                 const safeRequests = requestData
                     .filter(
                         (request): request is SpecialRequestType =>
@@ -91,7 +91,7 @@ export const useSpecialRequests = () => {
                     )
                     .map((request) => ({
                         ...request,
-                        // ✅ تحويل JSON strings لـ arrays لو كانت strings
+                        //  تحويل JSON strings لـ arrays لو كانت strings
                         memorized_parts:
                             typeof request.memorized_parts === "string"
                                 ? JSON.parse(request.memorized_parts || "[]")
@@ -106,7 +106,7 @@ export const useSpecialRequests = () => {
                                 : request.available_schedule || {},
                     }));
 
-                // ✅ استخراج Pagination بأمان
+                //  استخراج Pagination بأمان
                 const safePagination: Pagination = {
                     current_page:
                         data.pagination?.current_page || data.current_page || 1,
