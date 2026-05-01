@@ -25,10 +25,24 @@ import { FaChalkboardTeacher, FaMosque, FaMoneyBillWave } from "react-icons/fa";
 import { GoGoal } from "react-icons/go";
 import { RiRobot2Fill } from "react-icons/ri";
 
+/* ─── Types ─── */
 type TeacherStatus = "active" | "pending" | "suspended" | "inactive";
 type AttendanceStatus = "present" | "late" | "absent";
 type DetailTab = "circles" | "students";
 
+interface TeacherCircle {
+    id: number | string;
+    name: string;
+    studentsCount: number;
+    timeRange?: string | null;
+    notes?: string | null;
+}
+interface TeacherStudent {
+    id: number;
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+}
 interface TeacherPlan {
     id: string;
     title: string;
@@ -39,29 +53,12 @@ interface TeacherPlan {
     weeklyDays: string[];
     timeRange?: string | null;
 }
-
-interface TeacherCircle {
-    id: number | string;
-    name: string;
-    studentsCount: number;
-    timeRange?: string | null;
-    notes?: string | null;
-}
-
-interface TeacherStudent {
-    id: number;
-    name: string;
-    phone?: string | null;
-    email?: string | null;
-}
-
 interface Teacher {
     id: number;
     user_id?: number;
     name: string;
     email: string;
     phone?: string | null;
-    avatar?: string | null;
     status: TeacherStatus;
     created_at: string;
     mosque?: string | null;
@@ -79,13 +76,8 @@ interface Teacher {
     circles?: TeacherCircle[];
     students?: TeacherStudent[];
     plan?: TeacherPlan | null;
-    teacher?: {
-        role?: string;
-        notes?: string;
-        session_time?: string;
-    };
+    teacher?: { role?: string; notes?: string; session_time?: string };
 }
-
 interface Pagination {
     current_page: number;
     total: number;
@@ -94,14 +86,12 @@ interface Pagination {
     from?: number;
     to?: number;
 }
-
 interface Stats {
     total: number;
     active: number;
     pending: number;
     suspended: number;
 }
-
 interface AttendanceRecord {
     teacher_id?: number;
     status?: AttendanceStatus;
@@ -109,10 +99,75 @@ interface AttendanceRecord {
     delay_minutes?: number;
 }
 
+/* ─── Constants ─── */
+const ROLE_LABELS: Record<string, string> = {
+    teacher: "مدرس",
+    supervisor: "مشرف",
+    motivator: "محفز",
+    student_affairs: "شؤون طلاب",
+    financial: "مالي",
+};
+
+const STATUS_META: Record<
+    string,
+    { label: string; bg: string; color: string; icon: ReactNode }
+> = {
+    active: {
+        label: "نشط",
+        bg: "#DCFCE7",
+        color: "#166534",
+        icon: <FiCheckCircle size={11} />,
+    },
+    pending: {
+        label: "معلّق",
+        bg: "#FEF9C3",
+        color: "#854D0E",
+        icon: <FiClock size={11} />,
+    },
+    suspended: {
+        label: "موقوف",
+        bg: "#FEE2E2",
+        color: "#991B1B",
+        icon: <FiXCircle size={11} />,
+    },
+    inactive: {
+        label: "غير نشط",
+        bg: "#F1F5F9",
+        color: "#475569",
+        icon: <FiXCircle size={11} />,
+    },
+    present: {
+        label: "حاضر",
+        bg: "#DCFCE7",
+        color: "#166534",
+        icon: <FiCheckCircle size={11} />,
+    },
+    late: {
+        label: "متأخر",
+        bg: "#FEF9C3",
+        color: "#854D0E",
+        icon: <FiClock size={11} />,
+    },
+    absent: {
+        label: "غائب",
+        bg: "#FEE2E2",
+        color: "#991B1B",
+        icon: <FiXCircle size={11} />,
+    },
+};
+
+const AV_COLORS = [
+    { bg: "#E1F5EE", color: "#085041" },
+    { bg: "#E6F1FB", color: "#0C447C" },
+    { bg: "#FAEEDA", color: "#633806" },
+    { bg: "#EAF3DE", color: "#27500A" },
+    { bg: "#FBEAF0", color: "#72243E" },
+    { bg: "#EEEDFE", color: "#3C3489" },
+];
+
 const MOCK_TEACHERS: Teacher[] = [
     {
         id: 1,
-        user_id: 1,
         name: "الشيخ محمد أحمد عبد الله",
         email: "m.ahmed@example.com",
         phone: "0501234567",
@@ -138,7 +193,7 @@ const MOCK_TEACHERS: Teacher[] = [
         circles: [
             {
                 id: 1,
-                name: "حلقة: تختيم القرآن (2) - (8 -9 سنوات) (ID: 1) | من 7:30 م إلى 8:30 م",
+                name: "حلقة: تختيم القرآن (2) - (8-9 سنوات) (ID: 1) | من 7:30 م إلى 8:30 م",
                 studentsCount: 24,
             },
             {
@@ -156,12 +211,11 @@ const MOCK_TEACHERS: Teacher[] = [
             { id: 101, name: "أحمد محمد علي", phone: "0501110001" },
             { id: 102, name: "محمود عبد الله", phone: "0501110002" },
             { id: 103, name: "يوسف إبراهيم", phone: "0501110003" },
-            { id: 104, name: "عبد الرحمن سعيد", phone: "0501110004" },
         ],
         plan: {
             id: "p-1",
             title: "خطة ختم القرآن خلال 17 شهرًا",
-            description: "وجه يومي مع مراجعة أسبوعية وربط بالحضور والإنجاز.",
+            description: "وجه يومي مع مراجعة أسبوعية.",
             studentsCount: 24,
             sessionsDone: 62,
             sessionsTotal: 170,
@@ -171,7 +225,6 @@ const MOCK_TEACHERS: Teacher[] = [
     },
     {
         id: 2,
-        user_id: 2,
         name: "الشيخة آمنة إبراهيم",
         email: "amina@example.com",
         phone: "0509876543",
@@ -209,7 +262,6 @@ const MOCK_TEACHERS: Teacher[] = [
         students: [
             { id: 201, name: "سلمى أحمد", phone: "0502220001" },
             { id: 202, name: "إيمان علي", phone: "0502220002" },
-            { id: 203, name: "هدى محمود", phone: "0502220003" },
         ],
         plan: {
             id: "p-2",
@@ -224,7 +276,6 @@ const MOCK_TEACHERS: Teacher[] = [
     },
     {
         id: 3,
-        user_id: 3,
         name: "الشيخ طارق فوزي البكري",
         email: "tarek@example.com",
         phone: "0502221111",
@@ -250,7 +301,7 @@ const MOCK_TEACHERS: Teacher[] = [
         circles: [
             {
                 id: 6,
-                name: "حلقة: تختيم القرآن (2) - (8 -9 سنوات) (ID: 6) | من 9:00 ص إلى 11:00 ص",
+                name: "حلقة: تختيم القرآن (2) (ID: 6) | من 9:00 ص إلى 11:00 ص",
                 studentsCount: 0,
             },
         ],
@@ -258,7 +309,7 @@ const MOCK_TEACHERS: Teacher[] = [
         plan: {
             id: "p-3",
             title: "خطة ختم القرآن للمتقدمين",
-            description: "ختم مجود مع جلسات مراجعة وقياس تقدم.",
+            description: "ختم مجود مع جلسات مراجعة.",
             studentsCount: 0,
             sessionsDone: 55,
             sessionsTotal: 180,
@@ -268,148 +319,283 @@ const MOCK_TEACHERS: Teacher[] = [
     },
 ];
 
-const roleLabels: Record<string, string> = {
-    teacher: "مدرس",
-    supervisor: "مشرف",
-    motivator: "محفز",
-    student_affairs: "شؤون طلاب",
-    financial: "مالي",
-};
+/* ─── Helpers ─── */
+const csrf = () =>
+    document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content") ?? "";
 
-const statusMeta: Record<
-    string,
-    { label: string; className: string; icon: ReactNode }
-> = {
-    active: {
-        label: "نشط",
-        className: "badge success",
-        icon: <FiCheckCircle size={12} />,
-    },
-    pending: {
-        label: "معلّق",
-        className: "badge warning",
-        icon: <FiClock size={12} />,
-    },
-    suspended: {
-        label: "موقوف",
-        className: "badge danger",
-        icon: <FiXCircle size={12} />,
-    },
-    inactive: {
-        label: "غير نشط",
-        className: "badge neutral",
-        icon: <FiXCircle size={12} />,
-    },
-    present: {
-        label: "حاضر اليوم",
-        className: "badge success",
-        icon: <FiCheckCircle size={12} />,
-    },
-    late: {
-        label: "متأخر",
-        className: "badge warning",
-        icon: <FiClock size={12} />,
-    },
-    absent: {
-        label: "غائب",
-        className: "badge danger",
-        icon: <FiXCircle size={12} />,
-    },
-};
-
-const AvatarSVG = ({ idx }: { idx: number }) => {
-    const skins = ["#F5D3A8", "#E8B97A", "#D4915A", "#F0C894"];
-    const robes = ["#1A5C3A", "#C9A84C", "#1565C0", "#6D4C41"];
-    const skin = skins[idx % skins.length];
-    const robe = robes[idx % robes.length];
-
-    return (
-        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="40" cy="40" r="38" fill="#EDF5F0" />
-            <path d="M15 80C15 58 25 52 40 52C55 52 65 58 65 80Z" fill={robe} />
-            <ellipse cx="40" cy="34" rx="14" ry="15" fill={skin} />
-            <ellipse
-                cx="40"
-                cy="21"
-                rx="12"
-                ry="5"
-                fill="#FFF"
-                fillOpacity="0.95"
-            />
-            <rect
-                x="28"
-                y="18"
-                width="24"
-                height="7"
-                rx="3"
-                fill="#FFF"
-                fillOpacity="0.9"
-            />
-            <path
-                d="M28 40Q40 50 52 40Q48 48 40 50Q32 48 28 40Z"
-                fill="#3D2314"
-                fillOpacity="0.68"
-            />
-            <circle cx="35" cy="35" r="2.5" fill="#2C1810" />
-            <circle cx="45" cy="35" r="2.5" fill="#2C1810" />
-            <path
-                d="M36 40Q40 43 44 40"
-                stroke="#B87040"
-                strokeWidth="1.2"
-                fill="none"
-                strokeLinecap="round"
-            />
-        </svg>
-    );
-};
-
-const parseCirclePresentation = (circle: TeacherCircle) => {
-    const source = (circle.notes || circle.name || "").trim();
-
-    if (!source) {
-        return {
-            title: "حلقة غير محددة",
-            time: circle.timeRange || "غير محدد",
-        };
+const apiFetch = async (url: string, opts: RequestInit = {}) => {
+    const res = await fetch(url, {
+        credentials: "include",
+        headers: {
+            Accept: "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRF-TOKEN": csrf(),
+            "Content-Type": "application/json",
+            ...(opts.headers || {}),
+        },
+        ...opts,
+    });
+    if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || `HTTP ${res.status}`);
     }
+    return res.json();
+};
 
-    const parts = source.split("|").map((part) => part.trim());
-    const leftPart = parts[0] || source;
-    const rightPart = parts[1]?.trim() || circle.timeRange || "غير محدد";
+const fmtSalary = (n?: number) =>
+    n ? `${n.toLocaleString("ar-EG")} ج.م` : "—";
+const fmtPct = (n?: number) => (n != null ? `${n}%` : "—");
 
-    const title = leftPart
+const parseCircle = (c: TeacherCircle) => {
+    const src = (c.notes || c.name || "").trim();
+    const parts = src.split("|").map((p) => p.trim());
+    const title = (parts[0] || src)
         .replace(/^حلقة:\s*/i, "")
         .replace(/\s*\(ID:\s*\d+\)\s*$/i, "")
         .trim();
-
     return {
         title: title || "حلقة غير محددة",
-        time: rightPart,
+        time: parts[1] || c.timeRange || "غير محدد",
     };
 };
 
-const RolePill = ({ role }: { role?: string }) => (
-    <span className="role-pill">{roleLabels[role || "teacher"] || "مدرس"}</span>
-);
+/* ─── Sub-components ─── */
 
+/* Avatar illustration - improved */
+const TeacherAvatar = ({ idx, name }: { idx: number; name: string }) => {
+    const av = AV_COLORS[idx % AV_COLORS.length];
+    const skins = ["#F5D3A8", "#E8B97A", "#D4915A", "#C8784A"];
+    const robes = [
+        "#1A5C3A",
+        "#C9A84C",
+        "#1565C0",
+        "#6D4C41",
+        "#7B3F6E",
+        "#2D5A8A",
+    ];
+    const skin = skins[idx % skins.length];
+    const robe = robes[idx % robes.length];
+    const initials = name
+        .split(" ")
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join("");
+
+    return (
+        <div
+            style={{
+                width: 52,
+                height: 52,
+                borderRadius: "50%",
+                background: av.bg,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                position: "relative",
+                overflow: "hidden",
+                border: `2px solid ${av.color}22`,
+            }}
+        >
+            <svg
+                viewBox="0 0 80 80"
+                width="52"
+                height="52"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ position: "absolute", inset: 0 }}
+            >
+                {/* body / robe */}
+                <path
+                    d="M8 82C8 56 22 49 40 49C58 49 72 56 72 82Z"
+                    fill={robe}
+                />
+                {/* collar */}
+                <path
+                    d="M33 49C33 49 40 56 47 49"
+                    stroke="#fff"
+                    strokeWidth="1.5"
+                    strokeOpacity="0.6"
+                    fill="none"
+                />
+                {/* neck */}
+                <rect x="35" y="42" width="10" height="9" rx="3" fill={skin} />
+                {/* head */}
+                <ellipse cx="40" cy="31" rx="14" ry="15" fill={skin} />
+                {/* hair / kufi */}
+                <path
+                    d="M26 27C26 18.7 32.3 12 40 12C47.7 12 54 18.7 54 27H26Z"
+                    fill="#2C1810"
+                    fillOpacity="0.85"
+                />
+                {/* kufi band */}
+                <rect
+                    x="26"
+                    y="25"
+                    width="28"
+                    height="4"
+                    rx="2"
+                    fill="#fff"
+                    fillOpacity="0.15"
+                />
+                {/* beard */}
+                <path
+                    d="M29 40Q34 50 40 51Q46 50 51 40Q48 46 40 48Q32 46 29 40Z"
+                    fill="#2C1810"
+                    fillOpacity="0.55"
+                />
+                {/* eyes */}
+                <ellipse cx="35.5" cy="32" rx="2.2" ry="2.5" fill="#fff" />
+                <ellipse cx="44.5" cy="32" rx="2.2" ry="2.5" fill="#fff" />
+                <circle cx="36" cy="32.5" r="1.4" fill="#1a0f0a" />
+                <circle cx="45" cy="32.5" r="1.4" fill="#1a0f0a" />
+                <circle cx="36.6" cy="31.8" r="0.5" fill="#fff" />
+                <circle cx="45.6" cy="31.8" r="0.5" fill="#fff" />
+                {/* brows */}
+                <path
+                    d="M33 29Q35.5 27.5 38 29"
+                    stroke="#2C1810"
+                    strokeWidth="1.2"
+                    fill="none"
+                    strokeLinecap="round"
+                />
+                <path
+                    d="M42 29Q44.5 27.5 47 29"
+                    stroke="#2C1810"
+                    strokeWidth="1.2"
+                    fill="none"
+                    strokeLinecap="round"
+                />
+                {/* smile */}
+                <path
+                    d="M37 38Q40 41 43 38"
+                    stroke="#B87040"
+                    strokeWidth="1.2"
+                    fill="none"
+                    strokeLinecap="round"
+                />
+                {/* ears */}
+                <ellipse cx="26.5" cy="33" rx="2" ry="3" fill={skin} />
+                <ellipse cx="53.5" cy="33" rx="2" ry="3" fill={skin} />
+            </svg>
+            {/* fallback initials overlay - hidden but accessible */}
+            <span
+                style={{
+                    position: "absolute",
+                    opacity: 0,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: av.color,
+                }}
+            >
+                {initials}
+            </span>
+        </div>
+    );
+};
+
+/* Status badge */
+const StatusBadge = ({ status }: { status: string }) => {
+    const m = STATUS_META[status] ?? STATUS_META.inactive;
+    return (
+        <span
+            style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                background: m.bg,
+                color: m.color,
+                borderRadius: 20,
+                padding: "3px 10px",
+                fontSize: 11,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+            }}
+        >
+            {m.icon}
+            {m.label}
+        </span>
+    );
+};
+
+/* Role pill */
+const RolePill = ({ role }: { role?: string }) => {
+    const roleStyle: Record<string, { bg: string; color: string }> = {
+        teacher: { bg: "#E1F5EE", color: "#085041" },
+        supervisor: { bg: "#E6F1FB", color: "#0C447C" },
+        motivator: { bg: "#FAEEDA", color: "#633806" },
+        student_affairs: { bg: "#EAF3DE", color: "#27500A" },
+        financial: { bg: "#FCEBEB", color: "#A32D2D" },
+    };
+    const s = roleStyle[role || "teacher"] ?? roleStyle.teacher;
+    return (
+        <span
+            style={{
+                display: "inline-block",
+                background: s.bg,
+                color: s.color,
+                borderRadius: 20,
+                padding: "2px 10px",
+                fontSize: 11,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+            }}
+        >
+            {ROLE_LABELS[role || "teacher"] ?? "مدرس"}
+        </span>
+    );
+};
+
+/* Info tile */
 const InfoTile = ({
     icon,
     label,
     value,
+    accent,
 }: {
     icon: ReactNode;
     label: string;
     value: string;
+    accent?: string;
 }) => (
-    <div className="info-tile">
-        <div className="info-tile-icon">{icon}</div>
+    <div
+        style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            padding: "10px 14px",
+            background: "#f8fafc",
+            borderRadius: 12,
+            flex: 1,
+            minWidth: 130,
+        }}
+    >
+        <div
+            style={{ color: accent || "#0f6e56", marginTop: 2, flexShrink: 0 }}
+        >
+            {icon}
+        </div>
         <div>
-            <div className="info-label">{label}</div>
-            <div className="info-value">{value}</div>
+            <div
+                style={{
+                    fontSize: 10,
+                    color: "#94a3b8",
+                    marginBottom: 2,
+                    fontWeight: 600,
+                }}
+            >
+                {label}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>
+                {value}
+            </div>
         </div>
     </div>
 );
 
+/* Toast */
 const Toast = ({
     message,
     tone,
@@ -419,19 +605,50 @@ const Toast = ({
     tone: "success" | "error";
     onClose: () => void;
 }) => (
-    <div className={`toast ${tone}`}>
+    <div
+        style={{
+            position: "fixed",
+            bottom: 28,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            background: tone === "success" ? "#1e293b" : "#7f1d1d",
+            color: "#fff",
+            borderRadius: 14,
+            padding: "12px 20px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 13,
+            fontWeight: 700,
+            boxShadow: "0 4px 24px #0003",
+            fontFamily: "'Tajawal',sans-serif",
+            whiteSpace: "nowrap",
+        }}
+    >
         {tone === "success" ? (
-            <FiCheckCircle size={16} />
+            <FiCheckCircle size={15} />
         ) : (
-            <FiXCircle size={16} />
+            <FiXCircle size={15} />
         )}
         <span>{message}</span>
-        <button className="icon-btn subtle invert" onClick={onClose}>
-            <FiX size={14} />
+        <button
+            onClick={onClose}
+            style={{
+                background: "transparent",
+                border: "none",
+                color: "#fff",
+                cursor: "pointer",
+                padding: 0,
+                display: "flex",
+            }}
+        >
+            <FiX size={13} />
         </button>
     </div>
 );
 
+/* Confirm Modal */
 const ConfirmModal = ({
     message,
     onConfirm,
@@ -441,20 +658,58 @@ const ConfirmModal = ({
     onConfirm: () => void;
     onCancel: () => void;
 }) => (
-    <div className="modal-overlay">
-        <div className="modal-card modal-compact">
-            <div className="modal-head">
-                <h3>تأكيد الإجراء</h3>
-                <button className="icon-btn subtle" onClick={onCancel}>
-                    <FiX size={16} />
-                </button>
-            </div>
-            <p className="modal-copy">{message}</p>
-            <div className="modal-actions">
-                <button className="btn secondary" onClick={onCancel}>
+    <div
+        style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9000,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+        }}
+    >
+        <div
+            style={{
+                background: "#fff",
+                borderRadius: 20,
+                padding: "28px 32px",
+                maxWidth: 400,
+                width: "90%",
+                fontFamily: "'Tajawal',sans-serif",
+                direction: "rtl",
+            }}
+        >
+            <h3
+                style={{
+                    margin: "0 0 10px",
+                    fontSize: 17,
+                    fontWeight: 900,
+                    color: "#1e293b",
+                }}
+            >
+                تأكيد الإجراء
+            </h3>
+            <p
+                style={{
+                    fontSize: 13,
+                    color: "#64748b",
+                    marginBottom: 24,
+                    lineHeight: 1.7,
+                }}
+            >
+                {message}
+            </p>
+            <div
+                style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}
+            >
+                <button
+                    onClick={onCancel}
+                    style={btnS("#f8fafc", "#475569", "1px solid #e2e8f0")}
+                >
                     إلغاء
                 </button>
-                <button className="btn danger" onClick={onConfirm}>
+                <button onClick={onConfirm} style={btnS("#dc2626", "#fff")}>
                     تنفيذ
                 </button>
             </div>
@@ -462,6 +717,7 @@ const ConfirmModal = ({
     </div>
 );
 
+/* Teacher Form Modal */
 const TeacherFormModal = ({
     title,
     submitLabel,
@@ -486,15 +742,14 @@ const TeacherFormModal = ({
 }) => {
     const [form, setForm] = useState(initialValues);
     const [saving, setSaving] = useState(false);
-
-    const updateField =
+    const upd =
         (key: keyof typeof form) =>
         (
-            event: ChangeEvent<
+            e: ChangeEvent<
                 HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
             >,
         ) =>
-            setForm((prev) => ({ ...prev, [key]: event.target.value }));
+            setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
     const submit = async () => {
         setSaving(true);
@@ -506,115 +761,304 @@ const TeacherFormModal = ({
         }
     };
 
+    const fieldStyle: React.CSSProperties = {
+        width: "100%",
+        border: "1px solid #e2e8f0",
+        borderRadius: 10,
+        padding: "9px 13px",
+        fontSize: 13,
+        fontFamily: "'Tajawal',sans-serif",
+        background: "#f8fafc",
+        color: "#1e293b",
+        outline: "none",
+        boxSizing: "border-box",
+    };
+
     return (
-        <div className="modal-overlay">
-            <div className="modal-card modal-rich">
-                <div className="modal-ornament" />
-                <div className="modal-head">
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9000,
+                background: "rgba(0,0,0,0.45)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+            }}
+        >
+            <div
+                style={{
+                    background: "#fff",
+                    borderRadius: 24,
+                    padding: "28px 32px",
+                    maxWidth: 680,
+                    width: "100%",
+                    fontFamily: "'Tajawal',sans-serif",
+                    direction: "rtl",
+                    maxHeight: "90vh",
+                    overflowY: "auto",
+                }}
+            >
+                {/* ornament strip */}
+                <div
+                    style={{
+                        height: 4,
+                        background:
+                            "linear-gradient(90deg,#0f6e56,#22c55e,#0f6e56)",
+                        borderRadius: 4,
+                        marginBottom: 20,
+                    }}
+                />
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: 20,
+                    }}
+                >
                     <div>
-                        <h3>{title}</h3>
-                        <p className="modal-subtitle">
-                            نموذج منسق بنفس روح التصميم الأساسية مع فصل واضح لكل
-                            جزء.
+                        <h3
+                            style={{
+                                margin: 0,
+                                fontSize: 17,
+                                fontWeight: 900,
+                                color: "#1e293b",
+                            }}
+                        >
+                            {title}
+                        </h3>
+                        <p
+                            style={{
+                                margin: "4px 0 0",
+                                fontSize: 12,
+                                color: "#94a3b8",
+                            }}
+                        >
+                            أدخل البيانات المطلوبة بدقة
                         </p>
                     </div>
-                    <button className="icon-btn subtle" onClick={onClose}>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            border: "none",
+                            background: "#f1f5f9",
+                            borderRadius: 8,
+                            padding: 6,
+                            cursor: "pointer",
+                            display: "flex",
+                        }}
+                    >
                         <FiX size={16} />
                     </button>
                 </div>
 
-                <div className="modal-panel-grid">
-                    <div className="modal-panel">
-                        <div className="modal-panel-title">
-                            <FiEdit3 size={15} />
-                            البيانات الأساسية
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                            "repeat(auto-fit,minmax(260px,1fr))",
+                        gap: 20,
+                    }}
+                >
+                    {/* Panel 1 */}
+                    <div>
+                        <div
+                            style={{
+                                fontSize: 11,
+                                fontWeight: 800,
+                                color: "#0f6e56",
+                                marginBottom: 12,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                            }}
+                        >
+                            <FiEdit3 size={13} /> البيانات الأساسية
                         </div>
-
-                        <div className="form-grid">
-                            <label className="field">
-                                <span>الاسم</span>
-                                <input
-                                    value={form.name}
-                                    onChange={updateField("name")}
-                                />
-                            </label>
-
-                            <label className="field">
-                                <span>البريد الإلكتروني</span>
-                                <input
-                                    value={form.email}
-                                    onChange={updateField("email")}
-                                />
-                            </label>
-
-                            <label className="field">
-                                <span>الهاتف</span>
-                                <input
-                                    value={form.phone}
-                                    onChange={updateField("phone")}
-                                />
-                            </label>
-
-                            <label className="field">
-                                <span>الدور الوظيفي</span>
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 10,
+                            }}
+                        >
+                            {[
+                                {
+                                    label: "الاسم",
+                                    key: "name" as const,
+                                    type: "text",
+                                },
+                                {
+                                    label: "البريد الإلكتروني",
+                                    key: "email" as const,
+                                    type: "email",
+                                },
+                                {
+                                    label: "الهاتف",
+                                    key: "phone" as const,
+                                    type: "tel",
+                                },
+                            ].map((f) => (
+                                <label
+                                    key={f.key}
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 4,
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            fontSize: 11,
+                                            color: "#64748b",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        {f.label}
+                                    </span>
+                                    <input
+                                        type={f.type}
+                                        value={form[f.key]}
+                                        onChange={upd(f.key)}
+                                        style={fieldStyle}
+                                    />
+                                </label>
+                            ))}
+                            <label
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 4,
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        fontSize: 11,
+                                        color: "#64748b",
+                                        fontWeight: 700,
+                                    }}
+                                >
+                                    الدور الوظيفي
+                                </span>
                                 <select
                                     value={form.teacher_role}
-                                    onChange={updateField("teacher_role")}
+                                    onChange={upd("teacher_role")}
+                                    style={fieldStyle}
                                 >
-                                    <option value="teacher">مدرس</option>
-                                    <option value="supervisor">مشرف</option>
-                                    <option value="motivator">محفز</option>
-                                    <option value="student_affairs">
-                                        شؤون طلاب
-                                    </option>
-                                    <option value="financial">مالي</option>
+                                    {Object.entries(ROLE_LABELS).map(
+                                        ([k, v]) => (
+                                            <option key={k} value={k}>
+                                                {v}
+                                            </option>
+                                        ),
+                                    )}
                                 </select>
                             </label>
                         </div>
                     </div>
-
-                    <div className="modal-panel">
-                        <div className="modal-panel-title">
-                            <FaMosque size={15} />
-                            الربط والملاحظات
+                    {/* Panel 2 */}
+                    <div>
+                        <div
+                            style={{
+                                fontSize: 11,
+                                fontWeight: 800,
+                                color: "#0f6e56",
+                                marginBottom: 12,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                            }}
+                        >
+                            <FaMosque size={13} /> الربط والملاحظات
                         </div>
-
-                        <div className="form-grid">
-                            <label className="field">
-                                <span>المسجد</span>
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 10,
+                            }}
+                        >
+                            <label
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 4,
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        fontSize: 11,
+                                        color: "#64748b",
+                                        fontWeight: 700,
+                                    }}
+                                >
+                                    المسجد
+                                </span>
                                 <select
                                     value={form.mosque}
-                                    onChange={updateField("mosque")}
+                                    onChange={upd("mosque")}
+                                    style={fieldStyle}
                                 >
                                     <option value="">بلا مسجد</option>
-                                    {mosques.map((mosque) => (
-                                        <option key={mosque} value={mosque}>
-                                            {mosque}
+                                    {mosques.map((m) => (
+                                        <option key={m} value={m}>
+                                            {m}
                                         </option>
                                     ))}
                                 </select>
                             </label>
-
-                            <label className="field full">
-                                <span>الملاحظات أو اسم الخطة</span>
+                            <label
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 4,
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        fontSize: 11,
+                                        color: "#64748b",
+                                        fontWeight: 700,
+                                    }}
+                                >
+                                    الملاحظات
+                                </span>
                                 <textarea
-                                    rows={5}
+                                    rows={6}
                                     value={form.notes}
-                                    onChange={updateField("notes")}
+                                    onChange={upd("notes")}
+                                    style={{
+                                        ...fieldStyle,
+                                        resize: "vertical",
+                                    }}
                                 />
                             </label>
                         </div>
                     </div>
                 </div>
 
-                <div className="modal-actions">
-                    <button className="btn secondary" onClick={onClose}>
+                <div
+                    style={{
+                        display: "flex",
+                        gap: 10,
+                        justifyContent: "flex-end",
+                        marginTop: 24,
+                        paddingTop: 16,
+                        borderTop: "1px solid #f1f5f9",
+                    }}
+                >
+                    <button
+                        onClick={onClose}
+                        style={btnS("#f8fafc", "#475569", "1px solid #e2e8f0")}
+                    >
                         إلغاء
                     </button>
                     <button
-                        className="btn primary"
                         onClick={submit}
                         disabled={saving}
+                        style={btnS("#0f6e56", "#fff")}
                     >
                         {saving ? "جاري الحفظ..." : submitLabel}
                     </button>
@@ -624,6 +1068,7 @@ const TeacherFormModal = ({
     );
 };
 
+/* ─── Teacher Card ─── */
 const TeacherCard = ({
     teacher,
     index,
@@ -642,17 +1087,12 @@ const TeacherCard = ({
     onEdit: () => void;
     onToggleStatus: () => void;
     onDelete: () => void;
-    onStudentClick: (student: TeacherStudent) => void;
-    onViewAllStudents: (teacher: Teacher) => void;
+    onStudentClick: (s: TeacherStudent) => void;
+    onViewAllStudents: (t: Teacher) => void;
 }) => {
     const [detailTab, setDetailTab] = useState<DetailTab>("circles");
-
-    const statusState = statusMeta[teacher.status] || statusMeta.inactive;
-    const attendanceState = teacher.attendance_today
-        ? statusMeta[teacher.attendance_today]
-        : null;
     const plan = teacher.plan;
-    const planProgress = plan
+    const planPct = plan
         ? Math.min(
               100,
               Math.round(
@@ -660,286 +1100,575 @@ const TeacherCard = ({
               ),
           )
         : 0;
-
-    const studentsPreview = (teacher.students || []).slice(0, 2);
-    const remainingStudents = Math.max((teacher.students?.length || 0) - 2, 0);
+    const borderColor =
+        teacher.status === "active"
+            ? "#22c55e"
+            : teacher.status === "suspended"
+              ? "#ef4444"
+              : "#f59e0b";
 
     return (
-        <article className="teacher-card">
-            <div className="teacher-card-head">
-                <div className="teacher-id-block">
+        <article
+            style={{
+                background: "#fff",
+                borderRadius: 20,
+                boxShadow: "0 2px 16px #0001",
+                overflow: "hidden",
+                borderRight: `4px solid ${borderColor}`,
+                fontFamily: "'Tajawal',sans-serif",
+                direction: "rtl",
+            }}
+        >
+            {/* Head */}
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "16px 18px",
+                    flexWrap: "wrap",
+                    justifyContent: "space-between",
+                }}
+            >
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        flex: 1,
+                        minWidth: 0,
+                    }}
+                >
                     <button
-                        className="icon-btn subtle"
                         onClick={onToggleExpand}
+                        style={{
+                            border: "none",
+                            background: "#f8fafc",
+                            borderRadius: 8,
+                            padding: 6,
+                            cursor: "pointer",
+                            display: "flex",
+                            flexShrink: 0,
+                        }}
                     >
                         {expanded ? (
-                            <FiChevronDown size={16} />
+                            <FiChevronDown size={15} />
                         ) : (
-                            <FiChevronLeft size={16} />
+                            <FiChevronLeft size={15} />
                         )}
                     </button>
-                    <div className="avatar-wrap">
-                        <AvatarSVG idx={index} />
-                    </div>
-                    <div>
-                        <div className="teacher-name">{teacher.name}</div>
-                        <div className="teacher-subline">
+                    <TeacherAvatar idx={index} name={teacher.name} />
+                    <div style={{ minWidth: 0 }}>
+                        <div
+                            style={{
+                                fontWeight: 900,
+                                fontSize: 14,
+                                color: "#1e293b",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                            }}
+                        >
+                            {teacher.name}
+                        </div>
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: 6,
+                                marginTop: 5,
+                                flexWrap: "wrap",
+                                alignItems: "center",
+                            }}
+                        >
                             <RolePill role={teacher.teacher?.role} />
-                            <span className="sub-sep" />
-                            <span>{teacher.mosque || "غير مربوط بمسجد"}</span>
-                            <span className="sub-sep" />
-                            <span>{teacher.students_count || 0} طالب</span>
-                            <span className="sub-sep" />
-                            <span>{teacher.circles_count || 0} حلقات</span>
+                            <span style={{ fontSize: 11, color: "#94a3b8" }}>
+                                ·
+                            </span>
+                            <span style={{ fontSize: 11, color: "#64748b" }}>
+                                {teacher.mosque || "غير مربوط"}
+                            </span>
+                            <span style={{ fontSize: 11, color: "#94a3b8" }}>
+                                ·
+                            </span>
+                            <span style={{ fontSize: 11, color: "#64748b" }}>
+                                {teacher.students_count || 0} طالب
+                            </span>
+                            <span style={{ fontSize: 11, color: "#94a3b8" }}>
+                                ·
+                            </span>
+                            <span style={{ fontSize: 11, color: "#64748b" }}>
+                                {teacher.circles_count || 0} حلقات
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                <div className="teacher-card-actions">
-                    <span className={statusState.className}>
-                        {statusState.icon}
-                        {statusState.label}
-                    </span>
-
-                    {attendanceState && (
-                        <span className={attendanceState.className}>
-                            {attendanceState.icon}
-                            {attendanceState.label}
-                        </span>
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        flexWrap: "wrap",
+                    }}
+                >
+                    <StatusBadge status={teacher.status} />
+                    {teacher.attendance_today && (
+                        <StatusBadge status={teacher.attendance_today} />
                     )}
-
-                    <button className="icon-btn" onClick={onEdit} title="تعديل">
-                        <FiEdit3 size={15} />
+                    <button onClick={onEdit} style={iconBtn()} title="تعديل">
+                        <FiEdit3 size={14} />
                     </button>
-
                     <button
-                        className="icon-btn"
                         onClick={onToggleStatus}
+                        style={iconBtn()}
                         title="تغيير الحالة"
                     >
-                        <FiRefreshCw size={15} />
+                        <FiRefreshCw size={14} />
                     </button>
-
                     <button
-                        className="icon-btn danger"
                         onClick={onDelete}
+                        style={iconBtn("#fee2e2", "#dc2626")}
                         title="تعليق"
                     >
-                        <FiTrash2 size={15} />
+                        <FiTrash2 size={14} />
                     </button>
                 </div>
             </div>
 
-            <div className="teacher-grid">
+            {/* Info grid */}
+            <div
+                style={{
+                    display: "flex",
+                    gap: 8,
+                    padding: "0 18px 14px",
+                    flexWrap: "wrap",
+                }}
+            >
                 <InfoTile
-                    icon={<FaMosque size={15} />}
-                    label="المسجد التابع"
+                    icon={<FaMosque size={14} />}
+                    label="المسجد"
                     value={teacher.mosque || "بلا مسجد"}
                 />
                 <InfoTile
-                    icon={<FiUsers size={15} />}
-                    label="عدد الطلاب"
+                    icon={<FiUsers size={14} />}
+                    label="الطلاب"
                     value={`${teacher.students_count || 0} طالب`}
+                    accent="#0284c7"
                 />
                 <InfoTile
-                    icon={<FiClock size={15} />}
+                    icon={<FiClock size={14} />}
                     label="آخر حضور"
                     value={teacher.last_checkin || "لا يوجد"}
+                    accent="#9333ea"
                 />
                 <InfoTile
-                    icon={<FaMoneyBillWave size={15} />}
+                    icon={<FaMoneyBillWave size={14} />}
                     label="الصافي"
-                    value={`${(teacher.net_salary || 0).toLocaleString()} ج`}
+                    value={fmtSalary(teacher.net_salary)}
+                    accent="#059669"
                 />
+                {teacher.attendance_rate != null && (
+                    <InfoTile
+                        icon={<FiTrendingUp size={14} />}
+                        label="نسبة الحضور"
+                        value={fmtPct(teacher.attendance_rate)}
+                        accent="#f59e0b"
+                    />
+                )}
             </div>
 
+            {/* Plan strip */}
             {plan && (
-                <div className="plan-strip">
-                    <div className="plan-strip-title">
-                        <GoGoal size={16} />
-                        <span>{plan.title}</span>
+                <div
+                    style={{
+                        margin: "0 18px 14px",
+                        padding: "12px 14px",
+                        background: "linear-gradient(135deg,#f0fdf4,#dcfce7)",
+                        borderRadius: 14,
+                    }}
+                >
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            marginBottom: 6,
+                            fontWeight: 800,
+                            fontSize: 13,
+                            color: "#15803d",
+                        }}
+                    >
+                        <GoGoal size={14} /> {plan.title}
                     </div>
-
-                    <div className="plan-strip-meta">
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 12,
+                            fontSize: 11,
+                            color: "#166534",
+                            marginBottom: 8,
+                            flexWrap: "wrap",
+                        }}
+                    >
                         <span>{plan.studentsCount} طالب</span>
-                        <span>{plan.timeRange || "غير محدد"}</span>
-                        <span>
-                            {plan.weeklyDays.length > 0
-                                ? plan.weeklyDays.join(" - ")
-                                : "لا يوجد أيام محددة"}
-                        </span>
+                        <span>{plan.timeRange || "—"}</span>
+                        <span>{plan.weeklyDays.join(" · ")}</span>
                     </div>
-
-                    <div className="progress-track">
+                    <div
+                        style={{
+                            background: "#bbf7d0",
+                            borderRadius: 99,
+                            height: 6,
+                            overflow: "hidden",
+                        }}
+                    >
                         <div
-                            className="progress-fill"
-                            style={{ width: `${planProgress}%` }}
+                            style={{
+                                height: "100%",
+                                width: `${planPct}%`,
+                                background:
+                                    "linear-gradient(90deg,#16a34a,#22c55e)",
+                                borderRadius: 99,
+                                transition: "width .4s",
+                            }}
                         />
                     </div>
-
-                    <div className="progress-caption">
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: 10,
+                            color: "#166534",
+                            marginTop: 4,
+                        }}
+                    >
                         <span>{plan.sessionsDone} جلسة منجزة</span>
-                        <span>{plan.sessionsTotal} إجمالي الجلسات</span>
+                        <span>
+                            {planPct}% · {plan.sessionsTotal} إجمالي
+                        </span>
                     </div>
                 </div>
             )}
 
+            {/* Expanded panel */}
             {expanded && (
-                <div className="expand-panel">
-                    <div className="detail-tabs">
-                        <button
-                            className={`detail-tab ${detailTab === "circles" ? "active" : ""}`}
-                            onClick={() => setDetailTab("circles")}
-                        >
-                            <FaChalkboardTeacher size={14} />
-                            الحلقات
-                        </button>
-
-                        <button
-                            className={`detail-tab ${detailTab === "students" ? "active" : ""}`}
-                            onClick={() => setDetailTab("students")}
-                        >
-                            <FiUsers size={14} />
-                            الطلاب
-                        </button>
+                <div style={{ borderTop: "1px solid #f1f5f9" }}>
+                    {/* Tab bar */}
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 0,
+                            borderBottom: "1px solid #f1f5f9",
+                        }}
+                    >
+                        {(
+                            [
+                                ["circles", "الحلقات"],
+                                ["students", "الطلاب"],
+                            ] as [DetailTab, string][]
+                        ).map(([tab, label]) => (
+                            <button
+                                key={tab}
+                                onClick={() => setDetailTab(tab)}
+                                style={{
+                                    flex: 1,
+                                    padding: "10px 0",
+                                    border: "none",
+                                    borderBottom:
+                                        detailTab === tab
+                                            ? "2px solid #0f6e56"
+                                            : "2px solid transparent",
+                                    background: "transparent",
+                                    cursor: "pointer",
+                                    fontFamily: "'Tajawal',sans-serif",
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    color:
+                                        detailTab === tab
+                                            ? "#0f6e56"
+                                            : "#94a3b8",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: 6,
+                                }}
+                            >
+                                {tab === "circles" ? (
+                                    <FaChalkboardTeacher size={13} />
+                                ) : (
+                                    <FiUsers size={13} />
+                                )}{" "}
+                                {label}
+                            </button>
+                        ))}
                     </div>
 
-                    <div className="expand-columns">
-                        <div className="expand-box">
-                            <div className="expand-title">
-                                <FiEye size={15} />
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                                "repeat(auto-fit,minmax(240px,1fr))",
+                            gap: 0,
+                        }}
+                    >
+                        {/* Details column */}
+                        <div
+                            style={{
+                                padding: "14px 18px",
+                                borderLeft: "1px solid #f8fafc",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    fontSize: 11,
+                                    fontWeight: 800,
+                                    color: "#64748b",
+                                    marginBottom: 10,
+                                }}
+                            >
                                 البيانات التفصيلية
                             </div>
-
-                            <ul className="detail-list">
-                                <li>
-                                    <FiMail size={13} />
-                                    <span>{teacher.email}</span>
-                                </li>
-                                <li>
-                                    <FiPhone size={13} />
-                                    <span>
-                                        {teacher.phone || "لا يوجد رقم هاتف"}
-                                    </span>
-                                </li>
-                                <li>
-                                    <FiCalendar size={13} />
-                                    <span>
-                                        {teacher.created_at?.slice(0, 10)}
-                                    </span>
-                                </li>
-                                <li>
-                                    <RiRobot2Fill size={13} />
-                                    <span>
-                                        {teacher.teacher?.notes ||
-                                            "لا توجد ملاحظات"}
-                                    </span>
-                                </li>
-                            </ul>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 8,
+                                }}
+                            >
+                                {[
+                                    {
+                                        icon: <FiMail size={12} />,
+                                        val: teacher.email,
+                                    },
+                                    {
+                                        icon: <FiPhone size={12} />,
+                                        val: teacher.phone || "لا يوجد رقم",
+                                    },
+                                    {
+                                        icon: <FiCalendar size={12} />,
+                                        val: teacher.created_at?.slice(0, 10),
+                                    },
+                                    {
+                                        icon: <RiRobot2Fill size={12} />,
+                                        val:
+                                            teacher.teacher?.notes ||
+                                            "لا توجد ملاحظات",
+                                    },
+                                ].map((item, i) => (
+                                    <div
+                                        key={i}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "flex-start",
+                                            gap: 8,
+                                            fontSize: 12,
+                                            color: "#475569",
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                color: "#0f6e56",
+                                                marginTop: 1,
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            {item.icon}
+                                        </span>
+                                        <span>{item.val}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="expand-box">
-                            <div className="expand-title">
-                                {detailTab === "circles" ? (
-                                    <FaChalkboardTeacher size={15} />
-                                ) : (
-                                    <FiUsers size={15} />
-                                )}
+                        {/* Circles / Students column */}
+                        <div style={{ padding: "14px 18px" }}>
+                            <div
+                                style={{
+                                    fontSize: 11,
+                                    fontWeight: 800,
+                                    color: "#64748b",
+                                    marginBottom: 10,
+                                }}
+                            >
                                 {detailTab === "circles"
-                                    ? "بيانات الحلقات"
-                                    : "بيانات الطلاب"}
+                                    ? "الحلقات المرتبطة"
+                                    : "الطلاب"}
                             </div>
-
                             {detailTab === "circles" ? (
-                                <div className="circle-list">
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 8,
+                                    }}
+                                >
                                     {(teacher.circles || []).length > 0 ? (
-                                        teacher.circles!.map((circle) => {
-                                            const parsed =
-                                                parseCirclePresentation(circle);
-
+                                        teacher.circles!.map((c) => {
+                                            const p = parseCircle(c);
                                             return (
                                                 <div
-                                                    key={circle.id}
-                                                    className="circle-item rich"
+                                                    key={c.id}
+                                                    style={{
+                                                        display: "flex",
+                                                        justifyContent:
+                                                            "space-between",
+                                                        alignItems: "center",
+                                                        padding: "8px 12px",
+                                                        background: "#f8fafc",
+                                                        borderRadius: 10,
+                                                        gap: 8,
+                                                    }}
                                                 >
                                                     <div>
-                                                        <div className="circle-name">
-                                                            {parsed.title}
+                                                        <div
+                                                            style={{
+                                                                fontSize: 12,
+                                                                fontWeight: 700,
+                                                                color: "#1e293b",
+                                                            }}
+                                                        >
+                                                            {p.title}
                                                         </div>
-                                                        <div className="circle-meta">
-                                                            {
-                                                                circle.studentsCount
-                                                            }{" "}
+                                                        <div
+                                                            style={{
+                                                                fontSize: 11,
+                                                                color: "#94a3b8",
+                                                                marginTop: 2,
+                                                            }}
+                                                        >
+                                                            {c.studentsCount}{" "}
                                                             طالب
                                                         </div>
                                                     </div>
-
-                                                    <div className="circle-time">
-                                                        {parsed.time ||
-                                                            "غير محدد"}
-                                                    </div>
+                                                    <span
+                                                        style={{
+                                                            fontSize: 11,
+                                                            color: "#0f6e56",
+                                                            fontWeight: 700,
+                                                            whiteSpace:
+                                                                "nowrap",
+                                                            background:
+                                                                "#e1f5ee",
+                                                            padding: "3px 8px",
+                                                            borderRadius: 8,
+                                                        }}
+                                                    >
+                                                        {p.time}
+                                                    </span>
                                                 </div>
                                             );
                                         })
                                     ) : (
-                                        <div className="empty-inline">
-                                            لا توجد حلقات مرتبطة بهذا المعلم.
+                                        <div
+                                            style={{
+                                                fontSize: 12,
+                                                color: "#94a3b8",
+                                            }}
+                                        >
+                                            لا توجد حلقات مرتبطة.
                                         </div>
                                     )}
                                 </div>
                             ) : (
-                                <div className="students-box">
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 8,
+                                    }}
+                                >
                                     {(teacher.students || []).length > 0 ? (
                                         <>
-                                            {studentsPreview.map((student) => (
-                                                <div
-                                                    key={student.id}
-                                                    className="student-item"
-                                                >
-                                                    <div>
-                                                        <div className="circle-name">
-                                                            {student.name}
-                                                        </div>
-                                                        <div className="circle-meta">
-                                                            {student.phone ||
-                                                                "لا يوجد رقم هاتف"}
-                                                        </div>
-                                                    </div>
-
-                                                    <button
-                                                        className="btn secondary student-link-btn"
-                                                        onClick={() =>
-                                                            onStudentClick(
-                                                                student,
-                                                            )
-                                                        }
+                                            {teacher
+                                                .students!.slice(0, 3)
+                                                .map((s) => (
+                                                    <div
+                                                        key={s.id}
+                                                        style={{
+                                                            display: "flex",
+                                                            justifyContent:
+                                                                "space-between",
+                                                            alignItems:
+                                                                "center",
+                                                            padding: "8px 12px",
+                                                            background:
+                                                                "#f8fafc",
+                                                            borderRadius: 10,
+                                                        }}
                                                     >
-                                                        <FiEye size={13} />
-                                                        فتح الطالب
-                                                    </button>
-                                                </div>
-                                            ))}
-
-                                            {remainingStudents > 0 && (
+                                                        <div>
+                                                            <div
+                                                                style={{
+                                                                    fontSize: 12,
+                                                                    fontWeight: 700,
+                                                                    color: "#1e293b",
+                                                                }}
+                                                            >
+                                                                {s.name}
+                                                            </div>
+                                                            <div
+                                                                style={{
+                                                                    fontSize: 11,
+                                                                    color: "#94a3b8",
+                                                                }}
+                                                            >
+                                                                {s.phone || "—"}
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() =>
+                                                                onStudentClick(
+                                                                    s,
+                                                                )
+                                                            }
+                                                            style={btnS(
+                                                                "#e1f5ee",
+                                                                "#0f6e56",
+                                                                "none",
+                                                                {
+                                                                    fontSize: 11,
+                                                                    padding:
+                                                                        "4px 10px",
+                                                                },
+                                                            )}
+                                                        >
+                                                            <FiEye size={11} />{" "}
+                                                            فتح
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            {teacher.students!.length > 3 && (
                                                 <button
-                                                    className="btn primary full-width-btn"
                                                     onClick={() =>
                                                         onViewAllStudents(
                                                             teacher,
                                                         )
                                                     }
+                                                    style={btnS(
+                                                        "#0f6e56",
+                                                        "#fff",
+                                                        "none",
+                                                        {
+                                                            width: "100%",
+                                                            justifyContent:
+                                                                "center",
+                                                        },
+                                                    )}
                                                 >
-                                                    <FiUsers size={14} />
-                                                    جميع الطلاب (
-                                                    {teacher.students?.length ||
-                                                        0}
-                                                    )
+                                                    <FiUsers size={12} /> جميع
+                                                    الطلاب (
+                                                    {teacher.students!.length})
                                                 </button>
                                             )}
                                         </>
                                     ) : (
-                                        <div className="empty-inline">
-                                            لا يوجد طلبة مع هذا المعلم.
+                                        <div
+                                            style={{
+                                                fontSize: 12,
+                                                color: "#94a3b8",
+                                            }}
+                                        >
+                                            لا يوجد طلبة.
                                         </div>
                                     )}
                                 </div>
@@ -952,6 +1681,51 @@ const TeacherCard = ({
     );
 };
 
+/* ─── Style helpers ─── */
+const btnS = (
+    bg: string,
+    color: string,
+    border = "none",
+    extra: React.CSSProperties = {},
+): React.CSSProperties => ({
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 5,
+    padding: "8px 16px",
+    borderRadius: 10,
+    border,
+    background: bg,
+    color,
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 700,
+    fontFamily: "'Tajawal',sans-serif",
+    transition: "opacity .15s",
+    ...extra,
+});
+const iconBtn = (bg = "#f8fafc", color = "#475569"): React.CSSProperties => ({
+    border: "1px solid #e2e8f0",
+    borderRadius: 8,
+    padding: "6px 8px",
+    background: bg,
+    color,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    transition: "background .15s",
+});
+const selectS: React.CSSProperties = {
+    border: "1px solid #e2e8f0",
+    borderRadius: 10,
+    padding: "8px 12px",
+    fontSize: 13,
+    fontFamily: "'Tajawal',sans-serif",
+    background: "#f8fafc",
+    color: "#1e293b",
+    outline: "none",
+};
+
+/* ─── Hook ─── */
 const useMyTeachers = () => {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [pagination, setPagination] = useState<Pagination>({
@@ -970,48 +1744,17 @@ const useMyTeachers = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const csrfToken = () =>
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute("content") || "";
-
-    const apiFetch = async (url: string, options: RequestInit = {}) => {
-        const response = await fetch(url, {
-            credentials: "include",
-            headers: {
-                Accept: "application/json",
-                "X-Requested-With": "XMLHttpRequest",
-                "X-CSRF-TOKEN": csrfToken(),
-                "Content-Type": "application/json",
-                ...(options.headers || {}),
-            },
-            ...options,
-        });
-
-        if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            throw new Error(data.message || `HTTP ${response.status}`);
-        }
-
-        return response.json();
-    };
-
     const normalizeTeacher = (
-        teacher: Teacher,
-        attendanceMap: Map<number, AttendanceRecord>,
+        t: Teacher,
+        amap: Map<number, AttendanceRecord>,
     ): Teacher => {
-        const mock = MOCK_TEACHERS.find((item) => item.id === teacher.id);
-        const attendance = attendanceMap.get(teacher.id);
-
-        const merged: Teacher = {
+        const mock = MOCK_TEACHERS.find((m) => m.id === t.id);
+        const att = amap.get(t.id);
+        const merged = {
             ...mock,
-            ...teacher,
-            teacher: {
-                ...mock?.teacher,
-                ...teacher.teacher,
-            },
+            ...t,
+            teacher: { ...mock?.teacher, ...t.teacher },
         };
-
         return {
             ...merged,
             circles_count: merged.circles_count ?? merged.circles?.length ?? 0,
@@ -1020,62 +1763,51 @@ const useMyTeachers = () => {
             net_salary:
                 merged.net_salary ??
                 Math.max(0, (merged.salary ?? 0) - (merged.deduction ?? 0)),
-            last_checkin:
-                attendance?.checkin_time ?? merged.last_checkin ?? null,
-            attendance_today:
-                attendance?.status ?? merged.attendance_today ?? null,
-            delay_minutes:
-                attendance?.delay_minutes ?? merged.delay_minutes ?? 0,
+            last_checkin: att?.checkin_time ?? merged.last_checkin ?? null,
+            attendance_today: att?.status ?? merged.attendance_today ?? null,
+            delay_minutes: att?.delay_minutes ?? merged.delay_minutes ?? 0,
         };
     };
 
     const fetchStats = async () => {
         try {
-            const data = await apiFetch(
+            const d = await apiFetch(
                 "/api/v1/teachers/my-teachers?per_page=200",
             );
-            const items: Teacher[] = data.data || [];
+            const items: Teacher[] = d.data || [];
             setStats({
                 total: items.length,
-                active: items.filter((item) => item.status === "active").length,
-                pending: items.filter((item) => item.status === "pending")
-                    .length,
+                active: items.filter((i) => i.status === "active").length,
+                pending: items.filter((i) => i.status === "pending").length,
                 suspended: items.filter(
-                    (item) =>
-                        item.status === "suspended" ||
-                        item.status === "inactive",
+                    (i) => i.status === "suspended" || i.status === "inactive",
                 ).length,
             });
         } catch {
             setStats({
                 total: MOCK_TEACHERS.length,
-                active: MOCK_TEACHERS.filter((item) => item.status === "active")
+                active: MOCK_TEACHERS.filter((i) => i.status === "active")
                     .length,
-                pending: MOCK_TEACHERS.filter(
-                    (item) => item.status === "pending",
-                ).length,
-                suspended: MOCK_TEACHERS.filter(
-                    (item) => item.status === "suspended",
-                ).length,
+                pending: MOCK_TEACHERS.filter((i) => i.status === "pending")
+                    .length,
+                suspended: MOCK_TEACHERS.filter((i) => i.status === "suspended")
+                    .length,
             });
         }
     };
 
     const loadMosques = async () => {
         try {
-            const data = await apiFetch("/api/v1/mosques");
-            const names = (data.data || [])
-                .map((item: { name?: string }) => item.name)
-                .filter(Boolean);
-            setMosques(names);
+            const d = await apiFetch("/api/v1/mosques");
+            setMosques(
+                (d.data || [])
+                    .map((m: { name?: string }) => m.name)
+                    .filter(Boolean),
+            );
         } catch {
             setMosques(
                 Array.from(
-                    new Set(
-                        MOCK_TEACHERS.map((item) => item.mosque).filter(
-                            Boolean,
-                        ),
-                    ),
+                    new Set(MOCK_TEACHERS.map((t) => t.mosque).filter(Boolean)),
                 ) as string[],
             );
         }
@@ -1090,17 +1822,15 @@ const useMyTeachers = () => {
     ) => {
         setLoading(true);
         setError(null);
-
         try {
             const params = new URLSearchParams({
                 page: String(page),
                 per_page: String(perPage),
                 search,
             });
-
             if (status) params.set("status", status);
 
-            const [teachersData, attendanceData] = await Promise.all([
+            const [td, ad] = await Promise.all([
                 apiFetch(`/api/v1/teachers/my-teachers?${params.toString()}`),
                 fetch("/api/v1/attendance/staff-attendance?date_filter=today", {
                     credentials: "include",
@@ -1109,29 +1839,22 @@ const useMyTeachers = () => {
                         "X-Requested-With": "XMLHttpRequest",
                     },
                 })
-                    .then(async (res) => {
-                        if (!res.ok) return { data: [] };
-                        return res.json();
-                    })
+                    .then((r) => (r.ok ? r.json() : { data: [] }))
                     .catch(() => ({ data: [] })),
             ]);
 
-            const attendanceMap = new Map<number, AttendanceRecord>();
-            (attendanceData.data || []).forEach((record: AttendanceRecord) => {
-                if (record.teacher_id != null) {
-                    attendanceMap.set(record.teacher_id, record);
-                }
+            const amap = new Map<number, AttendanceRecord>();
+            (ad.data || []).forEach((r: AttendanceRecord) => {
+                if (r.teacher_id != null) amap.set(r.teacher_id, r);
             });
 
-            const normalized = ((teachersData.data || []) as Teacher[])
-                .map((teacher) => normalizeTeacher(teacher, attendanceMap))
-                .filter((teacher) =>
-                    mosque ? (teacher.mosque || "") === mosque : true,
-                );
+            const normalized = ((td.data || []) as Teacher[])
+                .map((t) => normalizeTeacher(t, amap))
+                .filter((t) => (mosque ? (t.mosque || "") === mosque : true));
 
             setTeachers(normalized);
             setPagination(
-                teachersData.pagination || {
+                td.pagination || {
                     current_page: page,
                     total: normalized.length,
                     per_page: perPage,
@@ -1139,37 +1862,24 @@ const useMyTeachers = () => {
                 },
             );
         } catch (err: unknown) {
-            const message =
+            const msg =
                 err instanceof Error ? err.message : "تعذر تحميل البيانات";
-            setError(message);
-
-            let fallback = [...MOCK_TEACHERS];
-
+            setError(msg);
+            let fb = [...MOCK_TEACHERS];
             if (search.trim()) {
                 const q = search.trim().toLowerCase();
-                fallback = fallback.filter(
-                    (teacher) =>
-                        teacher.name.toLowerCase().includes(q) ||
-                        teacher.email.toLowerCase().includes(q),
+                fb = fb.filter(
+                    (t) =>
+                        t.name.toLowerCase().includes(q) ||
+                        t.email.toLowerCase().includes(q),
                 );
             }
-
-            if (status) {
-                fallback = fallback.filter(
-                    (teacher) => teacher.status === status,
-                );
-            }
-
-            if (mosque) {
-                fallback = fallback.filter(
-                    (teacher) => teacher.mosque === mosque,
-                );
-            }
-
-            setTeachers(fallback);
+            if (status) fb = fb.filter((t) => t.status === status);
+            if (mosque) fb = fb.filter((t) => t.mosque === mosque);
+            setTeachers(fb);
             setPagination({
                 current_page: 1,
-                total: fallback.length,
+                total: fb.length,
                 per_page: perPage,
                 last_page: 1,
             });
@@ -1178,34 +1888,22 @@ const useMyTeachers = () => {
         }
     };
 
-    const toggleStatus = async (id: number) => {
-        await apiFetch(`/api/v1/teachers/my-teachers/${id}/toggle-status`, {
+    const toggleStatus = (id: number) =>
+        apiFetch(`/api/v1/teachers/my-teachers/${id}/toggle-status`, {
             method: "POST",
         });
-    };
-
-    const deleteTeacher = async (id: number) => {
-        await apiFetch(`/api/v1/teachers/my-teachers/${id}`, {
-            method: "DELETE",
-        });
-    };
-
-    const updateTeacher = async (
-        id: number,
-        payload: Record<string, unknown>,
-    ) => {
-        await apiFetch(`/api/v1/teachers/my-teachers/${id}`, {
+    const deleteTeacher = (id: number) =>
+        apiFetch(`/api/v1/teachers/my-teachers/${id}`, { method: "DELETE" });
+    const updateTeacher = (id: number, payload: Record<string, unknown>) =>
+        apiFetch(`/api/v1/teachers/my-teachers/${id}`, {
             method: "PUT",
             body: JSON.stringify(payload),
         });
-    };
-
-    const createTeacher = async (payload: Record<string, unknown>) => {
-        await apiFetch(`/api/v1/teachers/my-teachers`, {
+    const createTeacher = (payload: Record<string, unknown>) =>
+        apiFetch(`/api/v1/teachers/my-teachers`, {
             method: "POST",
             body: JSON.stringify(payload),
         });
-    };
 
     useEffect(() => {
         loadMosques();
@@ -1228,9 +1926,10 @@ const useMyTeachers = () => {
     };
 };
 
+/* ─── Main Component ─── */
 const MyTeachersManagement: React.FC = () => {
     const [search, setSearch] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [debSearch, setDebSearch] = useState("");
     const [activeTab, setActiveTab] = useState<"all" | "active" | "suspended">(
         "all",
     );
@@ -1263,17 +1962,18 @@ const MyTeachersManagement: React.FC = () => {
     } = useMyTeachers();
 
     useEffect(() => {
-        const timeout = window.setTimeout(
-            () => setDebouncedSearch(search),
-            350,
-        );
-        return () => window.clearTimeout(timeout);
+        const t = window.setTimeout(() => setDebSearch(search), 350);
+        return () => window.clearTimeout(t);
     }, [search]);
-
     useEffect(() => {
-        const status = activeTab === "all" ? "" : activeTab;
-        fetchTeachers(page, perPage, debouncedSearch, status, mosqueFilter);
-    }, [page, perPage, debouncedSearch, activeTab, mosqueFilter]);
+        fetchTeachers(
+            page,
+            perPage,
+            debSearch,
+            activeTab === "all" ? "" : activeTab,
+            mosqueFilter,
+        );
+    }, [page, perPage, debSearch, activeTab, mosqueFilter]);
 
     const showToast = (
         message: string,
@@ -1285,63 +1985,39 @@ const MyTeachersManagement: React.FC = () => {
     };
 
     const displayTeachers = useMemo(() => {
-        if (activeTab === "active") {
-            return teachers.filter((teacher) => teacher.status === "active");
-        }
-        if (activeTab === "suspended") {
+        if (activeTab === "active")
+            return teachers.filter((t) => t.status === "active");
+        if (activeTab === "suspended")
             return teachers.filter(
-                (teacher) =>
-                    teacher.status === "suspended" ||
-                    teacher.status === "inactive",
+                (t) => t.status === "suspended" || t.status === "inactive",
             );
-        }
         return teachers;
     }, [teachers, activeTab]);
 
-    const pageRange = () => {
-        const totalPages = pagination.last_page || 1;
-        if (totalPages <= 6) {
-            return Array.from({ length: totalPages }, (_, i) => i + 1);
-        }
-        if (page <= 3) return [1, 2, 3, 4, "...", totalPages];
-        if (page >= totalPages - 2) {
-            return [
-                1,
-                "...",
-                totalPages - 3,
-                totalPages - 2,
-                totalPages - 1,
-                totalPages,
-            ];
-        }
-        return [1, "...", page - 1, page, page + 1, "...", totalPages];
-    };
-
     const handleRefresh = async () => {
-        const status = activeTab === "all" ? "" : activeTab;
         await fetchTeachers(
             page,
             perPage,
-            debouncedSearch,
-            status,
+            debSearch,
+            activeTab === "all" ? "" : activeTab,
             mosqueFilter,
         );
         await fetchStats();
         showToast("تم تحديث البيانات");
     };
 
-    const handleToggleStatus = async (teacher: Teacher) => {
+    const handleToggleStatus = async (t: Teacher) => {
         try {
-            await toggleStatus(teacher.id);
+            await toggleStatus(t.id);
             await handleRefresh();
         } catch {
             showToast("تعذر تحديث الحالة", "error");
         }
     };
 
-    const handleDelete = async (teacher: Teacher) => {
+    const handleDelete = async (t: Teacher) => {
         try {
-            await deleteTeacher(teacher.id);
+            await deleteTeacher(t.id);
             setConfirmTeacher(null);
             await handleRefresh();
             showToast("تم تعليق حساب المعلم");
@@ -1350,7 +2026,7 @@ const MyTeachersManagement: React.FC = () => {
         }
     };
 
-    const handleSaveTeacher = async (payload: Record<string, unknown>) => {
+    const handleSave = async (payload: Record<string, unknown>) => {
         if (!editTeacher) return;
         try {
             await updateTeacher(editTeacher.id, payload);
@@ -1362,307 +2038,598 @@ const MyTeachersManagement: React.FC = () => {
         }
     };
 
-    const handleCreateTeacher = async (payload: Record<string, unknown>) => {
+    const handleCreate = async (payload: Record<string, unknown>) => {
         try {
             await createTeacher(payload);
             await handleRefresh();
             showToast("تم إنشاء المعلم بنجاح");
         } catch {
-            showToast("تعذر إنشاء المعلم، وتم إبقاء التصميم جاهزًا", "error");
+            showToast("تعذر إنشاء المعلم", "error");
             throw new Error("create_failed");
         }
     };
 
+    const pageRange = (): (number | "...")[] => {
+        const tp = pagination.last_page || 1;
+        if (tp <= 6) return Array.from({ length: tp }, (_, i) => i + 1);
+        if (page <= 3) return [1, 2, 3, 4, "...", tp];
+        if (page >= tp - 2) return [1, "...", tp - 3, tp - 2, tp - 1, tp];
+        return [1, "...", page - 1, page, page + 1, "...", tp];
+    };
+
+    const STAT_CARDS = [
+        {
+            label: "إجمالي المعلمين",
+            value: stats.total,
+            icon: <FaChalkboardTeacher size={18} />,
+            accent: "#1e293b",
+            sub: "كل الأدوار",
+        },
+        {
+            label: "المعلمون النشطون",
+            value: stats.active,
+            icon: <FiCheckCircle size={18} />,
+            accent: "#16a34a",
+            sub: "يعملون الآن",
+        },
+        {
+            label: "الطلبات المعلقة",
+            value: stats.pending,
+            icon: <FiClock size={18} />,
+            accent: "#f59e0b",
+            sub: "بانتظار الاعتماد",
+        },
+        {
+            label: "الموقوفون",
+            value: stats.suspended,
+            icon: <FiXCircle size={18} />,
+            accent: "#dc2626",
+            sub: "معلق أو غير نشط",
+        },
+    ];
+
     return (
-        <div className="my-teachers-page" dir="rtl">
-            <div className="page-shell">
-                <section className="hero-card">
-                    <div>
-                        <h1 className="hero-title">إدارة المعلمين</h1>
-                        <p className="hero-copy">
-                            واجهة كاملة تعرض المعلم، المسجد المرتبط به، عدد
-                            الطلاب، الخطة، حالة الحضور، مع تبويب واضح بين
-                            الحلقات والطلاب، وبوب أب محترم للتعديل والإنشاء بنفس
-                            روح التصميم الأساسي.
-                        </p>
+        <div
+            style={{
+                fontFamily: "'Tajawal',sans-serif",
+                direction: "rtl",
+                background: "#f8fafc",
+                minHeight: "100vh",
+                padding: 24,
+            }}
+        >
+            {/* ── Hero ── */}
+            <div
+                style={{
+                    background: "linear-gradient(135deg,#1e293b,#0f4c35)",
+                    borderRadius: 24,
+                    padding: "32px 36px",
+                    marginBottom: 24,
+                    color: "#fff",
+                    position: "relative",
+                    overflow: "hidden",
+                }}
+            >
+                <div
+                    style={{
+                        position: "absolute",
+                        inset: 0,
+                        opacity: 0.05,
+                        backgroundImage:
+                            "radial-gradient(circle at 20% 50%,#fff 1px,transparent 1px)",
+                        backgroundSize: "24px 24px",
+                        pointerEvents: "none",
+                    }}
+                />
+                <div style={{ position: "relative" }}>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: "#86efac",
+                            marginBottom: 4,
+                        }}
+                    >
+                        ﷽ — منصة إتقان
                     </div>
-
-                    <div className="hero-actions">
+                    <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900 }}>
+                        إدارة المعلمين
+                    </h1>
+                    <p
+                        style={{
+                            margin: "6px 0 16px",
+                            color: "#94a3b8",
+                            fontSize: 13,
+                        }}
+                    >
+                        عرض شامل للمعلمين · الحلقات · الطلاب · الحضور · الرواتب
+                    </p>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                         <button
-                            className="btn secondary"
                             onClick={handleRefresh}
+                            style={btnS(
+                                "#ffffff22",
+                                "#fff",
+                                "1px solid #ffffff33",
+                            )}
                         >
-                            <FiRefreshCw size={15} />
-                            تحديث
+                            <FiRefreshCw size={13} /> تحديث
                         </button>
-
                         <button
-                            className="btn primary"
                             onClick={() => setShowCreate(true)}
+                            style={btnS("#22c55e", "#fff")}
                         >
-                            <FiPlus size={15} />
-                            إضافة معلم
+                            <FiPlus size={13} /> إضافة معلم
                         </button>
                     </div>
-                </section>
+                </div>
+            </div>
 
-                <section className="stats-grid">
-                    <div className="stat-card gold">
-                        <div className="stat-head">
-                            <div className="stat-icon">
-                                <FaChalkboardTeacher />
-                            </div>
-                            <FiTrendingUp />
+            {/* ── Stats ── */}
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
+                    gap: 14,
+                    marginBottom: 24,
+                }}
+            >
+                {STAT_CARDS.map((s) => (
+                    <div
+                        key={s.label}
+                        style={{
+                            background: "#fff",
+                            borderRadius: 16,
+                            padding: "20px 22px",
+                            boxShadow: "0 2px 12px #0001",
+                            borderTop: `4px solid ${s.accent}`,
+                        }}
+                    >
+                        <div
+                            style={{
+                                color: s.accent,
+                                fontSize: 18,
+                                marginBottom: 6,
+                            }}
+                        >
+                            {s.icon}
                         </div>
-                        <div className="stat-number">{stats.total}</div>
-                        <div className="stat-label">إجمالي المعلمين</div>
-                    </div>
-
-                    <div className="stat-card green">
-                        <div className="stat-head">
-                            <div className="stat-icon">
-                                <FiCheckCircle />
-                            </div>
-                            <FiTrendingUp />
+                        <div
+                            style={{
+                                fontSize: 28,
+                                fontWeight: 900,
+                                color: "#1e293b",
+                            }}
+                        >
+                            {s.value}
                         </div>
-                        <div className="stat-number">{stats.active}</div>
-                        <div className="stat-label">المعلمون النشطون</div>
-                    </div>
-
-                    <div className="stat-card blue">
-                        <div className="stat-head">
-                            <div className="stat-icon">
-                                <FiClock />
-                            </div>
-                            <FiFilter />
+                        <div
+                            style={{
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: "#475569",
+                            }}
+                        >
+                            {s.label}
                         </div>
-                        <div className="stat-number">{stats.pending}</div>
-                        <div className="stat-label">الطلبات المعلقة</div>
-                    </div>
-
-                    <div className="stat-card orange">
-                        <div className="stat-head">
-                            <div className="stat-icon">
-                                <FiXCircle />
-                            </div>
-                            <FiUsers />
+                        <div
+                            style={{
+                                fontSize: 11,
+                                color: "#94a3b8",
+                                marginTop: 2,
+                            }}
+                        >
+                            {s.sub}
                         </div>
-                        <div className="stat-number">{stats.suspended}</div>
-                        <div className="stat-label">الموقوفون</div>
                     </div>
-                </section>
+                ))}
+            </div>
 
-                <section className="filter-bar">
-                    <label className="search-field">
-                        <FiSearch size={16} />
+            {/* ── Filter bar ── */}
+            <div
+                style={{
+                    background: "#fff",
+                    borderRadius: 16,
+                    padding: 16,
+                    marginBottom: 16,
+                    boxShadow: "0 2px 10px #0001",
+                }}
+            >
+                <div
+                    style={{
+                        display: "flex",
+                        gap: 10,
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                    }}
+                >
+                    {/* Search */}
+                    <label
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            background: "#f8fafc",
+                            borderRadius: 10,
+                            padding: "8px 14px",
+                            flex: 1,
+                            minWidth: 200,
+                            border: "1px solid #e2e8f0",
+                        }}
+                    >
+                        <FiSearch size={14} color="#94a3b8" />
                         <input
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value);
                                 setPage(1);
                             }}
-                            placeholder="ابحث باسم المعلم أو البريد"
+                            placeholder="ابحث باسم المعلم أو البريد..."
+                            style={{
+                                border: "none",
+                                background: "transparent",
+                                outline: "none",
+                                fontSize: 13,
+                                flex: 1,
+                                fontFamily: "inherit",
+                                color: "#1e293b",
+                            }}
                         />
+                        {search && (
+                            <button
+                                onClick={() => setSearch("")}
+                                style={{
+                                    border: "none",
+                                    background: "none",
+                                    cursor: "pointer",
+                                    color: "#94a3b8",
+                                    display: "flex",
+                                    padding: 0,
+                                }}
+                            >
+                                <FiX size={12} />
+                            </button>
+                        )}
                     </label>
 
-                    <label className="select-field">
-                        <FaMosque size={14} />
+                    {/* Mosque filter */}
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            background: "#f8fafc",
+                            borderRadius: 10,
+                            padding: "0 12px",
+                            border: "1px solid #e2e8f0",
+                        }}
+                    >
+                        <FaMosque size={13} color="#94a3b8" />
                         <select
                             value={mosqueFilter}
                             onChange={(e) => {
                                 setMosqueFilter(e.target.value);
                                 setPage(1);
                             }}
+                            style={{
+                                ...selectS,
+                                border: "none",
+                                background: "transparent",
+                                padding: "9px 0",
+                            }}
                         >
                             <option value="">كل المساجد</option>
-                            {mosques.map((mosque) => (
-                                <option key={mosque} value={mosque}>
-                                    {mosque}
+                            {mosques.map((m) => (
+                                <option key={m} value={m}>
+                                    {m}
                                 </option>
                             ))}
                         </select>
-                    </label>
+                    </div>
 
-                    <label className="select-field">
-                        <FiFilter size={14} />
+                    {/* Per page */}
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            background: "#f8fafc",
+                            borderRadius: 10,
+                            padding: "0 12px",
+                            border: "1px solid #e2e8f0",
+                        }}
+                    >
+                        <FiFilter size={13} color="#94a3b8" />
                         <select
                             value={perPage}
                             onChange={(e) => {
                                 setPerPage(Number(e.target.value));
                                 setPage(1);
                             }}
+                            style={{
+                                ...selectS,
+                                border: "none",
+                                background: "transparent",
+                                padding: "9px 0",
+                            }}
                         >
                             <option value={8}>8 / صفحة</option>
                             <option value={12}>12 / صفحة</option>
                             <option value={20}>20 / صفحة</option>
                         </select>
-                    </label>
+                    </div>
 
-                    <div className="toolbar">
-                        <button
-                            className="btn secondary"
-                            onClick={() => {
-                                setSearch("");
-                                setDebouncedSearch("");
-                                setMosqueFilter("");
-                                setActiveTab("all");
-                                setPage(1);
+                    {/* Status tabs */}
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 4,
+                            background: "#f8fafc",
+                            borderRadius: 12,
+                            padding: 4,
+                        }}
+                    >
+                        {(["all", "active", "suspended"] as const).map(
+                            (tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => {
+                                        setActiveTab(tab);
+                                        setPage(1);
+                                    }}
+                                    style={{
+                                        padding: "6px 14px",
+                                        borderRadius: 10,
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontWeight: 700,
+                                        fontSize: 12,
+                                        fontFamily: "inherit",
+                                        background:
+                                            activeTab === tab
+                                                ? "#1e293b"
+                                                : "transparent",
+                                        color:
+                                            activeTab === tab
+                                                ? "#fff"
+                                                : "#64748b",
+                                        transition: "all .15s",
+                                    }}
+                                >
+                                    {
+                                        {
+                                            all: "الكل",
+                                            active: "النشطون",
+                                            suspended: "الموقوفون",
+                                        }[tab]
+                                    }
+                                </button>
+                            ),
+                        )}
+                    </div>
+
+                    {/* Reset */}
+                    <button
+                        onClick={() => {
+                            setSearch("");
+                            setDebSearch("");
+                            setMosqueFilter("");
+                            setActiveTab("all");
+                            setPage(1);
+                        }}
+                        style={btnS("#f8fafc", "#64748b", "1px solid #e2e8f0")}
+                    >
+                        <FiX size={13} /> إعادة ضبط
+                    </button>
+                </div>
+            </div>
+
+            {/* ── Error banner ── */}
+            {error && (
+                <div
+                    style={{
+                        background: "#fee2e2",
+                        color: "#dc2626",
+                        borderRadius: 12,
+                        padding: "12px 16px",
+                        marginBottom: 14,
+                        fontSize: 13,
+                    }}
+                >
+                    ⚠️ تعذر تحميل البيانات من الـ API — يُعرض بيانات بديلة
+                    مؤقتًا.
+                </div>
+            )}
+
+            {/* ── Table shell ── */}
+            <div
+                style={{
+                    background: "#fff",
+                    borderRadius: 20,
+                    boxShadow: "0 2px 16px #0001",
+                    overflow: "hidden",
+                }}
+            >
+                {/* Head */}
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "16px 20px",
+                        borderBottom: "1px solid #f1f5f9",
+                        flexWrap: "wrap",
+                        gap: 8,
+                    }}
+                >
+                    <div>
+                        <h2
+                            style={{
+                                margin: 0,
+                                fontSize: 16,
+                                fontWeight: 900,
+                                color: "#0f6e56",
                             }}
                         >
-                            <FiX size={15} />
-                            إعادة ضبط
-                        </button>
-                    </div>
-                </section>
-
-                <section className="table-shell">
-                    {error && (
-                        <div className="error-banner">
-                            تعذر تحميل بعض البيانات من الـ API وتم عرض بيانات
-                            بديلة مؤقتًا.
-                        </div>
-                    )}
-
-                    <div className="table-head">
-                        <div>
-                            <h2 style={{ margin: 0, color: "var(--emerald)" }}>
-                                قائمة المعلمين
-                            </h2>
-                            <div className="muted">
-                                عرض {displayTeachers.length} معلم
-                                {loading ? " - جاري التحديث..." : ""}
-                            </div>
-                        </div>
-
-                        <div className="tabs">
-                            <button
-                                className={`tab-btn ${activeTab === "all" ? "active" : ""}`}
-                                onClick={() => {
-                                    setActiveTab("all");
-                                    setPage(1);
-                                }}
-                            >
-                                الكل
-                            </button>
-
-                            <button
-                                className={`tab-btn ${activeTab === "active" ? "active" : ""}`}
-                                onClick={() => {
-                                    setActiveTab("active");
-                                    setPage(1);
-                                }}
-                            >
-                                النشطون
-                            </button>
-
-                            <button
-                                className={`tab-btn ${activeTab === "suspended" ? "active" : ""}`}
-                                onClick={() => {
-                                    setActiveTab("suspended");
-                                    setPage(1);
-                                }}
-                            >
-                                الموقوفون
-                            </button>
+                            قائمة المعلمين
+                        </h2>
+                        <div
+                            style={{
+                                fontSize: 12,
+                                color: "#94a3b8",
+                                marginTop: 2,
+                            }}
+                        >
+                            عرض {displayTeachers.length} معلم
+                            {loading ? " — جاري التحديث..." : ""}
                         </div>
                     </div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>
+                        الصفحة {pagination.current_page} من{" "}
+                        {pagination.last_page || 1}
+                    </div>
+                </div>
 
-                    {displayTeachers.length > 0 ? (
-                        <div className="teacher-list">
-                            {displayTeachers.map((teacher, index) => (
-                                <TeacherCard
-                                    key={teacher.id}
-                                    teacher={teacher}
-                                    index={index}
-                                    expanded={expandedIds.has(teacher.id)}
-                                    onToggleExpand={() =>
-                                        setExpandedIds((prev) => {
-                                            const next = new Set(prev);
-                                            if (next.has(teacher.id))
-                                                next.delete(teacher.id);
-                                            else next.add(teacher.id);
-                                            return next;
-                                        })
-                                    }
-                                    onEdit={() => setEditTeacher(teacher)}
-                                    onToggleStatus={() =>
-                                        handleToggleStatus(teacher)
-                                    }
-                                    onDelete={() => setConfirmTeacher(teacher)}
-                                    onStudentClick={(student) =>
-                                        showToast(`الطالب: ${student.name}`)
-                                    }
-                                    onViewAllStudents={(teacherItem) => {
-                                        window.location.href = `/teachers/${teacherItem.id}/students`;
-                                    }}
-                                />
-                            ))}
+                {/* Content */}
+                {loading && displayTeachers.length === 0 ? (
+                    <div
+                        style={{
+                            textAlign: "center",
+                            padding: "60px 20px",
+                            color: "#94a3b8",
+                            fontSize: 16,
+                        }}
+                    >
+                        ⏳ جارٍ تحميل البيانات...
+                    </div>
+                ) : displayTeachers.length === 0 ? (
+                    <div
+                        style={{
+                            textAlign: "center",
+                            padding: "60px 20px",
+                            color: "#94a3b8",
+                        }}
+                    >
+                        <div style={{ fontSize: 40, marginBottom: 10 }}>🔍</div>
+                        <div style={{ fontWeight: 700, fontSize: 15 }}>
+                            لا توجد نتائج مطابقة
                         </div>
-                    ) : (
-                        <div className="empty-state">
-                            لا توجد نتائج مطابقة للفلاتر الحالية.
+                        <div style={{ fontSize: 13, marginTop: 4 }}>
+                            جرب تعديل الفلاتر
                         </div>
-                    )}
+                    </div>
+                ) : (
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 12,
+                            padding: 16,
+                        }}
+                    >
+                        {displayTeachers.map((t, i) => (
+                            <TeacherCard
+                                key={t.id}
+                                teacher={t}
+                                index={i}
+                                expanded={expandedIds.has(t.id)}
+                                onToggleExpand={() =>
+                                    setExpandedIds((prev) => {
+                                        const s = new Set(prev);
+                                        s.has(t.id)
+                                            ? s.delete(t.id)
+                                            : s.add(t.id);
+                                        return s;
+                                    })
+                                }
+                                onEdit={() => setEditTeacher(t)}
+                                onToggleStatus={() => handleToggleStatus(t)}
+                                onDelete={() => setConfirmTeacher(t)}
+                                onStudentClick={(s) =>
+                                    showToast(`الطالب: ${s.name}`)
+                                }
+                                onViewAllStudents={(tc) => {
+                                    window.location.href = `/teachers/${tc.id}/students`;
+                                }}
+                            />
+                        ))}
+                    </div>
+                )}
 
-                    <div className="pagination-bar">
-                        <div className="muted">
+                {/* Pagination */}
+                {pagination.last_page > 1 && (
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "14px 20px",
+                            borderTop: "1px solid #f1f5f9",
+                            flexWrap: "wrap",
+                            gap: 10,
+                        }}
+                    >
+                        <span style={{ fontSize: 12, color: "#64748b" }}>
                             الصفحة {pagination.current_page} من{" "}
-                            {pagination.last_page || 1}
-                        </div>
-
-                        <div className="pagination">
+                            {pagination.last_page} · {pagination.total} معلم
+                        </span>
+                        <div style={{ display: "flex", gap: 6 }}>
                             <button
-                                className="page-btn"
                                 disabled={page <= 1}
                                 onClick={() =>
-                                    setPage((prev) => Math.max(1, prev - 1))
+                                    setPage((p) => Math.max(1, p - 1))
                                 }
+                                style={pgBtn(false, page <= 1)}
                             >
-                                <FiChevronRight size={14} />
+                                <FiChevronRight size={13} />
                             </button>
-
-                            {pageRange().map((item, index) =>
-                                item === "..." ? (
-                                    <button
-                                        key={`ellipsis-${index}`}
-                                        className="page-btn"
-                                        disabled
+                            {pageRange().map((p2, i) =>
+                                p2 === "..." ? (
+                                    <span
+                                        key={`e${i}`}
+                                        style={{
+                                            padding: "6px 8px",
+                                            color: "#94a3b8",
+                                            fontSize: 13,
+                                        }}
                                     >
                                         ...
-                                    </button>
+                                    </span>
                                 ) : (
                                     <button
-                                        key={item}
-                                        className={`page-btn ${page === item ? "active" : ""}`}
-                                        onClick={() => setPage(item as number)}
+                                        key={i}
+                                        onClick={() => setPage(p2 as number)}
+                                        style={pgBtn(page === p2)}
                                     >
-                                        {item}
+                                        {p2}
                                     </button>
                                 ),
                             )}
-
                             <button
-                                className="page-btn"
                                 disabled={page >= (pagination.last_page || 1)}
                                 onClick={() =>
-                                    setPage((prev) =>
+                                    setPage((p) =>
                                         Math.min(
                                             pagination.last_page || 1,
-                                            prev + 1,
+                                            p + 1,
                                         ),
                                     )
                                 }
+                                style={pgBtn(
+                                    false,
+                                    page >= (pagination.last_page || 1),
+                                )}
                             >
-                                <FiChevronLeft size={14} />
+                                <FiChevronLeft size={13} />
                             </button>
                         </div>
                     </div>
-                </section>
+                )}
             </div>
 
+            {/* ── Modals ── */}
             {confirmTeacher && (
                 <ConfirmModal
-                    message={`سيتم تعليق حساب ${confirmTeacher.name}. هل تريد المتابعة؟`}
+                    message={`سيتم تعليق حساب "${confirmTeacher.name}". هل تريد المتابعة؟`}
                     onCancel={() => setConfirmTeacher(null)}
                     onConfirm={() => handleDelete(confirmTeacher)}
                 />
@@ -1682,7 +2649,7 @@ const MyTeachersManagement: React.FC = () => {
                         mosque: editTeacher.mosque || "",
                     }}
                     onClose={() => setEditTeacher(null)}
-                    onSubmit={handleSaveTeacher}
+                    onSubmit={handleSave}
                 />
             )}
 
@@ -1700,7 +2667,7 @@ const MyTeachersManagement: React.FC = () => {
                         mosque: "",
                     }}
                     onClose={() => setShowCreate(false)}
-                    onSubmit={handleCreateTeacher}
+                    onSubmit={handleCreate}
                 />
             )}
 
@@ -1714,5 +2681,20 @@ const MyTeachersManagement: React.FC = () => {
         </div>
     );
 };
+
+const pgBtn = (active: boolean, disabled = false): React.CSSProperties => ({
+    border: "1px solid #e2e8f0",
+    borderRadius: 8,
+    padding: "6px 12px",
+    background: active ? "#1e293b" : "#fff",
+    color: active ? "#fff" : "#475569",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontFamily: "'Tajawal',sans-serif",
+    fontWeight: 700,
+    fontSize: 13,
+    opacity: disabled ? 0.4 : 1,
+    display: "flex",
+    alignItems: "center",
+});
 
 export default MyTeachersManagement;

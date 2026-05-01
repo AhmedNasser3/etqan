@@ -12,7 +12,7 @@ return new class extends Migration
         // أيام الإجازات - للمجمع كله أو لفرد
         Schema::create('center_holidays', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('center_id')->constrained('circles')->onDelete('cascade');
+            $table->foreignId('center_id')->constrained('centers')->onDelete('cascade');
 
             // NULL = إجازة للكل، رقم = إجازة لمعلم بعينه
             $table->foreignId('teacher_id')->nullable()->constrained('teachers')->onDelete('cascade');

@@ -233,6 +233,15 @@ const CenterSidebar: React.FC<CenterSidebarProps> = ({
                     permissionPath: "/center-dashboard/staff-approval",
                 },
                 {
+                    id: "staff-approval",
+                    path: "/center-dashboard/teacher-atten-manegment",
+                    lbl: "سجل حضور المعلمين",
+                    ico: "users",
+                    badge: null,
+                    permissionKey: "staff",
+                    permissionPath: "/center-dashboard/staff-approval",
+                },
+                {
                     id: "teachers-work-shedule",
                     path: "/center-dashboard/teachers-work-shedule",
                     lbl: "مواعيد عمل الموظفون",
@@ -405,7 +414,8 @@ const CenterSidebar: React.FC<CenterSidebarProps> = ({
                         </svg>
                     </div>
                     <span className="sb-brand-name sb-lbl">
-                        إتقان<span style={{ color: "var(--g400)" }}>.</span>
+                        {me.centerName || "—"}
+                        <span style={{ color: "var(--g400)" }}>.</span>
                     </span>
                 </div>
 
@@ -423,7 +433,6 @@ const CenterSidebar: React.FC<CenterSidebarProps> = ({
                     >
                         المجمع الحالي
                     </div>
-                    <div className="sba-n">{me.centerName || "—"}</div>
                     <div className="sba-r">
                         {me.name && me.role
                             ? `${me.name} · ${me.role}`

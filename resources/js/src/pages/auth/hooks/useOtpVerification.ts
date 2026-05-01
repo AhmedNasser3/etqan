@@ -1,5 +1,3 @@
-// hooks/useOtpVerification.ts
-
 import { useState, useCallback, useRef } from "react";
 
 interface ModalState {
@@ -19,6 +17,16 @@ interface UseOtpVerificationReturn {
     closeModal: () => void;
 }
 
+// ✅ دالة مشتركة لجلب الـ CSRF token
+const getCSRFToken = (): string => {
+    return decodeURIComponent(
+        document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("XSRF-TOKEN="))
+            ?.split("=")[1] ?? "",
+    );
+};
+
 export const useOtpVerification = (): UseOtpVerificationReturn => {
     const [verified, setVerified] = useState<boolean>(false);
     const [error, setError] = useState<boolean>(false);
@@ -34,18 +42,14 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
         setModal((m) => ({ ...m, show: false }));
     }, []);
 
-    const showAlert = useCallback(
-        (message: string): void => {
-            setModal({
-                show: true,
-                title: "تنبيه",
-                message,
-            });
-        },
-        [], // تنگدیني عن Dependcy
-    );
+    const showAlert = useCallback((message: string): void => {
+        setModal({
+            show: true,
+            title: "تنبيه",
+            message,
+        });
+    }, []);
 
-    //  إرسال OTP مباشرة
     const sendOtp = useCallback(
         async (email: string) => {
             setLoading(true);
@@ -59,6 +63,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                         "Content-Type": "application/json",
                         Accept: "application/json",
                         "X-Requested-With": "XMLHttpRequest",
+                        "X-XSRF-TOKEN": getCSRFToken(), // ✅
                     },
                     body: JSON.stringify({ email }),
                 });
@@ -66,7 +71,6 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                 const data = await response.json();
 
                 if (response.ok && data.success === true) {
-                    //  إذا كان الـ OTP ظاهر في الـ Response (dev/testing)
                     if (data.otp != null) {
                         showAlert(
                             `رمز التحقق المؤقت: ${data.otp} - ادخله في الحقول أدناه`,
@@ -75,7 +79,6 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                         showAlert("تم إرسال رمز التحقق للبريد الإلكتروني.");
                     }
                 } else {
-                    //  handle all fail cases
                     let msg = Array.isArray(data.message)
                         ? String(
                               Object.values(data.message)[0] ??
@@ -83,7 +86,6 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                           )
                         : String(data.message ?? "فشل في إرسال OTP");
 
-                    //  خاص بالرسالة "الحساب لم يتم قبوله بعد"
                     if (data.reason === "pending") {
                         setModal({
                             show: true,
@@ -109,7 +111,6 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
         [showAlert],
     );
 
-    //  التحقق من OTP
     const verifyOtp = useCallback(
         async (otp: string, onSuccess?: () => void) => {
             setLoading(true);
@@ -123,6 +124,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                         "Content-Type": "application/json",
                         Accept: "application/json",
                         "X-Requested-With": "XMLHttpRequest",
+                        "X-XSRF-TOKEN": getCSRFToken(), // ✅
                     },
                     body: JSON.stringify({ otp }),
                 });
@@ -131,7 +133,7 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
 
                 if (response.ok && data.success) {
                     setVerified(true);
-                    showAlert(" تم تسجيل الدخول بنجاح!");
+                    showAlert("تم تسجيل الدخول بنجاح!");
 
                     if (shieldRef.current) {
                         shieldRef.current.classList.add("verified-animation");
@@ -151,7 +153,6 @@ export const useOtpVerification = (): UseOtpVerificationReturn => {
                           )
                         : String(data.message ?? "رمز التحقق غير صحيح");
 
-                    //  مثال خاص برسالة معلّقة
                     if (data.reason === "pending") {
                         setModal({
                             show: true,

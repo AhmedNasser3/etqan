@@ -64,6 +64,13 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
                     badge: null,
                 },
                 {
+                    id: "students-reports",
+                    path: "/teacher-dashboard/students-reports",
+                    lbl: "تقارير الطلاب",
+                    ico: "cal",
+                    badge: null,
+                },
+                {
                     id: "motivation",
                     path: "/teacher-dashboard/motivation",
                     lbl: "التحفيز",

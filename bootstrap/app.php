@@ -1,10 +1,10 @@
 <?php
 
 use App\Http\Middleware\ImpersonateCenter;
+use App\Http\Middleware\LoadAdminRelation;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,22 +13,31 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware) {
+->withMiddleware(function (Middleware $middleware) {
 
-        // ✅ CORS - السماح بالـ X-Center-Id header
-        $middleware->validateCsrfTokens(except: ['api/*']);
+    // ✅ أضف student/register وباقي الـ routes
+    $middleware->validateCsrfTokens(except: [
+        'api/*',
+        'student/register',
+        'teacher/register',
+        'email/*',
+        'logout',
+        'v1/*',
+        'super/*',
+    ]);
 
-        $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
+    $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
 
-        $middleware->alias([
-            'impersonate' => ImpersonateCenter::class,
-        ]);
+    $middleware->alias([
+        'impersonate' => ImpersonateCenter::class,
+    ]);
 
-        $middleware->appendToGroup('api', [
-            ImpersonateCenter::class,
-        ]);
+    $middleware->appendToGroup('api', [
+        ImpersonateCenter::class,
+        LoadAdminRelation::class,
+    ]);
 
-    })
+})
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

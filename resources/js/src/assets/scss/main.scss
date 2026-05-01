@@ -14027,18 +14027,6 @@ td.td-right {
     padding: 24px;
     font-family: "Tajawal", sans-serif;
     color: var(--ink);
-    background:
-        radial-gradient(
-            circle at top right,
-            rgba(201, 168, 76, 0.08),
-            transparent 28%
-        ),
-        radial-gradient(
-            circle at bottom left,
-            rgba(26, 92, 58, 0.06),
-            transparent 24%
-        ),
-        var(--paper);
 }
 
 .page-shell {
@@ -14268,7 +14256,6 @@ td.td-right {
 .field select,
 .field textarea {
     width: 100%;
-    border: none;
     outline: none;
     background: transparent;
     font-family: inherit;
@@ -14820,5 +14807,1134 @@ td.td-right {
     }
     .teacher-card-actions {
         justify-content: flex-start;
+    }
+}
+/* ============================================================
+   teacher-attendance.css
+   تقرير حضور المعلمين — منصة إتقان
+   ============================================================ */
+
+/* ── Google Font (Tajawal) ── */
+@import url("https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap");
+
+/* ── Reset & Base ── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Tajawal", sans-serif;
+    direction: rtl;
+    background: #f8fafc;
+    min-height: 100vh;
+    color: #1e293b;
+}
+
+/* ============================================================
+   Layout — Wrapper
+   ============================================================ */
+.attendance-page {
+    padding: 24px;
+    min-height: 100vh;
+    background: #f8fafc;
+    font-family: "Tajawal", sans-serif;
+    direction: rtl;
+}
+
+/* ============================================================
+   Header
+   ============================================================ */
+.attendance-header {
+    background: linear-gradient(135deg, #1e293b, #0f4c35);
+    border-radius: 24px;
+    padding: 32px 36px;
+    margin-bottom: 24px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+/* dot-grid overlay */
+.attendance-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+    background-image: radial-gradient(
+        circle at 20% 50%,
+        #fff 1px,
+        transparent 1px
+    );
+    background-size: 24px 24px;
+    pointer-events: none;
+}
+
+.attendance-header__inner {
+    position: relative;
+}
+
+.attendance-header__bismillah {
+    font-size: 13px;
+    color: #86efac;
+    margin-bottom: 4px;
+}
+
+.attendance-header__title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 900;
+}
+
+.attendance-header__subtitle {
+    margin: 6px 0 0;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+/* ============================================================
+   Stats Grid
+   ============================================================ */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+/* Stat Card */
+.stat-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border-top: 4px solid var(--accent, #1e293b);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.stat-card__icon {
+    font-size: 22px;
+    color: var(--accent, #1e293b);
+}
+
+.stat-card__value {
+    font-size: 28px;
+    font-weight: 900;
+    color: #1e293b;
+}
+
+.stat-card__label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.stat-card__sub {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* Accent color variants */
+.stat-card--dark {
+    --accent: #1e293b;
+}
+.stat-card--green {
+    --accent: #16a34a;
+}
+.stat-card--blue {
+    --accent: #0284c7;
+}
+.stat-card--yellow {
+    --accent: #ca8a04;
+}
+.stat-card--red {
+    --accent: #dc2626;
+}
+.stat-card--purple {
+    --accent: #9333ea;
+}
+
+/* ============================================================
+   Filter Bar
+   ============================================================ */
+.filters-bar {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+/* Search input wrapper */
+.filters-bar__search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 8px 14px;
+    flex: 1;
+    min-width: 180px;
+}
+
+.filters-bar__search-icon {
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.filters-bar__search input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    flex: 1;
+    font-family: inherit;
+    color: #1e293b;
+}
+
+.filters-bar__search input::placeholder {
+    color: #94a3b8;
+}
+
+/* Shared select / date input style */
+.filters-bar select,
+.filters-bar input[type="date"] {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #f8fafc;
+    color: #475569;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.filters-bar select:focus,
+.filters-bar input[type="date"]:focus {
+    border-color: #0284c7;
+}
+
+/* Buttons */
+.btn {
+    border: none;
+    border-radius: 10px;
+    padding: 8px 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 700;
+    transition: opacity 0.15s;
+}
+
+.btn:hover {
+    opacity: 0.85;
+}
+
+.btn--primary {
+    background: #1e293b;
+    color: #fff;
+}
+
+.btn--ghost {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 8px 14px;
+}
+
+/* ============================================================
+   Error Banner
+   ============================================================ */
+.error-banner {
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+/* ============================================================
+   Loading / Empty States
+   ============================================================ */
+.state-center {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+    font-size: 18px;
+}
+
+/* ============================================================
+   Teacher Card
+   ============================================================ */
+.teacher-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+    margin-bottom: 16px;
+    overflow: hidden;
+    border-right: 4px solid var(--status-color, #e2e8f0);
+}
+
+.teacher-card--active {
+    --status-color: #22c55e;
+}
+.teacher-card--suspended {
+    --status-color: #ef4444;
+}
+.teacher-card--pending {
+    --status-color: #f59e0b;
+}
+.teacher-card--inactive {
+    --status-color: #94a3b8;
+}
+
+/* Card header row */
+.teacher-card__header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    flex-wrap: wrap;
+}
+
+/* Avatar */
+.teacher-card__avatar {
+    flex-shrink: 0;
+}
+
+/* Identity block */
+.teacher-card__identity {
+    flex: 1;
+    min-width: 0;
+}
+
+.teacher-card__name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.teacher-card__name {
+    font-weight: 900;
+    font-size: 15px;
+    color: #1e293b;
+}
+
+.teacher-card__meta {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.teacher-card__meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Quick stats */
+.teacher-card__quick-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.quick-stat {
+    text-align: center;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 8px 14px;
+}
+
+.quick-stat__value {
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.quick-stat__value--blue {
+    color: #0284c7;
+}
+.quick-stat__value--green {
+    color: #16a34a;
+}
+.quick-stat__value--purple {
+    color: #9333ea;
+}
+
+.quick-stat__label {
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+/* Toggle expand button */
+.teacher-card__toggle {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #475569;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.teacher-card__toggle:hover {
+    background: #e2e8f0;
+}
+
+/* Plan bar */
+.teacher-card__plan {
+    margin: 0 20px 12px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border-radius: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.teacher-card__plan-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #15803d;
+}
+
+.teacher-card__plan-detail {
+    font-size: 11px;
+    color: #166534;
+}
+
+.teacher-card__plan-sessions {
+    font-size: 11px;
+    color: #166534;
+    margin-right: auto;
+}
+
+/* Last check-in bar */
+.teacher-card__checkin {
+    margin: 0 20px 14px;
+    font-size: 12px;
+    color: #475569;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.teacher-card__checkin-delay {
+    color: #f59e0b;
+}
+
+/* Expanded panel */
+.teacher-card__expanded {
+    border-top: 1px solid #f1f5f9;
+    padding: 16px 20px;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.tab-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 12px;
+    font-family: inherit;
+    transition:
+        background 0.15s,
+        color 0.15s;
+}
+
+.tab-btn--active {
+    background: #1e293b;
+    color: #fff;
+}
+
+.tab-btn--inactive {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.tab-btn--inactive:hover {
+    background: #e2e8f0;
+}
+
+/* Empty tab message */
+.tab-empty {
+    color: #94a3b8;
+    text-align: center;
+    padding: 20px;
+}
+
+/* ============================================================
+   Circle Row (inside Circles tab)
+   ============================================================ */
+.circle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.circle-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-radius: 10px;
+    font-size: 13px;
+}
+
+.circle-item__name {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.circle-item__count {
+    color: #059669;
+    font-weight: 700;
+}
+
+/* ============================================================
+   Schedule Row (inside Schedules tab)
+   ============================================================ */
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.schedule-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-radius: 10px;
+    flex-wrap: wrap;
+}
+
+.schedule-item__day {
+    font-size: 12px;
+    font-weight: 800;
+    color: #1e293b;
+    min-width: 80px;
+}
+
+.schedule-item__time {
+    font-size: 12px;
+    color: #0284c7;
+}
+
+.schedule-item__circle {
+    font-size: 12px;
+    color: #475569;
+    flex: 1;
+}
+
+.schedule-item__plan {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.schedule-item__capacity {
+    font-size: 11px;
+    color: #059669;
+}
+
+/* ============================================================
+   Day Row  (inside Sessions tab)
+   ============================================================ */
+.day-row {
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.day-row__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    background: #fafafa;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.day-row__header--open {
+    background: #f0fdf4;
+}
+
+.day-row__header:hover {
+    background: #f0fdf4;
+}
+
+.day-row__date-block {
+    min-width: 90px;
+}
+
+.day-row__date {
+    font-size: 12px;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.day-row__day-name {
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+.day-row__info {
+    flex: 1;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.day-row__time {
+    font-size: 12px;
+    color: #475569;
+}
+
+.day-row__duration {
+    font-size: 12px;
+    color: #059669;
+    font-weight: 700;
+}
+
+.day-row__sessions-count {
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* Session detail rows */
+.day-row__body {
+    padding: 8px 14px 12px;
+    background: #fff;
+}
+
+.session-item {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.session-item:last-child {
+    border-bottom: none;
+}
+
+.session-item__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.session-item__dot--open {
+    background: #f59e0b;
+}
+.session-item__dot--closed {
+    background: #22c55e;
+}
+
+.session-item__time {
+    font-size: 11px;
+    color: #475569;
+    min-width: 80px;
+}
+
+.session-item__circle {
+    font-size: 11px;
+    color: #64748b;
+    flex: 1;
+}
+
+.session-item__duration {
+    font-size: 11px;
+    color: #059669;
+    font-weight: 700;
+}
+
+/* ============================================================
+   Badges
+   ============================================================ */
+.badge {
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.badge--active {
+    background: #dcfce7;
+    color: #16a34a;
+}
+.badge--pending {
+    background: #fef9c3;
+    color: #ca8a04;
+}
+.badge--suspended {
+    background: #fee2e2;
+    color: #dc2626;
+}
+.badge--inactive {
+    background: #f1f5f9;
+    color: #64748b;
+}
+.badge--present {
+    background: #dcfce7;
+    color: #16a34a;
+}
+.badge--late {
+    background: #fef9c3;
+    color: #ca8a04;
+}
+.badge--role {
+    background: #ede9fe;
+    color: #7c3aed;
+}
+
+/* ============================================================
+   Pagination
+   ============================================================ */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 24px;
+}
+
+.pagination__btn {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    color: #475569;
+    font-weight: 700;
+    transition:
+        background 0.15s,
+        color 0.15s;
+}
+
+.pagination__btn:hover:not(:disabled) {
+    background: #f1f5f9;
+}
+
+.pagination__btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pagination__btn--active {
+    background: #1e293b;
+    color: #fff;
+    border-color: #1e293b;
+}
+
+.pagination__ellipsis {
+    padding: 0 4px;
+    color: #94a3b8;
+}
+
+/* ============================================================
+   Responsive tweaks
+   ============================================================ */
+@media (max-width: 640px) {
+    .attendance-page {
+        padding: 12px;
+    }
+
+    .attendance-header {
+        padding: 20px 18px;
+    }
+
+    .attendance-header__title {
+        font-size: 20px;
+    }
+
+    .teacher-card__header {
+        padding: 12px 14px;
+    }
+
+    .teacher-card__plan,
+    .teacher-card__checkin {
+        margin-left: 14px;
+        margin-right: 14px;
+    }
+
+    .teacher-card__expanded {
+        padding: 12px 14px;
+    }
+
+    .stat-card__value {
+        font-size: 22px;
+    }
+
+    .filters-bar {
+        padding: 12px;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 400px) {
+    .quick-stat {
+        padding: 6px 10px;
+    }
+
+    .quick-stat__value {
+        font-size: 15px;
+    }
+}
+.main-area {
+    background-image: url("https://img.freepik.com/premium-vector/white-abstract-islamic-background-with-arabian-pattern-style-seamless-concept_57082-2430.jpg?semt=ais_hybrid&w=740&q=80");
+    background-size: 220px 220px; /* هنا السر: صغير جداً = نقوش كثيرة ودقيقة */
+    background-position: center;
+    background-repeat: repeat; /* تكرار لتغطية كاملة */
+    opacity: 1; /* خفوت أكثر للنقوش الدقيقة */
+}
+/* ========================================
+   PlanStartConfigModal Styles
+   ======================================== */
+
+.psm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: psm-fade-in 0.2s ease;
+}
+
+@keyframes psm-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.psm-modal {
+    background: #fff;
+    border-radius: 1.25rem;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: psm-slide-up 0.25s ease;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+@keyframes psm-slide-up {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Header */
+.psm-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.psm-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0;
+}
+.psm-subtitle {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 0.2rem 0 0;
+}
+.psm-close {
+    background: #f5f5f5;
+    border: none;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    &:hover {
+        background: #e0e0e0;
+    }
+}
+
+/* Modes Grid */
+.psm-modes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+.psm-mode-btn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    padding: 0.9rem 1rem;
+    border: 2px solid #e8e8e8;
+    border-radius: 0.875rem;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: right;
+
+    &:hover {
+        border-color: #4f46e5;
+        background: #f5f4ff;
+    }
+
+    &--active {
+        border-color: #4f46e5;
+        background: #eef2ff;
+    }
+}
+.psm-mode-icon {
+    font-size: 1.3rem;
+}
+.psm-mode-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #1a1a2e;
+}
+.psm-mode-desc {
+    font-size: 0.75rem;
+    color: #888;
+    line-height: 1.4;
+}
+.psm-mode-check {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    background: #4f46e5;
+    color: #fff;
+    border-radius: 50%;
+    width: 1.2rem;
+    height: 1.2rem;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Day Selector */
+.psm-day-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.psm-day-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #333;
+}
+.psm-day-scroll {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scrollbar-width: thin;
+}
+.psm-day-chip {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.5rem 0.8rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 0.75rem;
+    background: #fff;
+    cursor: pointer;
+    min-width: 90px;
+    transition: all 0.2s;
+
+    &:hover {
+        border-color: #4f46e5;
+    }
+
+    &--active {
+        border-color: #4f46e5;
+        background: #eef2ff;
+    }
+}
+.psm-day-chip__num {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #4f46e5;
+}
+.psm-day-chip__text {
+    font-size: 0.7rem;
+    color: #666;
+    text-align: center;
+}
+
+/* Preview */
+.psm-preview {
+    background: #f8fafc;
+    border-radius: 0.875rem;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+}
+.psm-preview__title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 0.75rem;
+}
+.psm-preview__days {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.psm-preview__day {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.45rem 0.6rem;
+    background: #fff;
+    border-radius: 0.5rem;
+    border: 1px solid #e8e8e8;
+}
+.psm-preview__seq {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #4f46e5;
+    min-width: 52px;
+}
+.psm-preview__daynum {
+    font-size: 0.78rem;
+    color: #333;
+    min-width: 55px;
+}
+.psm-preview__content {
+    font-size: 0.75rem;
+    color: #666;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.psm-preview__more {
+    font-size: 0.75rem;
+    color: #999;
+    text-align: center;
+    padding: 0.3rem;
+}
+
+/* Footer */
+.psm-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 1rem;
+}
+.psm-btn-cancel {
+    padding: 0.65rem 1.25rem;
+    border: 1.5px solid #ddd;
+    border-radius: 0.75rem;
+    background: #fff;
+    color: #555;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    &:hover {
+        background: #f5f5f5;
+    }
+}
+.psm-btn-confirm {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.5rem;
+    border: none;
+    border-radius: 0.75rem;
+    background: #4f46e5;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    &:hover:not(:disabled) {
+        background: #4338ca;
+    }
+    &:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+}
+.psm-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 480px) {
+    .psm-modes {
+        grid-template-columns: 1fr;
+    }
+    .psm-modal {
+        padding: 1.25rem;
     }
 }

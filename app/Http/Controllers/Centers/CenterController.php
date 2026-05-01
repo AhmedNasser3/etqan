@@ -347,13 +347,56 @@ class CenterController extends Controller
             'message' => 'تم إيقاف المجمع بنجاح'
         ]);
     }
+public function visit(Request $request, string $id)
+{
+    $user = auth()->user();
+
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'غير مصرح لك'
+        ], 401);
+    }
+
+    $center = Center::findOrFail($id);
+
+    $existingAdmin = DB::table('admins')
+        ->where('user_id', $user->id)
+        ->first();
+
+    if ($existingAdmin) {
+        DB::table('admins')
+            ->where('user_id', $user->id)
+            ->update([
+                'center_id' => $center->id,
+                'updated_at' => now(),
+            ]);
+    } else {
+        DB::table('admins')->insert([
+            'user_id' => $user->id,
+            'center_id' => $center->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم تحديث center_id للأدمن بنجاح',
+        'data' => [
+            'user_id' => $user->id,
+            'center_id' => $center->id,
+            'redirect_url' => url('/' . $center->subdomain . '/center-dashboard'),
+        ],
+    ]);
+}
+
 
 // جلب كل المجمعات المتاحة للجميع (بدون أي شروط)
 public function allCenters(Request $request)
 {
     try {
-        $centers = Center::where('is_active', true)
-            ->select([
+        $centers = Center::select([
                 'id',
                 'name as circleName',
                 'subdomain as domain',
@@ -372,12 +415,12 @@ public function allCenters(Request $request)
                 'circleName' => $center->circleName,
                 'managerEmail' => $center->email ?? 'غير محدد',
                 'managerPhone' => $center->phone ?? 'غير محدد',
-                'circleLink' => $center->domain . '.' . parse_url(config('app.url'), PHP_URL_HOST),
+                'circleLink' => '/' . $center->domain . '/center-dashboard',
                 'domain' => $center->domain,
                 'logo' => $center->logo ? asset('storage/' . $center->logo) : null,
                 'countryCode' => 'SA',
-                'is_active' => $center->is_active,
-                'created_at' => $center->created_at->format('Y-m-d H:i:s'),
+                'is_active' => (bool) $center->is_active,
+                'created_at' => optional($center->created_at)->format('Y-m-d H:i:s'),
             ];
         });
 
@@ -385,9 +428,8 @@ public function allCenters(Request $request)
             'success' => true,
             'data' => $formattedCenters,
             'total' => $formattedCenters->count(),
-            'message' => 'تم جلب جميع المجمعات المتاحة بنجاح'
+            'message' => 'تم جلب جميع المجمعات بنجاح'
         ]);
-
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
@@ -395,4 +437,5 @@ public function allCenters(Request $request)
         ], 500);
     }
 }
+
 }

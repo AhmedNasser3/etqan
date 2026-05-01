@@ -12,7 +12,7 @@ return new class extends Migration
         // جدول مواعيد العمل الافتراضية للمجمع أو لفرد معين
         Schema::create('work_schedules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('center_id')->constrained('circles')->onDelete('cascade');
+            $table->foreignId('center_id')->constrained('centers')->onDelete('cascade');
 
             // NULL = ينطبق على الكل، رقم = ينطبق على معلم بعينه
             $table->foreignId('teacher_id')->nullable()->constrained('teachers')->onDelete('cascade');

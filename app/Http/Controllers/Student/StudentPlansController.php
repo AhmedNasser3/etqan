@@ -258,7 +258,6 @@ class StudentPlansController extends Controller
 
         return response()->json($planData);
     }
-
 public function bookSchedule(Request $request, $scheduleId)
 {
     if (!Auth::check()) {
@@ -271,14 +270,16 @@ public function bookSchedule(Request $request, $scheduleId)
     $user = Auth::user();
 
     \Log::info('=== BOOK DEBUG START ===', [
-        'user_id' => $user->id,
-        'request_all' => $request->all(),
-        'schedule_id' => $scheduleId
+        'user_id'      => $user->id,
+        'request_all'  => $request->all(),
+        'schedule_id'  => $scheduleId
     ]);
 
     $request->validate([
-        'plan_id' => 'required|exists:plans,id',
-        'plan_details_id' => 'required|exists:plan_details,id',
+        'plan_id'        => 'required|exists:plans,id',
+        'plan_details_id'=> 'required|exists:plan_details,id',
+        'start_mode'     => ['nullable', Rule::in(['normal', 'reverse', 'from_day', 'reverse_from_day'])],
+        'start_day'      => 'nullable|integer|min:1',
     ]);
 
     $schedule = PlanCircleSchedule::where('id', $scheduleId)
@@ -307,44 +308,58 @@ public function bookSchedule(Request $request, $scheduleId)
     DB::beginTransaction();
 
     try {
-        //  Increment booked_students  (ده اشتغل)
         $schedule->increment('booked_students');
 
-        //  استخدم أرقام بدل strings للـ status
+        // ✅ start_mode و start_day_number بيتحفظوا صح
+        $startMode      = $request->input('start_mode', 'normal');
+        $startDayNumber = $request->input('start_day');
+
+        // ✅ لو الـ mode مش محتاج يوم، نتجاهل الـ start_day
+        if (!in_array($startMode, ['from_day', 'reverse_from_day'])) {
+            $startDayNumber = null;
+        }
+
         $booking = CircleStudentBooking::create([
-            'plan_id' => $request->plan_id,
-            'plan_details_id' => $request->plan_details_id,
+            'plan_id'                 => $request->plan_id,
+            'plan_details_id'         => $request->plan_details_id,
             'plan_circle_schedule_id' => $scheduleId,
-            'user_id' => $user->id,
-            'status' => 1, //  1 بدل 'pending'
-            'progress_status' => 1, //  1 بدل 'not_started'
-            'current_day' => 0,
-            'completed_days' => 0,
-            'total_days' => 1,
-            'booked_at' => now(),
+            'user_id'                 => $user->id,
+            'status'                  => 'pending',      // ✅ string مش int
+            'progress_status'         => 'not_started',  // ✅ string مش int
+            'current_day'             => 0,
+            'completed_days'          => 0,
+            'total_days'              => 1,
+            'booked_at'               => now(),
+            'start_mode'              => $startMode,       // ✅
+            'start_day_number'        => $startDayNumber,  // ✅
         ]);
 
         DB::commit();
 
-        \Log::info(' BOOKING SUCCESS 100%', ['booking_id' => $booking->id]);
+        \Log::info('✅ BOOKING SUCCESS', [
+            'booking_id'       => $booking->id,
+            'start_mode'       => $booking->start_mode,
+            'start_day_number' => $booking->start_day_number,
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'تم تسجيل طلب الحجز بنجاح! 🎉',
             'booking' => [
-                'id' => $booking->id,
-                'schedule_id' => $scheduleId,
-                'status' => $booking->status,
+                'id'               => $booking->id,
+                'schedule_id'      => $scheduleId,
+                'status'           => $booking->status,
+                'start_mode'       => $booking->start_mode,
+                'start_day_number' => $booking->start_day_number,
             ]
         ]);
 
     } catch (\Exception $e) {
         DB::rollBack();
         \Log::error('❌ EXCEPTION:', ['error' => $e->getMessage()]);
-        throw $e; // للـ debug
+        throw $e;
     }
 }
-
 
     public function cancelBooking(Request $request, $bookingId)
     {

@@ -1,8 +1,7 @@
-// StaffAttendance.tsx
+// StaffAttendance.tsx — نسخة مكتملة بتصميم جديد كامل
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { FiFileText, FiRefreshCw } from "react-icons/fi";
-import { CiCircleCheck, CiWarning, CiCircleRemove } from "react-icons/ci";
+import { FiFileText, FiRefreshCw, FiSearch, FiX } from "react-icons/fi";
 import {
     BsPersonCheck,
     BsPersonX,
@@ -17,25 +16,30 @@ import {
     StaffAttendance as StaffAttendanceType,
 } from "./hooks/useStaffAttendance";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════
+   Constants
+═══════════════════════════════════════════════════════════ */
 const STATUS_CFG = {
     present: {
         label: "حاضر",
         bg: "#dcfce7",
         color: "#15803d",
         border: "#bbf7d0",
+        dot: "#16a34a",
     },
     late: {
         label: "متأخر",
         bg: "#fef9c3",
         color: "#a16207",
         border: "#fde68a",
+        dot: "#d97706",
     },
     absent: {
         label: "غائب",
         bg: "#fee2e2",
         color: "#b91c1c",
         border: "#fecaca",
+        dot: "#dc2626",
     },
 } as const;
 
@@ -44,8 +48,8 @@ const ROLE_CFG: Record<string, { bg: string; color: string }> = {
     "مشرف تعليمي": { bg: "#dbeafe", color: "#1d4ed8" },
     مدير: { bg: "#ede9fe", color: "#7c3aed" },
 };
-const roleStyle = (role: string) =>
-    ROLE_CFG[role] ?? { bg: "#f1f5f9", color: "#475569" };
+const roleStyle = (r: string) =>
+    ROLE_CFG[r] ?? { bg: "#f1f5f9", color: "#475569" };
 
 const DATE_LABELS = {
     today: "اليومي",
@@ -54,7 +58,254 @@ const DATE_LABELS = {
     month: "الشهري",
 } as const;
 
-// ── Component ─────────────────────────────────────────────────────────────────
+const AV_COLORS = [
+    { bg: "#E1F5EE", color: "#085041" },
+    { bg: "#E6F1FB", color: "#0C447C" },
+    { bg: "#FAEEDA", color: "#633806" },
+    { bg: "#EAF3DE", color: "#27500A" },
+    { bg: "#FBEAF0", color: "#72243E" },
+    { bg: "#EEEDFE", color: "#3C3489" },
+];
+
+/* ═══════════════════════════════════════════════════════════
+   Tiny helpers
+═══════════════════════════════════════════════════════════ */
+const Avatar = ({ name, idx }: { name: string; idx: number }) => {
+    const av = AV_COLORS[idx % AV_COLORS.length];
+    const initials = name
+        .split(" ")
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join("");
+    return (
+        <div
+            style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: av.bg,
+                color: av.color,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 13,
+                fontWeight: 700,
+                flexShrink: 0,
+                fontFamily: "'Tajawal',sans-serif",
+            }}
+        >
+            {initials}
+        </div>
+    );
+};
+
+const StatusBadge = ({ status }: { status: keyof typeof STATUS_CFG }) => {
+    const s = STATUS_CFG[status] ?? STATUS_CFG.absent;
+    return (
+        <span
+            style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                background: s.bg,
+                color: s.color,
+                border: `1px solid ${s.border}`,
+                padding: "3px 10px",
+                borderRadius: 20,
+                fontSize: 11,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+            }}
+        >
+            <span
+                style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: s.dot,
+                    display: "inline-block",
+                }}
+            />
+            {s.label}
+        </span>
+    );
+};
+
+const RolePill = ({ role }: { role: string }) => {
+    const rs = roleStyle(role);
+    return (
+        <span
+            style={{
+                background: rs.bg,
+                color: rs.color,
+                padding: "3px 10px",
+                borderRadius: 20,
+                fontSize: 11,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                display: "inline-block",
+            }}
+        >
+            {role}
+        </span>
+    );
+};
+
+const Spinner = () => (
+    <div
+        style={{
+            width: 14,
+            height: 14,
+            border: "2px solid rgba(255,255,255,0.35)",
+            borderTop: "2px solid #fff",
+            borderRadius: "50%",
+            animation: "ta-spin 0.7s linear infinite",
+            display: "inline-block",
+        }}
+    />
+);
+
+const SkeletonRow = () => (
+    <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+        {[44, 160, 90, 110, 80, 70, 130, 110].map((w, j) => (
+            <td key={j} style={{ padding: "14px 14px" }}>
+                <div
+                    style={{
+                        height: 12,
+                        width: w,
+                        borderRadius: 6,
+                        background:
+                            "linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%)",
+                        backgroundSize: "200% 100%",
+                        animation: "ta-shimmer 1.4s infinite",
+                    }}
+                />
+            </td>
+        ))}
+    </tr>
+);
+
+/* ═══════════════════════════════════════════════════════════
+   Stat Card
+═══════════════════════════════════════════════════════════ */
+const StatCard = ({
+    label,
+    value,
+    icon: Icon,
+    accent,
+    bg,
+}: {
+    label: string;
+    value: string | number;
+    icon: any;
+    accent: string;
+    bg: string;
+}) => (
+    <div
+        style={{
+            background: "#fff",
+            borderRadius: 16,
+            padding: "18px 20px",
+            boxShadow: "0 2px 12px #0001",
+            borderTop: `4px solid ${accent}`,
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+        }}
+    >
+        <div
+            style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                background: bg,
+                color: accent,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                fontSize: 20,
+            }}
+        >
+            <Icon size={20} />
+        </div>
+        <div>
+            <div
+                style={{
+                    fontSize: 22,
+                    fontWeight: 900,
+                    color: accent,
+                    lineHeight: 1,
+                }}
+            >
+                {value}
+            </div>
+            <div
+                style={{
+                    fontSize: 11,
+                    color: "#94a3b8",
+                    marginTop: 4,
+                    fontWeight: 600,
+                }}
+            >
+                {label}
+            </div>
+        </div>
+    </div>
+);
+
+/* ═══════════════════════════════════════════════════════════
+   Button helper
+═══════════════════════════════════════════════════════════ */
+const Btn = ({
+    bg,
+    color,
+    border = "none",
+    disabled = false,
+    onClick,
+    children,
+    title,
+    style: extra = {},
+}: {
+    bg: string;
+    color: string;
+    border?: string;
+    disabled?: boolean;
+    onClick?: () => void;
+    children: React.ReactNode;
+    title?: string;
+    style?: React.CSSProperties;
+}) => (
+    <button
+        onClick={onClick}
+        disabled={disabled}
+        title={title}
+        style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "7px 14px",
+            borderRadius: 10,
+            border,
+            background: bg,
+            color,
+            cursor: disabled ? "not-allowed" : "pointer",
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: "'Tajawal',sans-serif",
+            opacity: disabled ? 0.6 : 1,
+            transition: "opacity .15s",
+            whiteSpace: "nowrap",
+            ...extra,
+        }}
+    >
+        {children}
+    </button>
+);
+
+/* ═══════════════════════════════════════════════════════════
+   Main Component
+═══════════════════════════════════════════════════════════ */
 const StaffAttendance: React.FC = () => {
     const {
         staff,
@@ -71,11 +322,14 @@ const StaffAttendance: React.FC = () => {
     } = useStaffAttendance();
 
     const [markingId, setMarkingId] = useState<number | null>(null);
-    const [lateModal, setLateModal] = useState<{ id: number } | null>(null);
+    const [lateModal, setLateModal] = useState<{
+        id: number;
+        name: string;
+    } | null>(null);
     const [lateReason, setLateReason] = useState("");
     const [lateMinutes, setLateMinutes] = useState(15);
 
-    // ── handlers ─────────────────────────────────────────────────────────────
+    /* ── handlers ── */
     const handleMark = async (
         id: number,
         status: "present" | "late" | "absent",
@@ -87,15 +341,15 @@ const StaffAttendance: React.FC = () => {
         if (ok) {
             toast.success(
                 status === "present"
-                    ? "تم تسجيل الحضور"
+                    ? "تم تسجيل الحضور ✓"
                     : status === "late"
-                      ? "تم تسجيل التأخير"
+                      ? "تم تسجيل التأخير ⚠"
                       : "تم تسجيل الغياب",
                 { duration: 3000, position: "top-right" },
             );
             setTimeout(fetchAttendance, 800);
         } else {
-            toast.error("فشل في التحديث - حاول مرة أخرى", {
+            toast.error("فشل في التحديث — حاول مرة أخرى", {
                 duration: 4000,
                 position: "top-right",
             });
@@ -120,276 +374,378 @@ const StaffAttendance: React.FC = () => {
         setTimeout(() => toast.success("تم فتح الملف!", { id: "pdf" }), 1000);
     };
 
-    // ── error state ───────────────────────────────────────────────────────────
+    /* ── error state ── */
     if (error)
         return (
-            <div className="content" id="contentArea">
-                <div className="widget">
+            <div
+                style={{
+                    fontFamily: "'Tajawal',sans-serif",
+                    direction: "rtl",
+                    padding: 24,
+                }}
+            >
+                <div
+                    style={{
+                        textAlign: "center",
+                        padding: "48px 24px",
+                        color: "#b91c1c",
+                        background: "#fee2e2",
+                        borderRadius: 16,
+                        margin: "24px auto",
+                        maxWidth: 400,
+                    }}
+                >
+                    <div style={{ fontSize: 40, marginBottom: 12 }}>⛔</div>
                     <div
                         style={{
-                            textAlign: "center",
-                            padding: "48px 24px",
-                            color: "#b91c1c",
-                            background: "#fee2e2",
-                            borderRadius: "12px",
-                            margin: "24px",
+                            fontWeight: 700,
+                            marginBottom: 16,
+                            fontSize: 15,
                         }}
                     >
-                        <CiCircleRemove
-                            size={48}
-                            style={{ marginBottom: 12, opacity: 0.7 }}
-                        />
-                        <div style={{ fontWeight: 600, marginBottom: "16px" }}>
-                            خطأ في تحميل البيانات: {error}
-                        </div>
-                        <button
-                            className="btn bp bsm"
-                            onClick={fetchAttendance}
-                        >
-                            <FiRefreshCw size={14} style={{ marginLeft: 6 }} />
-                            إعادة المحاولة
-                        </button>
+                        خطأ في تحميل البيانات: {error}
                     </div>
+                    <Btn bg="#dc2626" color="#fff" onClick={fetchAttendance}>
+                        <FiRefreshCw size={14} /> إعادة المحاولة
+                    </Btn>
                 </div>
             </div>
         );
 
-    // ── main render ───────────────────────────────────────────────────────────
+    /* ── TH / TD styles ── */
+    const TH: React.CSSProperties = {
+        padding: "11px 14px",
+        textAlign: "right",
+        color: "#64748b",
+        fontWeight: 700,
+        fontSize: 11,
+        whiteSpace: "nowrap",
+        borderBottom: "1px solid #f1f5f9",
+        background: "#f8fafc",
+    };
+    const TD: React.CSSProperties = {
+        padding: "12px 14px",
+        borderBottom: "1px solid #f8fafc",
+        verticalAlign: "middle",
+    };
+
+    /* ══════════════════════════════════════════════════════
+       RENDER
+    ══════════════════════════════════════════════════════ */
     return (
-        <div className="content" id="contentArea">
-            <div className="widget">
-                {/* ── Header ── */}
-                <div className="wh">
-                    <div className="wh-l">
-                        سجل الحضور {DATE_LABELS[dateFilter]}
-                    </div>
+        <div
+            style={{
+                fontFamily: "'Tajawal',sans-serif",
+                direction: "rtl",
+                background: "#f8fafc",
+                minHeight: "100vh",
+                padding: 24,
+            }}
+        >
+            {/* ── Hero Header ── */}
+            <div
+                style={{
+                    background: "linear-gradient(135deg,#1e293b,#0f4c35)",
+                    borderRadius: 24,
+                    padding: "30px 36px",
+                    marginBottom: 24,
+                    color: "#fff",
+                    position: "relative",
+                    overflow: "hidden",
+                }}
+            >
+                <div
+                    style={{
+                        position: "absolute",
+                        inset: 0,
+                        opacity: 0.06,
+                        backgroundImage:
+                            "radial-gradient(circle at 20% 50%,#fff 1px,transparent 1px)",
+                        backgroundSize: "24px 24px",
+                        pointerEvents: "none",
+                    }}
+                />
+                <div style={{ position: "relative" }}>
                     <div
-                        className="flx"
+                        style={{
+                            fontSize: 13,
+                            color: "#86efac",
+                            marginBottom: 4,
+                        }}
+                    >
+                        ﷽ — منصة إتقان
+                    </div>
+                    <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900 }}>
+                        سجل الحضور {DATE_LABELS[dateFilter]}
+                    </h1>
+                    <p
+                        style={{
+                            margin: "6px 0 0",
+                            color: "#94a3b8",
+                            fontSize: 13,
+                        }}
+                    >
+                        متابعة حضور وغياب وتأخير الكوادر التعليمية بشكل يومي
+                        وأسبوعي وشهري
+                    </p>
+                    <div
                         style={{
                             display: "flex",
-                            gap: "8px",
+                            gap: 10,
+                            marginTop: 18,
                             flexWrap: "wrap",
                         }}
                     >
-                        <select
-                            value={dateFilter}
-                            onChange={(e) =>
-                                setDateFilter(e.target.value as any)
-                            }
-                            className="fi"
-                            disabled={loading}
-                        >
-                            <option value="today">اليوم</option>
-                            <option value="yesterday">أمس</option>
-                            <option value="week">هذا الأسبوع</option>
-                            <option value="month">هذا الشهر</option>
-                        </select>
-                        <input
-                            type="search"
-                            placeholder="بحث بالاسم أو الدور أو المركز..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="fi"
-                            disabled={loading}
-                            style={{ minWidth: "200px" }}
-                        />
-                        <button
+                        <Btn
+                            bg="#ffffff22"
+                            color="#fff"
+                            border="1px solid #ffffff33"
                             onClick={fetchAttendance}
-                            className="btn bs bsm"
                             disabled={loading}
                         >
-                            <FiRefreshCw size={14} style={{ marginLeft: 6 }} />
+                            <FiRefreshCw
+                                size={13}
+                                style={{
+                                    animation: loading
+                                        ? "ta-spin 1s linear infinite"
+                                        : "none",
+                                }}
+                            />{" "}
                             تحديث
-                        </button>
-                        <button
+                        </Btn>
+                        <Btn
+                            bg="#ffffff22"
+                            color="#fff"
+                            border="1px solid #ffffff33"
                             onClick={handleExportPDF}
                             disabled={loading || staff.length === 0}
-                            className="btn bp bsm"
                         >
-                            <FiFileText size={14} style={{ marginLeft: 6 }} />
-                            PDF
-                        </button>
+                            <FiFileText size={13} /> تصدير PDF
+                        </Btn>
                     </div>
                 </div>
+            </div>
 
-                {/* ── Stats Bar ── */}
-                <div
+            {/* ── Stat Cards ── */}
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(155px,1fr))",
+                    gap: 14,
+                    marginBottom: 24,
+                }}
+            >
+                <StatCard
+                    label="الإجمالي"
+                    value={stats.total}
+                    icon={BsClipboardData}
+                    accent="#6366f1"
+                    bg="#eef2ff"
+                />
+                <StatCard
+                    label="حاضر"
+                    value={stats.present}
+                    icon={BsPersonCheck}
+                    accent="#16a34a"
+                    bg="#dcfce7"
+                />
+                <StatCard
+                    label="متأخر"
+                    value={stats.late}
+                    icon={BsPersonExclamation}
+                    accent="#d97706"
+                    bg="#fef9c3"
+                />
+                <StatCard
+                    label="غائب"
+                    value={stats.absent}
+                    icon={BsPersonX}
+                    accent="#dc2626"
+                    bg="#fee2e2"
+                />
+                <StatCard
+                    label="نسبة الحضور"
+                    value={`${stats.monthlyAttendanceRate}%`}
+                    icon={BsBarChart}
+                    accent="#0891b2"
+                    bg="#e0f2fe"
+                />
+                <StatCard
+                    label="متوسط التأخير"
+                    value={`${stats.avgDelay} د`}
+                    icon={BsClock}
+                    accent="#7c3aed"
+                    bg="#ede9fe"
+                />
+            </div>
+
+            {/* ── Filter Bar ── */}
+            <div
+                style={{
+                    background: "#fff",
+                    borderRadius: 16,
+                    padding: 16,
+                    marginBottom: 20,
+                    boxShadow: "0 2px 10px #0001",
+                    display: "flex",
+                    gap: 12,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                }}
+            >
+                {/* Search */}
+                <label
                     style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                            "repeat(auto-fill, minmax(130px,1fr))",
-                        gap: "10px",
-                        marginBottom: "20px",
-                        padding: "24px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        background: "#f8fafc",
+                        borderRadius: 10,
+                        padding: "8px 14px",
+                        flex: 1,
+                        minWidth: 200,
+                        border: "1px solid #e2e8f0",
                     }}
                 >
-                    {[
-                        {
-                            label: "الإجمالي",
-                            value: stats.total,
-                            Icon: BsClipboardData,
-                            color: "#6366f1",
-                            bg: "#eef2ff",
-                        },
-                        {
-                            label: "حاضر",
-                            value: stats.present,
-                            Icon: BsPersonCheck,
-                            color: "#16a34a",
-                            bg: "#dcfce7",
-                        },
-                        {
-                            label: "متأخر",
-                            value: stats.late,
-                            Icon: BsPersonExclamation,
-                            color: "#d97706",
-                            bg: "#fef9c3",
-                        },
-                        {
-                            label: "غائب",
-                            value: stats.absent,
-                            Icon: BsPersonX,
-                            color: "#dc2626",
-                            bg: "#fee2e2",
-                        },
-                        {
-                            label: "نسبة الحضور",
-                            value: `${stats.monthlyAttendanceRate}%`,
-                            Icon: BsBarChart,
-                            color: "#0891b2",
-                            bg: "#e0f2fe",
-                        },
-                        {
-                            label: "متوسط التأخير",
-                            value: `${stats.avgDelay} د`,
-                            Icon: BsClock,
-                            color: "#7c3aed",
-                            bg: "#ede9fe",
-                        },
-                    ].map(({ label, value, Icon, color, bg }) => (
-                        <div
-                            key={label}
+                    <FiSearch size={14} color="#94a3b8" />
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="بحث بالاسم أو الدور أو المركز..."
+                        style={{
+                            border: "none",
+                            background: "transparent",
+                            outline: "none",
+                            fontSize: 13,
+                            flex: 1,
+                            fontFamily: "inherit",
+                            color: "#1e293b",
+                        }}
+                    />
+                    {search && (
+                        <button
+                            onClick={() => setSearch("")}
                             style={{
-                                background: "white",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "12px",
-                                padding: "14px 16px",
+                                border: "none",
+                                background: "none",
+                                cursor: "pointer",
+                                color: "#94a3b8",
                                 display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
+                                padding: 0,
                             }}
                         >
-                            <div
+                            <FiX size={12} />
+                        </button>
+                    )}
+                </label>
+
+                {/* Date filter pills */}
+                <div
+                    style={{
+                        display: "flex",
+                        gap: 6,
+                        background: "#f8fafc",
+                        borderRadius: 12,
+                        padding: 4,
+                    }}
+                >
+                    {(["today", "yesterday", "week", "month"] as const).map(
+                        (d) => (
+                            <button
+                                key={d}
+                                onClick={() => setDateFilter(d)}
                                 style={{
-                                    width: 38,
-                                    height: 38,
+                                    padding: "6px 14px",
                                     borderRadius: 10,
-                                    background: bg,
-                                    color,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    flexShrink: 0,
+                                    border: "none",
+                                    cursor: "pointer",
+                                    fontWeight: 700,
+                                    fontSize: 12,
+                                    fontFamily: "inherit",
+                                    background:
+                                        dateFilter === d
+                                            ? "#1e293b"
+                                            : "transparent",
+                                    color:
+                                        dateFilter === d ? "#fff" : "#64748b",
+                                    transition: "all .15s",
                                 }}
                             >
-                                <Icon size={18} />
-                            </div>
-                            <div>
-                                <div
-                                    style={{
-                                        fontSize: "1.3rem",
-                                        fontWeight: 800,
-                                        color,
-                                        lineHeight: 1,
-                                    }}
-                                >
-                                    {value}
-                                </div>
-                                <div
-                                    style={{
-                                        fontSize: "0.72rem",
-                                        color: "#94a3b8",
-                                        marginTop: 3,
-                                    }}
-                                >
-                                    {label}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                                {DATE_LABELS[d]}
+                            </button>
+                        ),
+                    )}
                 </div>
+            </div>
 
-                {/* ── Table ── */}
+            {/* ── Results count ── */}
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 12,
+                    fontSize: 13,
+                    color: "#64748b",
+                }}
+            >
+                <span>
+                    عرض <b style={{ color: "#1e293b" }}>{staff.length}</b> موظف
+                </span>
+                {loading && (
+                    <span
+                        style={{
+                            color: "#0284c7",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                        }}
+                    >
+                        <FiRefreshCw
+                            size={12}
+                            style={{ animation: "ta-spin 1s linear infinite" }}
+                        />{" "}
+                        جاري التحديث...
+                    </span>
+                )}
+            </div>
+
+            {/* ── Table Shell ── */}
+            <div
+                style={{
+                    background: "#fff",
+                    borderRadius: 20,
+                    overflow: "hidden",
+                    boxShadow: "0 2px 16px #0001",
+                }}
+            >
                 <div style={{ overflowX: "auto" }}>
                     <table
-                        style={{ width: "100%", borderCollapse: "collapse" }}
+                        style={{
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            fontSize: 13,
+                        }}
                     >
                         <thead>
-                            <tr
-                                style={{
-                                    background: "#f8fafc",
-                                    borderBottom: "2px solid #e2e8f0",
-                                }}
-                            >
-                                {[
-                                    "",
-                                    "الموظف",
-                                    "الدور",
-                                    "المركز",
-                                    "الحالة",
-                                    "التأخير",
-                                    "الملاحظات",
-                                    "الإجراءات",
-                                ].map((h) => (
-                                    <th
-                                        key={h}
-                                        style={{
-                                            padding: "12px 14px",
-                                            textAlign: "right",
-                                            fontWeight: 700,
-                                            color: "#64748b",
-                                            fontSize: "0.78rem",
-                                            whiteSpace: "nowrap",
-                                        }}
-                                    >
-                                        {h}
-                                    </th>
-                                ))}
+                            <tr>
+                                <th style={TH}></th>
+                                <th style={TH}>الموظف</th>
+                                <th style={TH}>الدور</th>
+                                <th style={TH}>المركز</th>
+                                <th style={TH}>الحالة</th>
+                                <th style={TH}>التأخير</th>
+                                <th style={TH}>الملاحظات</th>
+                                <th style={{ ...TH, textAlign: "center" }}>
+                                    الإجراءات
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
-                            {/* Loading Skeleton */}
+                            {/* Skeleton */}
                             {loading &&
-                                [1, 2, 3, 4].map((i) => (
-                                    <tr
-                                        key={i}
-                                        style={{
-                                            borderBottom: "1px solid #f1f5f9",
-                                        }}
-                                    >
-                                        {[
-                                            50, 160, 90, 110, 80, 70, 130, 110,
-                                        ].map((w, j) => (
-                                            <td
-                                                key={j}
-                                                style={{ padding: "14px" }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        height: 14,
-                                                        width: w,
-                                                        borderRadius: 6,
-                                                        background:
-                                                            "linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%)",
-                                                        backgroundSize:
-                                                            "200% 100%",
-                                                        animation:
-                                                            "shimmer 1.4s infinite",
-                                                    }}
-                                                />
-                                            </td>
-                                        ))}
-                                    </tr>
+                                [1, 2, 3, 4, 5].map((i) => (
+                                    <SkeletonRow key={i} />
                                 ))}
 
                             {/* Empty */}
@@ -399,20 +755,21 @@ const StaffAttendance: React.FC = () => {
                                         colSpan={8}
                                         style={{
                                             textAlign: "center",
-                                            padding: "56px 0",
+                                            padding: "64px 20px",
                                             color: "#94a3b8",
                                         }}
                                     >
-                                        <BsClipboardData
-                                            size={48}
-                                            style={{
-                                                marginBottom: 12,
-                                                opacity: 0.4,
-                                            }}
-                                        />
                                         <div
                                             style={{
-                                                fontWeight: 600,
+                                                fontSize: 40,
+                                                marginBottom: 12,
+                                            }}
+                                        >
+                                            📋
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontWeight: 700,
                                                 color: "#64748b",
                                                 marginBottom: 6,
                                             }}
@@ -421,8 +778,9 @@ const StaffAttendance: React.FC = () => {
                                                 ? "لا توجد سجلات حضور لهذه الفترة"
                                                 : "لا توجد نتائج للبحث"}
                                         </div>
-                                        <div style={{ fontSize: "0.85rem" }}>
-                                            جرب تغيير الفترة الزمنية أو الفلتر
+                                        <div style={{ fontSize: 12 }}>
+                                            جرب تغيير الفترة الزمنية أو كلمة
+                                            البحث
                                         </div>
                                     </td>
                                 </tr>
@@ -430,21 +788,15 @@ const StaffAttendance: React.FC = () => {
 
                             {/* Rows */}
                             {!loading &&
-                                staff.map((item) => {
-                                    const s =
-                                        STATUS_CFG[item.status] ??
-                                        STATUS_CFG.absent;
-                                    const rs = roleStyle(item.role);
+                                staff.map((item, idx) => {
                                     const isMarking = markingId === item.id;
-
                                     return (
                                         <tr
                                             key={item.id}
                                             style={{
                                                 borderBottom:
-                                                    "1px solid #f1f5f9",
-                                                background: "white",
-                                                transition: "background .1s",
+                                                    "1px solid #f8fafc",
+                                                transition: "background .12s",
                                             }}
                                             onMouseEnter={(e) =>
                                                 (e.currentTarget.style.background =
@@ -452,86 +804,49 @@ const StaffAttendance: React.FC = () => {
                                             }
                                             onMouseLeave={(e) =>
                                                 (e.currentTarget.style.background =
-                                                    "white")
+                                                    "#fff")
                                             }
                                         >
                                             {/* Avatar */}
-                                            <td
-                                                style={{
-                                                    padding: "12px 14px",
-                                                    width: 52,
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        width: 38,
-                                                        height: 38,
-                                                        borderRadius: 10,
-                                                        background:
-                                                            "linear-gradient(135deg,#6366f1,#4f46e5)",
-                                                        color: "white",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent:
-                                                            "center",
-                                                        fontWeight: 800,
-                                                        fontSize: "1rem",
-                                                    }}
-                                                >
-                                                    {item.teacher_name.charAt(
-                                                        0,
-                                                    )}
-                                                </div>
+                                            <td style={{ ...TD, width: 52 }}>
+                                                <Avatar
+                                                    name={item.teacher_name}
+                                                    idx={idx}
+                                                />
                                             </td>
 
-                                            {/* Name + date */}
-                                            <td
-                                                style={{ padding: "12px 14px" }}
-                                            >
+                                            {/* Name */}
+                                            <td style={TD}>
                                                 <div
                                                     style={{
                                                         fontWeight: 700,
                                                         color: "#1e293b",
-                                                        fontSize: "0.9rem",
+                                                        fontSize: 13,
                                                     }}
                                                 >
                                                     {item.teacher_name}
                                                 </div>
                                                 <div
                                                     style={{
-                                                        fontSize: "0.75rem",
+                                                        fontSize: 11,
                                                         color: "#94a3b8",
                                                         marginTop: 2,
                                                     }}
                                                 >
                                                     {item.date}
-                                                    {item.checkin_time &&
-                                                        ` · ${item.checkin_time}`}
+                                                    {item.checkin_time
+                                                        ? ` · ${item.checkin_time}`
+                                                        : ""}
                                                 </div>
                                             </td>
 
                                             {/* Role */}
-                                            <td
-                                                style={{ padding: "12px 14px" }}
-                                            >
-                                                <span
-                                                    style={{
-                                                        background: rs.bg,
-                                                        color: rs.color,
-                                                        padding: "3px 10px",
-                                                        borderRadius: 999,
-                                                        fontSize: "0.75rem",
-                                                        fontWeight: 600,
-                                                    }}
-                                                >
-                                                    {item.role}
-                                                </span>
+                                            <td style={TD}>
+                                                <RolePill role={item.role} />
                                             </td>
 
                                             {/* Center */}
-                                            <td
-                                                style={{ padding: "12px 14px" }}
-                                            >
+                                            <td style={TD}>
                                                 <span
                                                     style={{
                                                         display: "inline-flex",
@@ -541,39 +856,24 @@ const StaffAttendance: React.FC = () => {
                                                         color: "#475569",
                                                         padding: "3px 10px",
                                                         borderRadius: 8,
-                                                        fontSize: "0.8rem",
+                                                        fontSize: 11,
                                                         border: "1px solid #e2e8f0",
                                                     }}
                                                 >
-                                                    <BsBuilding size={12} />
+                                                    <BsBuilding size={11} />
                                                     {item.center_name}
                                                 </span>
                                             </td>
 
                                             {/* Status */}
-                                            <td
-                                                style={{ padding: "12px 14px" }}
-                                            >
-                                                <span
-                                                    style={{
-                                                        background: s.bg,
-                                                        color: s.color,
-                                                        border: `1px solid ${s.border}`,
-                                                        padding: "4px 12px",
-                                                        borderRadius: 999,
-                                                        fontSize: "0.78rem",
-                                                        fontWeight: 700,
-                                                        display: "inline-block",
-                                                    }}
-                                                >
-                                                    {s.label}
-                                                </span>
+                                            <td style={TD}>
+                                                <StatusBadge
+                                                    status={item.status as any}
+                                                />
                                             </td>
 
                                             {/* Delay */}
-                                            <td
-                                                style={{ padding: "12px 14px" }}
-                                            >
+                                            <td style={TD}>
                                                 {item.delay_minutes > 0 ? (
                                                     <span
                                                         style={{
@@ -587,12 +887,12 @@ const StaffAttendance: React.FC = () => {
                                                             color: "#a16207",
                                                             border: "1px solid #fde68a",
                                                             padding: "3px 10px",
-                                                            borderRadius: 999,
-                                                            fontSize: "0.78rem",
-                                                            fontWeight: 600,
+                                                            borderRadius: 20,
+                                                            fontSize: 11,
+                                                            fontWeight: 700,
                                                         }}
                                                     >
-                                                        <BsClock size={11} />
+                                                        <BsClock size={10} />
                                                         {item.delay_minutes} د
                                                     </span>
                                                 ) : (
@@ -608,10 +908,7 @@ const StaffAttendance: React.FC = () => {
 
                                             {/* Notes */}
                                             <td
-                                                style={{
-                                                    padding: "12px 14px",
-                                                    maxWidth: 180,
-                                                }}
+                                                style={{ ...TD, maxWidth: 170 }}
                                             >
                                                 <span
                                                     title={item.notes}
@@ -622,7 +919,7 @@ const StaffAttendance: React.FC = () => {
                                                             "ellipsis",
                                                         whiteSpace: "nowrap",
                                                         color: "#64748b",
-                                                        fontSize: "0.8rem",
+                                                        fontSize: 12,
                                                     }}
                                                 >
                                                     {item.notes || "—"}
@@ -631,81 +928,92 @@ const StaffAttendance: React.FC = () => {
 
                                             {/* Actions */}
                                             <td
-                                                style={{ padding: "12px 14px" }}
+                                                style={{
+                                                    ...TD,
+                                                    textAlign: "center",
+                                                }}
                                             >
-                                                <div className="td-actions">
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        gap: 6,
+                                                        justifyContent:
+                                                            "center",
+                                                        flexWrap: "wrap",
+                                                    }}
+                                                >
                                                     {/* حاضر */}
-                                                    <button
-                                                        className="btn bp bxs"
+                                                    <Btn
+                                                        bg="#dcfce7"
+                                                        color="#15803d"
+                                                        border="1px solid #bbf7d0"
+                                                        disabled={
+                                                            isMarking || loading
+                                                        }
                                                         onClick={() =>
                                                             handleMark(
                                                                 item.id,
                                                                 "present",
                                                             )
                                                         }
-                                                        disabled={
-                                                            isMarking || loading
-                                                        }
                                                         title="تسجيل حاضر"
                                                         style={{
                                                             padding: "5px 10px",
+                                                            fontSize: 11,
                                                         }}
                                                     >
                                                         {isMarking ? (
-                                                            <div
-                                                                style={
-                                                                    spinnerStyle
-                                                                }
-                                                            />
+                                                            <Spinner />
                                                         ) : (
-                                                            <CiCircleCheck
-                                                                size={17}
-                                                            />
+                                                            "✓ حاضر"
                                                         )}
-                                                    </button>
-
-                                                    {/* متأخر - يفتح modal السبب */}
-                                                    <button
-                                                        className="btn bs bxs"
+                                                    </Btn>
+                                                    {/* متأخر */}
+                                                    <Btn
+                                                        bg="#fef9c3"
+                                                        color="#a16207"
+                                                        border="1px solid #fde68a"
+                                                        disabled={
+                                                            isMarking || loading
+                                                        }
                                                         onClick={() => {
                                                             setLateModal({
                                                                 id: item.id,
+                                                                name: item.teacher_name,
                                                             });
                                                             setLateReason("");
                                                             setLateMinutes(15);
                                                         }}
-                                                        disabled={
-                                                            isMarking || loading
-                                                        }
                                                         title="تسجيل متأخر"
                                                         style={{
                                                             padding: "5px 10px",
+                                                            fontSize: 11,
                                                         }}
                                                     >
-                                                        <CiWarning size={17} />
-                                                    </button>
-
+                                                        ⚠ متأخر
+                                                    </Btn>
                                                     {/* غائب */}
-                                                    <button
-                                                        className="btn bd bxs"
+                                                    <Btn
+                                                        bg="#fee2e2"
+                                                        color="#dc2626"
+                                                        border="1px solid #fecaca"
+                                                        disabled={
+                                                            isMarking || loading
+                                                        }
                                                         onClick={() =>
                                                             handleMark(
                                                                 item.id,
                                                                 "absent",
                                                             )
                                                         }
-                                                        disabled={
-                                                            isMarking || loading
-                                                        }
                                                         title="تسجيل غائب"
                                                         style={{
                                                             padding: "5px 10px",
+                                                            fontSize: 11,
                                                         }}
                                                     >
-                                                        <CiCircleRemove
-                                                            size={17}
-                                                        />
-                                                    </button>
+                                                        ✕ غائب
+                                                    </Btn>
                                                 </div>
                                             </td>
                                         </tr>
@@ -724,7 +1032,6 @@ const StaffAttendance: React.FC = () => {
                         inset: 0,
                         zIndex: 3000,
                         background: "rgba(0,0,0,.45)",
-                        backdropFilter: "blur(4px)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -733,15 +1040,16 @@ const StaffAttendance: React.FC = () => {
                 >
                     <div
                         style={{
-                            background: "white",
-                            borderRadius: 16,
+                            background: "#fff",
+                            borderRadius: 20,
                             padding: 28,
                             width: "100%",
-                            maxWidth: 420,
-                            boxShadow: "0 20px 60px rgba(0,0,0,.25)",
+                            maxWidth: 440,
+                            fontFamily: "'Tajawal',sans-serif",
+                            direction: "rtl",
                         }}
                     >
-                        {/* Modal Header */}
+                        {/* Modal header */}
                         <div
                             style={{
                                 display: "flex",
@@ -752,68 +1060,155 @@ const StaffAttendance: React.FC = () => {
                         >
                             <div
                                 style={{
-                                    width: 42,
-                                    height: 42,
-                                    borderRadius: 10,
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 12,
                                     background: "#fef9c3",
                                     color: "#a16207",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
+                                    fontSize: 22,
                                 }}
                             >
-                                <BsClock size={20} />
+                                ⚠
                             </div>
                             <div>
                                 <div
                                     style={{
-                                        fontWeight: 700,
-                                        fontSize: "1rem",
+                                        fontWeight: 900,
+                                        fontSize: 16,
                                         color: "#1e293b",
                                     }}
                                 >
                                     تسجيل تأخير
                                 </div>
-                                <div
-                                    style={{
-                                        fontSize: "0.8rem",
-                                        color: "#94a3b8",
-                                    }}
-                                >
-                                    أدخل مدة التأخير وسببه
+                                <div style={{ fontSize: 12, color: "#94a3b8" }}>
+                                    {lateModal.name}
                                 </div>
                             </div>
+                            <button
+                                onClick={() => setLateModal(null)}
+                                style={{
+                                    marginRight: "auto",
+                                    border: "none",
+                                    background: "#f8fafc",
+                                    borderRadius: 8,
+                                    padding: "6px 10px",
+                                    cursor: "pointer",
+                                    color: "#64748b",
+                                }}
+                            >
+                                <FiX size={14} />
+                            </button>
                         </div>
 
-                        {/* دقائق التأخير */}
+                        {/* Minutes */}
                         <div style={{ marginBottom: 16 }}>
-                            <label style={labelStyle}>
+                            <label style={modalLabel}>
                                 مدة التأخير (بالدقائق)
                             </label>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    gap: 8,
+                                    flexWrap: "wrap",
+                                    marginBottom: 8,
+                                }}
+                            >
+                                {[5, 10, 15, 20, 30, 45, 60].map((m) => (
+                                    <button
+                                        key={m}
+                                        onClick={() => setLateMinutes(m)}
+                                        style={{
+                                            padding: "6px 14px",
+                                            borderRadius: 10,
+                                            border: `1px solid ${lateMinutes === m ? "#a16207" : "#e2e8f0"}`,
+                                            background:
+                                                lateMinutes === m
+                                                    ? "#fef9c3"
+                                                    : "#f8fafc",
+                                            color:
+                                                lateMinutes === m
+                                                    ? "#a16207"
+                                                    : "#64748b",
+                                            cursor: "pointer",
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                            fontFamily: "inherit",
+                                        }}
+                                    >
+                                        {m} د
+                                    </button>
+                                ))}
+                            </div>
                             <input
                                 type="number"
                                 min={1}
-                                max={120}
+                                max={180}
                                 value={lateMinutes}
                                 onChange={(e) =>
                                     setLateMinutes(Number(e.target.value))
                                 }
-                                style={inputStyle}
+                                style={modalInput}
+                                placeholder="أو اكتب عدد الدقائق"
                             />
                         </div>
 
-                        {/* سبب التأخير */}
-                        <div style={{ marginBottom: 20 }}>
-                            <label style={labelStyle}>سبب التأخير *</label>
+                        {/* Reason */}
+                        <div style={{ marginBottom: 22 }}>
+                            <label style={modalLabel}>
+                                سبب التأخير{" "}
+                                <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    gap: 8,
+                                    flexWrap: "wrap",
+                                    marginBottom: 8,
+                                }}
+                            >
+                                {[
+                                    "ازدحام مروري",
+                                    "ظرف طارئ",
+                                    "أسباب صحية",
+                                    "مشكلة في المواصلات",
+                                    "أخرى",
+                                ].map((r) => (
+                                    <button
+                                        key={r}
+                                        onClick={() => setLateReason(r)}
+                                        style={{
+                                            padding: "5px 12px",
+                                            borderRadius: 10,
+                                            border: `1px solid ${lateReason === r ? "#0f6e56" : "#e2e8f0"}`,
+                                            background:
+                                                lateReason === r
+                                                    ? "#dcfce7"
+                                                    : "#f8fafc",
+                                            color:
+                                                lateReason === r
+                                                    ? "#15803d"
+                                                    : "#64748b",
+                                            cursor: "pointer",
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            fontFamily: "inherit",
+                                        }}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
+                            </div>
                             <textarea
                                 value={lateReason}
                                 onChange={(e) => setLateReason(e.target.value)}
-                                placeholder="اكتب سبب التأخير هنا..."
-                                rows={3}
+                                placeholder="أو اكتب السبب يدوياً..."
+                                rows={2}
                                 style={{
-                                    ...inputStyle,
+                                    ...modalInput,
                                     resize: "vertical",
-                                    fontFamily: "inherit",
                                     lineHeight: 1.6,
                                 }}
                             />
@@ -821,72 +1216,68 @@ const StaffAttendance: React.FC = () => {
 
                         {/* Buttons */}
                         <div style={{ display: "flex", gap: 10 }}>
-                            <button
-                                className="btn bp bsm"
+                            <Btn
+                                bg="#0f6e56"
+                                color="#fff"
                                 onClick={handleLateSubmit}
                                 disabled={!lateReason.trim()}
-                                style={{ flex: 1, height: 42, fontWeight: 700 }}
+                                style={{
+                                    flex: 1,
+                                    justifyContent: "center",
+                                    height: 42,
+                                    fontSize: 14,
+                                }}
                             >
-                                <CiWarning
-                                    size={16}
-                                    style={{ marginLeft: 6 }}
-                                />
-                                تسجيل التأخير
-                            </button>
-                            <button
-                                className="btn bs bsm"
+                                ⚠ تسجيل التأخير
+                            </Btn>
+                            <Btn
+                                bg="#f8fafc"
+                                color="#475569"
+                                border="1px solid #e2e8f0"
                                 onClick={() => setLateModal(null)}
-                                style={{ flex: 1, height: 42 }}
+                                style={{
+                                    flex: 1,
+                                    justifyContent: "center",
+                                    height: 42,
+                                    fontSize: 14,
+                                }}
                             >
                                 إلغاء
-                            </button>
+                            </Btn>
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* Global keyframes */}
             <style>{`
-                @keyframes shimmer {
-                    0%   { background-position: -200% 0; }
-                    100% { background-position:  200% 0; }
-                }
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
+                @keyframes ta-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+                @keyframes ta-spin    { to{transform:rotate(360deg)} }
             `}</style>
         </div>
     );
 };
 
-const spinnerStyle: React.CSSProperties = {
-    width: 15,
-    height: 15,
-    border: "2px solid rgba(255,255,255,0.4)",
-    borderTop: "2px solid white",
-    borderRadius: "50%",
-    animation: "spin 0.7s linear infinite",
-    display: "inline-block",
-};
-
-const labelStyle: React.CSSProperties = {
+/* ── Modal style tokens ── */
+const modalLabel: React.CSSProperties = {
     display: "block",
-    fontSize: "0.8rem",
+    fontSize: 12,
     color: "#475569",
-    fontWeight: 600,
-    marginBottom: 6,
+    fontWeight: 700,
+    marginBottom: 8,
 };
-
-const inputStyle: React.CSSProperties = {
+const modalInput: React.CSSProperties = {
     width: "100%",
     padding: "9px 12px",
     border: "1px solid #e2e8f0",
-    borderRadius: 8,
-    fontSize: "0.9rem",
+    borderRadius: 10,
+    fontSize: 13,
     outline: "none",
     direction: "rtl",
     background: "#f8fafc",
     color: "#1e293b",
     boxSizing: "border-box",
+    fontFamily: "'Tajawal',sans-serif",
 };
 
 export default StaffAttendance;

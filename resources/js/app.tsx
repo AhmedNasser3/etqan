@@ -7,7 +7,6 @@ import {
     Outlet,
     Navigate,
 } from "react-router-dom";
-import axios from "axios";
 import { Toaster } from "react-hot-toast";
 import "./src/assets/scss/main.scss";
 import Navbar from "./src/layouts/navbar";
@@ -100,20 +99,9 @@ import AIPlanGenerator from "./src/pages/DashBoard/Center/PlansDetails/AIPlanGen
 import PlatformPlanDetailsManagement from "./src/pages/DashBoard/Center/PlansDetails/Platformplandetailsmanagement";
 import WorkSchedulePage from "./src/pages/DashBoard/Center/Attendance/Staff/WorkSchedulePage";
 import StaffAttendancePage from "./src/pages/DashBoard/Center/Attendance/Staff/StaffAttendancePage";
-// ✅ هنا - خارج أي function، أول ما الملف يتحمل// ✅ أول حاجة في الملف
-const _impSaved = localStorage.getItem("impersonated_center");
-if (_impSaved) {
-    try {
-        const { center_id } = JSON.parse(_impSaved);
-        axios.interceptors.request.use((config) => {
-            config.headers["X-Center-Id"] = String(center_id);
-            return config;
-        });
-        console.log("✅ Interceptor set for center_id:", center_id);
-    } catch (e) {
-        localStorage.removeItem("impersonated_center");
-    }
-}
+import TeacherStudentReports from "./src/pages/DashBoard/teacherDashboard/TeacherStudentReports";
+import TeacherStudentsDashboard from "./src/pages/DashBoard/teacherDashboard/TeacherStudentsDashboard";
+import TeacherAttendanceReport from "./src/pages/DashBoard/Center/Certificates/TeacherAttendanceReport";
 
 function UserLayout() {
     const [mobileSB, setMobileSB] = useState(false);
@@ -327,6 +315,10 @@ function App() {
                             element={<PlansManagement />}
                         />
                         <Route
+                            path="teacher-atten-manegment"
+                            element={<TeacherAttendanceReport />}
+                        />
+                        <Route
                             path="plans-details-manegment"
                             element={<PlanDetailsManagement />}
                         />
@@ -405,6 +397,10 @@ function App() {
                     >
                         <Route index element={<TeacherDashboard />} />
                         <Route path="students" element={<TeacherStudents />} />
+                        <Route
+                            path="students-reports"
+                            element={<TeacherStudentsDashboard />}
+                        />
                         <Route path="plan" element={<TeacherPlan />} />
                         <Route
                             path="motivation"

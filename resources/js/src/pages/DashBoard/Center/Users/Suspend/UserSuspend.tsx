@@ -18,10 +18,12 @@ import {
     FiTrendingUp,
     FiEye,
     FiTrash2,
+    FiAlertTriangle,
+    FiActivity,
 } from "react-icons/fi";
 import { FaChalkboardTeacher, FaMosque, FaMoneyBillWave } from "react-icons/fa";
 
-/* ─────────────── Types ─────────────── */
+/* ─── Types ─── */
 type TeacherStatus =
     | "active"
     | "suspended"
@@ -64,28 +66,19 @@ interface Stats {
     suspended: number;
     recent: number;
 }
-
 interface ConfirmState {
     title: string;
     desc: string;
     cb: () => void;
 }
 
-/* ─────────────── Constants ─────────────── */
+/* ─── Constants ─── */
 const ROLE_LABELS: Record<string, string> = {
     teacher: "معلم قرآن",
     supervisor: "مشرف تعليمي",
     motivator: "مشرف تحفيز",
     student_affairs: "شؤون الطلاب",
     financial: "مشرف مالي",
-};
-
-const ROLE_CLASS: Record<string, string> = {
-    teacher: "role-pill role-teacher",
-    supervisor: "role-pill role-supervisor",
-    motivator: "role-pill role-motivator",
-    student_affairs: "role-pill role-student-affairs",
-    financial: "role-pill role-financial",
 };
 
 const SESSION_LABELS: Record<string, string> = {
@@ -95,33 +88,46 @@ const SESSION_LABELS: Record<string, string> = {
 
 const STATUS_META: Record<
     string,
-    { label: string; className: string; icon: React.ReactNode }
+    { label: string; bg: string; color: string; icon: React.ReactNode }
 > = {
     active: {
-        label: "✓ مفعّل",
-        className: "badge success",
+        label: "مفعّل",
+        bg: "#DCFCE7",
+        color: "#166534",
         icon: <FiCheckCircle size={11} />,
     },
     suspended: {
-        label: "⏸ موقوف",
-        className: "badge danger",
+        label: "موقوف",
+        bg: "#FEE2E2",
+        color: "#991B1B",
         icon: <FiXCircle size={11} />,
     },
     inactive: {
         label: "غير نشط",
-        className: "badge warning",
+        bg: "#F1F5F9",
+        color: "#475569",
         icon: <FiClock size={11} />,
     },
     pending: {
-        label: "⏳ معلّق",
-        className: "badge warning",
+        label: "معلّق",
+        bg: "#FEF9C3",
+        color: "#854D0E",
         icon: <FiClock size={11} />,
     },
     rejected: {
-        label: "✕ مرفوض",
-        className: "badge danger",
+        label: "مرفوض",
+        bg: "#FEE2E2",
+        color: "#991B1B",
         icon: <FiXCircle size={11} />,
     },
+};
+
+const ROLE_STYLE: Record<string, { bg: string; color: string }> = {
+    teacher: { bg: "#E1F5EE", color: "#085041" },
+    supervisor: { bg: "#E6F1FB", color: "#0C447C" },
+    motivator: { bg: "#FAEEDA", color: "#633806" },
+    student_affairs: { bg: "#EAF3DE", color: "#27500A" },
+    financial: { bg: "#FCEBEB", color: "#A32D2D" },
 };
 
 const AV_COLORS = [
@@ -133,7 +139,6 @@ const AV_COLORS = [
     { bg: "#EEEDFE", color: "#3C3489" },
 ];
 
-/* Mock fallback */
 const MOCK_USERS: TeacherType[] = [
     {
         id: 1,
@@ -215,18 +220,16 @@ const MOCK_USERS: TeacherType[] = [
     },
 ];
 
-/* ─────────────── Helpers ─────────────── */
+/* ─── Helpers ─── */
 const normalizeTeacher = (item: any): TeacherType => {
     const mosqueName =
         typeof item?.mosque === "string"
             ? item.mosque
             : item?.mosque?.name || item?.teacher?.mosque || null;
-
     const mosqueId =
         typeof item?.mosque === "object" && item?.mosque?.id
             ? item.mosque.id
             : item?.mosque_id || null;
-
     return {
         id: item?.id,
         name: item?.name || "بدون اسم",
@@ -266,69 +269,223 @@ const normalizeTeacher = (item: any): TeacherType => {
     };
 };
 
-const formatDate = (value?: string | null) => {
-    if (!value) return "—";
-    return value.split("T")[0].split(" ")[0];
+const formatDate = (v?: string | null) =>
+    !v ? "—" : v.split("T")[0].split(" ")[0];
+const dateValue = (v?: string | null) => {
+    if (!v) return 0;
+    const t = new Date(v.includes("T") ? v : v.replace(" ", "T")).getTime();
+    return isNaN(t) ? 0 : t;
 };
-
-const dateValue = (value?: string | null) => {
-    if (!value) return 0;
-    const normalized = value.includes("T") ? value : value.replace(" ", "T");
-    const time = new Date(normalized).getTime();
-    return Number.isNaN(time) ? 0 : time;
+const isRecent = (v?: string | null) => {
+    const t = dateValue(v);
+    return t ? Date.now() - t <= 7 * 24 * 60 * 60 * 1000 : false;
 };
-
-const isRecent = (value?: string | null) => {
-    const time = dateValue(value);
-    if (!time) return false;
-    return Date.now() - time <= 7 * 24 * 60 * 60 * 1000;
-};
-
-const getMosqueName = (teacher: TeacherType) =>
-    teacher.mosque || teacher.teacher?.mosque || "غير مربوط";
-
-const getCircleInfo = (teacher: TeacherType) => {
-    if (teacher.teacher?.notes) return teacher.teacher.notes;
-    if (teacher.teacher?.session_time === "asr") return "حلقة العصر";
-    if (teacher.teacher?.session_time === "maghrib") return "حلقة المغرب";
+const getMosqueName = (t: TeacherType) =>
+    t.mosque || t.teacher?.mosque || "غير مربوط";
+const getCircleInfo = (t: TeacherType) => {
+    if (t.teacher?.notes) return t.teacher.notes;
+    if (t.teacher?.session_time === "asr") return "حلقة العصر";
+    if (t.teacher?.session_time === "maghrib") return "حلقة المغرب";
     return "غير محدد";
 };
+const getReason = (t: TeacherType) =>
+    t.suspension_reason || t.teacher?.suspension_reason || "غير محدد";
+const csrf = () =>
+    document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content") || "";
 
-const getReason = (teacher: TeacherType) =>
-    teacher.suspension_reason ||
-    teacher.teacher?.suspension_reason ||
-    "غير محدد";
-
-/* ─────────────── UI Sub-components ─────────────── */
-const AvatarInitials = ({ name, idx }: { name: string; idx: number }) => {
+/* ─── Avatar Illustration ─── */
+const TeacherAvatar = ({ idx, name }: { idx: number; name: string }) => {
     const av = AV_COLORS[idx % AV_COLORS.length];
-    const initials = name
-        .split(" ")
-        .slice(0, 2)
-        .map((w) => w[0])
-        .join("");
-
+    const skins = ["#F5D3A8", "#E8B97A", "#D4915A", "#C8784A"];
+    const robes = [
+        "#1A5C3A",
+        "#C9A84C",
+        "#1565C0",
+        "#6D4C41",
+        "#7B3F6E",
+        "#2D5A8A",
+    ];
+    const skin = skins[idx % skins.length];
+    const robe = robes[idx % robes.length];
     return (
         <div
             style={{
-                width: 38,
-                height: 38,
+                width: 44,
+                height: 44,
                 borderRadius: "50%",
                 background: av.bg,
-                color: av.color,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 13,
-                fontWeight: 500,
                 flexShrink: 0,
+                overflow: "hidden",
+                border: `2px solid ${av.color}22`,
             }}
         >
-            {initials}
+            <svg
+                viewBox="0 0 80 80"
+                width="44"
+                height="44"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <path
+                    d="M8 82C8 56 22 49 40 49C58 49 72 56 72 82Z"
+                    fill={robe}
+                />
+                <path
+                    d="M33 49C33 49 40 56 47 49"
+                    stroke="#fff"
+                    strokeWidth="1.5"
+                    strokeOpacity="0.6"
+                    fill="none"
+                />
+                <rect x="35" y="42" width="10" height="9" rx="3" fill={skin} />
+                <ellipse cx="40" cy="31" rx="14" ry="15" fill={skin} />
+                <path
+                    d="M26 27C26 18.7 32.3 12 40 12C47.7 12 54 18.7 54 27H26Z"
+                    fill="#2C1810"
+                    fillOpacity="0.85"
+                />
+                <rect
+                    x="26"
+                    y="25"
+                    width="28"
+                    height="4"
+                    rx="2"
+                    fill="#fff"
+                    fillOpacity="0.15"
+                />
+                <path
+                    d="M29 40Q34 50 40 51Q46 50 51 40Q48 46 40 48Q32 46 29 40Z"
+                    fill="#2C1810"
+                    fillOpacity="0.55"
+                />
+                <ellipse cx="35.5" cy="32" rx="2.2" ry="2.5" fill="#fff" />
+                <ellipse cx="44.5" cy="32" rx="2.2" ry="2.5" fill="#fff" />
+                <circle cx="36" cy="32.5" r="1.4" fill="#1a0f0a" />
+                <circle cx="45" cy="32.5" r="1.4" fill="#1a0f0a" />
+                <circle cx="36.6" cy="31.8" r="0.5" fill="#fff" />
+                <circle cx="45.6" cy="31.8" r="0.5" fill="#fff" />
+                <path
+                    d="M33 29Q35.5 27.5 38 29"
+                    stroke="#2C1810"
+                    strokeWidth="1.2"
+                    fill="none"
+                    strokeLinecap="round"
+                />
+                <path
+                    d="M42 29Q44.5 27.5 47 29"
+                    stroke="#2C1810"
+                    strokeWidth="1.2"
+                    fill="none"
+                    strokeLinecap="round"
+                />
+                <path
+                    d="M37 38Q40 41 43 38"
+                    stroke="#B87040"
+                    strokeWidth="1.2"
+                    fill="none"
+                    strokeLinecap="round"
+                />
+                <ellipse cx="26.5" cy="33" rx="2" ry="3" fill={skin} />
+                <ellipse cx="53.5" cy="33" rx="2" ry="3" fill={skin} />
+            </svg>
         </div>
     );
 };
 
+/* ─── Status Badge ─── */
+const StatusBadge = ({ status }: { status: string }) => {
+    const m = STATUS_META[status] ?? STATUS_META.inactive;
+    return (
+        <span
+            style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                background: m.bg,
+                color: m.color,
+                borderRadius: 20,
+                padding: "3px 10px",
+                fontSize: 11,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+            }}
+        >
+            {m.icon}
+            {m.label}
+        </span>
+    );
+};
+
+/* ─── Role Pill ─── */
+const RolePill = ({ role }: { role?: string }) => {
+    const s = ROLE_STYLE[role || "teacher"] ?? ROLE_STYLE.teacher;
+    return (
+        <span
+            style={{
+                display: "inline-block",
+                background: s.bg,
+                color: s.color,
+                borderRadius: 20,
+                padding: "2px 10px",
+                fontSize: 11,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+            }}
+        >
+            {ROLE_LABELS[role || "teacher"] ?? "موظف"}
+        </span>
+    );
+};
+
+/* ─── Info Tile ─── */
+const InfoTile = ({
+    icon,
+    label,
+    value,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+}) => (
+    <div
+        style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            padding: "10px 14px",
+            background: "#f8fafc",
+            borderRadius: 12,
+            flex: 1,
+            minWidth: 130,
+        }}
+    >
+        <div style={{ color: "#0f6e56", marginTop: 2, flexShrink: 0 }}>
+            {icon}
+        </div>
+        <div>
+            <div
+                style={{
+                    fontSize: 10,
+                    color: "#94a3b8",
+                    marginBottom: 2,
+                    fontWeight: 600,
+                }}
+            >
+                {label}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>
+                {value}
+            </div>
+        </div>
+    </div>
+);
+
+/* ─── Confirm Modal ─── */
 const ConfirmModal = ({
     title,
     desc,
@@ -340,31 +497,68 @@ const ConfirmModal = ({
     onConfirm: () => void;
     onCancel: () => void;
 }) => (
-    <div className="modal-overlay">
-        <div className="modal-card modal-compact">
-            <div className="modal-head">
-                <div
+    <div
+        style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9000,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+        }}
+    >
+        <div
+            style={{
+                background: "#fff",
+                borderRadius: 20,
+                padding: "28px 32px",
+                maxWidth: 400,
+                width: "90%",
+                fontFamily: "'Tajawal',sans-serif",
+                direction: "rtl",
+            }}
+        >
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 10,
+                }}
+            >
+                <FiTrash2 size={16} color="#A32D2D" />
+                <h3
                     style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
+                        margin: 0,
+                        fontSize: 17,
+                        fontWeight: 900,
+                        color: "#1e293b",
                     }}
                 >
-                    <span style={{ color: "#A32D2D", display: "inline-flex" }}>
-                        <FiTrash2 size={16} />
-                    </span>
-                    <h3 style={{ margin: 0 }}>{title}</h3>
-                </div>
-                <button className="icon-btn subtle" onClick={onCancel}>
-                    <FiX size={15} />
-                </button>
+                    {title}
+                </h3>
             </div>
-            <p className="modal-copy">{desc}</p>
-            <div className="modal-actions">
-                <button className="btn secondary" onClick={onCancel}>
+            <p
+                style={{
+                    fontSize: 13,
+                    color: "#64748b",
+                    marginBottom: 24,
+                    lineHeight: 1.7,
+                }}
+            >
+                {desc}
+            </p>
+            <div
+                style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}
+            >
+                <button
+                    onClick={onCancel}
+                    style={btnS("#f8fafc", "#475569", "1px solid #e2e8f0")}
+                >
                     إلغاء
                 </button>
-                <button className="btn danger" onClick={onConfirm}>
+                <button onClick={onConfirm} style={btnS("#dc2626", "#fff")}>
                     تنفيذ
                 </button>
             </div>
@@ -372,47 +566,58 @@ const ConfirmModal = ({
     </div>
 );
 
-const DetailItem = ({
-    icon,
-    label,
-    value,
-}: {
-    icon: React.ReactNode;
-    label: string;
-    value: string;
-}) => (
-    <div className="info-tile">
-        <div className="info-tile-icon">{icon}</div>
-        <div>
-            <div className="info-label">{label}</div>
-            <div className="info-value">{value}</div>
-        </div>
-    </div>
-);
+/* ─── Style helpers ─── */
+const btnS = (
+    bg: string,
+    color: string,
+    border = "none",
+    extra: React.CSSProperties = {},
+): React.CSSProperties => ({
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 5,
+    padding: "7px 14px",
+    borderRadius: 10,
+    border,
+    background: bg,
+    color,
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 700,
+    fontFamily: "'Tajawal',sans-serif",
+    ...extra,
+});
 
-/* ─────────────── API Hook ─────────────── */
+const TH: React.CSSProperties = {
+    padding: "10px 14px",
+    textAlign: "right",
+    color: "#64748b",
+    fontWeight: 700,
+    fontSize: 12,
+    whiteSpace: "nowrap",
+    borderBottom: "1px solid #f1f5f9",
+};
+const TD: React.CSSProperties = {
+    padding: "12px 14px",
+    borderBottom: "1px solid #f8fafc",
+    verticalAlign: "middle",
+};
+
+/* ─── API Hook ─── */
 const useUserSuspendData = () => {
     const [teachers, setTeachers] = useState<TeacherType[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [mosques, setMosques] = useState<string[]>([]);
 
-    const csrfToken = () =>
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute("content") || "";
-
     const apiFetch = async (url: string, options: RequestInit = {}) => {
         const headers: Record<string, string> = {
             Accept: "application/json",
             "X-Requested-With": "XMLHttpRequest",
-            "X-CSRF-TOKEN": csrfToken(),
+            "X-CSRF-TOKEN": csrf(),
         };
-
-        if (!(options.body instanceof FormData)) {
+        if (!(options.body instanceof FormData))
             headers["Content-Type"] = "application/json";
-        }
-
         const res = await fetch(url, {
             credentials: "include",
             ...options,
@@ -422,24 +627,19 @@ const useUserSuspendData = () => {
                     {}),
             },
         });
-
         if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(data.message || `HTTP ${res.status}`);
+            const d = await res.json().catch(() => ({}));
+            throw new Error(d.message || `HTTP ${res.status}`);
         }
-
         if (res.status === 204) return null;
-
-        const contentType = res.headers.get("content-type") || "";
-        if (!contentType.includes("application/json")) return null;
-
+        const ct = res.headers.get("content-type") || "";
+        if (!ct.includes("application/json")) return null;
         return res.json();
     };
 
     const fetchTeachers = async () => {
         setLoading(true);
         setError(null);
-
         try {
             const data = await apiFetch(
                 "/api/v1/teachers/my-teachers?per_page=100",
@@ -469,27 +669,18 @@ const useUserSuspendData = () => {
         } catch {
             setMosques(
                 Array.from(
-                    new Set(
-                        MOCK_USERS.map((teacher) => teacher.mosque).filter(
-                            Boolean,
-                        ),
-                    ),
+                    new Set(MOCK_USERS.map((t) => t.mosque).filter(Boolean)),
                 ) as string[],
             );
         }
     };
 
-    const toggleTeacherStatus = async (id: number) => {
-        await apiFetch(`/api/v1/teachers/my-teachers/${id}/toggle-status`, {
+    const toggleTeacherStatus = async (id: number) =>
+        apiFetch(`/api/v1/teachers/my-teachers/${id}/toggle-status`, {
             method: "POST",
         });
-    };
-
-    const removeTeacher = async (id: number) => {
-        await apiFetch(`/api/v1/teachers/my-teachers/${id}`, {
-            method: "DELETE",
-        });
-    };
+    const removeTeacher = async (id: number) =>
+        apiFetch(`/api/v1/teachers/my-teachers/${id}`, { method: "DELETE" });
 
     useEffect(() => {
         fetchTeachers();
@@ -508,7 +699,7 @@ const useUserSuspendData = () => {
     };
 };
 
-/* ─────────────── Main Component ─────────────── */
+/* ─── Main Component ─── */
 const UserSuspend: React.FC = () => {
     const {
         teachers,
@@ -520,7 +711,6 @@ const UserSuspend: React.FC = () => {
         toggleTeacherStatus,
         removeTeacher,
     } = useUserSuspendData();
-
     const { notifySuccess, notifyError } = useToast();
 
     const [search, setSearch] = useState("");
@@ -538,53 +728,41 @@ const UserSuspend: React.FC = () => {
     const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
     const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
     const [confirm, setConfirm] = useState<ConfirmState | null>(null);
-
     const [showUserSuspendModel, setShowUserSuspendModel] = useState(false);
     const [showHistoryModel, setShowHistoryModel] = useState(false);
 
     useEffect(() => {
-        const timer = window.setTimeout(() => {
-            setDebouncedSearch(search);
-        }, 350);
-
-        return () => window.clearTimeout(timer);
+        const t = window.setTimeout(() => setDebouncedSearch(search), 350);
+        return () => window.clearTimeout(t);
     }, [search]);
 
     const mosqueOptions = Array.from(
         new Set(
-            [...mosques, ...teachers.map((teacher) => getMosqueName(teacher))]
+            [...mosques, ...teachers.map((t) => getMosqueName(t))]
                 .filter(Boolean)
-                .filter((name) => name !== "غير مربوط"),
+                .filter((n) => n !== "غير مربوط"),
         ),
     ) as string[];
 
     const filtered = teachers
-        .filter((teacher) => {
+        .filter((t) => {
             const q = debouncedSearch.trim().toLowerCase();
-            const roleLabel =
-                ROLE_LABELS[teacher.teacher?.role || ""] || "موظف";
-            const sessionLabel =
-                SESSION_LABELS[teacher.teacher?.session_time || ""] || "";
             const matchSearch =
                 !q ||
-                (teacher.name || "").toLowerCase().includes(q) ||
-                (teacher.email || "").toLowerCase().includes(q) ||
-                roleLabel.toLowerCase().includes(q) ||
-                (getCircleInfo(teacher) || "").toLowerCase().includes(q) ||
-                (getMosqueName(teacher) || "").toLowerCase().includes(q) ||
-                (getReason(teacher) || "").toLowerCase().includes(q) ||
-                sessionLabel.toLowerCase().includes(q);
-
-            const matchTab =
-                activeTab === "all" || teacher.status === activeTab;
-            const matchRole =
-                !roleFilter || teacher.teacher?.role === roleFilter;
+                t.name.toLowerCase().includes(q) ||
+                t.email.toLowerCase().includes(q) ||
+                (ROLE_LABELS[t.teacher?.role || ""] || "")
+                    .toLowerCase()
+                    .includes(q) ||
+                (getCircleInfo(t) || "").toLowerCase().includes(q) ||
+                (getMosqueName(t) || "").toLowerCase().includes(q) ||
+                (getReason(t) || "").toLowerCase().includes(q);
+            const matchTab = activeTab === "all" || t.status === activeTab;
+            const matchRole = !roleFilter || t.teacher?.role === roleFilter;
             const matchMosque =
-                !mosqueFilter || getMosqueName(teacher) === mosqueFilter;
+                !mosqueFilter || getMosqueName(t) === mosqueFilter;
             const matchSession =
-                !sessionFilter ||
-                teacher.teacher?.session_time === sessionFilter;
-
+                !sessionFilter || t.teacher?.session_time === sessionFilter;
             return (
                 matchSearch &&
                 matchTab &&
@@ -599,24 +777,18 @@ const UserSuspend: React.FC = () => {
     const pageItems = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
     useEffect(() => {
-        if (page > totalPages) {
-            setPage(totalPages);
-        }
+        if (page > totalPages) setPage(totalPages);
     }, [page, totalPages]);
 
     const stats: Stats = {
         total: teachers.length,
-        active: teachers.filter((teacher) => teacher.status === "active")
-            .length,
-        suspended: teachers.filter((teacher) => teacher.status === "suspended")
-            .length,
-        recent: teachers.filter((teacher) => isRecent(teacher.updated_at))
-            .length,
+        active: teachers.filter((t) => t.status === "active").length,
+        suspended: teachers.filter((t) => t.status === "suspended").length,
+        recent: teachers.filter((t) => isRecent(t.updated_at)).length,
     };
 
     const handleToggleSuspend = async (teacher: TeacherType) => {
         const nextStatus = teacher.status === "active" ? "suspended" : "active";
-
         setTogglingIds((prev) => new Set([...prev, teacher.id]));
         setTeachers((prev) =>
             prev.map((item) =>
@@ -629,7 +801,6 @@ const UserSuspend: React.FC = () => {
                     : item,
             ),
         );
-
         try {
             await toggleTeacherStatus(teacher.id);
             notifySuccess(
@@ -637,14 +808,14 @@ const UserSuspend: React.FC = () => {
                     ? "تم تفعيل الموظف بنجاح"
                     : "تم إيقاف الموظف بنجاح",
             );
-        } catch (error: any) {
+        } catch (err: any) {
             await fetchTeachers();
-            notifyError(error?.message || "تعذر تحديث حالة الموظف");
+            notifyError(err?.message || "تعذر تحديث حالة الموظف");
         } finally {
             setTogglingIds((prev) => {
-                const set = new Set(prev);
-                set.delete(teacher.id);
-                return set;
+                const s = new Set(prev);
+                s.delete(teacher.id);
+                return s;
             });
         }
     };
@@ -656,20 +827,19 @@ const UserSuspend: React.FC = () => {
             cb: async () => {
                 setDeletingIds((prev) => new Set([...prev, teacher.id]));
                 setConfirm(null);
-
                 try {
                     await removeTeacher(teacher.id);
                     setTeachers((prev) =>
                         prev.filter((item) => item.id !== teacher.id),
                     );
                     notifySuccess("تم حذف الموظف بنجاح");
-                } catch (error: any) {
-                    notifyError(error?.message || "تعذر حذف الموظف");
+                } catch (err: any) {
+                    notifyError(err?.message || "تعذر حذف الموظف");
                 } finally {
                     setDeletingIds((prev) => {
-                        const set = new Set(prev);
-                        set.delete(teacher.id);
-                        return set;
+                        const s = new Set(prev);
+                        s.delete(teacher.id);
+                        return s;
                     });
                 }
             },
@@ -678,20 +848,17 @@ const UserSuspend: React.FC = () => {
 
     const handleRefresh = async () => {
         const ok = await fetchTeachers();
-        if (ok) {
-            notifySuccess("تم تحديث البيانات");
-        } else {
-            notifyError("تعذر التحديث من الـ API وتم عرض بيانات بديلة");
-        }
+        ok
+            ? notifySuccess("تم تحديث البيانات")
+            : notifyError("تعذر التحديث وتم عرض بيانات بديلة");
     };
 
-    const toggleDetail = (id: number) => {
+    const toggleDetail = (id: number) =>
         setExpandedIds((prev) => {
-            const set = new Set(prev);
-            set.has(id) ? set.delete(id) : set.add(id);
-            return set;
+            const s = new Set(prev);
+            s.has(id) ? s.delete(id) : s.add(id);
+            return s;
         });
-    };
 
     const resetFilters = () => {
         setSearch("");
@@ -703,12 +870,11 @@ const UserSuspend: React.FC = () => {
         setPage(1);
     };
 
-    const pageRange = () => {
-        if (totalPages <= 6) {
+    const pageRange = (): (number | "...")[] => {
+        if (totalPages <= 6)
             return Array.from({ length: totalPages }, (_, i) => i + 1);
-        }
         if (page <= 3) return [1, 2, 3, 4, "...", totalPages];
-        if (page >= totalPages - 2) {
+        if (page >= totalPages - 2)
             return [
                 1,
                 "...",
@@ -717,9 +883,35 @@ const UserSuspend: React.FC = () => {
                 totalPages - 1,
                 totalPages,
             ];
-        }
         return [1, "...", page - 1, page, page + 1, "...", totalPages];
     };
+
+    const STAT_CARDS = [
+        {
+            label: "إجمالي الموظفين",
+            value: stats.total,
+            icon: <FaChalkboardTeacher size={18} />,
+            accent: "#1e293b",
+        },
+        {
+            label: "مفعّل",
+            value: stats.active,
+            icon: <FiCheckCircle size={18} />,
+            accent: "#16a34a",
+        },
+        {
+            label: "موقوف",
+            value: stats.suspended,
+            icon: <FiXCircle size={18} />,
+            accent: "#dc2626",
+        },
+        {
+            label: "آخر 7 أيام",
+            value: stats.recent,
+            icon: <FiActivity size={18} />,
+            accent: "#0284c7",
+        },
+    ];
 
     if (loading && !teachers.length) {
         return (
@@ -729,7 +921,7 @@ const UserSuspend: React.FC = () => {
                         style={{
                             textAlign: "center",
                             padding: "4rem",
-                            color: "var(--color-text-secondary)",
+                            color: "#94a3b8",
                         }}
                     >
                         <FiRefreshCw
@@ -747,79 +939,155 @@ const UserSuspend: React.FC = () => {
 
     return (
         <>
-            <div className="my-teachers-page" dir="rtl">
-                <div className="page-shell">
-                    <section className="hero-card">
-                        <div>
-                            <h1 className="hero-title">
-                                إدارة إيقاف وتفعيل الموظفين
-                            </h1>
-                            <p className="hero-copy">
-                                متابعة حالات المعلمين والمشرفين، مراجعة آخر
-                                التحديثات، الاطلاع على أسباب الإيقاف، وتفعيل أو
-                                إيقاف الحسابات بنفس روح تصميم StaffApproval
-                                وبهوية أنيقة هادئة مناسبة للمنصة.
-                            </p>
+            <div
+                style={{
+                    fontFamily: "'Tajawal',sans-serif",
+                    direction: "rtl",
+                    background: "#f8fafc",
+                    minHeight: "100vh",
+                    padding: 24,
+                }}
+            >
+                {/* ── Hero ── */}
+                <div
+                    style={{
+                        background: "linear-gradient(135deg,#1e293b,#0f4c35)",
+                        borderRadius: 24,
+                        padding: "32px 36px",
+                        marginBottom: 24,
+                        color: "#fff",
+                        position: "relative",
+                        overflow: "hidden",
+                    }}
+                >
+                    <div
+                        style={{
+                            position: "absolute",
+                            inset: 0,
+                            opacity: 0.05,
+                            backgroundImage:
+                                "radial-gradient(circle at 20% 50%,#fff 1px,transparent 1px)",
+                            backgroundSize: "24px 24px",
+                            pointerEvents: "none",
+                        }}
+                    />
+                    <div style={{ position: "relative" }}>
+                        <div
+                            style={{
+                                fontSize: 12,
+                                color: "#86efac",
+                                marginBottom: 4,
+                            }}
+                        >
+                            ﷽ — منصة إتقان
                         </div>
-                        <div className="hero-actions">
-                            <button
-                                className="btn secondary"
-                                onClick={handleRefresh}
+                        <h1
+                            style={{ margin: 0, fontSize: 26, fontWeight: 900 }}
+                        >
+                            إدارة إيقاف وتفعيل الموظفين
+                        </h1>
+                        <p
+                            style={{
+                                margin: "6px 0 16px",
+                                color: "#94a3b8",
+                                fontSize: 13,
+                            }}
+                        >
+                            متابعة حالات المعلمين والمشرفين · مراجعة أسباب
+                            الإيقاف · تفعيل أو إيقاف الحسابات
+                        </p>
+                        <button
+                            onClick={handleRefresh}
+                            style={btnS(
+                                "#ffffff22",
+                                "#fff",
+                                "1px solid #ffffff33",
+                            )}
+                        >
+                            <FiRefreshCw size={13} /> تحديث
+                        </button>
+                    </div>
+                </div>
+
+                {/* ── Stats ── */}
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                            "repeat(auto-fit,minmax(150px,1fr))",
+                        gap: 14,
+                        marginBottom: 24,
+                    }}
+                >
+                    {STAT_CARDS.map((s) => (
+                        <div
+                            key={s.label}
+                            style={{
+                                background: "#fff",
+                                borderRadius: 16,
+                                padding: "20px 22px",
+                                boxShadow: "0 2px 12px #0001",
+                                borderTop: `4px solid ${s.accent}`,
+                            }}
+                        >
+                            <div style={{ color: s.accent, marginBottom: 6 }}>
+                                {s.icon}
+                            </div>
+                            <div
+                                style={{
+                                    fontSize: 28,
+                                    fontWeight: 900,
+                                    color: "#1e293b",
+                                }}
                             >
-                                <FiRefreshCw size={14} /> تحديث
-                            </button>
-                        </div>
-                    </section>
-
-                    <section className="stats-grid">
-                        <div className="stat-card gold">
-                            <div className="stat-head">
-                                <div className="stat-icon">
-                                    <FaChalkboardTeacher />
-                                </div>
-                                <FiTrendingUp size={13} />
+                                {s.value}
                             </div>
-                            <div className="stat-number">{stats.total}</div>
-                            <div className="stat-label">إجمالي الموظفين</div>
-                        </div>
-
-                        <div className="stat-card green">
-                            <div className="stat-head">
-                                <div className="stat-icon">
-                                    <FiCheckCircle />
-                                </div>
-                                <FiTrendingUp size={13} />
+                            <div
+                                style={{
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    color: "#475569",
+                                }}
+                            >
+                                {s.label}
                             </div>
-                            <div className="stat-number">{stats.active}</div>
-                            <div className="stat-label">مفعّل</div>
                         </div>
+                    ))}
+                </div>
 
-                        <div className="stat-card orange">
-                            <div className="stat-head">
-                                <div className="stat-icon">
-                                    <FiXCircle />
-                                </div>
-                                <FiUsers size={13} />
-                            </div>
-                            <div className="stat-number">{stats.suspended}</div>
-                            <div className="stat-label">موقوف</div>
-                        </div>
-
-                        <div className="stat-card blue">
-                            <div className="stat-head">
-                                <div className="stat-icon">
-                                    <FiClock />
-                                </div>
-                                <FiTrendingUp size={13} />
-                            </div>
-                            <div className="stat-number">{stats.recent}</div>
-                            <div className="stat-label">آخر 7 أيام</div>
-                        </div>
-                    </section>
-
-                    <section className="filter-bar">
-                        <label className="search-field">
-                            <FiSearch size={15} />
+                {/* ── Filter bar ── */}
+                <div
+                    style={{
+                        background: "#fff",
+                        borderRadius: 16,
+                        padding: 16,
+                        marginBottom: 16,
+                        boxShadow: "0 2px 10px #0001",
+                    }}
+                >
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 10,
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                        }}
+                    >
+                        {/* Search */}
+                        <label
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                background: "#f8fafc",
+                                borderRadius: 10,
+                                padding: "8px 14px",
+                                flex: 1,
+                                minWidth: 200,
+                                border: "1px solid #e2e8f0",
+                            }}
+                        >
+                            <FiSearch size={14} color="#94a3b8" />
                             <input
                                 value={search}
                                 onChange={(e) => {
@@ -827,643 +1095,831 @@ const UserSuspend: React.FC = () => {
                                     setPage(1);
                                 }}
                                 placeholder="ابحث بالاسم أو البريد أو الدور أو السبب..."
+                                style={{
+                                    border: "none",
+                                    background: "transparent",
+                                    outline: "none",
+                                    fontSize: 13,
+                                    flex: 1,
+                                    fontFamily: "inherit",
+                                    color: "#1e293b",
+                                }}
                             />
+                            {search && (
+                                <button
+                                    onClick={() => setSearch("")}
+                                    style={{
+                                        border: "none",
+                                        background: "none",
+                                        cursor: "pointer",
+                                        color: "#94a3b8",
+                                        display: "flex",
+                                        padding: 0,
+                                    }}
+                                >
+                                    <FiX size={12} />
+                                </button>
+                            )}
                         </label>
 
-                        <label className="select-field">
-                            <FaChalkboardTeacher size={13} />
+                        {/* Role */}
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                                background: "#f8fafc",
+                                borderRadius: 10,
+                                padding: "0 12px",
+                                border: "1px solid #e2e8f0",
+                            }}
+                        >
+                            <FaChalkboardTeacher size={13} color="#94a3b8" />
                             <select
                                 value={roleFilter}
                                 onChange={(e) => {
                                     setRoleFilter(e.target.value);
                                     setPage(1);
                                 }}
+                                style={selectS}
                             >
                                 <option value="">كل الأدوار</option>
-                                {Object.entries(ROLE_LABELS).map(
-                                    ([key, value]) => (
-                                        <option key={key} value={key}>
-                                            {value}
-                                        </option>
-                                    ),
-                                )}
+                                {Object.entries(ROLE_LABELS).map(([k, v]) => (
+                                    <option key={k} value={k}>
+                                        {v}
+                                    </option>
+                                ))}
                             </select>
-                        </label>
+                        </div>
 
-                        <label className="select-field">
-                            <FaMosque size={13} />
+                        {/* Mosque */}
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                                background: "#f8fafc",
+                                borderRadius: 10,
+                                padding: "0 12px",
+                                border: "1px solid #e2e8f0",
+                            }}
+                        >
+                            <FaMosque size={13} color="#94a3b8" />
                             <select
                                 value={mosqueFilter}
                                 onChange={(e) => {
                                     setMosqueFilter(e.target.value);
                                     setPage(1);
                                 }}
+                                style={selectS}
                             >
                                 <option value="">كل المساجد</option>
-                                {mosqueOptions.map((mosque) => (
-                                    <option key={mosque} value={mosque}>
-                                        {mosque}
+                                {mosqueOptions.map((m) => (
+                                    <option key={m} value={m}>
+                                        {m}
                                     </option>
                                 ))}
                             </select>
-                        </label>
+                        </div>
 
-                        <label className="select-field">
-                            <FiClock size={13} />
+                        {/* Session */}
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                                background: "#f8fafc",
+                                borderRadius: 10,
+                                padding: "0 12px",
+                                border: "1px solid #e2e8f0",
+                            }}
+                        >
+                            <FiClock size={13} color="#94a3b8" />
                             <select
                                 value={sessionFilter}
                                 onChange={(e) => {
                                     setSessionFilter(e.target.value);
                                     setPage(1);
                                 }}
+                                style={selectS}
                             >
                                 <option value="">كل الفترات</option>
                                 <option value="asr">حلقة العصر</option>
                                 <option value="maghrib">حلقة المغرب</option>
                             </select>
-                        </label>
-
-                        <div className="toolbar">
-                            <button
-                                className="btn secondary"
-                                onClick={resetFilters}
-                            >
-                                <FiX size={14} /> إعادة ضبط
-                            </button>
                         </div>
-                    </section>
 
-                    <section className="table-shell">
-                        {error && <div className="error-banner">{error}</div>}
-
-                        <div className="table-head">
-                            <div>
-                                <h2
+                        {/* Status tabs */}
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: 4,
+                                background: "#f8fafc",
+                                borderRadius: 12,
+                                padding: 4,
+                            }}
+                        >
+                            {(
+                                [
+                                    "all",
+                                    "active",
+                                    "suspended",
+                                    "inactive",
+                                ] as const
+                            ).map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => {
+                                        setActiveTab(tab);
+                                        setPage(1);
+                                    }}
                                     style={{
-                                        margin: 0,
-                                        color: "var(--emerald)",
+                                        padding: "6px 12px",
+                                        borderRadius: 10,
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontWeight: 700,
+                                        fontSize: 12,
+                                        fontFamily: "inherit",
+                                        background:
+                                            activeTab === tab
+                                                ? "#1e293b"
+                                                : "transparent",
+                                        color:
+                                            activeTab === tab
+                                                ? "#fff"
+                                                : "#64748b",
+                                        transition: "all .15s",
                                     }}
                                 >
-                                    قائمة الموظفين
-                                </h2>
-                                <div className="muted">
-                                    عرض {filtered.length} موظف
-                                    {loading ? " – جاري التحديث..." : ""}
-                                </div>
-                            </div>
-
-                            <div className="tabs">
-                                {(
-                                    [
-                                        "all",
-                                        "active",
-                                        "suspended",
-                                        "inactive",
-                                    ] as const
-                                ).map((tab) => (
-                                    <button
-                                        key={tab}
-                                        className={`tab-btn ${activeTab === tab ? "active" : ""}`}
-                                        onClick={() => {
-                                            setActiveTab(tab);
-                                            setPage(1);
-                                        }}
-                                    >
+                                    {
                                         {
-                                            {
-                                                all: "الكل",
-                                                active: "مفعّل",
-                                                suspended: "موقوف",
-                                                inactive: "غير نشط",
-                                            }[tab]
-                                        }
-                                    </button>
-                                ))}
-                            </div>
+                                            all: "الكل",
+                                            active: "مفعّل",
+                                            suspended: "موقوف",
+                                            inactive: "غير نشط",
+                                        }[tab]
+                                    }
+                                </button>
+                            ))}
                         </div>
 
-                        <div style={{ overflowX: "auto" }}>
-                            <table
+                        <button
+                            onClick={resetFilters}
+                            style={btnS(
+                                "#f8fafc",
+                                "#64748b",
+                                "1px solid #e2e8f0",
+                            )}
+                        >
+                            <FiX size={13} /> إعادة ضبط
+                        </button>
+                    </div>
+                </div>
+
+                {/* ── Error ── */}
+                {error && (
+                    <div
+                        style={{
+                            background: "#fee2e2",
+                            color: "#dc2626",
+                            borderRadius: 12,
+                            padding: "12px 16px",
+                            marginBottom: 14,
+                            fontSize: 13,
+                        }}
+                    >
+                        ⚠️ {error}
+                    </div>
+                )}
+
+                {/* ── Table shell ── */}
+                <div
+                    style={{
+                        background: "#fff",
+                        borderRadius: 20,
+                        boxShadow: "0 2px 16px #0001",
+                        overflow: "hidden",
+                    }}
+                >
+                    {/* head */}
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "16px 20px",
+                            borderBottom: "1px solid #f1f5f9",
+                            flexWrap: "wrap",
+                            gap: 8,
+                        }}
+                    >
+                        <div>
+                            <h2
                                 style={{
-                                    width: "100%",
-                                    borderCollapse: "collapse",
-                                    fontSize: ".83rem",
+                                    margin: 0,
+                                    fontSize: 16,
+                                    fontWeight: 900,
+                                    color: "#0f6e56",
                                 }}
                             >
-                                <thead>
-                                    <tr
-                                        style={{
-                                            background:
-                                                "var(--color-background-secondary)",
-                                        }}
-                                    >
-                                        <th style={TH}>الموظف</th>
-                                        <th style={TH}>الدور</th>
-                                        <th style={TH}>الحلقة / القسم</th>
-                                        <th style={TH}>المسجد</th>
-                                        <th style={TH}>آخر تحديث</th>
-                                        <th style={TH}>الحالة</th>
-                                        <th style={TH}>الإجراءات</th>
-                                    </tr>
-                                </thead>
+                                قائمة الموظفين
+                            </h2>
+                            <div
+                                style={{
+                                    fontSize: 12,
+                                    color: "#94a3b8",
+                                    marginTop: 2,
+                                }}
+                            >
+                                عرض {filtered.length} موظف
+                                {loading ? " — جاري التحديث..." : ""}
+                            </div>
+                        </div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>
+                            الصفحة {page} من {totalPages}
+                        </div>
+                    </div>
 
-                                <tbody>
-                                    {pageItems.length > 0 ? (
-                                        pageItems.map((teacher, idx) => {
-                                            const statusMeta =
-                                                STATUS_META[teacher.status] ||
-                                                STATUS_META.inactive;
-                                            const roleClass =
-                                                ROLE_CLASS[
-                                                    teacher.teacher?.role || ""
-                                                ] || ROLE_CLASS.teacher;
-                                            const roleLabel =
-                                                ROLE_LABELS[
-                                                    teacher.teacher?.role || ""
-                                                ] || "موظف";
-                                            const isExpanded = expandedIds.has(
-                                                teacher.id,
-                                            );
-                                            const loadingAction =
-                                                togglingIds.has(teacher.id) ||
-                                                deletingIds.has(teacher.id);
-
-                                            return (
-                                                <React.Fragment
-                                                    key={teacher.id}
+                    {/* table */}
+                    <div style={{ overflowX: "auto" }}>
+                        <table
+                            style={{
+                                width: "100%",
+                                borderCollapse: "collapse",
+                                fontSize: 13,
+                            }}
+                        >
+                            <thead>
+                                <tr style={{ background: "#f8fafc" }}>
+                                    {[
+                                        "الموظف",
+                                        "الدور",
+                                        "الحلقة / القسم",
+                                        "المسجد",
+                                        "آخر تحديث",
+                                        "الحالة",
+                                        "الإجراءات",
+                                    ].map((h) => (
+                                        <th key={h} style={TH}>
+                                            {h}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {pageItems.length > 0 ? (
+                                    pageItems.map((teacher, idx) => {
+                                        const isExpanded = expandedIds.has(
+                                            teacher.id,
+                                        );
+                                        const loadingAction =
+                                            togglingIds.has(teacher.id) ||
+                                            deletingIds.has(teacher.id);
+                                        return (
+                                            <React.Fragment key={teacher.id}>
+                                                <tr
+                                                    style={{
+                                                        background: isExpanded
+                                                            ? "#f0fdf4"
+                                                            : idx % 2 === 0
+                                                              ? "#fff"
+                                                              : "#fafafa",
+                                                    }}
                                                 >
-                                                    <tr
-                                                        style={
-                                                            isExpanded
-                                                                ? {
-                                                                      background:
-                                                                          "var(--color-background-secondary)",
-                                                                  }
-                                                                : {}
-                                                        }
+                                                    {/* Name */}
+                                                    <td style={TD}>
+                                                        <div
+                                                            style={{
+                                                                display: "flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                gap: 10,
+                                                            }}
+                                                        >
+                                                            <TeacherAvatar
+                                                                idx={
+                                                                    (page - 1) *
+                                                                        PER_PAGE +
+                                                                    idx
+                                                                }
+                                                                name={
+                                                                    teacher.name
+                                                                }
+                                                            />
+                                                            <div>
+                                                                <div
+                                                                    style={{
+                                                                        fontWeight: 700,
+                                                                        fontSize: 13,
+                                                                        color: "#1e293b",
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        teacher.name
+                                                                    }
+                                                                </div>
+                                                                <div
+                                                                    style={{
+                                                                        fontSize: 11,
+                                                                        color: "#94a3b8",
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        teacher.email
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    {/* Role */}
+                                                    <td style={TD}>
+                                                        <RolePill
+                                                            role={
+                                                                teacher.teacher
+                                                                    ?.role
+                                                            }
+                                                        />
+                                                    </td>
+                                                    {/* Circle */}
+                                                    <td
+                                                        style={{
+                                                            ...TD,
+                                                            maxWidth: 190,
+                                                            fontSize: 12,
+                                                            color: "#64748b",
+                                                        }}
                                                     >
-                                                        <td style={TD}>
+                                                        {getCircleInfo(teacher)}
+                                                    </td>
+                                                    {/* Mosque */}
+                                                    <td style={TD}>
+                                                        <span
+                                                            style={{
+                                                                display:
+                                                                    "inline-flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                gap: 5,
+                                                                fontSize: 12,
+                                                            }}
+                                                        >
+                                                            <FaMosque
+                                                                size={11}
+                                                                style={{
+                                                                    color: "#0f6e56",
+                                                                }}
+                                                            />{" "}
+                                                            {getMosqueName(
+                                                                teacher,
+                                                            )}
+                                                        </span>
+                                                    </td>
+                                                    {/* Date */}
+                                                    <td
+                                                        style={{
+                                                            ...TD,
+                                                            fontSize: 12,
+                                                            color: "#64748b",
+                                                        }}
+                                                    >
+                                                        {formatDate(
+                                                            teacher.updated_at,
+                                                        )}
+                                                    </td>
+                                                    {/* Status */}
+                                                    <td style={TD}>
+                                                        <StatusBadge
+                                                            status={
+                                                                teacher.status
+                                                            }
+                                                        />
+                                                    </td>
+                                                    {/* Actions */}
+                                                    <td style={TD}>
+                                                        <div
+                                                            style={{
+                                                                display: "flex",
+                                                                gap: 5,
+                                                                flexWrap:
+                                                                    "wrap",
+                                                                alignItems:
+                                                                    "center",
+                                                            }}
+                                                        >
+                                                            <button
+                                                                disabled={
+                                                                    loadingAction
+                                                                }
+                                                                onClick={() =>
+                                                                    handleToggleSuspend(
+                                                                        teacher,
+                                                                    )
+                                                                }
+                                                                style={btnS(
+                                                                    teacher.status ===
+                                                                        "active"
+                                                                        ? "#fee2e2"
+                                                                        : "#dcfce7",
+                                                                    teacher.status ===
+                                                                        "active"
+                                                                        ? "#dc2626"
+                                                                        : "#15803d",
+                                                                    teacher.status ===
+                                                                        "active"
+                                                                        ? "1px solid #fecaca"
+                                                                        : "1px solid #bbf7d0",
+                                                                    {
+                                                                        fontSize: 11,
+                                                                        padding:
+                                                                            "5px 10px",
+                                                                    },
+                                                                )}
+                                                            >
+                                                                {togglingIds.has(
+                                                                    teacher.id,
+                                                                ) ? (
+                                                                    "جاري..."
+                                                                ) : teacher.status ===
+                                                                  "active" ? (
+                                                                    <>
+                                                                        <FiXCircle
+                                                                            size={
+                                                                                11
+                                                                            }
+                                                                        />{" "}
+                                                                        إيقاف
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <FiCheckCircle
+                                                                            size={
+                                                                                11
+                                                                            }
+                                                                        />{" "}
+                                                                        تفعيل
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    setShowUserSuspendModel(
+                                                                        true,
+                                                                    )
+                                                                }
+                                                                style={btnS(
+                                                                    "#f8fafc",
+                                                                    "#475569",
+                                                                    "1px solid #e2e8f0",
+                                                                    {
+                                                                        fontSize: 11,
+                                                                        padding:
+                                                                            "5px 10px",
+                                                                    },
+                                                                )}
+                                                            >
+                                                                <FiAlertTriangle
+                                                                    size={11}
+                                                                />{" "}
+                                                                سبب
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    setShowHistoryModel(
+                                                                        true,
+                                                                    )
+                                                                }
+                                                                style={btnS(
+                                                                    "#f8fafc",
+                                                                    "#475569",
+                                                                    "1px solid #e2e8f0",
+                                                                    {
+                                                                        fontSize: 11,
+                                                                        padding:
+                                                                            "5px 10px",
+                                                                    },
+                                                                )}
+                                                            >
+                                                                <FiActivity
+                                                                    size={11}
+                                                                />{" "}
+                                                                سجل
+                                                            </button>
+                                                            <button
+                                                                disabled={
+                                                                    loadingAction
+                                                                }
+                                                                onClick={() =>
+                                                                    handleDelete(
+                                                                        teacher,
+                                                                    )
+                                                                }
+                                                                style={btnS(
+                                                                    "#fee2e2",
+                                                                    "#dc2626",
+                                                                    "1px solid #fecaca",
+                                                                    {
+                                                                        fontSize: 11,
+                                                                        padding:
+                                                                            "5px 10px",
+                                                                    },
+                                                                )}
+                                                            >
+                                                                {deletingIds.has(
+                                                                    teacher.id,
+                                                                ) ? (
+                                                                    "جاري..."
+                                                                ) : (
+                                                                    <>
+                                                                        <FiTrash2
+                                                                            size={
+                                                                                11
+                                                                            }
+                                                                        />{" "}
+                                                                        حذف
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    toggleDetail(
+                                                                        teacher.id,
+                                                                    )
+                                                                }
+                                                                style={btnS(
+                                                                    "#f8fafc",
+                                                                    "#475569",
+                                                                    "1px solid #e2e8f0",
+                                                                    {
+                                                                        fontSize: 11,
+                                                                        padding:
+                                                                            "5px 8px",
+                                                                    },
+                                                                )}
+                                                            >
+                                                                {isExpanded ? (
+                                                                    <FiChevronDown
+                                                                        size={
+                                                                            12
+                                                                        }
+                                                                    />
+                                                                ) : (
+                                                                    <FiEye
+                                                                        size={
+                                                                            12
+                                                                        }
+                                                                    />
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+
+                                                {/* Expanded row */}
+                                                {isExpanded && (
+                                                    <tr>
+                                                        <td
+                                                            colSpan={7}
+                                                            style={{
+                                                                background:
+                                                                    "#f0fdf4",
+                                                                padding:
+                                                                    "14px 20px",
+                                                                borderBottom:
+                                                                    "1px solid #dcfce7",
+                                                            }}
+                                                        >
                                                             <div
                                                                 style={{
                                                                     display:
-                                                                        "flex",
-                                                                    alignItems:
-                                                                        "center",
-                                                                    gap: 10,
+                                                                        "grid",
+                                                                    gridTemplateColumns:
+                                                                        "repeat(auto-fit,minmax(160px,1fr))",
+                                                                    gap: 8,
                                                                 }}
                                                             >
-                                                                <AvatarInitials
-                                                                    name={
-                                                                        teacher.name
-                                                                    }
-                                                                    idx={
-                                                                        (page -
-                                                                            1) *
-                                                                            PER_PAGE +
-                                                                        idx
-                                                                    }
-                                                                />
-                                                                <div>
-                                                                    <div
-                                                                        style={{
-                                                                            fontWeight: 500,
-                                                                        }}
-                                                                    >
-                                                                        {
-                                                                            teacher.name
-                                                                        }
-                                                                    </div>
-                                                                    <div
-                                                                        style={{
-                                                                            fontSize:
-                                                                                ".73rem",
-                                                                            color: "var(--color-text-secondary)",
-                                                                        }}
-                                                                    >
-                                                                        {
-                                                                            teacher.email
-                                                                        }
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-
-                                                        <td style={TD}>
-                                                            <span
-                                                                className={
-                                                                    roleClass
-                                                                }
-                                                            >
-                                                                {roleLabel}
-                                                            </span>
-                                                        </td>
-
-                                                        <td
-                                                            style={{
-                                                                ...TD,
-                                                                maxWidth: 190,
-                                                                fontSize:
-                                                                    ".78rem",
-                                                                color: "var(--color-text-secondary)",
-                                                            }}
-                                                        >
-                                                            {getCircleInfo(
-                                                                teacher,
-                                                            )}
-                                                        </td>
-
-                                                        <td style={TD}>
-                                                            <span
-                                                                style={{
-                                                                    display:
-                                                                        "inline-flex",
-                                                                    alignItems:
-                                                                        "center",
-                                                                    gap: 5,
-                                                                    fontSize:
-                                                                        ".8rem",
-                                                                }}
-                                                            >
-                                                                <FaMosque
-                                                                    size={11}
-                                                                    style={{
-                                                                        color: "var(--emerald)",
-                                                                    }}
-                                                                />
-                                                                {getMosqueName(
-                                                                    teacher,
-                                                                )}
-                                                            </span>
-                                                        </td>
-
-                                                        <td
-                                                            style={{
-                                                                ...TD,
-                                                                fontSize:
-                                                                    ".78rem",
-                                                                color: "var(--color-text-secondary)",
-                                                            }}
-                                                        >
-                                                            {formatDate(
-                                                                teacher.updated_at,
-                                                            )}
-                                                        </td>
-
-                                                        <td style={TD}>
-                                                            <span
-                                                                className={
-                                                                    statusMeta.className
-                                                                }
-                                                            >
-                                                                {
-                                                                    statusMeta.icon
-                                                                }{" "}
-                                                                {
-                                                                    statusMeta.label
-                                                                }
-                                                            </span>
-                                                        </td>
-
-                                                        <td style={TD}>
-                                                            <div className="td-actions">
-                                                                <button
-                                                                    className={
-                                                                        teacher.status ===
-                                                                        "active"
-                                                                            ? "btn danger"
-                                                                            : "btn primary"
-                                                                    }
-                                                                    style={{
-                                                                        fontSize:
-                                                                            ".75rem",
-                                                                        padding:
-                                                                            "5px 10px",
-                                                                    }}
-                                                                    onClick={() =>
-                                                                        handleToggleSuspend(
-                                                                            teacher,
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        loadingAction
-                                                                    }
-                                                                    title={
-                                                                        teacher.status ===
-                                                                        "active"
-                                                                            ? "إيقاف الموظف"
-                                                                            : "تفعيل الموظف"
-                                                                    }
-                                                                >
-                                                                    {togglingIds.has(
-                                                                        teacher.id,
-                                                                    )
-                                                                        ? "جاري..."
-                                                                        : teacher.status ===
-                                                                            "active"
-                                                                          ? "إيقاف"
-                                                                          : "تفعيل"}
-                                                                </button>
-
-                                                                <button
-                                                                    className="btn secondary"
-                                                                    style={{
-                                                                        fontSize:
-                                                                            ".75rem",
-                                                                        padding:
-                                                                            "5px 10px",
-                                                                    }}
-                                                                    onClick={() =>
-                                                                        setShowUserSuspendModel(
-                                                                            true,
-                                                                        )
-                                                                    }
-                                                                    title="سبب الإيقاف"
-                                                                >
-                                                                    سبب
-                                                                </button>
-
-                                                                <button
-                                                                    className="btn secondary"
-                                                                    style={{
-                                                                        fontSize:
-                                                                            ".75rem",
-                                                                        padding:
-                                                                            "5px 10px",
-                                                                    }}
-                                                                    onClick={() =>
-                                                                        setShowHistoryModel(
-                                                                            true,
-                                                                        )
-                                                                    }
-                                                                    title="عرض السجل"
-                                                                >
-                                                                    سجل
-                                                                </button>
-
-                                                                <button
-                                                                    className="btn danger"
-                                                                    style={{
-                                                                        fontSize:
-                                                                            ".75rem",
-                                                                        padding:
-                                                                            "5px 10px",
-                                                                    }}
-                                                                    onClick={() =>
-                                                                        handleDelete(
-                                                                            teacher,
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        loadingAction
-                                                                    }
-                                                                    title="حذف نهائي"
-                                                                >
-                                                                    {deletingIds.has(
-                                                                        teacher.id,
-                                                                    )
-                                                                        ? "جاري..."
-                                                                        : "حذف"}
-                                                                </button>
-
-                                                                <button
-                                                                    className="icon-btn"
-                                                                    onClick={() =>
-                                                                        toggleDetail(
-                                                                            teacher.id,
-                                                                        )
-                                                                    }
-                                                                    title="تفاصيل"
-                                                                >
-                                                                    {isExpanded ? (
-                                                                        <FiChevronDown
+                                                                <InfoTile
+                                                                    icon={
+                                                                        <FiPhone
                                                                             size={
-                                                                                14
+                                                                                12
                                                                             }
                                                                         />
-                                                                    ) : (
-                                                                        <FiEye
+                                                                    }
+                                                                    label="الهاتف"
+                                                                    value={
+                                                                        teacher.phone ||
+                                                                        "لا يوجد"
+                                                                    }
+                                                                />
+                                                                <InfoTile
+                                                                    icon={
+                                                                        <FiMail
                                                                             size={
-                                                                                14
+                                                                                12
                                                                             }
                                                                         />
+                                                                    }
+                                                                    label="البريد الإلكتروني"
+                                                                    value={
+                                                                        teacher.email
+                                                                    }
+                                                                />
+                                                                <InfoTile
+                                                                    icon={
+                                                                        <FiClock
+                                                                            size={
+                                                                                12
+                                                                            }
+                                                                        />
+                                                                    }
+                                                                    label="آخر دخول"
+                                                                    value={
+                                                                        teacher.last_login ||
+                                                                        "غير متوفر"
+                                                                    }
+                                                                />
+                                                                <InfoTile
+                                                                    icon={
+                                                                        <FiClock
+                                                                            size={
+                                                                                12
+                                                                            }
+                                                                        />
+                                                                    }
+                                                                    label="وقت الحلقة"
+                                                                    value={
+                                                                        SESSION_LABELS[
+                                                                            teacher
+                                                                                .teacher
+                                                                                ?.session_time ||
+                                                                                ""
+                                                                        ] ||
+                                                                        "غير محدد"
+                                                                    }
+                                                                />
+                                                                <InfoTile
+                                                                    icon={
+                                                                        <FiUsers
+                                                                            size={
+                                                                                12
+                                                                            }
+                                                                        />
+                                                                    }
+                                                                    label="عدد الطلاب"
+                                                                    value={`${teacher.students_count || 0} طالب`}
+                                                                />
+                                                                <InfoTile
+                                                                    icon={
+                                                                        <FaChalkboardTeacher
+                                                                            size={
+                                                                                12
+                                                                            }
+                                                                        />
+                                                                    }
+                                                                    label="عدد الحلقات"
+                                                                    value={`${teacher.circles_count || 0} حلقة`}
+                                                                />
+                                                                <InfoTile
+                                                                    icon={
+                                                                        <FaMoneyBillWave
+                                                                            size={
+                                                                                12
+                                                                            }
+                                                                        />
+                                                                    }
+                                                                    label="الراتب الأساسي"
+                                                                    value={`${(teacher.salary || 0).toLocaleString()} ج.م`}
+                                                                />
+                                                                <InfoTile
+                                                                    icon={
+                                                                        <FiAlertTriangle
+                                                                            size={
+                                                                                12
+                                                                            }
+                                                                        />
+                                                                    }
+                                                                    label="سبب الإيقاف"
+                                                                    value={getReason(
+                                                                        teacher,
                                                                     )}
-                                                                </button>
+                                                                />
                                                             </div>
                                                         </td>
                                                     </tr>
-
-                                                    {isExpanded && (
-                                                        <tr>
-                                                            <td
-                                                                colSpan={7}
-                                                                style={{
-                                                                    background:
-                                                                        "var(--color-background-secondary)",
-                                                                    padding:
-                                                                        "14px 1.25rem",
-                                                                    borderBottom:
-                                                                        "0.5px solid var(--color-border-tertiary)",
-                                                                }}
-                                                            >
-                                                                <div
-                                                                    style={{
-                                                                        display:
-                                                                            "grid",
-                                                                        gridTemplateColumns:
-                                                                            "repeat(auto-fit, minmax(170px, 1fr))",
-                                                                        gap: ".75rem",
-                                                                    }}
-                                                                >
-                                                                    <DetailItem
-                                                                        icon={
-                                                                            <FiPhone
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                            />
-                                                                        }
-                                                                        label="الهاتف"
-                                                                        value={
-                                                                            teacher.phone ||
-                                                                            "لا يوجد"
-                                                                        }
-                                                                    />
-                                                                    <DetailItem
-                                                                        icon={
-                                                                            <FiMail
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                            />
-                                                                        }
-                                                                        label="البريد الإلكتروني"
-                                                                        value={
-                                                                            teacher.email
-                                                                        }
-                                                                    />
-                                                                    <DetailItem
-                                                                        icon={
-                                                                            <FiClock
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                            />
-                                                                        }
-                                                                        label="آخر دخول"
-                                                                        value={
-                                                                            teacher.last_login ||
-                                                                            "غير متوفر"
-                                                                        }
-                                                                    />
-                                                                    <DetailItem
-                                                                        icon={
-                                                                            <FiClock
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                            />
-                                                                        }
-                                                                        label="وقت الحلقة"
-                                                                        value={
-                                                                            SESSION_LABELS[
-                                                                                teacher
-                                                                                    .teacher
-                                                                                    ?.session_time ||
-                                                                                    ""
-                                                                            ] ||
-                                                                            "غير محدد"
-                                                                        }
-                                                                    />
-                                                                    <DetailItem
-                                                                        icon={
-                                                                            <FiUsers
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                            />
-                                                                        }
-                                                                        label="عدد الطلاب"
-                                                                        value={`${teacher.students_count || 0} طالب`}
-                                                                    />
-                                                                    <DetailItem
-                                                                        icon={
-                                                                            <FaChalkboardTeacher
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                            />
-                                                                        }
-                                                                        label="عدد الحلقات"
-                                                                        value={`${teacher.circles_count || 0} حلقة`}
-                                                                    />
-                                                                    <DetailItem
-                                                                        icon={
-                                                                            <FaMoneyBillWave
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                            />
-                                                                        }
-                                                                        label="الراتب الأساسي"
-                                                                        value={`${(
-                                                                            teacher.salary ||
-                                                                            0
-                                                                        ).toLocaleString()} ج.م`}
-                                                                    />
-                                                                    <DetailItem
-                                                                        icon={
-                                                                            <FiXCircle
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                            />
-                                                                        }
-                                                                        label="سبب الإيقاف"
-                                                                        value={getReason(
-                                                                            teacher,
-                                                                        )}
-                                                                    />
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </React.Fragment>
-                                            );
-                                        })
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={7}>
-                                                <div className="empty-state">
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan={7}>
+                                            <div
+                                                style={{
+                                                    textAlign: "center",
+                                                    padding: "60px 20px",
+                                                    color: "#94a3b8",
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        fontSize: 36,
+                                                        marginBottom: 10,
+                                                    }}
+                                                >
+                                                    <FiSearch size={36} />
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontWeight: 700,
+                                                        fontSize: 15,
+                                                    }}
+                                                >
                                                     {search ||
                                                     roleFilter ||
                                                     mosqueFilter ||
                                                     sessionFilter ||
                                                     activeTab !== "all"
-                                                        ? "لا توجد نتائج مطابقة للفلاتر الحالية."
-                                                        : "لا يوجد موظفون لعرضهم حاليًا."}
+                                                        ? "لا توجد نتائج مطابقة للفلاتر."
+                                                        : "لا يوجد موظفون لعرضهم."}
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
 
-                        <div className="pagination-bar">
-                            <div className="muted">
-                                الصفحة {page} من {totalPages}
-                            </div>
-
-                            <div className="pagination">
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "14px 20px",
+                                borderTop: "1px solid #f1f5f9",
+                                flexWrap: "wrap",
+                                gap: 10,
+                            }}
+                        >
+                            <span style={{ fontSize: 12, color: "#64748b" }}>
+                                الصفحة {page} من {totalPages} ·{" "}
+                                {filtered.length} موظف
+                            </span>
+                            <div style={{ display: "flex", gap: 6 }}>
                                 <button
-                                    className="page-btn"
                                     disabled={page <= 1}
                                     onClick={() =>
-                                        setPage((prev) => Math.max(1, prev - 1))
+                                        setPage((p) => Math.max(1, p - 1))
                                     }
+                                    style={pgBtn(false, page <= 1)}
                                 >
                                     <FiChevronRight size={13} />
                                 </button>
-
-                                {pageRange().map((item, index) =>
-                                    item === "..." ? (
-                                        <button
-                                            key={`ellipsis-${index}`}
-                                            className="page-btn"
-                                            disabled
+                                {pageRange().map((p2, i) =>
+                                    p2 === "..." ? (
+                                        <span
+                                            key={`e${i}`}
+                                            style={{
+                                                padding: "6px 8px",
+                                                color: "#94a3b8",
+                                                fontSize: 13,
+                                            }}
                                         >
                                             ...
-                                        </button>
+                                        </span>
                                     ) : (
                                         <button
-                                            key={item}
-                                            className={`page-btn ${page === item ? "active" : ""}`}
+                                            key={i}
                                             onClick={() =>
-                                                setPage(item as number)
+                                                setPage(p2 as number)
                                             }
+                                            style={pgBtn(page === p2)}
                                         >
-                                            {item}
+                                            {p2}
                                         </button>
                                     ),
                                 )}
-
                                 <button
-                                    className="page-btn"
                                     disabled={page >= totalPages}
                                     onClick={() =>
-                                        setPage((prev) =>
-                                            Math.min(totalPages, prev + 1),
+                                        setPage((p) =>
+                                            Math.min(totalPages, p + 1),
                                         )
                                     }
+                                    style={pgBtn(false, page >= totalPages)}
                                 >
                                     <FiChevronLeft size={13} />
                                 </button>
                             </div>
                         </div>
-                    </section>
+                    )}
                 </div>
             </div>
 
+            {/* Modals */}
             {confirm && (
                 <ConfirmModal
                     title={confirm.title}
@@ -1472,14 +1928,12 @@ const UserSuspend: React.FC = () => {
                     onCancel={() => setConfirm(null)}
                 />
             )}
-
             {showUserSuspendModel && (
                 <UserSuspendModel
                     isOpen={showUserSuspendModel}
                     onClose={() => setShowUserSuspendModel(false)}
                 />
             )}
-
             {showHistoryModel && (
                 <HistoryModel
                     isOpen={showHistoryModel}
@@ -1490,39 +1944,28 @@ const UserSuspend: React.FC = () => {
     );
 };
 
-/* ─────────────── Tiny helpers ─────────────── */
-const TH: React.CSSProperties = {
-    padding: "10px 14px",
-    textAlign: "right",
-    color: "var(--color-text-secondary)",
-    fontWeight: 500,
-    fontSize: ".78rem",
-    whiteSpace: "nowrap",
-    borderBottom: "0.5px solid var(--color-border-tertiary)",
+const selectS: React.CSSProperties = {
+    border: "none",
+    background: "transparent",
+    padding: "9px 0",
+    fontSize: 13,
+    fontFamily: "'Tajawal',sans-serif",
+    color: "#1e293b",
+    outline: "none",
 };
-
-const TD: React.CSSProperties = {
-    padding: "12px 14px",
-    borderBottom: "0.5px solid rgba(0,0,0,.05)",
-    verticalAlign: "middle",
-};
-
-/*
-لو نفس CSS بتاع StaffApproval موجود عندك، الصفحة هتطلع بنفس الروح تقريبًا مباشرة.
-ولو محتاج تضيف الكلاسات دي فقط:
-
-.role-pill           { display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.73rem;font-weight:500 }
-.role-teacher        { background:var(--emerald-light, #E1F5EE);color:var(--emerald, #0F6E56) }
-.role-supervisor     { background:#E6F1FB;color:#185FA5 }
-.role-motivator      { background:#FAEEDA;color:#854F0B }
-.role-student-affairs{ background:#EAF3DE;color:#27500A }
-.role-financial      { background:#FCEBEB;color:#A32D2D }
-
-.td-actions          { display:flex;gap:5px;flex-wrap:wrap;align-items:center }
-.btn.danger          { background:#FCEBEB;color:#A32D2D;border-color:#F09595 }
-.btn.danger:hover    { background:#F7C1C1 }
-.btn.primary         { background:var(--emerald,#0F6E56);color:#fff;border-color:var(--emerald) }
-.btn.secondary       { background:var(--color-background-secondary);color:var(--color-text-secondary);border-color:var(--color-border-tertiary) }
-*/
+const pgBtn = (active: boolean, disabled = false): React.CSSProperties => ({
+    border: "1px solid #e2e8f0",
+    borderRadius: 8,
+    padding: "6px 12px",
+    background: active ? "#1e293b" : "#fff",
+    color: active ? "#fff" : "#475569",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontFamily: "'Tajawal',sans-serif",
+    fontWeight: 700,
+    fontSize: 13,
+    opacity: disabled ? 0.4 : 1,
+    display: "flex",
+    alignItems: "center",
+});
 
 export default UserSuspend;

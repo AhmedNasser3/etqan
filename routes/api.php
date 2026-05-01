@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\ImpersonateController;
 use App\Http\Controllers\Admin\MosquePortalController;
 use App\Http\Controllers\Admin\StudentAffairsAdminController;
 use App\Http\Controllers\Admin\TeachersAffairsAdminController;
+use App\Http\Controllers\Api\SessionLogController;
+use App\Http\Controllers\Api\V1\Teacher\TeacherMyStudentsController;
 use App\Http\Controllers\Auth\StudentRegistrationController;
 use App\Http\Controllers\Auth\TeacherRegisterController;
 use App\Http\Controllers\Center\CenterDashboardController;
@@ -38,6 +40,7 @@ use App\Http\Controllers\Students\StudentUserController;
 use App\Http\Controllers\Students\TeacherStudentSessionsController;
 use App\Http\Controllers\Teachers\AttendanceController;
 use App\Http\Controllers\Teachers\MyTeachersController;
+use App\Http\Controllers\Teachers\TeacherAttendanceReportController;
 use App\Http\Controllers\Teachers\TeacherController;
 use App\Http\Controllers\Teachers\TeacherCustomSalaryController;
 use App\Http\Controllers\Teachers\TeacherPayrollController;
@@ -48,7 +51,6 @@ use App\Http\Controllers\Teachers\TeacherStudentsController;
 use App\Http\Controllers\Teachers\WorkScheduleController;
 use App\Http\Controllers\User\FeaturedController;
 use App\Http\Controllers\Users\UserSuspendController;
-use App\Models\Tenant\Center;
 use Illuminate\Support\Facades\Route;
 // routes/api.php
 // Admin route - No authentication required
@@ -58,54 +60,53 @@ use Illuminate\Support\Facades\Route;
 // في routes/api.php
 // داخل الـ Route::middleware(['auth:sanctum']) الموجود عندك
 // في routes/api.php مؤقتاً للاختبار فقط
+Route::middleware(['web'])->prefix('v1/teachers')->group(function () {
+    Route::get('attendance-report',       [TeacherAttendanceReportController::class, 'index']);
+    Route::get('attendance-report/{id}',  [TeacherAttendanceReportController::class, 'show']);
+});
+Route::middleware('web')->prefix('v1/teachers')->group(function () {
+    Route::get('my-students',         [TeacherMyStudentsController::class, 'index']);
+    Route::get('my-students/filters', [TeacherMyStudentsController::class, 'filters']);
+});
+Route::middleware('web')->group(function () {
+    Route::post('/admin/centers/{id}/visit', [CenterController::class, 'visit'])
+        ->name('admin.centers.visit');
+});
 
-Route::get('v1/test-impersonate', function () {
-    return response()->json([
-        'user_center_id'  => auth()->user()?->center_id,
-        'header_center_id' => request()->header('X-Center-Id'),
-        'query_cid'       => request()->query('_cid'),
-        'are_they_equal'  => auth()->user()?->center_id == request()->header('X-Center-Id'),
-    ]);
-})->middleware('web');
-Route::prefix('v1')->group(function () {
+Route::middleware('web')->prefix('session-logs')->group(function () {
 
-    Route::get('centers-test', fn() => Center::all());
+    // دخل الغرفة
+    Route::post('join',        [SessionLogController::class, 'join']);
+
+    // خرج بشكل طبيعي
+    Route::post('leave',       [SessionLogController::class, 'leave']);
+
+    // إغلاق قسري (beforeunload / sendBeacon)
+    Route::post('force-leave', [SessionLogController::class, 'forceLeave']);
+
+    // تقرير يوم محدد  ?date=2025-04-28
+    Route::get('daily',        [SessionLogController::class, 'daily']);
+
+    // تقرير فترة كاملة  ?from=...&to=...
+    Route::get('summary',      [SessionLogController::class, 'summary']);
+});
+
+Route::get('v1/centers-test', function () {
+    return \App\Models\Tenant\Center::all();
+});
     Route::get('centers/all', [CenterController::class, 'allCenters']);
 
-    Route::middleware('web')->group(function () {
-
-        Route::get('centers',                  [CenterController::class, 'index']);
-        Route::post('centers/register',        [CenterController::class, 'register']);
-        Route::get('centers/{id}',             [CenterController::class, 'show']);
-        Route::post('centers/{id}/update',     [CenterController::class, 'update']);
-        Route::delete('centers/{id}',          [CenterController::class, 'destroy']);
-        Route::post('centers/{id}/activate',   [CenterController::class, 'activate']);
-        Route::post('centers/{id}/deactivate', [CenterController::class, 'deactivate']);
-
-        Route::prefix('admin')->group(function () {
-            Route::post('impersonate/{centerId}', [ImpersonateController::class, 'enter']);
-            Route::delete('impersonate',          [ImpersonateController::class, 'leave']);
-            Route::get('impersonate/status',      [ImpersonateController::class, 'status']);
-        });
-
-        Route::prefix('center')->group(function () {
-            Route::get('dashboard/stats',          [CenterDashboardController::class, 'stats']);
-            Route::get('dashboard/recent-circles', [CenterDashboardController::class, 'recentCircles']);
-        });
-
-    });
-});
 Route::get('/v1/attendance/staff-attendance', [AttendanceController::class, 'staffAttendance'])->middleware('web');
 // في routes/api.php
 Route::prefix('v1')->name('v1.')->group(function () {
-// Route::prefix('admin')->middleware(['web'])->group(function () {
+Route::prefix('admin')->middleware(['web'])->group(function () {
 
-//     // Impersonate
-//     Route::post('impersonate/{centerId}', [ImpersonateController::class, 'enter']);
-//     Route::delete('impersonate',          [ImpersonateController::class, 'leave']);
-//     Route::get('impersonate/status',      [ImpersonateController::class, 'status']);
+    // Impersonate
+    Route::post('impersonate/{centerId}', [ImpersonateController::class, 'enter']);
+    Route::delete('impersonate',          [ImpersonateController::class, 'leave']);
+    Route::get('impersonate/status',      [ImpersonateController::class, 'status']);
 
-// });
+});
 // Route::apiResource('bookings', StudentBookingsController::class);
     // هنا كل الـ API v1 endpoints
 
@@ -384,13 +385,12 @@ Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
 Route::middleware('web')->prefix('v1')->name('api.v1.')->group(function () {
     Route::prefix('student-affairs')->name('student-affairs.')->group(function () {
         // الروتات العادية للمجمع الحالي
-        Route::get('/', [StudentAffairsController::class, 'index'])->name('index');
-        Route::get('/{id}', [StudentAffairsController::class, 'show'])->name('show');
-        Route::put('/{id}', [StudentAffairsController::class, 'update'])->name('update');
-        Route::post('/{id}/attendance', [StudentAffairsController::class, 'updateAttendance'])->name('attendance');
-        Route::post('/{id}/pay-balance', [StudentAffairsController::class, 'payBalance'])->name('pay-balance');
-        Route::post('/{id}/whatsapp', [StudentAffairsController::class, 'whatsappReminder'])->name('whatsapp');
-        Route::get('/{id}/print-card', [StudentAffairsController::class, 'printCard'])->name('print-card');
+    Route::get('/',                    [StudentAffairsController::class, 'index']);
+    Route::get('/{id}',                [StudentAffairsController::class, 'show']);
+    Route::put('/{id}',                [StudentAffairsController::class, 'update']);
+    Route::post('/{id}/whatsapp',      [StudentAffairsController::class, 'whatsappReminder']);
+    Route::get('/{id}/print-card',     [StudentAffairsController::class, 'printCard']);
+    Route::get('/{id}/jitsi-room',     [StudentAffairsController::class, 'getJitsiRoom']);
     });
 
 
@@ -846,3 +846,4 @@ Route::prefix('v1/teachers/my-teachers')->middleware('web')->group(function () {
     Route::delete('/{id}', [MyTeachersController::class, 'destroy']);
     Route::post('/{id}/toggle-status', [MyTeachersController::class, 'toggleStatus']);
 });
+// في routes/api.php — أضف داخل middleware auth

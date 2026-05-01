@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class Controller extends BaseController
 {
@@ -12,10 +14,16 @@ class Controller extends BaseController
 
     protected function centerId(): int
     {
-        $override = request()->header('X-Center-Id');
-        if ($override && is_numeric($override)) {
-            return (int) $override;
+        return (int) Auth::user()->center_id;
+    }
+
+    protected function resolveCenterId(Request $request): ?int
+    {
+        if (Auth::check() && Auth::user()->center_id) {
+            return (int) Auth::user()->center_id;
         }
-        return (int) auth()->user()->center_id;
+
+        $id = $request->header('X-Center-Id') ?? $request->query('center_id');
+        return ($id && is_numeric($id)) ? (int) $id : null;
     }
 }

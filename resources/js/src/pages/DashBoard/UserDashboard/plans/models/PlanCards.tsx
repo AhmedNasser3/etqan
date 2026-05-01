@@ -1,11 +1,5 @@
-// UserDashboard/plans/models/PlanCards.tsx
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
-    CalendarIcon,
-    ClockIcon,
-    BuildingOfficeIcon,
-    DocumentTextIcon,
-    UserIcon,
     CheckCircleIcon,
     XCircleIcon,
     InformationCircleIcon,
@@ -13,6 +7,8 @@ import {
     ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 import { useStudentPlans } from "./hooks/useStudentPlans";
+import PlanStartConfigModal from "./PlanStartConfigModal";
+import type { PlanStartConfig } from "./hooks/useStudentPlans";
 
 interface ScheduleItem {
     id: number;
@@ -54,7 +50,7 @@ interface PlanCardProps {
         scheduleId: number,
         planId: number,
         planDetailsId: number,
-    ) => Promise<void>;
+    ) => void;
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({
@@ -62,19 +58,14 @@ const PlanCard: React.FC<PlanCardProps> = ({
     plan_name,
     total_months,
     details_count,
-    available_schedules_count = 0,
     schedule_summary = [],
     center,
-    details = [],
     isExpanded,
     onToggle,
     type,
     onBookSchedule,
 }) => {
-    const [bookingScheduleId, setBookingScheduleId] = useState<number | null>(
-        null,
-    );
-
+    // ✅ FIX: pendingScheduleId مش محتاجها هنا لأن الـ Modal هو اللي بيتحكم في الـ loading state
     const safeSummary =
         Array.isArray(schedule_summary) && schedule_summary.length > 0
             ? schedule_summary[0]
@@ -83,22 +74,12 @@ const PlanCard: React.FC<PlanCardProps> = ({
     const scheduleItems = safeSummary.schedule_items || [];
     const totalSchedules = safeSummary.total_schedules || 0;
 
-    const handleBookSchedule = async (
-        scheduleId: number,
-        planDetailsId: number,
-        e: React.MouseEvent,
-    ) => {
+    const handleClickBook = (scheduleId: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!scheduleItems.find((item) => item.id === scheduleId)?.is_available)
-            return;
-        try {
-            setBookingScheduleId(scheduleId);
-            await onBookSchedule(scheduleId, id, planDetailsId);
-        } catch (error: any) {
-            console.error(`❌ [PlanCard ${id}] Booking error:`, error);
-        } finally {
-            setBookingScheduleId(null);
-        }
+        const item = scheduleItems.find((s) => s.id === scheduleId);
+        if (!item?.is_available) return;
+        // ✅ FIX: بنمرر planDetailsId=0 وبنخلي الـ hook يحدده من الـ API
+        onBookSchedule(scheduleId, id, 0);
     };
 
     return (
@@ -154,7 +135,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                             {schedule.circle_name}
                                         </h4>
                                         <div className="qschedule-card__teacher">
-                                            المعلم : {schedule.teacher_name}
+                                            المعلم: {schedule.teacher_name}
                                         </div>
                                         <div className="qschedule-card__time">
                                             {schedule.time_range}
@@ -175,31 +156,19 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                             )}
                                         </div>
                                         <button
-                                            className={`qschedule-card__btn ${schedule.is_available ? (bookingScheduleId === schedule.id ? "qschedule-card__btn--loading" : "qschedule-card__btn--ok") : "qschedule-card__btn--disabled"}`}
+                                            className={`qschedule-card__btn ${
+                                                schedule.is_available
+                                                    ? "qschedule-card__btn--ok"
+                                                    : "qschedule-card__btn--disabled"
+                                            }`}
                                             onClick={(e) =>
-                                                handleBookSchedule(
-                                                    schedule.id,
-                                                    1,
-                                                    e,
-                                                )
+                                                handleClickBook(schedule.id, e)
                                             }
-                                            disabled={
-                                                !schedule.is_available ||
-                                                bookingScheduleId ===
-                                                    schedule.id
-                                            }
+                                            disabled={!schedule.is_available}
                                         >
-                                            {bookingScheduleId ===
-                                            schedule.id ? (
-                                                <>
-                                                    <span className="qschedule-card__spinner" />
-                                                    جاري الحجز...
-                                                </>
-                                            ) : schedule.is_available ? (
-                                                "اشتراك الآن"
-                                            ) : (
-                                                "ممتلئ"
-                                            )}
+                                            {schedule.is_available
+                                                ? "اشتراك الآن"
+                                                : "ممتلئ"}
                                         </button>
                                     </div>
                                 ))}
@@ -216,8 +185,17 @@ const PlanCard: React.FC<PlanCardProps> = ({
     );
 };
 
+// ============================================================
+// PlanCards — الكومبوننت الرئيسي
+// ============================================================
 interface PlanCardsProps {
     type?: "available" | "my-plans";
+}
+
+interface BookingIntent {
+    scheduleId: number;
+    planId: number;
+    planDetailsId: number;
 }
 
 const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
@@ -225,6 +203,15 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         new Set(),
     );
     const containerRef = useRef<HTMLDivElement>(null);
+
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalLoading, setModalLoading] = useState(false);
+    const [bookingIntent, setBookingIntent] = useState<BookingIntent | null>(
+        null,
+    );
+    const [planDetailsForModal, setPlanDetailsForModal] = useState<any[]>([]);
+    const [currentPlanName, setCurrentPlanName] = useState("");
+
     const {
         plans,
         loading,
@@ -233,29 +220,76 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         fetchPlans,
         refetch,
         bookSchedule,
+        fetchPlanDetails,
     } = useStudentPlans(type, 1);
 
-    const handleBookSchedule = async (
-        scheduleId: number,
-        planId: number,
-        planDetailsId: number,
-    ) => {
-        try {
-            const result = await bookSchedule(
-                scheduleId,
-                planId,
-                planDetailsId,
-            );
-            if (result.success) {
-                alert(result.message);
-                await refetch();
-            } else {
-                alert(`❌ ${result.message}`);
+    // ✅ FIX: نجيب البيانات الأول، وبعدين نفتح الـ Modal — بدون race condition
+    const handleOpenModal = useCallback(
+        async (scheduleId: number, planId: number, planDetailsId: number) => {
+            // منع double-click أو فتح modal تاني وهو شغال
+            if (modalLoading || modalOpen) return;
+
+            setModalLoading(true);
+
+            try {
+                const plan = plans.find((p: any) => p.id === planId);
+                setCurrentPlanName(plan?.plan_name || "الخطة");
+
+                const details = await fetchPlanDetails(planId);
+                setPlanDetailsForModal(details);
+
+                // ✅ بنفتح الـ Modal بس بعد ما البيانات وصلت
+                setBookingIntent({ scheduleId, planId, planDetailsId });
+                setModalOpen(true);
+            } catch (err) {
+                console.error("❌ Failed to fetch plan details:", err);
+            } finally {
+                setModalLoading(false);
             }
-        } catch {
-            alert("حدث خطأ في الحجز");
-        }
-    };
+        },
+        [plans, fetchPlanDetails, modalLoading, modalOpen],
+    );
+
+    const handleConfirmBooking = useCallback(
+        async (config: PlanStartConfig) => {
+            if (!bookingIntent) return;
+
+            console.log("📦 Booking with config:", config);
+
+            setModalLoading(true);
+            try {
+                const result = await bookSchedule(
+                    bookingIntent.scheduleId,
+                    bookingIntent.planId,
+                    bookingIntent.planDetailsId,
+                    config,
+                );
+
+                // ✅ نغلق الـ Modal الأول، وبعدين نعرض النتيجة
+                setModalOpen(false);
+                setBookingIntent(null);
+                setPlanDetailsForModal([]);
+
+                if (result.success) {
+                    alert(result.message);
+                    await refetch();
+                } else {
+                    alert(`❌ ${result.message}`);
+                }
+            } finally {
+                setModalLoading(false);
+            }
+        },
+        [bookingIntent, bookSchedule, refetch],
+    );
+
+    // ✅ FIX: إغلاق نظيف للـ Modal
+    const handleCloseModal = useCallback(() => {
+        if (modalLoading) return; // منع الإغلاق وهو بيحجز
+        setModalOpen(false);
+        setBookingIntent(null);
+        setPlanDetailsForModal([]);
+    }, [modalLoading]);
 
     const togglePlan = useCallback((planId: number) => {
         setLocalExpandedPlans((prev) => {
@@ -314,73 +348,90 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
     }
 
     return (
-        <div
-            ref={containerRef}
-            className="qplans-container"
-            id="plan-cards-container"
-        >
-            <header className="qplans-header">
-                <h1 className="qplans-header__title">
-                    {type === "available"
-                        ? "حلقات متاحة للحجز"
-                        : `خططي (${plans.length})`}
-                </h1>
-            </header>
+        <>
+            <div
+                ref={containerRef}
+                className="qplans-container"
+                id="plan-cards-container"
+            >
+                <header className="qplans-header">
+                    <h1 className="qplans-header__title">
+                        {type === "available"
+                            ? "حلقات متاحة للحجز"
+                            : `خططي (${plans.length})`}
+                    </h1>
+                </header>
 
-            <div className="qplans-grid">
-                {plans.map((plan: any) => (
-                    <div
-                        key={plan.id}
-                        data-plan-id={plan.id}
-                        className="qplans-grid__item"
-                    >
-                        <PlanCard
-                            id={plan.id}
-                            plan_name={plan.plan_name}
-                            total_months={plan.total_months || 0}
-                            details_count={plan.details_count || 0}
-                            available_schedules_count={
-                                plan.available_schedules_count || 0
+                <div className="qplans-grid">
+                    {plans.map((plan: any) => (
+                        <div
+                            key={plan.id}
+                            data-plan-id={plan.id}
+                            className="qplans-grid__item"
+                        >
+                            <PlanCard
+                                id={plan.id}
+                                plan_name={plan.plan_name}
+                                total_months={plan.total_months || 0}
+                                details_count={plan.details_count || 0}
+                                available_schedules_count={
+                                    plan.available_schedules_count || 0
+                                }
+                                schedule_summary={plan.schedule_summary || []}
+                                center={plan.center || { name: "غير محدد" }}
+                                details={plan.details || []}
+                                isExpanded={localExpandedPlans.has(plan.id)}
+                                onToggle={() => togglePlan(plan.id)}
+                                type={type}
+                                onBookSchedule={handleOpenModal}
+                            />
+                        </div>
+                    ))}
+                </div>
+
+                {pagination && (
+                    <div className="qplans-pagination">
+                        <button
+                            onClick={() =>
+                                fetchPlans(pagination.currentPage - 1)
                             }
-                            schedule_summary={plan.schedule_summary || []}
-                            center={plan.center || { name: "غير محدد" }}
-                            details={plan.details || []}
-                            isExpanded={localExpandedPlans.has(plan.id)}
-                            onToggle={() => togglePlan(plan.id)}
-                            type={type}
-                            onBookSchedule={handleBookSchedule}
-                        />
+                            disabled={pagination.currentPage === 1}
+                            className="qplans-pagination__btn"
+                        >
+                            <ArrowLeftIcon className="w-4 h-4" />
+                            السابق
+                        </button>
+                        <span className="qplans-pagination__info">
+                            صفحة {pagination.currentPage} من{" "}
+                            {pagination.lastPage}
+                            <span>({pagination.total} خطة)</span>
+                        </span>
+                        <button
+                            onClick={() =>
+                                fetchPlans(pagination.currentPage + 1)
+                            }
+                            disabled={
+                                pagination.currentPage === pagination.lastPage
+                            }
+                            className="qplans-pagination__btn"
+                        >
+                            التالي
+                            <ArrowRightIcon className="w-4 h-4" />
+                        </button>
                     </div>
-                ))}
+                )}
             </div>
 
-            {pagination && (
-                <div className="qplans-pagination">
-                    <button
-                        onClick={() => fetchPlans(pagination.currentPage - 1)}
-                        disabled={pagination.currentPage === 1}
-                        className="qplans-pagination__btn"
-                    >
-                        <ArrowLeftIcon className="w-4 h-4" />
-                        السابق
-                    </button>
-                    <span className="qplans-pagination__info">
-                        صفحة {pagination.currentPage} من {pagination.lastPage}
-                        <span>({pagination.total} خطة)</span>
-                    </span>
-                    <button
-                        onClick={() => fetchPlans(pagination.currentPage + 1)}
-                        disabled={
-                            pagination.currentPage === pagination.lastPage
-                        }
-                        className="qplans-pagination__btn"
-                    >
-                        التالي
-                        <ArrowRightIcon className="w-4 h-4" />
-                    </button>
-                </div>
-            )}
-        </div>
+            {/* ✅ Modal اختيار طريقة البداية */}
+            <PlanStartConfigModal
+                isOpen={modalOpen}
+                onClose={handleCloseModal}
+                onConfirm={handleConfirmBooking}
+                planDetails={planDetailsForModal}
+                planName={currentPlanName}
+                isLoading={modalLoading}
+            />
+        </>
     );
 };
 

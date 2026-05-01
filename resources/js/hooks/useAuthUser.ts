@@ -26,7 +26,6 @@ export const useAuthUser = () => {
                 if (data.success && data.user) {
                     setUser(data.user);
 
-                    // لو الـ user مسجل دخول وفي الصفحة الرئيسية / وفيه center
                     if (data.user.center && location.pathname === "/") {
                         navigate(
                             `/${data.user.center.slug || data.user.center.name}`,
@@ -45,7 +44,7 @@ export const useAuthUser = () => {
         };
 
         fetchUser();
-    }, [navigate, location.pathname]);
+    }, []); // ✅ array فاضي — بيتنفذ مرة واحدة بس
 
     return { user, loading };
 };

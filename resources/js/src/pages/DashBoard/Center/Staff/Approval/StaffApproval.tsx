@@ -1,8 +1,7 @@
-// StaffApproval.tsx — نسخة مكتملة بنفس نظام كلاسات MyTeachersManagement
+// StaffApproval.tsx — نسخة مكتملة مع تصميم متقدم وفلاتر شاملة
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
     FiSearch,
-    FiFilter,
     FiRefreshCw,
     FiX,
     FiCheckCircle,
@@ -16,6 +15,11 @@ import {
     FiPhone,
     FiTrendingUp,
     FiEye,
+    FiCalendar,
+    FiGrid,
+    FiList,
+    FiDownload,
+    FiFilter,
 } from "react-icons/fi";
 import { FaChalkboardTeacher, FaMosque, FaMoneyBillWave } from "react-icons/fa";
 
@@ -26,6 +30,14 @@ type TeacherStatus =
     | "suspended"
     | "rejected"
     | "inactive";
+type ViewMode = "table" | "cards";
+type SortKey =
+    | "name"
+    | "created_at"
+    | "salary"
+    | "students_count"
+    | "circles_count";
+type SortDir = "asc" | "desc";
 
 interface TeacherMeta {
     role?: string;
@@ -54,7 +66,6 @@ interface Stats {
     active: number;
     rejected: number;
 }
-
 interface ConfirmState {
     title: string;
     desc: string;
@@ -70,37 +81,47 @@ const ROLE_LABELS: Record<string, string> = {
     financial: "مشرف مالي",
 };
 
-const ROLE_CLASS: Record<string, string> = {
-    teacher: "role-pill role-teacher",
-    supervisor: "role-pill role-supervisor",
-    motivator: "role-pill role-motivator",
-    student_affairs: "role-pill role-student-affairs",
-    financial: "role-pill role-financial",
+const ROLE_STYLE: Record<string, { bg: string; color: string }> = {
+    teacher: { bg: "#E1F5EE", color: "#085041" },
+    supervisor: { bg: "#E6F1FB", color: "#0C447C" },
+    motivator: { bg: "#FAEEDA", color: "#633806" },
+    student_affairs: { bg: "#EAF3DE", color: "#27500A" },
+    financial: { bg: "#FCEBEB", color: "#A32D2D" },
 };
 
 const STATUS_META: Record<
     string,
-    { label: string; className: string; icon: React.ReactNode }
+    { label: string; bg: string; color: string; icon: React.ReactNode }
 > = {
     pending: {
-        label: "⏳ معلق",
-        className: "badge warning",
+        label: "معلق",
+        bg: "#FEF9C3",
+        color: "#854D0E",
         icon: <FiClock size={11} />,
     },
     active: {
-        label: "✓ مفعّل",
-        className: "badge success",
+        label: "مفعّل",
+        bg: "#DCFCE7",
+        color: "#166534",
         icon: <FiCheckCircle size={11} />,
     },
     rejected: {
-        label: "✕ مرفوض",
-        className: "badge danger",
+        label: "مرفوض",
+        bg: "#FEE2E2",
+        color: "#991B1B",
         icon: <FiXCircle size={11} />,
     },
     suspended: {
         label: "موقوف",
-        className: "badge danger",
+        bg: "#FEE2E2",
+        color: "#991B1B",
         icon: <FiXCircle size={11} />,
+    },
+    inactive: {
+        label: "غير نشط",
+        bg: "#F1F5F9",
+        color: "#475569",
+        icon: <FiClock size={11} />,
     },
 };
 
@@ -113,7 +134,6 @@ const AV_COLORS = [
     { bg: "#EEEDFE", color: "#3C3489" },
 ];
 
-/* Mock للـ fallback */
 const MOCK_PENDING: PendingTeacher[] = [
     {
         id: 1,
@@ -176,9 +196,79 @@ const MOCK_PENDING: PendingTeacher[] = [
         salary: 2000,
         teacher: { role: "motivator", notes: "برنامج التحفيز الأسبوعي" },
     },
+    {
+        id: 5,
+        name: "الأستاذ خالد البراهيم",
+        email: "khaled@example.com",
+        phone: "0511112222",
+        status: "active",
+        created_at: "2025-01-20T07:00:00",
+        mosque: "مسجد الرحمة",
+        circles_count: 4,
+        students_count: 88,
+        salary: 3800,
+        teacher: { role: "teacher", notes: "حلقة الصبح" },
+    },
+    {
+        id: 6,
+        name: "الأستاذة نورا الحامد",
+        email: "noura@example.com",
+        phone: "0522223333",
+        status: "pending",
+        created_at: "2025-04-12T08:00:00",
+        mosque: "مسجد السلام",
+        circles_count: 1,
+        students_count: 22,
+        salary: 2100,
+        teacher: { role: "financial", notes: "متابعة مصاريف الحلقات" },
+    },
+    {
+        id: 7,
+        name: "الشيخ يوسف العمري",
+        email: "yousef@example.com",
+        phone: "0533334444",
+        status: "suspended",
+        created_at: "2024-12-01T09:00:00",
+        mosque: "مسجد الفتح",
+        circles_count: 2,
+        students_count: 35,
+        salary: 2900,
+        teacher: { role: "supervisor", notes: "الإشراف العام" },
+    },
 ];
 
+/* ─────────────── Helpers ─────────────── */
+const csrf = () =>
+    document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content") ?? "";
+
+const apiFetch = async (url: string, opts: RequestInit = {}) => {
+    const res = await fetch(url, {
+        credentials: "include",
+        headers: {
+            Accept: "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRF-TOKEN": csrf(),
+            "Content-Type": "application/json",
+            ...(opts.headers || {}),
+        },
+        ...opts,
+    });
+    if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+};
+
+const fmtDate = (s: string) => s?.split("T")[0] ?? "—";
+const fmtSalary = (n?: number) =>
+    n ? `${n.toLocaleString("ar-EG")} ج.م` : "—";
+
 /* ─────────────── Sub-components ─────────────── */
+
+/* Avatar */
 const AvatarInitials = ({ name, idx }: { name: string; idx: number }) => {
     const av = AV_COLORS[idx % AV_COLORS.length];
     const initials = name
@@ -189,8 +279,8 @@ const AvatarInitials = ({ name, idx }: { name: string; idx: number }) => {
     return (
         <div
             style={{
-                width: 38,
-                height: 38,
+                width: 40,
+                height: 40,
                 borderRadius: "50%",
                 background: av.bg,
                 color: av.color,
@@ -200,6 +290,7 @@ const AvatarInitials = ({ name, idx }: { name: string; idx: number }) => {
                 fontSize: 13,
                 fontWeight: 500,
                 flexShrink: 0,
+                fontFamily: "'Tajawal',sans-serif",
             }}
         >
             {initials}
@@ -207,6 +298,52 @@ const AvatarInitials = ({ name, idx }: { name: string; idx: number }) => {
     );
 };
 
+/* Badge */
+const StatusBadge = ({ status }: { status: string }) => {
+    const m = STATUS_META[status] ?? STATUS_META.inactive;
+    return (
+        <span
+            style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                background: m.bg,
+                color: m.color,
+                borderRadius: 20,
+                padding: "3px 10px",
+                fontSize: 11,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+            }}
+        >
+            {m.icon}
+            {m.label}
+        </span>
+    );
+};
+
+/* Role pill */
+const RolePill = ({ role }: { role?: string }) => {
+    const s = ROLE_STYLE[role || "teacher"] ?? ROLE_STYLE.teacher;
+    return (
+        <span
+            style={{
+                display: "inline-block",
+                background: s.bg,
+                color: s.color,
+                borderRadius: 20,
+                padding: "3px 10px",
+                fontSize: 11,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+            }}
+        >
+            {ROLE_LABELS[role || "teacher"] ?? "معلم"}
+        </span>
+    );
+};
+
+/* Toast */
 const Toast = ({
     message,
     tone,
@@ -216,19 +353,50 @@ const Toast = ({
     tone: "success" | "error";
     onClose: () => void;
 }) => (
-    <div className={`toast ${tone}`}>
+    <div
+        style={{
+            position: "fixed",
+            bottom: 28,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            background: tone === "success" ? "#1e293b" : "#7f1d1d",
+            color: "#fff",
+            borderRadius: 14,
+            padding: "12px 20px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 13,
+            fontWeight: 700,
+            boxShadow: "0 4px 24px #0003",
+            fontFamily: "'Tajawal',sans-serif",
+            whiteSpace: "nowrap",
+        }}
+    >
         {tone === "success" ? (
             <FiCheckCircle size={15} />
         ) : (
             <FiXCircle size={15} />
         )}
         <span>{message}</span>
-        <button className="icon-btn subtle" onClick={onClose}>
+        <button
+            onClick={onClose}
+            style={{
+                background: "transparent",
+                border: "none",
+                color: "#fff",
+                cursor: "pointer",
+                padding: 0,
+                display: "flex",
+            }}
+        >
             <FiX size={13} />
         </button>
     </div>
 );
 
+/* Confirm Modal */
 const ConfirmModal = ({
     title,
     desc,
@@ -240,20 +408,81 @@ const ConfirmModal = ({
     onConfirm: () => void;
     onCancel: () => void;
 }) => (
-    <div className="modal-overlay">
-        <div className="modal-card modal-compact">
-            <div className="modal-head">
-                <h3>{title}</h3>
-                <button className="icon-btn subtle" onClick={onCancel}>
-                    <FiX size={15} />
-                </button>
-            </div>
-            <p className="modal-copy">{desc}</p>
-            <div className="modal-actions">
-                <button className="btn secondary" onClick={onCancel}>
+    <div
+        style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9000,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+        }}
+    >
+        <div
+            style={{
+                background: "#fff",
+                borderRadius: 20,
+                padding: "28px 32px",
+                maxWidth: 400,
+                width: "90%",
+                fontFamily: "'Tajawal',sans-serif",
+                direction: "rtl",
+            }}
+        >
+            <h3
+                style={{
+                    margin: "0 0 10px",
+                    fontSize: 17,
+                    fontWeight: 900,
+                    color: "#1e293b",
+                }}
+            >
+                {title}
+            </h3>
+            <p
+                style={{
+                    fontSize: 13,
+                    color: "#64748b",
+                    marginBottom: 24,
+                    lineHeight: 1.7,
+                }}
+            >
+                {desc}
+            </p>
+            <div
+                style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}
+            >
+                <button
+                    onClick={onCancel}
+                    style={{
+                        padding: "8px 20px",
+                        borderRadius: 10,
+                        border: "1px solid #e2e8f0",
+                        background: "#f8fafc",
+                        cursor: "pointer",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "#475569",
+                        fontFamily: "inherit",
+                    }}
+                >
                     إلغاء
                 </button>
-                <button className="btn danger" onClick={onConfirm}>
+                <button
+                    onClick={onConfirm}
+                    style={{
+                        padding: "8px 20px",
+                        borderRadius: 10,
+                        border: "none",
+                        background: "#dc2626",
+                        color: "#fff",
+                        cursor: "pointer",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        fontFamily: "inherit",
+                    }}
+                >
                     تنفيذ
                 </button>
             </div>
@@ -261,125 +490,403 @@ const ConfirmModal = ({
     </div>
 );
 
-/* ─────────────── API hook ─────────────── */
-const useStaffApproval = () => {
+/* Detail Item */
+const DetailItem = ({
+    icon,
+    label,
+    value,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+}) => (
+    <div
+        style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            padding: "10px 14px",
+            background: "#f8fafc",
+            borderRadius: 10,
+        }}
+    >
+        <div style={{ color: "#0f6e56", marginTop: 2, flexShrink: 0 }}>
+            {icon}
+        </div>
+        <div>
+            <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>
+                {label}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>
+                {value}
+            </div>
+        </div>
+    </div>
+);
+
+/* ─────────────── Stat Card ─────────────── */
+const StatCard = ({
+    label,
+    value,
+    icon,
+    accent,
+    sub,
+}: {
+    label: string;
+    value: number | string;
+    icon: React.ReactNode;
+    accent: string;
+    sub?: string;
+}) => (
+    <div
+        style={{
+            background: "#fff",
+            borderRadius: 16,
+            padding: "20px 22px",
+            boxShadow: "0 2px 12px #0001",
+            borderTop: `4px solid ${accent}`,
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+        }}
+    >
+        <div style={{ color: accent, fontSize: 20 }}>{icon}</div>
+        <div style={{ fontSize: 26, fontWeight: 900, color: "#1e293b" }}>
+            {value}
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>
+            {label}
+        </div>
+        {sub && <div style={{ fontSize: 11, color: "#94a3b8" }}>{sub}</div>}
+    </div>
+);
+
+/* ─────────────── Teacher Card (Card View) ─────────────── */
+const TeacherCardView = ({
+    teacher,
+    index,
+    onApprove,
+    onReject,
+    onOTP,
+    approving,
+    rejecting,
+}: {
+    teacher: PendingTeacher;
+    index: number;
+    onApprove: (id: number) => void;
+    onReject: (id: number) => void;
+    onOTP: (id: number) => void;
+    approving: boolean;
+    rejecting: boolean;
+}) => {
+    const [expanded, setExpanded] = useState(false);
+    const T = teacher;
+    const sm = STATUS_META[T.status] ?? STATUS_META.inactive;
+    const borderColor =
+        T.status === "active"
+            ? "#22c55e"
+            : T.status === "rejected" || T.status === "suspended"
+              ? "#ef4444"
+              : "#f59e0b";
+
+    return (
+        <div
+            style={{
+                background: "#fff",
+                borderRadius: 20,
+                boxShadow: "0 2px 16px #0001",
+                overflow: "hidden",
+                borderRight: `4px solid ${borderColor}`,
+                fontFamily: "'Tajawal',sans-serif",
+                direction: "rtl",
+            }}
+        >
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "16px 18px",
+                    flexWrap: "wrap",
+                }}
+            >
+                <AvatarInitials name={T.name} idx={index} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <span
+                            style={{
+                                fontWeight: 900,
+                                fontSize: 14,
+                                color: "#1e293b",
+                            }}
+                        >
+                            {T.name}
+                        </span>
+                        <StatusBadge status={T.status} />
+                        <RolePill role={T.teacher?.role} />
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: "#64748b",
+                            marginTop: 4,
+                            display: "flex",
+                            gap: 12,
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <span
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                            }}
+                        >
+                            <FiMail size={11} />
+                            {T.email}
+                        </span>
+                        {T.phone && (
+                            <span
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 4,
+                                }}
+                            >
+                                <FiPhone size={11} />
+                                {T.phone}
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {[
+                        { l: "الطلاب", v: T.students_count ?? 0, c: "#0284c7" },
+                        { l: "الحلقات", v: T.circles_count ?? 0, c: "#9333ea" },
+                        { l: "الراتب", v: fmtSalary(T.salary), c: "#059669" },
+                    ].map((s) => (
+                        <div
+                            key={s.l}
+                            style={{
+                                textAlign: "center",
+                                background: "#f8fafc",
+                                borderRadius: 10,
+                                padding: "7px 12px",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    fontSize: 15,
+                                    fontWeight: 900,
+                                    color: s.c,
+                                }}
+                            >
+                                {s.v}
+                            </div>
+                            <div style={{ fontSize: 10, color: "#94a3b8" }}>
+                                {s.l}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Info bar */}
+            <div
+                style={{
+                    margin: "0 18px 12px",
+                    padding: "10px 14px",
+                    background: "linear-gradient(135deg,#f0fdf4,#dcfce7)",
+                    borderRadius: 12,
+                    display: "flex",
+                    gap: 14,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                }}
+            >
+                <span
+                    style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: "#15803d",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                    }}
+                >
+                    <FaMosque size={12} />
+                    {T.mosque || "غير مربوط"}
+                </span>
+                {T.teacher?.notes && (
+                    <span style={{ fontSize: 11, color: "#166534", flex: 1 }}>
+                        {T.teacher.notes}
+                    </span>
+                )}
+                <span style={{ fontSize: 11, color: "#64748b" }}>
+                    📅 {fmtDate(T.created_at)}
+                </span>
+            </div>
+
+            {/* Actions */}
+            <div
+                style={{
+                    padding: "0 18px 16px",
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                }}
+            >
+                {T.status !== "active" && (
+                    <button
+                        disabled={approving}
+                        onClick={() => onApprove(T.id)}
+                        style={btnStyle("#0f6e56", "#fff")}
+                    >
+                        <FiCheckCircle size={12} />
+                        {approving ? "جاري..." : "تفعيل"}
+                    </button>
+                )}
+                {T.status !== "rejected" && T.status !== "suspended" && (
+                    <button
+                        disabled={rejecting}
+                        onClick={() => onReject(T.id)}
+                        style={btnStyle("#dc2626", "#fff")}
+                    >
+                        <FiXCircle size={12} />
+                        {rejecting ? "جاري..." : "رفض"}
+                    </button>
+                )}
+                <button
+                    onClick={() => onOTP(T.id)}
+                    style={btnStyle("#f8fafc", "#475569", "1px solid #e2e8f0")}
+                >
+                    OTP
+                </button>
+                <button
+                    onClick={() => alert(`ربط رواتب: ${T.name}`)}
+                    style={btnStyle("#f8fafc", "#475569", "1px solid #e2e8f0")}
+                >
+                    <FaMoneyBillWave size={11} /> رواتب
+                </button>
+                <button
+                    onClick={() => setExpanded((v) => !v)}
+                    style={{
+                        ...btnStyle("#f8fafc", "#475569", "1px solid #e2e8f0"),
+                        marginRight: "auto",
+                    }}
+                >
+                    {expanded ? (
+                        <FiChevronDown size={13} />
+                    ) : (
+                        <FiEye size={13} />
+                    )}{" "}
+                    تفاصيل
+                </button>
+            </div>
+
+            {/* Expanded */}
+            {expanded && (
+                <div
+                    style={{
+                        borderTop: "1px solid #f1f5f9",
+                        padding: "14px 18px",
+                        display: "grid",
+                        gridTemplateColumns:
+                            "repeat(auto-fit,minmax(150px,1fr))",
+                        gap: 8,
+                    }}
+                >
+                    <DetailItem
+                        icon={<FiPhone size={12} />}
+                        label="الهاتف"
+                        value={T.phone || "لا يوجد"}
+                    />
+                    <DetailItem
+                        icon={<FaMoneyBillWave size={12} />}
+                        label="الراتب الأساسي"
+                        value={fmtSalary(T.salary)}
+                    />
+                    <DetailItem
+                        icon={<FaChalkboardTeacher size={12} />}
+                        label="عدد الحلقات"
+                        value={`${T.circles_count ?? 0} حلقة`}
+                    />
+                    <DetailItem
+                        icon={<FiUsers size={12} />}
+                        label="عدد الطلاب"
+                        value={`${T.students_count ?? 0} طالب`}
+                    />
+                    <DetailItem
+                        icon={<FiMail size={12} />}
+                        label="البريد"
+                        value={T.email}
+                    />
+                    <DetailItem
+                        icon={<FaMosque size={12} />}
+                        label="المسجد"
+                        value={T.mosque || "غير مربوط"}
+                    />
+                </div>
+            )}
+        </div>
+    );
+};
+
+const btnStyle = (
+    bg: string,
+    color: string,
+    border = "none",
+    extra: React.CSSProperties = {},
+): React.CSSProperties => ({
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 5,
+    padding: "7px 14px",
+    borderRadius: 10,
+    border,
+    background: bg,
+    color,
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 700,
+    fontFamily: "'Tajawal',sans-serif",
+    transition: "opacity .15s",
+    ...extra,
+});
+
+/* ─────────────── Main Component ─────────────── */
+const StaffApproval: React.FC = () => {
     const [teachers, setTeachers] = useState<PendingTeacher[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [mosques, setMosques] = useState<string[]>([]);
 
-    const csrfToken = () =>
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute("content") || "";
-
-    const apiFetch = async (url: string, options: RequestInit = {}) => {
-        const res = await fetch(url, {
-            credentials: "include",
-            headers: {
-                Accept: "application/json",
-                "X-Requested-With": "XMLHttpRequest",
-                "X-CSRF-TOKEN": csrfToken(),
-                "Content-Type": "application/json",
-                ...(options.headers || {}),
-            },
-            ...options,
-        });
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(data.message || `HTTP ${res.status}`);
-        }
-        return res.json();
-    };
-
-    const fetchPendingTeachers = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const data = await apiFetch(
-                "/api/v1/teachers/my-teachers?status=pending&per_page=100",
-            );
-            setTeachers(data.data || []);
-        } catch {
-            setError("تعذر تحميل البيانات، يُعرض بيانات بديلة.");
-            setTeachers(MOCK_PENDING);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchMosques = async () => {
-        try {
-            const data = await apiFetch("/api/v1/mosques");
-            setMosques(
-                (data.data || [])
-                    .map((m: { name?: string }) => m.name)
-                    .filter(Boolean),
-            );
-        } catch {
-            setMosques(
-                Array.from(
-                    new Set(MOCK_PENDING.map((t) => t.mosque).filter(Boolean)),
-                ) as string[],
-            );
-        }
-    };
-
-    const approveTeacher = async (id: number) => {
-        await apiFetch(`/api/v1/teachers/my-teachers/${id}/toggle-status`, {
-            method: "POST",
-        });
-    };
-
-    const rejectTeacher = async (id: number) => {
-        await apiFetch(`/api/v1/teachers/my-teachers/${id}`, {
-            method: "DELETE",
-        });
-    };
-
-    const sendOTP = async (id: number) => {
-        await apiFetch(`/api/v1/teachers/send-otp/${id}`, { method: "POST" });
-    };
-
-    useEffect(() => {
-        fetchPendingTeachers();
-        fetchMosques();
-    }, []);
-
-    return {
-        teachers,
-        setTeachers,
-        loading,
-        error,
-        mosques,
-        fetchPendingTeachers,
-        approveTeacher,
-        rejectTeacher,
-        sendOTP,
-    };
-};
-
-/* ─────────────── Main Component ─────────────── */
-const StaffApproval: React.FC = () => {
-    const {
-        teachers,
-        setTeachers,
-        loading,
-        error,
-        mosques,
-        fetchPendingTeachers,
-        approveTeacher,
-        rejectTeacher,
-        sendOTP,
-    } = useStaffApproval();
-
+    /* Filters */
     const [search, setSearch] = useState("");
-    const [debouncedSearch, setDebounced] = useState("");
+    const [debSearch, setDebSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("");
     const [mosqueFilter, setMosqueFilter] = useState("");
-    const [activeTab, setActiveTab] = useState<
+    const [statusFilter, setStatusFilter] = useState<
         "all" | "pending" | "active" | "rejected"
     >("all");
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
+    const [salaryMin, setSalaryMin] = useState("");
+    const [salaryMax, setSalaryMax] = useState("");
+    const [sortKey, setSortKey] = useState<SortKey>("created_at");
+    const [sortDir, setSortDir] = useState<SortDir>("desc");
+    const [viewMode, setViewMode] = useState<ViewMode>("table");
+    const [showFilters, setShowFilters] = useState(false);
+
+    /* UI state */
     const [page, setPage] = useState(1);
     const PER_PAGE = 10;
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -392,43 +899,123 @@ const StaffApproval: React.FC = () => {
     } | null>(null);
     const toastTimer = useRef<number | null>(null);
 
+    /* ── API ── */
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const d = await apiFetch("/api/v1/teachers/pending");
+
+            setTeachers(d.data ?? []);
+        } catch {
+            setError("تعذر تحميل البيانات — يُعرض بيانات بديلة");
+            setTeachers(MOCK_PENDING);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const fetchMosques = useCallback(async () => {
+        try {
+            const d = await apiFetch("/api/v1/mosques");
+            setMosques(
+                (d.data || [])
+                    .map((m: { name?: string }) => m.name)
+                    .filter(Boolean),
+            );
+        } catch {
+            setMosques(
+                Array.from(
+                    new Set(MOCK_PENDING.map((t) => t.mosque).filter(Boolean)),
+                ) as string[],
+            );
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+        fetchMosques();
+    }, []);
+
     /* Debounce search */
     useEffect(() => {
-        const t = window.setTimeout(() => setDebounced(search), 350);
+        const t = window.setTimeout(() => setDebSearch(search), 350);
         return () => window.clearTimeout(t);
     }, [search]);
 
+    /* Reset page on filter change */
+    useEffect(() => {
+        setPage(1);
+    }, [
+        debSearch,
+        roleFilter,
+        mosqueFilter,
+        statusFilter,
+        dateFrom,
+        dateTo,
+        salaryMin,
+        salaryMax,
+        sortKey,
+        sortDir,
+    ]);
+
+    /* Toast helper */
     const showToast = (
         message: string,
         tone: "success" | "error" = "success",
     ) => {
         setToast({ message, tone });
         if (toastTimer.current) window.clearTimeout(toastTimer.current);
-        toastTimer.current = window.setTimeout(() => setToast(null), 3200);
+        toastTimer.current = window.setTimeout(() => setToast(null), 3500);
     };
 
-    /* Derived filtered list */
-    const filtered = teachers.filter((t) => {
-        const q = debouncedSearch.toLowerCase();
-        const matchSearch =
-            !q ||
-            (t.name || "").toLowerCase().includes(q) ||
-            (t.email || "").toLowerCase().includes(q) ||
-            (ROLE_LABELS[t.teacher?.role || ""] || "").includes(q) ||
-            (t.teacher?.notes || "").toLowerCase().includes(q);
-        const matchTab =
-            activeTab === "all" ||
-            (activeTab === "rejected"
-                ? t.status === "rejected" || t.status === "suspended"
-                : t.status === activeTab);
-        const matchRole = !roleFilter || t.teacher?.role === roleFilter;
-        const matchMosque = !mosqueFilter || t.mosque === mosqueFilter;
-        return matchSearch && matchTab && matchRole && matchMosque;
-    });
-
-    /* Pagination */
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-    const pageItems = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+    /* ── Derived data ── */
+    const filtered = teachers
+        .filter((t) => {
+            const q = debSearch.toLowerCase();
+            const mSearch =
+                !q ||
+                t.name.toLowerCase().includes(q) ||
+                t.email.toLowerCase().includes(q) ||
+                (ROLE_LABELS[t.teacher?.role || ""] || "").includes(q) ||
+                (t.teacher?.notes || "").toLowerCase().includes(q) ||
+                (t.mosque || "").includes(q);
+            const mTab =
+                statusFilter === "all" ||
+                (statusFilter === "rejected"
+                    ? t.status === "rejected" || t.status === "suspended"
+                    : t.status === statusFilter);
+            const mRole = !roleFilter || t.teacher?.role === roleFilter;
+            const mMosque = !mosqueFilter || t.mosque === mosqueFilter;
+            const mDateFrom = !dateFrom || t.created_at >= dateFrom;
+            const mDateTo = !dateTo || t.created_at <= dateTo + "T23:59:59";
+            const sal = t.salary ?? 0;
+            const mSalMin = !salaryMin || sal >= Number(salaryMin);
+            const mSalMax = !salaryMax || sal <= Number(salaryMax);
+            return (
+                mSearch &&
+                mTab &&
+                mRole &&
+                mMosque &&
+                mDateFrom &&
+                mDateTo &&
+                mSalMin &&
+                mSalMax
+            );
+        })
+        .sort((a, b) => {
+            let va: string | number =
+                (a[sortKey as keyof PendingTeacher] as string | number) ?? 0;
+            let vb: string | number =
+                (b[sortKey as keyof PendingTeacher] as string | number) ?? 0;
+            if (typeof va === "string" && typeof vb === "string")
+                return sortDir === "asc"
+                    ? va.localeCompare(vb, "ar")
+                    : vb.localeCompare(va, "ar");
+            return sortDir === "asc"
+                ? (va as number) - (vb as number)
+                : (vb as number) - (va as number);
+        });
 
     const stats: Stats = {
         total: teachers.length,
@@ -439,17 +1026,22 @@ const StaffApproval: React.FC = () => {
         ).length,
     };
 
-    /* Actions */
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+    const pageItems = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+    /* ── Actions ── */
     const handleApprove = async (id: number) => {
         setApprovingIds((prev) => new Set([...prev, id]));
         setTeachers((prev) =>
             prev.map((t) => (t.id === id ? { ...t, status: "active" } : t)),
         );
         try {
-            await approveTeacher(id);
-            showToast(`تم تفعيل المعلم بنجاح ✓`);
+            await apiFetch(`/api/v1/teachers/my-teachers/${id}/toggle-status`, {
+                method: "POST",
+            });
+            showToast("تم تفعيل المعلم بنجاح ✓");
         } catch {
-            await fetchPendingTeachers();
+            await fetchData();
             showToast("تعذر تفعيل المعلم", "error");
         } finally {
             setApprovingIds((prev) => {
@@ -474,10 +1066,12 @@ const StaffApproval: React.FC = () => {
                 );
                 setConfirm(null);
                 try {
-                    await rejectTeacher(id);
+                    await apiFetch(`/api/v1/teachers/my-teachers/${id}`, {
+                        method: "DELETE",
+                    });
                     showToast("تم رفض الطلب");
                 } catch {
-                    await fetchPendingTeachers();
+                    await fetchData();
                     showToast("تعذر رفض الطلب", "error");
                 } finally {
                     setRejectingIds((prev) => {
@@ -490,20 +1084,80 @@ const StaffApproval: React.FC = () => {
         });
     };
 
-    const handleSendOTP = async (id: number) => {
+    const handleOTP = async (id: number) => {
         const t = teachers.find((x) => x.id === id);
         try {
-            await sendOTP(id);
+            await apiFetch(`/api/v1/teachers/send-otp/${id}`, {
+                method: "POST",
+            });
             showToast(`تم إرسال OTP إلى ${t?.name}`);
         } catch {
             showToast(`تم إرسال OTP إلى ${t?.name} (محاكاة)`);
         }
     };
 
-    const handleRefresh = async () => {
-        await fetchPendingTeachers();
-        showToast("تم تحديث البيانات");
+    const handleExportCSV = () => {
+        const headers = [
+            "الاسم",
+            "البريد",
+            "الهاتف",
+            "الدور",
+            "المسجد",
+            "الحالة",
+            "الراتب",
+            "تاريخ التقديم",
+        ];
+        const rows = filtered.map((t) => [
+            t.name,
+            t.email,
+            t.phone || "",
+            ROLE_LABELS[t.teacher?.role || ""] || "",
+            t.mosque || "",
+            STATUS_META[t.status]?.label || t.status,
+            t.salary || 0,
+            fmtDate(t.created_at),
+        ]);
+        const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
+        const blob = new Blob(["\uFEFF" + csv], {
+            type: "text/csv;charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "teachers.csv";
+        a.click();
+        URL.revokeObjectURL(url);
     };
+
+    const resetFilters = () => {
+        setSearch("");
+        setDebSearch("");
+        setRoleFilter("");
+        setMosqueFilter("");
+        setStatusFilter("all");
+        setDateFrom("");
+        setDateTo("");
+        setSalaryMin("");
+        setSalaryMax("");
+        setPage(1);
+    };
+
+    const toggleSort = (key: SortKey) => {
+        if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+        else {
+            setSortKey(key);
+            setSortDir("asc");
+        }
+    };
+
+    const SortIcon = ({ k }: { k: SortKey }) =>
+        sortKey !== k ? (
+            <span style={{ opacity: 0.3 }}>↕</span>
+        ) : sortDir === "asc" ? (
+            <span>↑</span>
+        ) : (
+            <span>↓</span>
+        );
 
     const toggleDetail = (id: number) =>
         setExpandedIds((prev) => {
@@ -512,17 +1166,7 @@ const StaffApproval: React.FC = () => {
             return s;
         });
 
-    const resetFilters = () => {
-        setSearch("");
-        setDebounced("");
-        setRoleFilter("");
-        setMosqueFilter("");
-        setActiveTab("all");
-        setPage(1);
-    };
-
-    /* Page range helper */
-    const pageRange = () => {
+    const pageRange = (): (number | "...")[] => {
         if (totalPages <= 6)
             return Array.from({ length: totalPages }, (_, i) => i + 1);
         if (page <= 3) return [1, 2, 3, 4, "...", totalPages];
@@ -538,664 +1182,1328 @@ const StaffApproval: React.FC = () => {
         return [1, "...", page - 1, page, page + 1, "...", totalPages];
     };
 
-    if (loading && !teachers.length) {
-        return (
-            <div className="my-teachers-page" dir="rtl">
-                <div className="page-shell">
+    /* ── Styles helpers ── */
+    const TH: React.CSSProperties = {
+        padding: "10px 14px",
+        textAlign: "right",
+        color: "#64748b",
+        fontWeight: 700,
+        fontSize: 12,
+        whiteSpace: "nowrap",
+        borderBottom: "1px solid #f1f5f9",
+        cursor: "pointer",
+        userSelect: "none",
+    };
+    const TD: React.CSSProperties = {
+        padding: "12px 14px",
+        borderBottom: "1px solid #f8fafc",
+        verticalAlign: "middle",
+    };
+
+    /* ═══════════════════════════════════════════════════ */
+    return (
+        <div
+            style={{
+                fontFamily: "'Tajawal',sans-serif",
+                direction: "rtl",
+                background: "#f8fafc",
+                minHeight: "100vh",
+                padding: 24,
+            }}
+        >
+            {/* ── Hero Header ── */}
+            <div
+                style={{
+                    background: "linear-gradient(135deg,#1e293b,#0f4c35)",
+                    borderRadius: 24,
+                    padding: "32px 36px",
+                    marginBottom: 24,
+                    color: "#fff",
+                    position: "relative",
+                    overflow: "hidden",
+                }}
+            >
+                <div
+                    style={{
+                        position: "absolute",
+                        inset: 0,
+                        opacity: 0.06,
+                        backgroundImage:
+                            "radial-gradient(circle at 20% 50%,#fff 1px,transparent 1px)",
+                        backgroundSize: "24px 24px",
+                        pointerEvents: "none",
+                    }}
+                />
+                <div style={{ position: "relative" }}>
                     <div
                         style={{
-                            textAlign: "center",
-                            padding: "4rem",
-                            color: "var(--color-text-secondary)",
+                            fontSize: 13,
+                            color: "#86efac",
+                            marginBottom: 4,
                         }}
                     >
-                        <FiRefreshCw
-                            size={28}
-                            style={{ animation: "spin 1s linear infinite" }}
-                        />
-                        <p style={{ marginTop: "1rem" }}>
-                            جاري تحميل المعلمين...
-                        </p>
+                        ﷽ — منصة إتقان
+                    </div>
+                    <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900 }}>
+                        اعتماد المعلمين الجدد
+                    </h1>
+                    <p
+                        style={{
+                            margin: "6px 0 0",
+                            color: "#94a3b8",
+                            fontSize: 13,
+                        }}
+                    >
+                        مراجعة طلبات الانضمام · ربط الرواتب · إرسال OTP · تفعيل
+                        أو رفض المعلمين المعلقين
+                    </p>
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 10,
+                            marginTop: 18,
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <button
+                            onClick={fetchData}
+                            style={{
+                                ...btnStyle(
+                                    "#ffffff22",
+                                    "#fff",
+                                    "1px solid #ffffff33",
+                                ),
+                            }}
+                        >
+                            <FiRefreshCw size={13} /> تحديث
+                        </button>
+                        <button
+                            onClick={handleExportCSV}
+                            style={{
+                                ...btnStyle(
+                                    "#ffffff22",
+                                    "#fff",
+                                    "1px solid #ffffff33",
+                                ),
+                            }}
+                        >
+                            <FiDownload size={13} /> تصدير CSV
+                        </button>
                     </div>
                 </div>
             </div>
-        );
-    }
 
-    return (
-        <div className="my-teachers-page" dir="rtl">
-            <div className="page-shell">
-                {/* ── Hero ── */}
-                <section className="hero-card">
-                    <div>
-                        <h1 className="hero-title">اعتماد المعلمين الجدد</h1>
-                        <p className="hero-copy">
-                            مراجعة طلبات الانضمام، ربط الرواتب، إرسال OTP، تفعيل
-                            أو رفض المعلمين المعلقين — بنفس روح التصميم الأساسي
-                            للمنصة.
-                        </p>
-                    </div>
-                    <div className="hero-actions">
-                        <button
-                            className="btn secondary"
-                            onClick={handleRefresh}
-                        >
-                            <FiRefreshCw size={14} /> تحديث
-                        </button>
-                    </div>
-                </section>
+            {/* ── Stats ── */}
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))",
+                    gap: 14,
+                    marginBottom: 24,
+                }}
+            >
+                <StatCard
+                    label="إجمالي الطلبات"
+                    value={stats.total}
+                    icon={<FaChalkboardTeacher />}
+                    accent="#1e293b"
+                />
+                <StatCard
+                    label="معلق"
+                    value={stats.pending}
+                    icon={<FiClock />}
+                    accent="#f59e0b"
+                />
+                <StatCard
+                    label="مفعّل"
+                    value={stats.active}
+                    icon={<FiCheckCircle />}
+                    accent="#16a34a"
+                />
+                <StatCard
+                    label="مرفوض / موقوف"
+                    value={stats.rejected}
+                    icon={<FiXCircle />}
+                    accent="#dc2626"
+                />
+                <StatCard
+                    label="إجمالي الطلاب"
+                    value={teachers.reduce(
+                        (s, t) => s + (t.students_count ?? 0),
+                        0,
+                    )}
+                    icon={<FiUsers />}
+                    accent="#9333ea"
+                    sub="عبر كل المعلمين"
+                />
+                <StatCard
+                    label="إجمالي الحلقات"
+                    value={teachers.reduce(
+                        (s, t) => s + (t.circles_count ?? 0),
+                        0,
+                    )}
+                    icon={<FaMosque />}
+                    accent="#0284c7"
+                />
+            </div>
 
-                {/* ── Stats ── */}
-                <section className="stats-grid">
-                    <div className="stat-card gold">
-                        <div className="stat-head">
-                            <div className="stat-icon">
-                                <FaChalkboardTeacher />
-                            </div>
-                            <FiTrendingUp size={13} />
-                        </div>
-                        <div className="stat-number">{stats.total}</div>
-                        <div className="stat-label">إجمالي الطلبات</div>
-                    </div>
-                    <div className="stat-card green">
-                        <div className="stat-head">
-                            <div className="stat-icon">
-                                <FiClock />
-                            </div>
-                            <FiTrendingUp size={13} />
-                        </div>
-                        <div className="stat-number">{stats.pending}</div>
-                        <div className="stat-label">معلق</div>
-                    </div>
-                    <div className="stat-card blue">
-                        <div className="stat-head">
-                            <div className="stat-icon">
-                                <FiCheckCircle />
-                            </div>
-                            <FiTrendingUp size={13} />
-                        </div>
-                        <div className="stat-number">{stats.active}</div>
-                        <div className="stat-label">مفعّل</div>
-                    </div>
-                    <div className="stat-card orange">
-                        <div className="stat-head">
-                            <div className="stat-icon">
-                                <FiXCircle />
-                            </div>
-                            <FiUsers size={13} />
-                        </div>
-                        <div className="stat-number">{stats.rejected}</div>
-                        <div className="stat-label">مرفوض</div>
-                    </div>
-                </section>
-
-                {/* ── Filters ── */}
-                <section className="filter-bar">
-                    <label className="search-field">
-                        <FiSearch size={15} />
+            {/* ── Filter Bar ── */}
+            <div
+                style={{
+                    background: "#fff",
+                    borderRadius: 16,
+                    padding: 16,
+                    marginBottom: 16,
+                    boxShadow: "0 2px 10px #0001",
+                }}
+            >
+                {/* Row 1: search + tabs + view toggle */}
+                <div
+                    style={{
+                        display: "flex",
+                        gap: 10,
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        marginBottom: 12,
+                    }}
+                >
+                    {/* Search */}
+                    <label
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            background: "#f8fafc",
+                            borderRadius: 10,
+                            padding: "8px 14px",
+                            flex: 1,
+                            minWidth: 200,
+                            border: "1px solid #e2e8f0",
+                        }}
+                    >
+                        <FiSearch size={14} color="#94a3b8" />
                         <input
                             value={search}
-                            onChange={(e) => {
-                                setSearch(e.target.value);
-                                setPage(1);
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="ابحث بالاسم أو البريد أو الدور أو المسجد..."
+                            style={{
+                                border: "none",
+                                background: "transparent",
+                                outline: "none",
+                                fontSize: 13,
+                                flex: 1,
+                                fontFamily: "inherit",
+                                color: "#1e293b",
                             }}
-                            placeholder="ابحث بالاسم أو البريد أو الدور أو الحلقة..."
                         />
+                        {search && (
+                            <button
+                                onClick={() => setSearch("")}
+                                style={{
+                                    border: "none",
+                                    background: "none",
+                                    cursor: "pointer",
+                                    color: "#94a3b8",
+                                    display: "flex",
+                                }}
+                            >
+                                <FiX size={12} />
+                            </button>
+                        )}
                     </label>
 
-                    <label className="select-field">
-                        <FaChalkboardTeacher size={13} />
-                        <select
-                            value={roleFilter}
-                            onChange={(e) => {
-                                setRoleFilter(e.target.value);
-                                setPage(1);
-                            }}
-                        >
-                            <option value="">كل الأدوار</option>
-                            {Object.entries(ROLE_LABELS).map(([k, v]) => (
-                                <option key={k} value={k}>
-                                    {v}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-
-                    <label className="select-field">
-                        <FaMosque size={13} />
-                        <select
-                            value={mosqueFilter}
-                            onChange={(e) => {
-                                setMosqueFilter(e.target.value);
-                                setPage(1);
-                            }}
-                        >
-                            <option value="">كل المساجد</option>
-                            {mosques.map((m) => (
-                                <option key={m} value={m}>
-                                    {m}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-
-                    <div className="toolbar">
-                        <button
-                            className="btn secondary"
-                            onClick={resetFilters}
-                        >
-                            <FiX size={14} /> إعادة ضبط
-                        </button>
-                    </div>
-                </section>
-
-                {/* ── Table Shell ── */}
-                <section className="table-shell">
-                    {error && (
-                        <div className="error-banner">
-                            تعذر تحميل بعض البيانات من الـ API وتم عرض بيانات
-                            بديلة مؤقتًا.
-                        </div>
-                    )}
-
-                    <div className="table-head">
-                        <div>
-                            <h2 style={{ margin: 0, color: "var(--emerald)" }}>
-                                قائمة المعلمين المعلقين
-                            </h2>
-                            <div className="muted">
-                                عرض {filtered.length} معلم
-                                {loading ? " – جاري التحديث..." : ""}
-                            </div>
-                        </div>
-                        <div className="tabs">
-                            {(
-                                [
-                                    "all",
-                                    "pending",
-                                    "active",
-                                    "rejected",
-                                ] as const
-                            ).map((tab) => (
-                                <button
-                                    key={tab}
-                                    className={`tab-btn ${activeTab === tab ? "active" : ""}`}
-                                    onClick={() => {
-                                        setActiveTab(tab);
-                                        setPage(1);
-                                    }}
-                                >
+                    {/* Status tabs */}
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 6,
+                            background: "#f8fafc",
+                            borderRadius: 12,
+                            padding: 4,
+                        }}
+                    >
+                        {(
+                            ["all", "pending", "active", "rejected"] as const
+                        ).map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setStatusFilter(tab)}
+                                style={{
+                                    padding: "6px 14px",
+                                    borderRadius: 10,
+                                    border: "none",
+                                    cursor: "pointer",
+                                    fontWeight: 700,
+                                    fontSize: 12,
+                                    fontFamily: "inherit",
+                                    background:
+                                        statusFilter === tab
+                                            ? "#1e293b"
+                                            : "transparent",
+                                    color:
+                                        statusFilter === tab
+                                            ? "#fff"
+                                            : "#64748b",
+                                    transition: "all .15s",
+                                }}
+                            >
+                                {
                                     {
-                                        {
-                                            all: "الكل",
-                                            pending: "معلق",
-                                            active: "مفعّل",
-                                            rejected: "مرفوض",
-                                        }[tab]
-                                    }
-                                </button>
-                            ))}
-                        </div>
+                                        all: "الكل",
+                                        pending: "معلق",
+                                        active: "مفعّل",
+                                        rejected: "مرفوض",
+                                    }[tab]
+                                }
+                            </button>
+                        ))}
                     </div>
 
-                    {/* Table */}
+                    {/* View toggle */}
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 4,
+                            background: "#f8fafc",
+                            borderRadius: 10,
+                            padding: 4,
+                        }}
+                    >
+                        {(
+                            [
+                                ["table", "table"],
+                                ["cards", "cards"],
+                            ] as [ViewMode, string][]
+                        ).map(([v, _]) => (
+                            <button
+                                key={v}
+                                onClick={() => setViewMode(v)}
+                                style={{
+                                    padding: "6px 10px",
+                                    borderRadius: 8,
+                                    border: "none",
+                                    cursor: "pointer",
+                                    background:
+                                        viewMode === v
+                                            ? "#1e293b"
+                                            : "transparent",
+                                    color: viewMode === v ? "#fff" : "#64748b",
+                                    display: "flex",
+                                    alignItems: "center",
+                                }}
+                            >
+                                {v === "table" ? (
+                                    <FiList size={14} />
+                                ) : (
+                                    <FiGrid size={14} />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Advanced filters toggle */}
+                    <button
+                        onClick={() => setShowFilters((v) => !v)}
+                        style={{
+                            ...btnStyle(
+                                showFilters ? "#1e293b" : "#f8fafc",
+                                showFilters ? "#fff" : "#475569",
+                                "1px solid #e2e8f0",
+                            ),
+                        }}
+                    >
+                        <FiFilter size={13} /> فلاتر متقدمة{" "}
+                        {showFilters ? "▲" : "▼"}
+                    </button>
+
+                    <button
+                        onClick={resetFilters}
+                        style={{
+                            ...btnStyle(
+                                "#f8fafc",
+                                "#64748b",
+                                "1px solid #e2e8f0",
+                            ),
+                        }}
+                    >
+                        <FiX size={13} /> إعادة ضبط
+                    </button>
+                </div>
+
+                {/* Row 2: Advanced Filters (collapsible) */}
+                {showFilters && (
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                                "repeat(auto-fit,minmax(160px,1fr))",
+                            gap: 10,
+                            paddingTop: 12,
+                            borderTop: "1px solid #f1f5f9",
+                        }}
+                    >
+                        {/* Role */}
+                        <div>
+                            <label
+                                style={{
+                                    fontSize: 11,
+                                    color: "#94a3b8",
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الدور الوظيفي
+                            </label>
+                            <select
+                                value={roleFilter}
+                                onChange={(e) => setRoleFilter(e.target.value)}
+                                style={selectStyle}
+                            >
+                                <option value="">كل الأدوار</option>
+                                {Object.entries(ROLE_LABELS).map(([k, v]) => (
+                                    <option key={k} value={k}>
+                                        {v}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {/* Mosque */}
+                        <div>
+                            <label
+                                style={{
+                                    fontSize: 11,
+                                    color: "#94a3b8",
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                المسجد
+                            </label>
+                            <select
+                                value={mosqueFilter}
+                                onChange={(e) =>
+                                    setMosqueFilter(e.target.value)
+                                }
+                                style={selectStyle}
+                            >
+                                <option value="">كل المساجد</option>
+                                {mosques.map((m) => (
+                                    <option key={m} value={m}>
+                                        {m}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {/* Date from */}
+                        <div>
+                            <label
+                                style={{
+                                    fontSize: 11,
+                                    color: "#94a3b8",
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                تاريخ التقديم من
+                            </label>
+                            <input
+                                type="date"
+                                value={dateFrom}
+                                onChange={(e) => setDateFrom(e.target.value)}
+                                style={selectStyle}
+                            />
+                        </div>
+                        {/* Date to */}
+                        <div>
+                            <label
+                                style={{
+                                    fontSize: 11,
+                                    color: "#94a3b8",
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                تاريخ التقديم إلى
+                            </label>
+                            <input
+                                type="date"
+                                value={dateTo}
+                                onChange={(e) => setDateTo(e.target.value)}
+                                style={selectStyle}
+                            />
+                        </div>
+                        {/* Salary min */}
+                        <div>
+                            <label
+                                style={{
+                                    fontSize: 11,
+                                    color: "#94a3b8",
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الراتب الأدنى
+                            </label>
+                            <input
+                                type="number"
+                                value={salaryMin}
+                                onChange={(e) => setSalaryMin(e.target.value)}
+                                placeholder="0"
+                                style={selectStyle}
+                            />
+                        </div>
+                        {/* Salary max */}
+                        <div>
+                            <label
+                                style={{
+                                    fontSize: 11,
+                                    color: "#94a3b8",
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الراتب الأقصى
+                            </label>
+                            <input
+                                type="number"
+                                value={salaryMax}
+                                onChange={(e) => setSalaryMax(e.target.value)}
+                                placeholder="∞"
+                                style={selectStyle}
+                            />
+                        </div>
+                        {/* Sort */}
+                        <div>
+                            <label
+                                style={{
+                                    fontSize: 11,
+                                    color: "#94a3b8",
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الترتيب حسب
+                            </label>
+                            <select
+                                value={sortKey}
+                                onChange={(e) =>
+                                    setSortKey(e.target.value as SortKey)
+                                }
+                                style={selectStyle}
+                            >
+                                <option value="created_at">
+                                    تاريخ التقديم
+                                </option>
+                                <option value="name">الاسم</option>
+                                <option value="salary">الراتب</option>
+                                <option value="students_count">
+                                    عدد الطلاب
+                                </option>
+                                <option value="circles_count">
+                                    عدد الحلقات
+                                </option>
+                            </select>
+                        </div>
+                        {/* Sort dir */}
+                        <div>
+                            <label
+                                style={{
+                                    fontSize: 11,
+                                    color: "#94a3b8",
+                                    display: "block",
+                                    marginBottom: 4,
+                                }}
+                            >
+                                الاتجاه
+                            </label>
+                            <select
+                                value={sortDir}
+                                onChange={(e) =>
+                                    setSortDir(e.target.value as SortDir)
+                                }
+                                style={selectStyle}
+                            >
+                                <option value="desc">تنازلي</option>
+                                <option value="asc">تصاعدي</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+
+                {/* Active filter chips */}
+                {(roleFilter ||
+                    mosqueFilter ||
+                    dateFrom ||
+                    dateTo ||
+                    salaryMin ||
+                    salaryMax) && (
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 6,
+                            flexWrap: "wrap",
+                            marginTop: 10,
+                            paddingTop: 10,
+                            borderTop: "1px solid #f1f5f9",
+                        }}
+                    >
+                        {[
+                            roleFilter && {
+                                label: `الدور: ${ROLE_LABELS[roleFilter]}`,
+                                clear: () => setRoleFilter(""),
+                            },
+                            mosqueFilter && {
+                                label: `المسجد: ${mosqueFilter}`,
+                                clear: () => setMosqueFilter(""),
+                            },
+                            dateFrom && {
+                                label: `من: ${dateFrom}`,
+                                clear: () => setDateFrom(""),
+                            },
+                            dateTo && {
+                                label: `إلى: ${dateTo}`,
+                                clear: () => setDateTo(""),
+                            },
+                            salaryMin && {
+                                label: `راتب ≥ ${salaryMin}`,
+                                clear: () => setSalaryMin(""),
+                            },
+                            salaryMax && {
+                                label: `راتب ≤ ${salaryMax}`,
+                                clear: () => setSalaryMax(""),
+                            },
+                        ]
+                            .filter(Boolean)
+                            .map(
+                                (chip, i) =>
+                                    chip && (
+                                        <span
+                                            key={i}
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                background: "#e0f2fe",
+                                                color: "#0369a1",
+                                                borderRadius: 20,
+                                                padding: "4px 10px",
+                                                fontSize: 11,
+                                                fontWeight: 700,
+                                            }}
+                                        >
+                                            {chip.label}
+                                            <button
+                                                onClick={chip.clear}
+                                                style={{
+                                                    border: "none",
+                                                    background: "none",
+                                                    cursor: "pointer",
+                                                    color: "#0369a1",
+                                                    display: "flex",
+                                                    padding: 0,
+                                                }}
+                                            >
+                                                <FiX size={10} />
+                                            </button>
+                                        </span>
+                                    ),
+                            )}
+                    </div>
+                )}
+            </div>
+
+            {/* ── Error ── */}
+            {error && (
+                <div
+                    style={{
+                        background: "#fee2e2",
+                        color: "#dc2626",
+                        borderRadius: 12,
+                        padding: "12px 16px",
+                        marginBottom: 14,
+                        fontSize: 13,
+                    }}
+                >
+                    ⚠️ {error}
+                </div>
+            )}
+
+            {/* ── Results count ── */}
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 12,
+                    fontSize: 13,
+                    color: "#64748b",
+                }}
+            >
+                <span>
+                    عرض <b style={{ color: "#1e293b" }}>{filtered.length}</b>{" "}
+                    نتيجة من أصل{" "}
+                    <b style={{ color: "#1e293b" }}>{teachers.length}</b>
+                </span>
+                <span>
+                    الصفحة {page} من {totalPages}
+                </span>
+            </div>
+
+            {/* ── Content: Table or Cards ── */}
+            {loading ? (
+                <div
+                    style={{
+                        textAlign: "center",
+                        padding: "60px 20px",
+                        color: "#94a3b8",
+                        fontSize: 18,
+                    }}
+                >
+                    ⏳ جارٍ تحميل البيانات...
+                </div>
+            ) : filtered.length === 0 ? (
+                <div
+                    style={{
+                        textAlign: "center",
+                        padding: "60px 20px",
+                        color: "#94a3b8",
+                        background: "#fff",
+                        borderRadius: 16,
+                    }}
+                >
+                    <div style={{ fontSize: 40, marginBottom: 10 }}>🔍</div>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>
+                        لا توجد نتائج مطابقة
+                    </div>
+                    <div style={{ fontSize: 13, marginTop: 4 }}>
+                        جرب تعديل الفلاتر أو البحث بكلمة مختلفة
+                    </div>
+                </div>
+            ) : viewMode === "cards" ? (
+                /* ── Cards View ── */
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                            "repeat(auto-fit,minmax(480px,1fr))",
+                        gap: 16,
+                        width: "20%",
+                    }}
+                >
+                    {pageItems.map((t, i) => (
+                        <TeacherCardView
+                            key={t.id}
+                            teacher={t}
+                            index={i}
+                            onApprove={handleApprove}
+                            onReject={handleReject}
+                            onOTP={handleOTP}
+                            approving={approvingIds.has(t.id)}
+                            rejecting={rejectingIds.has(t.id)}
+                        />
+                    ))}
+                </div>
+            ) : (
+                /* ── Table View ── */
+                <div
+                    style={{
+                        background: "#fff",
+                        borderRadius: 20,
+                        overflow: "hidden",
+                        boxShadow: "0 2px 16px #0001",
+                    }}
+                >
                     <div style={{ overflowX: "auto" }}>
                         <table
                             style={{
                                 width: "100%",
                                 borderCollapse: "collapse",
-                                fontSize: ".83rem",
+                                fontSize: 13,
                             }}
                         >
                             <thead>
-                                <tr
-                                    style={{
-                                        background:
-                                            "var(--color-background-secondary)",
-                                    }}
-                                >
-                                    <th style={TH}>المعلم</th>
+                                <tr style={{ background: "#f8fafc" }}>
+                                    <th
+                                        style={TH}
+                                        onClick={() => toggleSort("name")}
+                                    >
+                                        المعلم <SortIcon k="name" />
+                                    </th>
                                     <th style={TH}>الدور</th>
-                                    <th style={TH}>الحلقة / القسم</th>
+                                    <th style={TH}>الحلقة / الملاحظات</th>
                                     <th style={TH}>المسجد</th>
-                                    <th style={TH}>تاريخ التقديم</th>
+                                    <th
+                                        style={TH}
+                                        onClick={() => toggleSort("salary")}
+                                    >
+                                        الراتب <SortIcon k="salary" />
+                                    </th>
+                                    <th
+                                        style={TH}
+                                        onClick={() =>
+                                            toggleSort("students_count")
+                                        }
+                                    >
+                                        الطلاب <SortIcon k="students_count" />
+                                    </th>
+                                    <th
+                                        style={TH}
+                                        onClick={() => toggleSort("created_at")}
+                                    >
+                                        تاريخ التقديم{" "}
+                                        <SortIcon k="created_at" />
+                                    </th>
                                     <th style={TH}>الحالة</th>
-                                    <th style={TH}>الإجراءات</th>
+                                    <th style={{ ...TH, cursor: "default" }}>
+                                        الإجراءات
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {pageItems.length > 0 ? (
-                                    pageItems.map((t, idx) => {
-                                        const sm =
-                                            STATUS_META[t.status] ||
-                                            STATUS_META.pending;
-                                        const roleCls =
-                                            ROLE_CLASS[t.teacher?.role || ""] ||
-                                            ROLE_CLASS.teacher;
-                                        const roleLabel =
-                                            ROLE_LABELS[
-                                                t.teacher?.role || ""
-                                            ] || "معلم";
-                                        const isExpanded = expandedIds.has(
-                                            t.id,
-                                        );
-
-                                        return (
-                                            <React.Fragment key={t.id}>
-                                                <tr
-                                                    style={
-                                                        isExpanded
-                                                            ? {
-                                                                  background:
-                                                                      "var(--color-background-secondary)",
-                                                              }
-                                                            : {}
-                                                    }
-                                                >
-                                                    {/* Name */}
-                                                    <td style={TD}>
-                                                        <div
-                                                            style={{
-                                                                display: "flex",
-                                                                alignItems:
-                                                                    "center",
-                                                                gap: 10,
-                                                            }}
-                                                        >
-                                                            <AvatarInitials
-                                                                name={t.name}
-                                                                idx={idx}
-                                                            />
-                                                            <div>
-                                                                <div
-                                                                    style={{
-                                                                        fontWeight: 500,
-                                                                    }}
-                                                                >
-                                                                    {t.name}
-                                                                </div>
-                                                                <div
-                                                                    style={{
-                                                                        fontSize:
-                                                                            ".73rem",
-                                                                        color: "var(--color-text-secondary)",
-                                                                    }}
-                                                                >
-                                                                    {t.email}
-                                                                </div>
+                                {pageItems.map((t, idx) => {
+                                    const isExp = expandedIds.has(t.id);
+                                    return (
+                                        <React.Fragment key={t.id}>
+                                            <tr
+                                                style={{
+                                                    background: isExp
+                                                        ? "#f0fdf4"
+                                                        : idx % 2 === 0
+                                                          ? "#fff"
+                                                          : "#fafafa",
+                                                    transition:
+                                                        "background .15s",
+                                                }}
+                                            >
+                                                {/* Name */}
+                                                <td style={TD}>
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems:
+                                                                "center",
+                                                            gap: 10,
+                                                        }}
+                                                    >
+                                                        <AvatarInitials
+                                                            name={t.name}
+                                                            idx={idx}
+                                                        />
+                                                        <div>
+                                                            <div
+                                                                style={{
+                                                                    fontWeight: 700,
+                                                                    fontSize: 13,
+                                                                    color: "#1e293b",
+                                                                }}
+                                                            >
+                                                                {t.name}
+                                                            </div>
+                                                            <div
+                                                                style={{
+                                                                    fontSize: 11,
+                                                                    color: "#94a3b8",
+                                                                }}
+                                                            >
+                                                                {t.email}
                                                             </div>
                                                         </div>
-                                                    </td>
-                                                    {/* Role */}
-                                                    <td style={TD}>
-                                                        <span
-                                                            className={roleCls}
-                                                        >
-                                                            {roleLabel}
-                                                        </span>
-                                                    </td>
-                                                    {/* Notes */}
-                                                    <td
+                                                    </div>
+                                                </td>
+                                                {/* Role */}
+                                                <td style={TD}>
+                                                    <RolePill
+                                                        role={t.teacher?.role}
+                                                    />
+                                                </td>
+                                                {/* Notes */}
+                                                <td
+                                                    style={{
+                                                        ...TD,
+                                                        maxWidth: 180,
+                                                        fontSize: 12,
+                                                        color: "#64748b",
+                                                    }}
+                                                >
+                                                    {t.teacher?.notes || "—"}
+                                                </td>
+                                                {/* Mosque */}
+                                                <td style={TD}>
+                                                    <span
                                                         style={{
-                                                            ...TD,
-                                                            maxWidth: 180,
-                                                            fontSize: ".78rem",
-                                                            color: "var(--color-text-secondary)",
+                                                            display:
+                                                                "inline-flex",
+                                                            alignItems:
+                                                                "center",
+                                                            gap: 5,
+                                                            fontSize: 12,
                                                         }}
                                                     >
-                                                        {t.teacher?.notes ||
-                                                            "—"}
-                                                    </td>
-                                                    {/* Mosque */}
-                                                    <td style={TD}>
+                                                        <FaMosque
+                                                            size={11}
+                                                            style={{
+                                                                color: "#0f6e56",
+                                                            }}
+                                                        />
+                                                        {t.mosque ||
+                                                            "غير مربوط"}
+                                                    </span>
+                                                </td>
+                                                {/* Salary */}
+                                                <td
+                                                    style={{
+                                                        ...TD,
+                                                        fontWeight: 700,
+                                                        color: "#059669",
+                                                        fontSize: 12,
+                                                    }}
+                                                >
+                                                    {fmtSalary(t.salary)}
+                                                </td>
+                                                {/* Students */}
+                                                <td
+                                                    style={{
+                                                        ...TD,
+                                                        textAlign: "center",
+                                                    }}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            display:
+                                                                "inline-flex",
+                                                            flexDirection:
+                                                                "column",
+                                                            alignItems:
+                                                                "center",
+                                                            gap: 1,
+                                                        }}
+                                                    >
                                                         <span
                                                             style={{
-                                                                display:
-                                                                    "inline-flex",
-                                                                alignItems:
-                                                                    "center",
-                                                                gap: 5,
-                                                                fontSize:
-                                                                    ".8rem",
+                                                                fontWeight: 700,
+                                                                color: "#0284c7",
                                                             }}
                                                         >
-                                                            <FaMosque
-                                                                size={11}
-                                                                style={{
-                                                                    color: "var(--emerald)",
-                                                                }}
-                                                            />
-                                                            {t.mosque ||
-                                                                "غير مربوط"}
+                                                            {t.students_count ??
+                                                                0}
                                                         </span>
-                                                    </td>
-                                                    {/* Date */}
-                                                    <td
+                                                        <span
+                                                            style={{
+                                                                fontSize: 10,
+                                                                color: "#94a3b8",
+                                                            }}
+                                                        >
+                                                            {t.circles_count ??
+                                                                0}{" "}
+                                                            حلقة
+                                                        </span>
+                                                    </span>
+                                                </td>
+                                                {/* Date */}
+                                                <td
+                                                    style={{
+                                                        ...TD,
+                                                        fontSize: 12,
+                                                        color: "#64748b",
+                                                    }}
+                                                >
+                                                    {fmtDate(t.created_at)}
+                                                </td>
+                                                {/* Status */}
+                                                <td style={TD}>
+                                                    <StatusBadge
+                                                        status={t.status}
+                                                    />
+                                                </td>
+                                                {/* Actions */}
+                                                <td style={TD}>
+                                                    <div
                                                         style={{
-                                                            ...TD,
-                                                            fontSize: ".78rem",
-                                                            color: "var(--color-text-secondary)",
+                                                            display: "flex",
+                                                            gap: 5,
+                                                            flexWrap: "wrap",
+                                                            alignItems:
+                                                                "center",
                                                         }}
                                                     >
-                                                        {
-                                                            (
-                                                                t.created_at ||
-                                                                ""
-                                                            ).split("T")[0]
-                                                        }
-                                                    </td>
-                                                    {/* Status */}
-                                                    <td style={TD}>
-                                                        <span
-                                                            className={
-                                                                sm.className
-                                                            }
-                                                        >
-                                                            {sm.icon} {sm.label}
-                                                        </span>
-                                                    </td>
-                                                    {/* Actions */}
-                                                    <td style={TD}>
-                                                        <div className="td-actions">
-                                                            {/* Payroll */}
+                                                        {t.status !==
+                                                            "active" && (
                                                             <button
-                                                                className="btn secondary"
-                                                                style={{
-                                                                    fontSize:
-                                                                        ".75rem",
-                                                                    padding:
-                                                                        "5px 10px",
-                                                                }}
+                                                                disabled={approvingIds.has(
+                                                                    t.id,
+                                                                )}
                                                                 onClick={() =>
-                                                                    alert(
-                                                                        `ربط رواتب: ${t.name}`,
+                                                                    handleApprove(
+                                                                        t.id,
                                                                     )
                                                                 }
-                                                                title="ربط الرواتب"
-                                                            >
-                                                                <FaMoneyBillWave
-                                                                    size={12}
-                                                                />{" "}
-                                                                رواتب
-                                                            </button>
-                                                            {/* Approve */}
-                                                            {t.status !==
-                                                                "active" && (
-                                                                <button
-                                                                    className="btn primary"
-                                                                    style={{
-                                                                        fontSize:
-                                                                            ".75rem",
+                                                                style={btnStyle(
+                                                                    "#dcfce7",
+                                                                    "#15803d",
+                                                                    "1px solid #bbf7d0",
+                                                                    {
+                                                                        fontSize: 11,
                                                                         padding:
                                                                             "5px 10px",
-                                                                    }}
+                                                                    },
+                                                                )}
+                                                            >
+                                                                <FiCheckCircle
+                                                                    size={11}
+                                                                />
+                                                                {approvingIds.has(
+                                                                    t.id,
+                                                                )
+                                                                    ? "..."
+                                                                    : "تفعيل"}
+                                                            </button>
+                                                        )}
+                                                        {t.status !==
+                                                            "rejected" &&
+                                                            t.status !==
+                                                                "suspended" && (
+                                                                <button
+                                                                    disabled={rejectingIds.has(
+                                                                        t.id,
+                                                                    )}
                                                                     onClick={() =>
-                                                                        handleApprove(
+                                                                        handleReject(
                                                                             t.id,
                                                                         )
                                                                     }
-                                                                    disabled={approvingIds.has(
-                                                                        t.id,
+                                                                    style={btnStyle(
+                                                                        "#fee2e2",
+                                                                        "#dc2626",
+                                                                        "1px solid #fecaca",
+                                                                        {
+                                                                            fontSize: 11,
+                                                                            padding:
+                                                                                "5px 10px",
+                                                                        },
                                                                     )}
                                                                 >
-                                                                    <FiCheckCircle
+                                                                    <FiXCircle
+                                                                        size={
+                                                                            11
+                                                                        }
+                                                                    />
+                                                                    {rejectingIds.has(
+                                                                        t.id,
+                                                                    )
+                                                                        ? "..."
+                                                                        : "رفض"}
+                                                                </button>
+                                                            )}
+                                                        <button
+                                                            onClick={() =>
+                                                                handleOTP(t.id)
+                                                            }
+                                                            style={btnStyle(
+                                                                "#f8fafc",
+                                                                "#475569",
+                                                                "1px solid #e2e8f0",
+                                                                {
+                                                                    fontSize: 11,
+                                                                    padding:
+                                                                        "5px 10px",
+                                                                },
+                                                            )}
+                                                        >
+                                                            OTP
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                alert(
+                                                                    `ربط رواتب: ${t.name}`,
+                                                                )
+                                                            }
+                                                            style={btnStyle(
+                                                                "#f8fafc",
+                                                                "#475569",
+                                                                "1px solid #e2e8f0",
+                                                                {
+                                                                    fontSize: 11,
+                                                                    padding:
+                                                                        "5px 10px",
+                                                                },
+                                                            )}
+                                                        >
+                                                            <FaMoneyBillWave
+                                                                size={10}
+                                                            />
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                toggleDetail(
+                                                                    t.id,
+                                                                )
+                                                            }
+                                                            style={btnStyle(
+                                                                "#f8fafc",
+                                                                "#475569",
+                                                                "1px solid #e2e8f0",
+                                                                {
+                                                                    fontSize: 11,
+                                                                    padding:
+                                                                        "5px 10px",
+                                                                },
+                                                            )}
+                                                        >
+                                                            {isExp ? (
+                                                                <FiChevronDown
+                                                                    size={12}
+                                                                />
+                                                            ) : (
+                                                                <FiEye
+                                                                    size={12}
+                                                                />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            {/* Expanded row */}
+                                            {isExp && (
+                                                <tr>
+                                                    <td
+                                                        colSpan={9}
+                                                        style={{
+                                                            background:
+                                                                "#f0fdf4",
+                                                            padding:
+                                                                "14px 20px",
+                                                            borderBottom:
+                                                                "1px solid #dcfce7",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                display: "grid",
+                                                                gridTemplateColumns:
+                                                                    "repeat(auto-fit,minmax(150px,1fr))",
+                                                                gap: 8,
+                                                            }}
+                                                        >
+                                                            <DetailItem
+                                                                icon={
+                                                                    <FiPhone
                                                                         size={
                                                                             12
                                                                         }
                                                                     />
-                                                                    {approvingIds.has(
-                                                                        t.id,
-                                                                    )
-                                                                        ? "جاري..."
-                                                                        : "تفعيل"}
-                                                                </button>
-                                                            )}
-                                                            {/* Reject */}
-                                                            {t.status !==
-                                                                "rejected" &&
-                                                                t.status !==
-                                                                    "suspended" && (
-                                                                    <button
-                                                                        className="btn danger"
-                                                                        style={{
-                                                                            fontSize:
-                                                                                ".75rem",
-                                                                            padding:
-                                                                                "5px 10px",
-                                                                        }}
-                                                                        onClick={() =>
-                                                                            handleReject(
-                                                                                t.id,
-                                                                            )
+                                                                }
+                                                                label="الهاتف"
+                                                                value={
+                                                                    t.phone ||
+                                                                    "لا يوجد"
+                                                                }
+                                                            />
+                                                            <DetailItem
+                                                                icon={
+                                                                    <FaMoneyBillWave
+                                                                        size={
+                                                                            12
                                                                         }
-                                                                        disabled={rejectingIds.has(
-                                                                            t.id,
-                                                                        )}
-                                                                    >
-                                                                        <FiXCircle
+                                                                    />
+                                                                }
+                                                                label="الراتب الأساسي"
+                                                                value={fmtSalary(
+                                                                    t.salary,
+                                                                )}
+                                                            />
+                                                            <DetailItem
+                                                                icon={
+                                                                    <FaChalkboardTeacher
+                                                                        size={
+                                                                            12
+                                                                        }
+                                                                    />
+                                                                }
+                                                                label="عدد الحلقات"
+                                                                value={`${t.circles_count ?? 0} حلقة`}
+                                                            />
+                                                            <DetailItem
+                                                                icon={
+                                                                    <FiUsers
+                                                                        size={
+                                                                            12
+                                                                        }
+                                                                    />
+                                                                }
+                                                                label="عدد الطلاب"
+                                                                value={`${t.students_count ?? 0} طالب`}
+                                                            />
+                                                            <DetailItem
+                                                                icon={
+                                                                    <FiMail
+                                                                        size={
+                                                                            12
+                                                                        }
+                                                                    />
+                                                                }
+                                                                label="البريد"
+                                                                value={t.email}
+                                                            />
+                                                            <DetailItem
+                                                                icon={
+                                                                    <FaMosque
+                                                                        size={
+                                                                            12
+                                                                        }
+                                                                    />
+                                                                }
+                                                                label="المسجد"
+                                                                value={
+                                                                    t.mosque ||
+                                                                    "غير مربوط"
+                                                                }
+                                                            />
+                                                            {t.teacher
+                                                                ?.session_time && (
+                                                                <DetailItem
+                                                                    icon={
+                                                                        <FiCalendar
                                                                             size={
                                                                                 12
                                                                             }
                                                                         />
-                                                                        {rejectingIds.has(
-                                                                            t.id,
-                                                                        )
-                                                                            ? "جاري..."
-                                                                            : "رفض"}
-                                                                    </button>
-                                                                )}
-                                                            {/* OTP */}
-                                                            <button
-                                                                className="btn secondary"
-                                                                style={{
-                                                                    fontSize:
-                                                                        ".75rem",
-                                                                    padding:
-                                                                        "5px 10px",
-                                                                }}
-                                                                onClick={() =>
-                                                                    handleSendOTP(
-                                                                        t.id,
-                                                                    )
-                                                                }
-                                                            >
-                                                                OTP
-                                                            </button>
-                                                            {/* Detail toggle */}
-                                                            <button
-                                                                className="icon-btn"
-                                                                onClick={() =>
-                                                                    toggleDetail(
-                                                                        t.id,
-                                                                    )
-                                                                }
-                                                                title="تفاصيل"
-                                                            >
-                                                                {isExpanded ? (
-                                                                    <FiChevronDown
-                                                                        size={
-                                                                            14
-                                                                        }
-                                                                    />
-                                                                ) : (
-                                                                    <FiEye
-                                                                        size={
-                                                                            14
-                                                                        }
-                                                                    />
-                                                                )}
-                                                            </button>
+                                                                    }
+                                                                    label="وقت الجلسة"
+                                                                    value={
+                                                                        t
+                                                                            .teacher
+                                                                            .session_time
+                                                                    }
+                                                                />
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
-
-                                                {/* Expandable detail row */}
-                                                {isExpanded && (
-                                                    <tr>
-                                                        <td
-                                                            colSpan={7}
-                                                            style={{
-                                                                background:
-                                                                    "var(--color-background-secondary)",
-                                                                padding:
-                                                                    "14px 1.25rem",
-                                                                borderBottom:
-                                                                    "0.5px solid var(--color-border-tertiary)",
-                                                            }}
-                                                        >
-                                                            <div
-                                                                style={{
-                                                                    display:
-                                                                        "grid",
-                                                                    gridTemplateColumns:
-                                                                        "repeat(auto-fit, minmax(160px, 1fr))",
-                                                                    gap: ".75rem",
-                                                                }}
-                                                            >
-                                                                <DetailItem
-                                                                    icon={
-                                                                        <FiPhone
-                                                                            size={
-                                                                                12
-                                                                            }
-                                                                        />
-                                                                    }
-                                                                    label="الهاتف"
-                                                                    value={
-                                                                        t.phone ||
-                                                                        "لا يوجد"
-                                                                    }
-                                                                />
-                                                                <DetailItem
-                                                                    icon={
-                                                                        <FaMoneyBillWave
-                                                                            size={
-                                                                                12
-                                                                            }
-                                                                        />
-                                                                    }
-                                                                    label="الراتب الأساسي"
-                                                                    value={`${(t.salary || 0).toLocaleString()} ج.م`}
-                                                                />
-                                                                <DetailItem
-                                                                    icon={
-                                                                        <FaChalkboardTeacher
-                                                                            size={
-                                                                                12
-                                                                            }
-                                                                        />
-                                                                    }
-                                                                    label="عدد الحلقات"
-                                                                    value={`${t.circles_count || 0} حلقة`}
-                                                                />
-                                                                <DetailItem
-                                                                    icon={
-                                                                        <FiUsers
-                                                                            size={
-                                                                                12
-                                                                            }
-                                                                        />
-                                                                    }
-                                                                    label="عدد الطلاب"
-                                                                    value={`${t.students_count || 0} طالب`}
-                                                                />
-                                                                <DetailItem
-                                                                    icon={
-                                                                        <FiMail
-                                                                            size={
-                                                                                12
-                                                                            }
-                                                                        />
-                                                                    }
-                                                                    label="البريد الإلكتروني"
-                                                                    value={
-                                                                        t.email
-                                                                    }
-                                                                />
-                                                                <DetailItem
-                                                                    icon={
-                                                                        <FaMosque
-                                                                            size={
-                                                                                12
-                                                                            }
-                                                                        />
-                                                                    }
-                                                                    label="المسجد"
-                                                                    value={
-                                                                        t.mosque ||
-                                                                        "غير مربوط"
-                                                                    }
-                                                                />
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </React.Fragment>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan={7}>
-                                            <div className="empty-state">
-                                                لا توجد نتائج مطابقة للفلاتر
-                                                الحالية.
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
 
-                    {/* Pagination */}
-                    <div className="pagination-bar">
-                        <div className="muted">
-                            الصفحة {page} من {totalPages}
+                    {/* ── Pagination ── */}
+                    {totalPages > 1 && (
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "14px 20px",
+                                borderTop: "1px solid #f1f5f9",
+                                flexWrap: "wrap",
+                                gap: 10,
+                            }}
+                        >
+                            <span style={{ fontSize: 12, color: "#64748b" }}>
+                                الصفحة {page} من {totalPages} ·{" "}
+                                {filtered.length} نتيجة
+                            </span>
+                            <div style={{ display: "flex", gap: 6 }}>
+                                <button
+                                    disabled={page <= 1}
+                                    onClick={() =>
+                                        setPage((p) => Math.max(1, p - 1))
+                                    }
+                                    style={pgBtn(false, page <= 1)}
+                                >
+                                    <FiChevronRight size={13} />
+                                </button>
+                                {pageRange().map((p2, i) =>
+                                    p2 === "..." ? (
+                                        <span
+                                            key={`e${i}`}
+                                            style={{
+                                                padding: "6px 8px",
+                                                color: "#94a3b8",
+                                                fontSize: 13,
+                                            }}
+                                        >
+                                            ...
+                                        </span>
+                                    ) : (
+                                        <button
+                                            key={i}
+                                            onClick={() =>
+                                                setPage(p2 as number)
+                                            }
+                                            style={pgBtn(page === p2)}
+                                        >
+                                            {p2}
+                                        </button>
+                                    ),
+                                )}
+                                <button
+                                    disabled={page >= totalPages}
+                                    onClick={() =>
+                                        setPage((p) =>
+                                            Math.min(totalPages, p + 1),
+                                        )
+                                    }
+                                    style={pgBtn(false, page >= totalPages)}
+                                >
+                                    <FiChevronLeft size={13} />
+                                </button>
+                            </div>
                         </div>
-                        <div className="pagination">
-                            <button
-                                className="page-btn"
-                                disabled={page <= 1}
-                                onClick={() =>
-                                    setPage((p) => Math.max(1, p - 1))
-                                }
-                            >
-                                <FiChevronRight size={13} />
-                            </button>
-                            {pageRange().map((item, i) =>
-                                item === "..." ? (
-                                    <button
-                                        key={`e-${i}`}
-                                        className="page-btn"
-                                        disabled
-                                    >
-                                        ...
-                                    </button>
-                                ) : (
-                                    <button
-                                        key={item}
-                                        className={`page-btn ${page === item ? "active" : ""}`}
-                                        onClick={() => setPage(item as number)}
-                                    >
-                                        {item}
-                                    </button>
-                                ),
-                            )}
-                            <button
-                                className="page-btn"
-                                disabled={page >= totalPages}
-                                onClick={() =>
-                                    setPage((p) => Math.min(totalPages, p + 1))
-                                }
-                            >
-                                <FiChevronLeft size={13} />
-                            </button>
-                        </div>
-                    </div>
-                </section>
-            </div>
+                    )}
+                </div>
+            )}
 
-            {/* Confirm modal */}
+            {/* Pagination for cards view */}
+            {viewMode === "cards" && totalPages > 1 && (
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        gap: 6,
+                        marginTop: 20,
+                    }}
+                >
+                    <button
+                        disabled={page <= 1}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        style={pgBtn(false, page <= 1)}
+                    >
+                        <FiChevronRight size={13} />
+                    </button>
+                    {pageRange().map((p2, i) =>
+                        p2 === "..." ? (
+                            <span
+                                key={`e${i}`}
+                                style={{ padding: "6px 8px", color: "#94a3b8" }}
+                            >
+                                ...
+                            </span>
+                        ) : (
+                            <button
+                                key={i}
+                                onClick={() => setPage(p2 as number)}
+                                style={pgBtn(page === p2)}
+                            >
+                                {p2}
+                            </button>
+                        ),
+                    )}
+                    <button
+                        disabled={page >= totalPages}
+                        onClick={() =>
+                            setPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        style={pgBtn(false, page >= totalPages)}
+                    >
+                        <FiChevronLeft size={13} />
+                    </button>
+                </div>
+            )}
+
+            {/* Confirm Modal */}
             {confirm && (
                 <ConfirmModal
                     title={confirm.title}
@@ -1217,55 +2525,32 @@ const StaffApproval: React.FC = () => {
     );
 };
 
-/* ─────────────── Tiny helpers ─────────────── */
-const TH: React.CSSProperties = {
-    padding: "10px 14px",
-    textAlign: "right",
-    color: "var(--color-text-secondary)",
-    fontWeight: 500,
-    fontSize: ".78rem",
-    whiteSpace: "nowrap",
-    borderBottom: "0.5px solid var(--color-border-tertiary)",
+/* ── Style helpers (outside component to avoid re-creation) ── */
+const selectStyle: React.CSSProperties = {
+    width: "100%",
+    border: "1px solid #e2e8f0",
+    borderRadius: 10,
+    padding: "8px 12px",
+    fontSize: 13,
+    fontFamily: "'Tajawal',sans-serif",
+    background: "#f8fafc",
+    color: "#1e293b",
+    outline: "none",
 };
 
-const TD: React.CSSProperties = {
-    padding: "12px 14px",
-    borderBottom: "0.5px solid rgba(0,0,0,.05)",
-    verticalAlign: "middle",
-};
-
-const DetailItem = ({
-    icon,
-    label,
-    value,
-}: {
-    icon: React.ReactNode;
-    label: string;
-    value: string;
-}) => (
-    <div className="info-tile">
-        <div className="info-tile-icon">{icon}</div>
-        <div>
-            <div className="info-label">{label}</div>
-            <div className="info-value">{value}</div>
-        </div>
-    </div>
-);
-
-/* CSS additions — ألصقها في ملف الـ CSS الموجود بجانب نفس كلاسات MyTeachersManagement */
-/*
-.role-pill          { display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.73rem;font-weight:500 }
-.role-teacher       { background:var(--emerald-light, #E1F5EE);color:var(--emerald, #0F6E56) }
-.role-supervisor    { background:#E6F1FB;color:#185FA5 }
-.role-motivator     { background:#FAEEDA;color:#854F0B }
-.role-student-affairs{ background:#EAF3DE;color:#27500A }
-.role-financial     { background:#FCEBEB;color:#A32D2D }
-
-.td-actions         { display:flex;gap:5px;flex-wrap:wrap;align-items:center }
-.btn.danger         { background:#FCEBEB;color:#A32D2D;border-color:#F09595 }
-.btn.danger:hover   { background:#F7C1C1 }
-.btn.primary        { background:var(--emerald,#0F6E56);color:#fff;border-color:var(--emerald) }
-.btn.secondary      { background:var(--color-background-secondary);color:var(--color-text-secondary);border-color:var(--color-border-tertiary) }
-*/
+const pgBtn = (active: boolean, disabled = false): React.CSSProperties => ({
+    border: "1px solid #e2e8f0",
+    borderRadius: 8,
+    padding: "6px 12px",
+    background: active ? "#1e293b" : "#fff",
+    color: active ? "#fff" : "#475569",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontFamily: "'Tajawal',sans-serif",
+    fontWeight: 700,
+    fontSize: 13,
+    opacity: disabled ? 0.4 : 1,
+    display: "flex",
+    alignItems: "center",
+});
 
 export default StaffApproval;

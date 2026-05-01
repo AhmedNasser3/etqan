@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 class CirclesController extends Controller
 {
     // ── helper: يجيب center_id من auth أو من الـ portal header ──────────────
-    private function resolveCenterId(Request $request): ?int
+    public function resolveCenterId(Request $request): ?int
     {
         if (Auth::check() && Auth::user()->center_id) {
             return (int) Auth::user()->center_id;

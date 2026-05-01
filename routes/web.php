@@ -14,11 +14,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/centers', [AdminRegisterController::class, 'getCenters'])->name('centers');
     Route::get('/center/{centerSlug}', [AdminRegisterController::class, 'getCenterDetails'])->name('center.details');
 });
+Route::post('/student/register', [StudentRegistrationController::class, 'register']);
 Route::middleware('web')->group(function () {
 Route::get('/portal/{token}',             function () { return view('app'); });
 Route::get('/portal/dashboard/{token}',   function () { return view('app'); });
     //  Auth Routes - هنا عشان الـ session تشتغل
-    Route::post('/student/register', [StudentRegistrationController::class, 'register']);
     Route::post('/email/send-otp', [EmailLoginController::class, 'sendOtp']);
     Route::post('/email/verify-otp', [EmailLoginController::class, 'verifyOtp']);
     Route::post('/teacher/register', [TeacherRegisterController::class, 'register']);

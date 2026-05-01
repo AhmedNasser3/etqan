@@ -309,112 +309,114 @@ class StudentUserController extends Controller
      *  جلب بيانات المجمع الخاص بالطالب مع الإحصائيات
      */
     public function getUserComplex()
-    {
-        $userId = Auth::id();
-        Log::info('🏛️ [USER COMPLEX] بداية الطلب', ['user_id' => $userId]);
+{
+    $userId = Auth::id();
+    Log::info('🏛️ [USER COMPLEX] بداية الطلب', ['user_id' => $userId]);
 
-        try {
-            //  1. جيب center_id الطالب من users
-            $userCenter = DB::table('users')
-                ->where('id', $userId)
-                ->where('status', 'active')
-                ->value('center_id');
+    try {
+        // 1. جيب center_id من User Model (هيشتغل صح سواء admin أو لأ)
+        $user = \App\Models\Auth\User::with('admin')
+            ->where('id', $userId)
+            ->where('status', 'active')
+            ->first();
 
-            if (!$userCenter) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'لا يوجد مجمع مرتبط بحسابك'
-                ]);
-            }
+        $userCenter = $user?->center_id;
 
-            Log::info('🏛️ [CENTER FOUND]', [
-                'user_id' => $userId,
-                'center_id' => $userCenter
-            ]);
-
-            //  2. جيب بيانات المركز
-            $center = DB::table('centers')
-                ->where('id', $userCenter)
-                ->where('is_active', true)
-                ->select('id', 'name', 'logo', 'phone', 'address', 'settings')
-                ->first();
-
-            if (!$center) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'المجمع غير مفعل'
-                ]);
-            }
-
-            //  3. إحصائيات الطلاب (من students → users.center_id)
-            $studentsCount = DB::table('students')
-                ->join('users', 'students.user_id', '=', 'users.id')
-                ->where('users.center_id', $userCenter)
-                ->where('users.status', 'active')
-                ->count();
-
-            //  4. إحصائيات المعلمين (من teacher_payrolls → users.center_id)
-            $teachersCount = DB::table('teacher_payrolls')
-                ->join('users', 'teacher_payrolls.user_id', '=', 'users.id')
-                ->where('users.center_id', $userCenter)
-                ->where('users.status', 'active')
-                ->distinct('teacher_payrolls.teacher_id')
-                ->count();
-
-            //  5. إحصائيات الحلقات (من circles)
-            $circlesCount = DB::table('circles')
-                ->where('center_id', $userCenter)
-                ->count();
-
-            //  6. إحصائيات الخطط (من plans)
-            $plansCount = DB::table('plans')
-                ->where('center_id', $userCenter)
-                ->count();
-
-            //  7. إحصائيات المساجد (من mosques)
-            $mosquesCount = DB::table('mosques')
-                ->where('center_id', $userCenter)
-                ->where('is_active', true)
-                ->count();
-
-            Log::info(' [COMPLEX STATS]', [
-                'center_id' => $userCenter,
-                'students' => $studentsCount,
-                'teachers' => $teachersCount,
-                'circles' => $circlesCount,
-                'plans' => $plansCount,
-                'mosques' => $mosquesCount
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'complex' => [
-                    'title' => $center->name,
-                    'description' => $center->settings && isset($center->settings['description'])
-                        ? $center->settings['description']
-                        : 'مجمع قرآني كريم يُعنى بخدمة القرآن وعلومه، يضم برامج تعليمية وإجازات بالسند المتصل.',
-                    'img' => $center->logo ?: 'https://via.placeholder.com/400x250/3b82f6/ffffff?text=مجمع+القرآن',
-                    'stats' => [
-                        ['label' => 'الطلاب', 'value' => (string) $studentsCount, 'icon' => '👥'],
-                        ['label' => 'المعلمين', 'value' => (string) $teachersCount, 'icon' => '👨‍🏫'],
-                        ['label' => 'الحلقات', 'value' => (string) $circlesCount, 'icon' => '⭕'],
-                        ['label' => 'الخطط', 'value' => (string) $plansCount, 'icon' => '📋'],
-                        ['label' => 'المساجد', 'value' => (string) $mosquesCount, 'icon' => '🕌']
-                    ]
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('❌ [USER COMPLEX] خطأ', [
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-                'line' => $e->getLine()
-            ]);
-
+        if (!$userCenter) {
             return response()->json([
                 'success' => false,
-                'message' => 'خطأ في جلب بيانات المجمع'
-            ], 500);
+                'message' => 'لا يوجد مجمع مرتبط بحسابك'
+            ]);
         }
+
+        Log::info('🏛️ [CENTER FOUND]', [
+            'user_id'   => $userId,
+            'center_id' => $userCenter
+        ]);
+
+        // 2. جيب بيانات المركز
+        $center = DB::table('centers')
+            ->where('id', $userCenter)
+            ->where('is_active', true)
+            ->select('id', 'name', 'logo', 'phone', 'address', 'settings')
+            ->first();
+
+        if (!$center) {
+            return response()->json([
+                'success' => false,
+                'message' => 'المجمع غير مفعل'
+            ]);
+        }
+
+        // 3. إحصائيات الطلاب
+        $studentsCount = DB::table('students')
+            ->join('users', 'students.user_id', '=', 'users.id')
+            ->where('users.center_id', $userCenter)
+            ->where('users.status', 'active')
+            ->count();
+
+        // 4. إحصائيات المعلمين
+        $teachersCount = DB::table('teacher_payrolls')
+            ->join('users', 'teacher_payrolls.user_id', '=', 'users.id')
+            ->where('users.center_id', $userCenter)
+            ->where('users.status', 'active')
+            ->distinct('teacher_payrolls.teacher_id')
+            ->count();
+
+        // 5. إحصائيات الحلقات
+        $circlesCount = DB::table('circles')
+            ->where('center_id', $userCenter)
+            ->count();
+
+        // 6. إحصائيات الخطط
+        $plansCount = DB::table('plans')
+            ->where('center_id', $userCenter)
+            ->count();
+
+        // 7. إحصائيات المساجد
+        $mosquesCount = DB::table('mosques')
+            ->where('center_id', $userCenter)
+            ->where('is_active', true)
+            ->count();
+
+        Log::info('✅ [COMPLEX STATS]', [
+            'center_id' => $userCenter,
+            'students'  => $studentsCount,
+            'teachers'  => $teachersCount,
+            'circles'   => $circlesCount,
+            'plans'     => $plansCount,
+            'mosques'   => $mosquesCount
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'complex' => [
+                'title'       => $center->name,
+                'description' => $center->settings && isset($center->settings['description'])
+                    ? $center->settings['description']
+                    : 'مجمع قرآني كريم يُعنى بخدمة القرآن وعلومه، يضم برامج تعليمية وإجازات بالسند المتصل.',
+                'img'         => $center->logo ?: 'https://via.placeholder.com/400x250/3b82f6/ffffff?text=مجمع+القرآن',
+                'stats'       => [
+                    ['label' => 'الطلاب',   'value' => (string) $studentsCount,  'icon' => '👥'],
+                    ['label' => 'المعلمين', 'value' => (string) $teachersCount,  'icon' => '👨‍🏫'],
+                    ['label' => 'الحلقات',  'value' => (string) $circlesCount,   'icon' => '⭕'],
+                    ['label' => 'الخطط',    'value' => (string) $plansCount,     'icon' => '📋'],
+                    ['label' => 'المساجد',  'value' => (string) $mosquesCount,   'icon' => '🕌'],
+                ],
+            ],
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('❌ [USER COMPLEX] خطأ', [
+            'user_id' => $userId,
+            'error'   => $e->getMessage(),
+            'line'    => $e->getLine()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'خطأ في جلب بيانات المجمع'
+        ], 500);
     }
+}
 }

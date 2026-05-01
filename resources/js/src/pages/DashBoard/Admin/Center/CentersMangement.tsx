@@ -1,116 +1,113 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useState } from "react";
 import toast from "react-hot-toast";
-import { useImpersonate } from "./hooks/useImpersonate";
+import { useCenters, Center } from "./hooks/useCenters";
 
-interface Center {
-    id: number;
-    circleName: string;
-    managerEmail: string;
-    managerPhone: string;
-    domain: string;
-    circleLink: string;
-    logo: string | null;
-    is_active: boolean;
-    created_at: string;
-}
-
-const CentersManagement: React.FC = () => {
-    const [centers, setCenters] = useState<Center[]>([]);
-    const [loading, setLoading] = useState(true);
+const CentersManagement = () => {
+    const { centers, loading, error, refetch, stats, apiFetch } = useCenters();
     const [search, setSearch] = useState("");
     const [filterStatus, setFilterStatus] = useState<
         "all" | "active" | "inactive"
     >("all");
-    const { enterCenter, loading: impersonateLoading } = useImpersonate();
-
-    const fetchCenters = async () => {
-        setLoading(true);
-        try {
-            const res = await axios.get("/api/v1/centers/all");
-
-            const mapped = (res.data.data || res.data).map((c: any) => ({
-                id: c.id,
-                circleName: c.circleName || c.name,
-                managerEmail: c.managerEmail || c.email,
-                managerPhone: c.managerPhone || c.phone || "",
-                domain: c.domain || c.subdomain, // ✅ يقبل الاتنين
-                circleLink: `/${c.domain || c.subdomain}/center-dashboard`,
-                logo: c.logo || null,
-                is_active: c.is_active,
-                created_at: c.created_at,
-            }));
-
-            setCenters(mapped);
-        } catch (e) {
-            console.error(e);
-            toast.error("فشل تحميل المجمعات");
-        } finally {
-            setLoading(false);
-        }
-    };
+    const [busyCenterId, setBusyCenterId] = useState<number | null>(null);
+    const [enteringCenterId, setEnteringCenterId] = useState<number | null>(
+        null,
+    );
 
     const toggleActive = async (center: Center) => {
         const endpoint = center.is_active
             ? `/api/v1/centers/${center.id}/deactivate`
             : `/api/v1/centers/${center.id}/activate`;
+
+        setBusyCenterId(center.id);
+
         try {
-            await axios.post(endpoint);
+            await apiFetch(endpoint, { method: "POST" });
             toast.success(
                 center.is_active ? "تم إيقاف المجمع" : "تم تفعيل المجمع",
             );
-            fetchCenters();
-        } catch (e) {
+            refetch();
+        } catch (err) {
+            console.error(err);
             toast.error("فشلت العملية");
+        } finally {
+            setBusyCenterId(null);
+        }
+    };
+
+    const enterCenter = async (center: Center) => {
+        setEnteringCenterId(center.id);
+
+        try {
+            const result = await apiFetch(
+                `/api/admin/centers/${center.id}/visit`,
+                {
+                    method: "POST",
+                },
+            );
+
+            if (!result?.success) {
+                throw new Error(result?.message || "فشل تحديث center_id");
+            }
+
+            toast.success("تم تحديد المجمع الحالي");
+
+            const redirectUrl =
+                result?.data?.redirect_url ||
+                center.circleLink ||
+                `/${center.domain}/center-dashboard`;
+
+            window.location.assign(redirectUrl);
+        } catch (err) {
+            console.error(err);
+            toast.error("تعذر الدخول إلى المجمع");
+            setEnteringCenterId(null);
         }
     };
 
     const filtered = centers
-        .filter((c) => {
-            const q = search.toLowerCase();
+        .filter((center) => {
+            const normalizedQuery = search.trim().toLowerCase();
+
+            if (!normalizedQuery) return true;
+
             return (
-                c.circleName?.toLowerCase().includes(q) ||
-                c.domain?.toLowerCase().includes(q) ||
-                c.managerEmail?.toLowerCase().includes(q)
+                center.circleName?.toLowerCase().includes(normalizedQuery) ||
+                center.domain?.toLowerCase().includes(normalizedQuery) ||
+                center.managerEmail?.toLowerCase().includes(normalizedQuery) ||
+                center.managerPhone?.includes(normalizedQuery) ||
+                center.manager_name?.toLowerCase().includes(normalizedQuery)
             );
         })
-        .filter((c) => {
-            if (filterStatus === "active") return c.is_active;
-            if (filterStatus === "inactive") return !c.is_active;
+        .filter((center) => {
+            if (filterStatus === "active") return center.is_active;
+            if (filterStatus === "inactive") return !center.is_active;
             return true;
         });
-
-    const activeCount = centers.filter((c) => c.is_active).length;
 
     const initials = (name: string) =>
         name
             ?.split(" ")
             .slice(0, 2)
-            .map((w) => w[0])
+            .map((word) => word[0])
             .join("") ?? "?";
-
-    useEffect(() => {
-        fetchCenters();
-    }, []);
 
     return (
         <div className="content" id="contentArea" style={{ direction: "rtl" }}>
-            {/* إحصائيات */}
             <div
                 style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))",
                     gap: 10,
                     marginBottom: 20,
                 }}
             >
                 {[
-                    { label: "إجمالي المجمعات", val: centers.length },
-                    { label: "النشطة", val: activeCount },
-                    { label: "الموقوفة", val: centers.length - activeCount },
-                ].map((s) => (
+                    { label: "إجمالي المجمعات", val: stats.total },
+                    { label: "النشطة", val: stats.active },
+                    { label: "الموقوفة", val: stats.inactive },
+                ].map((item) => (
                     <div
-                        key={s.label}
+                        key={item.label}
                         style={{
                             background:
                                 "var(--color-background-secondary,#f5f5f5)",
@@ -125,10 +122,10 @@ const CentersManagement: React.FC = () => {
                                 marginBottom: 4,
                             }}
                         >
-                            {s.label}
+                            {item.label}
                         </div>
                         <div style={{ fontSize: 22, fontWeight: 500 }}>
-                            {s.val}
+                            {item.val}
                         </div>
                     </div>
                 ))}
@@ -140,14 +137,20 @@ const CentersManagement: React.FC = () => {
                     <div className="flx" style={{ gap: 8, flexWrap: "wrap" }}>
                         <input
                             className="fi"
-                            placeholder="بحث بالاسم أو الدومين..."
+                            placeholder="بحث بالاسم أو الدومين أو البريد..."
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(event) => setSearch(event.target.value)}
                         />
+
                         <select
                             value={filterStatus}
-                            onChange={(e) =>
-                                setFilterStatus(e.target.value as any)
+                            onChange={(event) =>
+                                setFilterStatus(
+                                    event.target.value as
+                                        | "all"
+                                        | "active"
+                                        | "inactive",
+                                )
                             }
                             style={{
                                 padding: "6px 10px",
@@ -160,8 +163,38 @@ const CentersManagement: React.FC = () => {
                             <option value="active">النشطة</option>
                             <option value="inactive">الموقوفة</option>
                         </select>
+
+                        <button
+                            onClick={refetch}
+                            style={{
+                                padding: "6px 12px",
+                                borderRadius: 6,
+                                border: "1px solid #ddd",
+                                background: "#fff",
+                                cursor: "pointer",
+                                fontSize: 12,
+                            }}
+                            type="button"
+                        >
+                            تحديث
+                        </button>
                     </div>
                 </div>
+
+                {error && (
+                    <div
+                        style={{
+                            margin: "0 0 12px",
+                            padding: "10px 12px",
+                            borderRadius: 8,
+                            background: "#FCEBEB",
+                            color: "#A32D2D",
+                            fontSize: 12,
+                        }}
+                    >
+                        {error}
+                    </div>
+                )}
 
                 <div style={{ overflowX: "auto" }}>
                     <table
@@ -180,9 +213,9 @@ const CentersManagement: React.FC = () => {
                                     "الجوال",
                                     "الحالة",
                                     "إجراءات",
-                                ].map((h) => (
+                                ].map((header) => (
                                     <th
-                                        key={h}
+                                        key={header}
                                         style={{
                                             padding: "10px 8px",
                                             textAlign: "right",
@@ -190,11 +223,12 @@ const CentersManagement: React.FC = () => {
                                             color: "#666",
                                         }}
                                     >
-                                        {h}
+                                        {header}
                                     </th>
                                 ))}
                             </tr>
                         </thead>
+
                         <tbody>
                             {loading ? (
                                 <tr>
@@ -206,7 +240,7 @@ const CentersManagement: React.FC = () => {
                                             color: "#aaa",
                                         }}
                                     >
-                                        جاري التحميل...
+                                        جاري تحميل المجمعات...
                                     </td>
                                 </tr>
                             ) : filtered.length === 0 ? (
@@ -219,19 +253,18 @@ const CentersManagement: React.FC = () => {
                                             color: "#aaa",
                                         }}
                                     >
-                                        لا توجد نتائج
+                                        لا توجد مجمعات مطابقة حالياً
                                     </td>
                                 </tr>
                             ) : (
-                                filtered.map((c) => (
+                                filtered.map((center) => (
                                     <tr
-                                        key={c.id}
+                                        key={center.id}
                                         style={{
                                             borderBottom: "0.5px solid #f0f0f0",
-                                            opacity: c.is_active ? 1 : 0.6,
+                                            opacity: center.is_active ? 1 : 0.6,
                                         }}
                                     >
-                                        {/* المجمع */}
                                         <td style={{ padding: "10px 8px" }}>
                                             <div
                                                 style={{
@@ -240,10 +273,10 @@ const CentersManagement: React.FC = () => {
                                                     gap: 8,
                                                 }}
                                             >
-                                                {c.logo ? (
+                                                {center.logo ? (
                                                     <img
-                                                        src={c.logo}
-                                                        alt=""
+                                                        src={center.logo}
+                                                        alt={center.circleName}
                                                         style={{
                                                             width: 32,
                                                             height: 32,
@@ -270,18 +303,20 @@ const CentersManagement: React.FC = () => {
                                                             flexShrink: 0,
                                                         }}
                                                     >
-                                                        {initials(c.circleName)}
+                                                        {initials(
+                                                            center.circleName,
+                                                        )}
                                                     </div>
                                                 )}
+
                                                 <span
                                                     style={{ fontWeight: 500 }}
                                                 >
-                                                    {c.circleName}
+                                                    {center.circleName}
                                                 </span>
                                             </div>
                                         </td>
 
-                                        {/* الدومين */}
                                         <td style={{ padding: "10px 8px" }}>
                                             <span
                                                 style={{
@@ -290,11 +325,10 @@ const CentersManagement: React.FC = () => {
                                                     color: "#185FA5",
                                                 }}
                                             >
-                                                {c.domain}
+                                                {center.domain}
                                             </span>
                                         </td>
 
-                                        {/* البريد */}
                                         <td
                                             style={{
                                                 padding: "10px 8px",
@@ -302,20 +336,18 @@ const CentersManagement: React.FC = () => {
                                                 color: "#555",
                                             }}
                                         >
-                                            {c.managerEmail}
+                                            {center.managerEmail}
                                         </td>
 
-                                        {/* الجوال */}
                                         <td
                                             style={{
                                                 padding: "10px 8px",
                                                 fontSize: 12,
                                             }}
                                         >
-                                            {c.managerPhone}
+                                            {center.managerPhone}
                                         </td>
 
-                                        {/* الحالة */}
                                         <td style={{ padding: "10px 8px" }}>
                                             <span
                                                 style={{
@@ -326,10 +358,10 @@ const CentersManagement: React.FC = () => {
                                                     borderRadius: 20,
                                                     fontSize: 11,
                                                     fontWeight: 500,
-                                                    background: c.is_active
+                                                    background: center.is_active
                                                         ? "#EAF3DE"
                                                         : "#FCEBEB",
-                                                    color: c.is_active
+                                                    color: center.is_active
                                                         ? "#3B6D11"
                                                         : "#A32D2D",
                                                 }}
@@ -339,16 +371,18 @@ const CentersManagement: React.FC = () => {
                                                         width: 6,
                                                         height: 6,
                                                         borderRadius: "50%",
-                                                        background: c.is_active
-                                                            ? "#639922"
-                                                            : "#E24B4A",
+                                                        background:
+                                                            center.is_active
+                                                                ? "#639922"
+                                                                : "#E24B4A",
                                                     }}
                                                 />
-                                                {c.is_active ? "نشط" : "موقوف"}
+                                                {center.is_active
+                                                    ? "نشط"
+                                                    : "موقوف"}
                                             </span>
                                         </td>
 
-                                        {/* إجراءات */}
                                         <td style={{ padding: "10px 8px" }}>
                                             <div
                                                 style={{
@@ -356,17 +390,13 @@ const CentersManagement: React.FC = () => {
                                                     gap: 5,
                                                 }}
                                             >
-                                                {/* ✅ زر الدخول - بيبعت الـ domain */}
                                                 <button
                                                     onClick={() =>
-                                                        enterCenter(
-                                                            c.id,
-                                                            c.circleName,
-                                                            c.domain,
-                                                        )
+                                                        enterCenter(center)
                                                     }
                                                     disabled={
-                                                        impersonateLoading
+                                                        enteringCenterId ===
+                                                        center.id
                                                     }
                                                     style={{
                                                         padding: "5px 12px",
@@ -379,15 +409,21 @@ const CentersManagement: React.FC = () => {
                                                         cursor: "pointer",
                                                         whiteSpace: "nowrap",
                                                     }}
+                                                    type="button"
                                                 >
-                                                    {impersonateLoading
+                                                    {enteringCenterId ===
+                                                    center.id
                                                         ? "..."
                                                         : "دخول ←"}
                                                 </button>
 
                                                 <button
                                                     onClick={() =>
-                                                        toggleActive(c)
+                                                        toggleActive(center)
+                                                    }
+                                                    disabled={
+                                                        busyCenterId ===
+                                                        center.id
                                                     }
                                                     style={{
                                                         padding: "5px 10px",
@@ -398,10 +434,13 @@ const CentersManagement: React.FC = () => {
                                                         color: "#555",
                                                         cursor: "pointer",
                                                     }}
+                                                    type="button"
                                                 >
-                                                    {c.is_active
-                                                        ? "إيقاف"
-                                                        : "تفعيل"}
+                                                    {busyCenterId === center.id
+                                                        ? "..."
+                                                        : center.is_active
+                                                          ? "إيقاف"
+                                                          : "تفعيل"}
                                                 </button>
                                             </div>
                                         </td>

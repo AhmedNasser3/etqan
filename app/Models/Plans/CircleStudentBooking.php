@@ -1,5 +1,4 @@
 <?php
-// app/Models/Plans/CircleStudentBooking.php -  مُصحح كامل
 
 namespace App\Models\Plans;
 
@@ -33,7 +32,8 @@ class CircleStudentBooking extends Model
         'started_at',
         'completed_at',
         'booked_at',
-        'center_id'
+        'start_mode',
+        'start_day_number',
     ];
 
     protected $casts = [
@@ -42,9 +42,6 @@ class CircleStudentBooking extends Model
         'booked_at' => 'datetime',
     ];
 
-    /**
-     *  العلاقات الأساسية - مُصححة للـ Guardian Controller
-     */
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
@@ -60,9 +57,6 @@ class CircleStudentBooking extends Model
         return $this->belongsTo(Student::class, 'user_id');
     }
 
-    /**
-     *  علاقات الخطة والحصص - مهمة للـ Guardian
-     */
     public function planDetail(): BelongsTo
     {
         return $this->belongsTo(PlanDetail::class, 'plan_details_id');
@@ -73,17 +67,11 @@ class CircleStudentBooking extends Model
         return $this->belongsTo(PlanCircleSchedule::class, 'plan_circle_schedule_id');
     }
 
-    /**
-     *  تفاصيل خطة الطالب - الأهم للـ Guardian Dashboard
-     */
     public function studentPlanDetails(): HasMany
     {
         return $this->hasMany(StudentPlanDetail::class, 'circle_student_booking_id');
     }
 
-    /**
-     *  Scopes مفيدة للـ Guardian
-     */
     public function scopeActive($query)
     {
         return $query->where('status', 'confirmed')
@@ -100,9 +88,6 @@ class CircleStudentBooking extends Model
         return $query->latest('started_at')->limit($limit);
     }
 
-    /**
-     *  Accessors للـ Guardian Dashboard
-     */
     public function getProgressRateAttribute()
     {
         return $this->total_days > 0
@@ -114,18 +99,18 @@ class CircleStudentBooking extends Model
     {
         return match($this->status) {
             'confirmed' => 'bg-green-100 text-green-800',
-            'pending' => 'bg-yellow-100 text-yellow-800',
+            'pending'   => 'bg-yellow-100 text-yellow-800',
             'cancelled' => 'bg-red-100 text-red-800',
-            default => 'bg-gray-100 text-gray-800'
+            default     => 'bg-gray-100 text-gray-800'
         };
     }
 
     public function getProgressColorAttribute()
     {
         return match(true) {
-            $this->progress_status === 'completed' => 'bg-green-100 text-green-800',
+            $this->progress_status === 'completed'  => 'bg-green-100 text-green-800',
             $this->progress_status === 'in_progress' => 'bg-blue-100 text-blue-800',
-            default => 'bg-gray-100 text-gray-800'
+            default                                  => 'bg-gray-100 text-gray-800'
         };
     }
 }

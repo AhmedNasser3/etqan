@@ -25,7 +25,7 @@ const CreateSchedulePage: React.FC<CreateSchedulePageProps> = ({
     const hasCircles = circlesData.length > 0;
     const hasPlans = plansData.length > 0;
     const hasTeachers = teachersData.length > 0;
-    const isDisabled = isSubmitting || !hasCircles || !hasPlans || !hasTeachers;
+    const isDisabled = isSubmitting || !hasCircles || !hasPlans;
 
     const { notifySuccess, notifyError } = useToast();
 
@@ -271,15 +271,14 @@ const CreateSchedulePage: React.FC<CreateSchedulePageProps> = ({
                         </FG>
 
                         {/* المدرس */}
-                        <FG label="المدرس *">
+                        <FG label="المعلم (اختياري)">
                             <select
                                 id="scTeacher"
                                 name="teacher_id"
                                 className="fi2"
-                                required
                                 disabled={isSubmitting}
                             >
-                                <option value="">اختر المدرس</option>
+                                <option value="">اختر المعلم</option>
                                 {teachersData.map((teacher: any) => (
                                     <option key={teacher.id} value={teacher.id}>
                                         {teacher.name}

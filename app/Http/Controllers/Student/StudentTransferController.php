@@ -358,8 +358,7 @@ class StudentTransferController extends Controller
      */
     private function getUserCenterId()
     {
-        return Auth::user()->center_id ?? Auth::user()->centers()->first()?->id;
-    }
+return Auth::user()->center_id;    }
 
     /**
      * تنسيق بيانات الحجز للعرض

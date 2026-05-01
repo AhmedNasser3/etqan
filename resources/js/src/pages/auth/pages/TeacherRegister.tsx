@@ -100,7 +100,7 @@ const TeacherRegister: React.FC = () => {
                 .tr-logo {
                     width: 54px; height: 54px;
                     border-radius: 14px;
-                    background: rgba(255,255,255,.15);
+                    background: rgb(255 255 255 / 58%);
                     border: 1.5px solid rgba(255,255,255,.25);
                     display: inline-flex;
                     align-items: center; justify-content: center;

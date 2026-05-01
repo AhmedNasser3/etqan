@@ -212,7 +212,7 @@ class StudentRegistrationController extends Controller
     }
 
     // ─── تحديد المجمع ─────────────────────────────────────────────────────────
-    private function resolveCenterId(Request $request): ?int
+    public function resolveCenterId(Request $request): ?int
     {
         if (auth()->check() && auth()->user()->center_id) {
             return auth()->user()->center_id;

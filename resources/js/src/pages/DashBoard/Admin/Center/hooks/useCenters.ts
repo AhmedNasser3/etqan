@@ -1,117 +1,194 @@
-// hooks/useCenters.ts - كامل ومحدث مع الـ Controller الجديد
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-interface Center {
+export interface Center {
     id: number;
-    name: string;
-    subdomain: string;
-    email: string;
-    phone: string;
-    address: string | null;
-    manager_name: string; //  اسم الـ center_owner (role_id = 1)
+    circleName: string;
+    managerEmail: string;
+    managerPhone: string;
+    domain: string;
+    circleLink: string;
+    logo: string | null;
+    is_active: boolean;
+    created_at: string;
+    manager_name?: string;
 }
+
+type RawCenter = {
+    id?: number;
+    name?: string;
+    circleName?: string;
+    subdomain?: string;
+    domain?: string;
+    email?: string;
+    managerEmail?: string;
+    phone?: string;
+    managerPhone?: string;
+    logo?: string | null;
+    is_active?: boolean | number;
+    created_at?: string;
+    manager_name?: string;
+    circleLink?: string;
+};
+
+const normalizeActiveFlag = (
+    value: boolean | number | string | undefined,
+    fallback = false,
+): boolean => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+        if (["1", "true", "active", "enabled"].includes(normalized)) {
+            return true;
+        }
+        if (["0", "false", "inactive", "disabled"].includes(normalized)) {
+            return false;
+        }
+    }
+    return fallback;
+};
+
+const ensureCsrfCookie = async () => {
+    if (!document.cookie.includes("XSRF-TOKEN=")) {
+        await fetch("/sanctum/csrf-cookie", {
+            credentials: "include",
+            headers: { Accept: "application/json" },
+        });
+    }
+};
+
+const getCsrfToken = (): string => {
+    const cookies = document.cookie.split(";");
+    const csrfCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("XSRF-TOKEN="),
+    );
+
+    return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
+};
+
+const apiFetch = async (url: string, options: RequestInit = {}) => {
+    await ensureCsrfCookie();
+
+    const response = await fetch(url, {
+        ...options,
+        credentials: "include",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-XSRF-TOKEN": getCsrfToken(),
+            ...(options.headers ?? {}),
+        },
+    });
+
+    const responseText = await response.text();
+
+    if (!response.ok) {
+        throw new Error(
+            `HTTP ${response.status}: ${responseText.substring(0, 160)}`,
+        );
+    }
+
+    try {
+        return JSON.parse(responseText);
+    } catch {
+        throw new Error("Invalid JSON response");
+    }
+};
+
+const normalizeCenter = (center: RawCenter, fallbackActive = false): Center => {
+    const domain = center.domain || center.subdomain || "";
+
+    return {
+        id: Number(center.id ?? 0),
+        circleName: center.circleName || center.name || "غير محدد",
+        managerEmail: center.managerEmail || center.email || "غير محدد",
+        managerPhone: center.managerPhone || center.phone || "غير محدد",
+        domain,
+        circleLink:
+            center.circleLink ||
+            (domain ? `/${domain}/center-dashboard` : "/center-dashboard"),
+        logo: center.logo || null,
+        is_active: normalizeActiveFlag(center.is_active, fallbackActive),
+        created_at: center.created_at || "",
+        manager_name: center.manager_name || "",
+    };
+};
+
+const extractCentersPayload = (result: any): RawCenter[] => {
+    if (Array.isArray(result)) return result;
+    if (Array.isArray(result?.data)) return result.data;
+    if (Array.isArray(result?.centers)) return result.centers;
+    if (Array.isArray(result?.data?.data)) return result.data.data;
+    if (Array.isArray(result?.payload)) return result.payload;
+    return [];
+};
 
 export const useCenters = () => {
     const [centers, setCenters] = useState<Center[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // CSRF Token Helper
-    const getCsrfToken = (): string => {
-        const cookies = document.cookie.split(";");
-        const csrfCookie = cookies.find((cookie) =>
-            cookie.trim().startsWith("XSRF-TOKEN="),
-        );
-        return csrfCookie ? decodeURIComponent(csrfCookie.split("=")[1]) : "";
-    };
-
-    // API Fetch Helper محسن
-    const apiFetch = async (url: string, options: RequestInit = {}) => {
-        // CSRF Token أولاً
-        if (!document.cookie.includes("XSRF-TOKEN=")) {
-            await fetch("/sanctum/csrf-cookie", {
-                credentials: "include",
-                headers: { Accept: "application/json" },
-            });
-        }
-
-        const response = await fetch(url, {
-            ...options,
-            credentials: "include",
-            headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-                "X-Requested-With": "XMLHttpRequest",
-                "X-XSRF-TOKEN": getCsrfToken(),
-                ...(options.headers as any),
-            },
-        });
-
-        const responseText = await response.text();
-
-        if (!response.ok) {
-            throw new Error(
-                `HTTP ${response.status}: ${responseText.substring(0, 100)}`,
-            );
-        }
-
-        try {
-            return JSON.parse(responseText);
-        } catch (e) {
-            console.error("JSON Parse Error:", responseText.substring(0, 200));
-            throw new Error("Invalid JSON response");
-        }
-    };
-
-    //  جلب المجامع من /admin/centers مع الـ manager_name
     const fetchCenters = useCallback(async () => {
-        console.log("📥 Fetching centers from: /admin/centers");
         setLoading(true);
         setError(null);
 
         try {
-            const result = await apiFetch("/admin/centers");
+            const endpoints = ["/api/v1/centers/all", "/admin/centers"];
+            let normalizedCenters: Center[] = [];
+            let lastError: unknown = null;
 
-            console.log(" API Response:", {
-                success: result.success,
-                centers_count: result.centers?.length || 0,
-                sample_manager: result.centers?.[0]?.manager_name,
-            });
+            for (const endpoint of endpoints) {
+                try {
+                    const result = await apiFetch(endpoint);
+                    const rawCenters = extractCentersPayload(result);
+                    const fallbackActive = endpoint === "/admin/centers";
 
-            if (result.success) {
-                setCenters(result.centers || []);
-                console.log(
-                    ` Loaded ${result.centers?.length || 0} centers مع manager_name`,
-                );
-            } else {
-                setError(result.message || "فشل في جلب المجامع");
-                console.error("API Error:", result.message);
+                    if (rawCenters.length > 0) {
+                        normalizedCenters = rawCenters.map((center) =>
+                            normalizeCenter(center, fallbackActive),
+                        );
+                        break;
+                    }
+
+                    if (result?.success === true && rawCenters.length === 0) {
+                        normalizedCenters = [];
+                        break;
+                    }
+                } catch (endpointError) {
+                    lastError = endpointError;
+                }
             }
+
+            if (!normalizedCenters.length && lastError) {
+                throw lastError;
+            }
+
+            setCenters(normalizedCenters);
         } catch (err: any) {
-            console.error("❌ Fetch Error:", err);
-            setError(err.message || "حدث خطأ في جلب المجامع");
+            console.error("Failed to fetch centers:", err);
+            setError(err?.message || "حدث خطأ في جلب المجمعات");
+            setCenters([]);
         } finally {
             setLoading(false);
         }
     }, []);
 
-    // تحميل تلقائي عند Mount
     useEffect(() => {
         fetchCenters();
     }, [fetchCenters]);
 
-    // إعادة تحميل يدوي
     const refetch = useCallback(() => {
-        console.log("🔄 Manual refetch");
         fetchCenters();
     }, [fetchCenters]);
 
-    // إحصائيات محسنة للمجامع
     const stats = {
         total: centers.length,
-        withManager: centers.filter((c) => c.manager_name).length,
-        etqan: centers.find((c) => c.subdomain === "etqan") ? 1 : 0,
-        game3: centers.find((c) => c.subdomain === "game3") ? 1 : 0,
+        active: centers.filter((center) => center.is_active).length,
+        inactive: centers.filter((center) => !center.is_active).length,
+        withManager: centers.filter(
+            (center) => center.manager_name || center.managerEmail,
+        ).length,
     };
 
     return {
@@ -121,5 +198,6 @@ export const useCenters = () => {
         refetch,
         stats,
         getCsrfToken,
+        apiFetch,
     };
 };

@@ -1,10 +1,97 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useStudentAffairs } from "./hooks/useStudentAffairs";
-import StudentAffairsUpdate from "./models/StudentAffairsUpdate";
-import { useToast } from "../../../../../contexts/ToastContext";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+    FiSearch,
+    FiRefreshCw,
+    FiX,
+    FiEdit2,
+    FiDownload,
+    FiCheckCircle,
+    FiXCircle,
+    FiClock,
+    FiUsers,
+    FiMail,
+    FiPhone,
+    FiStar,
+    FiVideo,
+    FiCalendar,
+    FiBook,
+    FiTrendingUp,
+    FiAward,
+    FiChevronDown,
+    FiChevronUp,
+    FiMessageSquare,
+    FiPrinter,
+    FiFilter,
+    FiGrid,
+    FiList,
+} from "react-icons/fi";
+import { FaMosque, FaQuran } from "react-icons/fa";
 import * as XLSX from "xlsx";
 
-interface StudentType {
+// ── Types ──────────────────────────────────────────────────────────────────
+interface AttendanceStats {
+    total: number;
+    present: number;
+    absent: number;
+    rate: number;
+    avg_rating: number;
+}
+interface Achievement {
+    total_points: number;
+    added_points: number;
+    deducted_points: number;
+    history: any[];
+}
+interface BookingInfo {
+    id: number;
+    status: string;
+    progress_status: string;
+    start_mode: string;
+    current_day: number;
+    completed_days: number;
+    total_days: number;
+    started_at: string;
+    plan_name: string;
+    total_months: number;
+    circle_name: string;
+    mosque_name: string;
+    teacher_name: string;
+    schedule_time: string;
+    jitsi_url: string | null;
+    jitsi_room: string | null;
+}
+interface PlanDay {
+    id: number;
+    day_number: number;
+    plan_day_number: number | null;
+    new_memorization: string;
+    review_memorization: string;
+    status: string;
+    session_time: string;
+}
+interface StudentDetail {
+    id: number;
+    id_number: string;
+    grade_level: string;
+    health_status: string;
+    reading_level: string;
+    session_time: string;
+    notes: string;
+    status: string;
+    name: string;
+    email: string;
+    phone: string;
+    birth_date: string;
+    avatar: string;
+    guardian_name: string;
+    guardian_phone: string;
+    guardian_email: string;
+    booking: BookingInfo | null;
+    attendance: AttendanceStats;
+    achievements: Achievement;
+    plan_progress: PlanDay[];
+}
+interface StudentRow {
     id: number;
     name: string;
     idNumber: string;
@@ -17,1054 +104,2319 @@ interface StudentType {
     img: string;
 }
 
-interface ConfirmModalProps {
-    title: string;
-    desc?: string;
-    cb: () => void;
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function csrf(): string {
+    return (
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content") ?? ""
+    );
 }
-
-interface RegisterRow {
-    "الاسم الأول": string;
-    "اسم العائلة": string;
-    "رقم الهوية": string;
-    "تاريخ الميلاد": string;
-    "المرحلة الدراسية": string;
-    الجنس: string;
-    "البريد الإلكتروني للطالب": string;
-    "بريد ولي الأمر": string;
-    "رمز دولة ولي الأمر": string;
-    "هاتف ولي الأمر": string;
-    "الحالة الصحية"?: string;
-    "وقت الجلسة"?: string;
-    ملاحظات?: string;
-}
-
-interface ImportResult {
-    success: number;
-    failed: number;
-    errors: string[];
-}
-
-interface SingleStudentForm {
-    first_name: string;
-    family_name: string;
-    id_number: string;
-    birth_date: string;
-    grade_level: string;
-    gender: string;
-    student_email: string;
-    guardian_email: string;
-    guardian_country_code: string;
-    guardian_phone: string;
-    health_status: string;
-    session_time: string;
-    notes: string;
-}
-
-const EMPTY_STUDENT: SingleStudentForm = {
-    first_name: "",
-    family_name: "",
-    id_number: "",
-    birth_date: "",
-    grade_level: "elementary",
-    gender: "male",
-    student_email: "",
-    guardian_email: "",
-    guardian_country_code: "966",
-    guardian_phone: "",
-    health_status: "healthy",
-    session_time: "",
-    notes: "",
-};
-
 function getPortalCenterId(): string | null {
-    const id = (window as any).__PORTAL_CENTER_ID__;
-    return id ? String(id) : null;
+    return (window as any).__PORTAL_CENTER_ID__
+        ? String((window as any).__PORTAL_CENTER_ID__)
+        : null;
 }
-
 function buildHeaders(extra?: Record<string, string>): Record<string, string> {
-    const headers: Record<string, string> = {
+    const h: Record<string, string> = {
         Accept: "application/json",
         "X-Requested-With": "XMLHttpRequest",
         ...extra,
     };
-    const centerId = getPortalCenterId();
-    if (centerId) headers["X-Center-Id"] = centerId;
-    return headers;
+    const c = getPortalCenterId();
+    if (c) h["X-Center-Id"] = c;
+    return h;
+}
+async function apiFetch(url: string, opts: RequestInit = {}) {
+    const res = await fetch(url, {
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": csrf(),
+            ...buildHeaders(),
+            ...(opts.headers || {}),
+        },
+        ...opts,
+    });
+    if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || `HTTP ${res.status}`);
+    }
+    return res.json();
 }
 
-function getCsrfToken(): string | null {
+const AV_COLORS = [
+    { bg: "#E1F5EE", color: "#085041" },
+    { bg: "#E6F1FB", color: "#0C447C" },
+    { bg: "#FAEEDA", color: "#633806" },
+    { bg: "#EAF3DE", color: "#27500A" },
+    { bg: "#FBEAF0", color: "#72243E" },
+    { bg: "#EEEDFE", color: "#3C3489" },
+];
+
+// ── Sub Components ───────────────────────────────────────────────────────────
+function Avatar({
+    name,
+    idx,
+    size = 42,
+    img,
+}: {
+    name: string;
+    idx: number;
+    size?: number;
+    img?: string;
+}) {
+    const av = AV_COLORS[idx % AV_COLORS.length];
+    const initials = name
+        .split(" ")
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join("");
+    if (img)
+        return (
+            <img
+                src={img}
+                style={{
+                    width: size,
+                    height: size,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    flexShrink: 0,
+                }}
+            />
+        );
     return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute("content") ?? null
+        <div
+            style={{
+                width: size,
+                height: size,
+                borderRadius: "50%",
+                background: av.bg,
+                color: av.color,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: size * 0.3,
+                fontWeight: 700,
+                flexShrink: 0,
+            }}
+        >
+            {initials}
+        </div>
     );
 }
 
-const WhatsAppIcon = (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488" />
-    </svg>
-);
+function Badge({
+    label,
+    bg,
+    color,
+}: {
+    label: string;
+    bg: string;
+    color: string;
+}) {
+    return (
+        <span
+            style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                background: bg,
+                color,
+                borderRadius: 20,
+                padding: "3px 10px",
+                fontSize: 11,
+                fontWeight: 700,
+            }}
+        >
+            {label}
+        </span>
+    );
+}
 
-const PrintIcon = (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-13H4V2h16v4z" />
-    </svg>
-);
+function StatBox({
+    icon,
+    label,
+    value,
+    color,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value: string | number;
+    color: string;
+}) {
+    return (
+        <div
+            style={{
+                background: "#fff",
+                borderRadius: 14,
+                padding: "16px 18px",
+                boxShadow: "0 2px 10px #0001",
+                borderTop: `3px solid ${color}`,
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+            }}
+        >
+            <div style={{ color, fontSize: 18 }}>{icon}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: "#1e293b" }}>
+                {value}
+            </div>
+            <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>
+                {label}
+            </div>
+        </div>
+    );
+}
 
-function ImportResultModal({
-    title,
-    result,
+function Toast({
+    message,
+    tone,
     onClose,
 }: {
-    title: string;
-    result: ImportResult;
+    message: string;
+    tone: "success" | "error";
     onClose: () => void;
 }) {
     return (
         <div
             style={{
                 position: "fixed",
-                inset: 0,
-                zIndex: 3000,
-                background: "rgba(0,0,0,.5)",
-                backdropFilter: "blur(4px)",
+                bottom: 24,
+                left: "50%",
+                transform: "translateX(-50%)",
+                zIndex: 9999,
+                background: tone === "success" ? "#1e293b" : "#7f1d1d",
+                color: "#fff",
+                borderRadius: 14,
+                padding: "12px 20px",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                gap: 10,
+                fontSize: 13,
+                fontWeight: 700,
+                boxShadow: "0 4px 24px #0003",
             }}
         >
-            <div className="conf-box" style={{ maxWidth: 500, width: "90%" }}>
-                <div className="conf-t">{title}</div>
-                <div
-                    style={{
-                        margin: "12px 0",
-                        display: "flex",
-                        gap: 12,
-                        justifyContent: "center",
-                        flexWrap: "wrap",
-                    }}
-                >
-                    <span
-                        style={{
-                            background: "var(--g100)",
-                            color: "var(--g700)",
-                            padding: "6px 20px",
-                            borderRadius: 8,
-                            fontWeight: 700,
-                            fontSize: 16,
-                        }}
-                    >
-                        ✓ نجح: {result.success}
-                    </span>
-                    {result.failed > 0 && (
-                        <span
-                            style={{
-                                background: "#fee2e2",
-                                color: "#ef4444",
-                                padding: "6px 20px",
-                                borderRadius: 8,
-                                fontWeight: 700,
-                                fontSize: 16,
-                            }}
-                        >
-                            ✗ فشل: {result.failed}
-                        </span>
-                    )}
-                </div>
-                {result.errors.length > 0 && (
-                    <div
-                        style={{
-                            background: "#fff8f8",
-                            border: "1px solid #fecaca",
-                            borderRadius: 8,
-                            padding: 12,
-                            maxHeight: 220,
-                            overflowY: "auto",
-                            textAlign: "right",
-                            fontSize: 13,
-                            margin: "8px 0",
-                        }}
-                    >
-                        {result.errors.map((err, i) => (
-                            <div
-                                key={i}
-                                style={{ padding: "3px 0", color: "#b91c1c" }}
-                            >
-                                • {err}
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <div className="conf-acts">
-                    <button className="btn bs" onClick={onClose}>
-                        إغلاق
-                    </button>
-                </div>
-            </div>
+            {tone === "success" ? (
+                <FiCheckCircle size={15} />
+            ) : (
+                <FiXCircle size={15} />
+            )}
+            <span>{message}</span>
+            <button
+                onClick={onClose}
+                style={{
+                    background: "none",
+                    border: "none",
+                    color: "#fff",
+                    cursor: "pointer",
+                }}
+            >
+                <FiX size={13} />
+            </button>
         </div>
     );
 }
 
-// ── Modal إضافة طالب — نفس تصميم CreateMosquePage ────────────────────────
-function AddStudentModal({
+// ── Student Detail Modal ─────────────────────────────────────────────────────
+function StudentDetailModal({
+    studentId,
     onClose,
-    onSuccess,
 }: {
+    studentId: number;
     onClose: () => void;
-    onSuccess: () => void;
 }) {
+    const [data, setData] = useState<StudentDetail | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<
+        "info" | "plan" | "attendance" | "achievements"
+    >("info");
     const [saving, setSaving] = useState(false);
-    const [errorMsg, setErrorMsg] = useState("");
-    const { notifySuccess, notifyError } = useToast();
+    const [editMode, setEditMode] = useState(false);
+    const [form, setForm] = useState<Partial<StudentDetail>>({});
 
-    const ICO = {
-        x: (
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-            >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-        ),
-    };
+    useEffect(() => {
+        apiFetch(`/api/v1/student-affairs/${studentId}`)
+            .then((r) => {
+                setData(r.data);
+                setForm(r.data);
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, [studentId]);
 
-    function FG({
-        label,
-        children,
-    }: {
-        label: string;
-        children: React.ReactNode;
-    }) {
-        return (
-            <div style={{ marginBottom: 13 }}>
-                <label
-                    style={{
-                        display: "block",
-                        fontSize: "10.5px",
-                        fontWeight: 700,
-                        color: "var(--n700)",
-                        marginBottom: 4,
-                    }}
-                >
-                    {label}
-                </label>
-                {children}
-            </div>
-        );
-    }
-
-    function FR2({ children }: { children: React.ReactNode }) {
-        return (
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 11,
-                }}
-            >
-                {children}
-            </div>
-        );
-    }
-
-    const handleSubmit = async () => {
-        setErrorMsg("");
-
-        const getValue = (id: string) =>
-            (
-                document.getElementById(id) as
-                    | HTMLInputElement
-                    | HTMLSelectElement
-            )?.value?.trim() ?? "";
-
-        const data: SingleStudentForm = {
-            first_name: getValue("st_first_name"),
-            family_name: getValue("st_family_name"),
-            id_number: getValue("st_id_number"),
-            birth_date: getValue("st_birth_date"),
-            grade_level: getValue("st_grade_level"),
-            gender: getValue("st_gender"),
-            student_email: getValue("st_student_email"),
-            guardian_email: getValue("st_guardian_email"),
-            guardian_country_code: getValue("st_guardian_country_code"),
-            guardian_phone: getValue("st_guardian_phone"),
-            health_status: getValue("st_health_status") || "healthy",
-            session_time: getValue("st_session_time"),
-            notes: getValue("st_notes"),
-        };
-
-        if (
-            !data.first_name ||
-            !data.family_name ||
-            !data.id_number ||
-            !data.birth_date ||
-            !data.student_email ||
-            !data.guardian_email ||
-            !data.guardian_phone
-        ) {
-            setErrorMsg("يرجى تعبئة جميع الحقول المطلوبة (*)");
-            return;
-        }
-
-        const csrfToken = getCsrfToken();
-        if (!csrfToken) {
-            setErrorMsg("فشل في جلب رمز الحماية");
-            return;
-        }
-
+    const handleSave = async () => {
         setSaving(true);
         try {
-            const res = await fetch("/student/register", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...buildHeaders({ "X-CSRF-TOKEN": csrfToken }),
-                },
-                body: JSON.stringify(data),
+            await apiFetch(`/api/v1/student-affairs/${studentId}`, {
+                method: "PUT",
+                body: JSON.stringify(form),
             });
-            const json = await res.json();
-            if (res.ok && json.success) {
-                notifySuccess("تم إضافة الطالب بنجاح");
-                onSuccess();
-            } else {
-                setErrorMsg(json.message || "فشل في الإضافة");
-            }
-        } catch {
-            setErrorMsg("حدث خطأ في الاتصال");
+            setEditMode(false);
+            const r = await apiFetch(`/api/v1/student-affairs/${studentId}`);
+            setData(r.data);
+        } catch (e: any) {
+            alert(e.message);
         } finally {
             setSaving(false);
         }
     };
 
-    return (
-        <div className="ov on">
-            <div className="modal">
-                <div className="mh">
-                    <span className="mh-t">إضافة طالب جديد</span>
-                    <button className="mx" onClick={onClose}>
-                        <span
-                            style={{
-                                width: 12,
-                                height: 12,
-                                display: "inline-flex",
-                            }}
-                        >
-                            {ICO.x}
-                        </span>
-                    </button>
-                </div>
+    const TABS = [
+        { key: "info", label: "البيانات", icon: <FiUsers size={13} /> },
+        { key: "plan", label: "الخطة", icon: <FiBook size={13} /> },
+        { key: "attendance", label: "الحضور", icon: <FiCalendar size={13} /> },
+        {
+            key: "achievements",
+            label: "الإنجازات",
+            icon: <FiAward size={13} />,
+        },
+    ] as const;
 
-                <div className="mb">
-                    {errorMsg && (
+    const STATUS_DAY: Record<string, { bg: string; color: string }> = {
+        مكتمل: { bg: "#dcfce7", color: "#166534" },
+        "قيد الانتظار": { bg: "#fef9c3", color: "#854d0e" },
+        إعادة: { bg: "#fee2e2", color: "#991b1b" },
+    };
+
+    const PROGRESS_LABEL: Record<string, string> = {
+        not_started: "لم يبدأ",
+        in_progress: "جاري",
+        completed: "مكتمل",
+    };
+    const MODE_LABEL: Record<string, string> = {
+        normal: "من البداية",
+        reverse: "معكوس",
+        from_day: "من يوم معين",
+        reverse_from_day: "معكوس من يوم",
+    };
+
+    const F = ({
+        label,
+        children,
+    }: {
+        label: string;
+        children: React.ReactNode;
+    }) => (
+        <div style={{ marginBottom: 12 }}>
+            <div
+                style={{
+                    fontSize: 10,
+                    color: "#94a3b8",
+                    marginBottom: 4,
+                    fontWeight: 700,
+                }}
+            >
+                {label}
+            </div>
+            {children}
+        </div>
+    );
+    const Input = ({
+        val,
+        onChange,
+    }: {
+        val: string;
+        onChange: (v: string) => void;
+    }) => (
+        <input
+            value={val}
+            onChange={(e) => onChange(e.target.value)}
+            style={{
+                width: "100%",
+                border: "1px solid #e2e8f0",
+                borderRadius: 8,
+                padding: "7px 10px",
+                fontSize: 13,
+                fontFamily: "inherit",
+                outline: "none",
+                background: "#f8fafc",
+            }}
+        />
+    );
+    const Sel = ({
+        val,
+        onChange,
+        options,
+    }: {
+        val: string;
+        onChange: (v: string) => void;
+        options: [string, string][];
+    }) => (
+        <select
+            value={val}
+            onChange={(e) => onChange(e.target.value)}
+            style={{
+                width: "100%",
+                border: "1px solid #e2e8f0",
+                borderRadius: 8,
+                padding: "7px 10px",
+                fontSize: 13,
+                fontFamily: "inherit",
+                outline: "none",
+                background: "#f8fafc",
+            }}
+        >
+            {options.map(([v, l]) => (
+                <option key={v} value={v}>
+                    {l}
+                </option>
+            ))}
+        </select>
+    );
+
+    return (
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 5000,
+                background: "rgba(0,0,0,.5)",
+                backdropFilter: "blur(4px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+            }}
+            onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
+            <div
+                style={{
+                    background: "#fff",
+                    borderRadius: 24,
+                    width: "100%",
+                    maxWidth: 780,
+                    maxHeight: "92vh",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    fontFamily: "'Tajawal',sans-serif",
+                    direction: "rtl",
+                }}
+            >
+                {/* Header */}
+                <div
+                    style={{
+                        background: "linear-gradient(135deg,#1e293b,#0f4c35)",
+                        padding: "20px 24px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                        flexShrink: 0,
+                    }}
+                >
+                    {data && (
+                        <Avatar
+                            name={data.name}
+                            idx={studentId % 6}
+                            size={52}
+                            img={data.avatar}
+                        />
+                    )}
+                    <div style={{ flex: 1 }}>
                         <div
                             style={{
-                                background: "#fee2e2",
-                                color: "#b91c1c",
-                                padding: "10px 14px",
-                                borderRadius: 8,
-                                marginBottom: 14,
-                                fontSize: 13,
+                                color: "#86efac",
+                                fontSize: 11,
+                                marginBottom: 2,
                             }}
                         >
-                            {errorMsg}
+                            ملف الطالب
                         </div>
-                    )}
-
-                    <FR2>
-                        <FG label="الاسم الأول *">
-                            <input
-                                id="st_first_name"
-                                className="fi2"
-                                placeholder="محمد"
-                            />
-                        </FG>
-                        <FG label="اسم العائلة *">
-                            <input
-                                id="st_family_name"
-                                className="fi2"
-                                placeholder="العمري"
-                            />
-                        </FG>
-                    </FR2>
-
-                    <FR2>
-                        <FG label="رقم الهوية *">
-                            <input
-                                id="st_id_number"
-                                className="fi2"
-                                placeholder="1234567890"
-                            />
-                        </FG>
-                        <FG label="تاريخ الميلاد *">
-                            <input
-                                id="st_birth_date"
-                                type="date"
-                                className="fi2"
-                            />
-                        </FG>
-                    </FR2>
-
-                    <FR2>
-                        <FG label="المرحلة الدراسية *">
-                            <select
-                                id="st_grade_level"
-                                className="fi2"
-                                defaultValue="elementary"
+                        <div
+                            style={{
+                                color: "#fff",
+                                fontWeight: 900,
+                                fontSize: 18,
+                            }}
+                        >
+                            {data?.name ?? "..."}
+                        </div>
+                        <div
+                            style={{
+                                color: "#94a3b8",
+                                fontSize: 12,
+                                marginTop: 2,
+                                display: "flex",
+                                gap: 12,
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            {data?.id_number && (
+                                <span>رقم الهوية: {data.id_number}</span>
+                            )}
+                            {data?.grade_level && (
+                                <span>{data.grade_level}</span>
+                            )}
+                            {data?.booking?.circle_name && (
+                                <span>
+                                    <FaMosque
+                                        size={11}
+                                        style={{ marginLeft: 3 }}
+                                    />
+                                    {data.booking.circle_name}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                        {data?.booking?.jitsi_url && (
+                            <a
+                                href={data.booking.jitsi_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                    background: "#2563eb",
+                                    color: "#fff",
+                                    borderRadius: 10,
+                                    padding: "8px 14px",
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    textDecoration: "none",
+                                }}
                             >
-                                <option value="elementary">ابتدائي</option>
-                                <option value="middle">متوسط</option>
-                                <option value="high">ثانوي</option>
-                            </select>
-                        </FG>
-                        <FG label="الجنس *">
-                            <select
-                                id="st_gender"
-                                className="fi2"
-                                defaultValue="male"
-                            >
-                                <option value="male">ذكر</option>
-                                <option value="female">أنثى</option>
-                            </select>
-                        </FG>
-                    </FR2>
-
-                    <FG label="بريد الطالب الإلكتروني *">
-                        <input
-                            id="st_student_email"
-                            type="email"
-                            className="fi2"
-                            placeholder="student@example.com"
-                            style={{ direction: "ltr" }}
-                        />
-                    </FG>
-
-                    <FR2>
-                        <FG label="بريد ولي الأمر *">
-                            <input
-                                id="st_guardian_email"
-                                type="email"
-                                className="fi2"
-                                placeholder="guardian@example.com"
-                                style={{ direction: "ltr" }}
-                            />
-                        </FG>
-                        <FG label="رمز الدولة *">
-                            <select
-                                id="st_guardian_country_code"
-                                className="fi2"
-                                defaultValue="966"
-                            >
-                                <option value="966">🇸🇦 السعودية (+966)</option>
-                                <option value="20">🇪🇬 مصر (+20)</option>
-                                <option value="971">🇦🇪 الإمارات (+971)</option>
-                            </select>
-                        </FG>
-                    </FR2>
-
-                    <FR2>
-                        <FG label="هاتف ولي الأمر *">
-                            <input
-                                id="st_guardian_phone"
-                                type="tel"
-                                className="fi2"
-                                placeholder="501234567"
-                                style={{ direction: "ltr" }}
-                            />
-                        </FG>
-                        <FG label="الحالة الصحية">
-                            <select
-                                id="st_health_status"
-                                className="fi2"
-                                defaultValue="healthy"
-                            >
-                                <option value="healthy">سليم</option>
-                                <option value="needs_attention">
-                                    يحتاج متابعة
-                                </option>
-                                <option value="special_needs">
-                                    ذوي احتياجات
-                                </option>
-                            </select>
-                        </FG>
-                    </FR2>
-
-                    <FR2>
-                        <FG label="وقت الجلسة">
-                            <select
-                                id="st_session_time"
-                                className="fi2"
-                                defaultValue=""
-                            >
-                                <option value="">— اختياري —</option>
-                                <option value="asr">العصر</option>
-                                <option value="maghrib">المغرب</option>
-                            </select>
-                        </FG>
-                        <FG label="ملاحظات">
-                            <input
-                                id="st_notes"
-                                className="fi2"
-                                placeholder="أي ملاحظات..."
-                            />
-                        </FG>
-                    </FR2>
-                </div>
-
-                <div className="mf">
-                    <div
-                        style={{
-                            display: "flex",
-                            gap: "12px",
-                            justifyContent: "flex-end",
-                            marginTop: "20px",
-                        }}
-                    >
+                                <FiVideo size={13} /> انضمام للحصة
+                            </a>
+                        )}
                         <button
-                            className="btn bs"
                             onClick={onClose}
-                            disabled={saving}
+                            style={{
+                                background: "#ffffff22",
+                                border: "none",
+                                color: "#fff",
+                                borderRadius: 10,
+                                padding: "8px 12px",
+                                cursor: "pointer",
+                                display: "flex",
+                            }}
                         >
-                            إلغاء
-                        </button>
-                        <button
-                            className="btn bp"
-                            onClick={handleSubmit}
-                            disabled={saving}
-                        >
-                            {saving ? "جاري الحفظ..." : "حفظ الطالب"}
+                            <FiX size={16} />
                         </button>
                     </div>
+                </div>
+
+                {/* Quick Stats */}
+                {data && (
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(4,1fr)",
+                            gap: 0,
+                            borderBottom: "1px solid #f1f5f9",
+                            flexShrink: 0,
+                        }}
+                    >
+                        {[
+                            {
+                                label: "الحضور",
+                                value: `${data.attendance.rate}%`,
+                                color: "#16a34a",
+                            },
+                            {
+                                label: "الأيام المكتملة",
+                                value: data.booking?.completed_days ?? 0,
+                                color: "#0284c7",
+                            },
+                            {
+                                label: "النقاط",
+                                value: data.achievements.total_points,
+                                color: "#9333ea",
+                            },
+                            {
+                                label: "التقييم",
+                                value: `${data.attendance.avg_rating}/5`,
+                                color: "#f59e0b",
+                            },
+                        ].map((s, i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    padding: "14px 16px",
+                                    borderLeft:
+                                        i < 3 ? "1px solid #f1f5f9" : "none",
+                                    textAlign: "center",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontSize: 20,
+                                        fontWeight: 900,
+                                        color: s.color,
+                                    }}
+                                >
+                                    {s.value}
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 11,
+                                        color: "#64748b",
+                                        marginTop: 2,
+                                    }}
+                                >
+                                    {s.label}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Tabs */}
+                <div
+                    style={{
+                        display: "flex",
+                        gap: 0,
+                        borderBottom: "1px solid #f1f5f9",
+                        flexShrink: 0,
+                    }}
+                >
+                    {TABS.map((t) => (
+                        <button
+                            key={t.key}
+                            onClick={() => setActiveTab(t.key)}
+                            style={{
+                                flex: 1,
+                                padding: "12px 8px",
+                                border: "none",
+                                background:
+                                    activeTab === t.key ? "#fff" : "#f8fafc",
+                                borderBottom:
+                                    activeTab === t.key
+                                        ? "2px solid #0f6e56"
+                                        : "2px solid transparent",
+                                color:
+                                    activeTab === t.key ? "#0f6e56" : "#64748b",
+                                fontWeight: 700,
+                                fontSize: 12,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 5,
+                                fontFamily: "inherit",
+                            }}
+                        >
+                            {t.icon}
+                            {t.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Body */}
+                <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+                    {loading ? (
+                        <div
+                            style={{
+                                textAlign: "center",
+                                padding: 60,
+                                color: "#94a3b8",
+                            }}
+                        >
+                            <FiClock size={32} style={{ marginBottom: 10 }} />
+                            <br />
+                            جاري التحميل...
+                        </div>
+                    ) : !data ? (
+                        <div
+                            style={{
+                                textAlign: "center",
+                                padding: 60,
+                                color: "#ef4444",
+                            }}
+                        >
+                            خطأ في تحميل البيانات
+                        </div>
+                    ) : // ── Tab: Info ──────────────────────────────────────────────
+                    activeTab === "info" ? (
+                        <div>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    marginBottom: 16,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontWeight: 900,
+                                        fontSize: 15,
+                                        color: "#1e293b",
+                                    }}
+                                >
+                                    البيانات الشخصية
+                                </div>
+                                {editMode ? (
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                        <button
+                                            onClick={() => setEditMode(false)}
+                                            style={{
+                                                padding: "6px 14px",
+                                                borderRadius: 8,
+                                                border: "1px solid #e2e8f0",
+                                                background: "#f8fafc",
+                                                cursor: "pointer",
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                fontFamily: "inherit",
+                                            }}
+                                        >
+                                            إلغاء
+                                        </button>
+                                        <button
+                                            onClick={handleSave}
+                                            disabled={saving}
+                                            style={{
+                                                padding: "6px 14px",
+                                                borderRadius: 8,
+                                                border: "none",
+                                                background: "#0f6e56",
+                                                color: "#fff",
+                                                cursor: "pointer",
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                fontFamily: "inherit",
+                                            }}
+                                        >
+                                            {saving
+                                                ? "جاري الحفظ..."
+                                                : "حفظ التغييرات"}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setEditMode(true)}
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: 6,
+                                            padding: "6px 14px",
+                                            borderRadius: 8,
+                                            border: "1px solid #e2e8f0",
+                                            background: "#f8fafc",
+                                            cursor: "pointer",
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                            fontFamily: "inherit",
+                                            color: "#475569",
+                                        }}
+                                    >
+                                        <FiEdit2 size={12} /> تعديل
+                                    </button>
+                                )}
+                            </div>
+
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr 1fr",
+                                    gap: 12,
+                                }}
+                            >
+                                <F label="الاسم">
+                                    {editMode ? (
+                                        <Input
+                                            val={form.name ?? ""}
+                                            onChange={(v) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    name: v,
+                                                }))
+                                            }
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{
+                                                fontSize: 13,
+                                                fontWeight: 700,
+                                                color: "#1e293b",
+                                            }}
+                                        >
+                                            {data.name}
+                                        </div>
+                                    )}
+                                </F>
+                                <F label="رقم الهوية">
+                                    {editMode ? (
+                                        <Input
+                                            val={form.id_number ?? ""}
+                                            onChange={(v) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    id_number: v,
+                                                }))
+                                            }
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{
+                                                fontSize: 13,
+                                                color: "#1e293b",
+                                            }}
+                                        >
+                                            {data.id_number}
+                                        </div>
+                                    )}
+                                </F>
+                                <F label="المرحلة الدراسية">
+                                    {editMode ? (
+                                        <Sel
+                                            val={form.grade_level ?? ""}
+                                            onChange={(v) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    grade_level: v,
+                                                }))
+                                            }
+                                            options={[
+                                                ["elementary", "ابتدائي"],
+                                                ["middle", "متوسط"],
+                                                ["high", "ثانوي"],
+                                            ]}
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{
+                                                fontSize: 13,
+                                                color: "#1e293b",
+                                            }}
+                                        >
+                                            {data.grade_level}
+                                        </div>
+                                    )}
+                                </F>
+                                <F label="الحالة الصحية">
+                                    {editMode ? (
+                                        <Sel
+                                            val={form.health_status ?? ""}
+                                            onChange={(v) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    health_status: v,
+                                                }))
+                                            }
+                                            options={[
+                                                ["healthy", "سليم"],
+                                                [
+                                                    "needs_attention",
+                                                    "يحتاج متابعة",
+                                                ],
+                                                [
+                                                    "special_needs",
+                                                    "ذوي احتياجات",
+                                                ],
+                                            ]}
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{
+                                                fontSize: 13,
+                                                color: "#1e293b",
+                                            }}
+                                        >
+                                            {data.health_status}
+                                        </div>
+                                    )}
+                                </F>
+                                <F label="البريد الإلكتروني">
+                                    <div
+                                        style={{
+                                            fontSize: 13,
+                                            color: "#0284c7",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 5,
+                                        }}
+                                    >
+                                        <FiMail size={12} />
+                                        {data.email || "—"}
+                                    </div>
+                                </F>
+                                <F label="رقم الهاتف">
+                                    <div
+                                        style={{
+                                            fontSize: 13,
+                                            color: "#1e293b",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 5,
+                                        }}
+                                    >
+                                        <FiPhone size={12} />
+                                        {data.phone || "—"}
+                                    </div>
+                                </F>
+                                <F label="ولي الأمر">
+                                    <div
+                                        style={{
+                                            fontSize: 13,
+                                            fontWeight: 700,
+                                            color: "#1e293b",
+                                        }}
+                                    >
+                                        {data.guardian_name}
+                                    </div>
+                                    <div
+                                        style={{
+                                            fontSize: 12,
+                                            color: "#64748b",
+                                            marginTop: 2,
+                                            display: "flex",
+                                            gap: 12,
+                                        }}
+                                    >
+                                        <span>
+                                            <FiPhone
+                                                size={11}
+                                                style={{ marginLeft: 3 }}
+                                            />
+                                            {data.guardian_phone}
+                                        </span>
+                                        <span>
+                                            <FiMail
+                                                size={11}
+                                                style={{ marginLeft: 3 }}
+                                            />
+                                            {data.guardian_email || "—"}
+                                        </span>
+                                    </div>
+                                </F>
+                                <F label="الحالة">
+                                    {editMode ? (
+                                        <Sel
+                                            val={form.status ?? ""}
+                                            onChange={(v) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    status: v,
+                                                }))
+                                            }
+                                            options={[
+                                                ["نشط", "نشط"],
+                                                ["معلق", "معلق"],
+                                                ["موقوف", "موقوف"],
+                                            ]}
+                                        />
+                                    ) : (
+                                        <Badge
+                                            label={data.status}
+                                            bg={
+                                                data.status === "نشط"
+                                                    ? "#dcfce7"
+                                                    : "#fee2e2"
+                                            }
+                                            color={
+                                                data.status === "نشط"
+                                                    ? "#166534"
+                                                    : "#991b1b"
+                                            }
+                                        />
+                                    )}
+                                </F>
+                                <F label="مستوى القراءة">
+                                    {editMode ? (
+                                        <Input
+                                            val={form.reading_level ?? ""}
+                                            onChange={(v) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    reading_level: v,
+                                                }))
+                                            }
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{
+                                                fontSize: 13,
+                                                color: "#1e293b",
+                                            }}
+                                        >
+                                            {data.reading_level || "—"}
+                                        </div>
+                                    )}
+                                </F>
+                                <F label="وقت الجلسة">
+                                    {editMode ? (
+                                        <Sel
+                                            val={form.session_time ?? ""}
+                                            onChange={(v) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    session_time: v,
+                                                }))
+                                            }
+                                            options={[
+                                                ["", "—"],
+                                                ["asr", "العصر"],
+                                                ["maghrib", "المغرب"],
+                                            ]}
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{
+                                                fontSize: 13,
+                                                color: "#1e293b",
+                                            }}
+                                        >
+                                            {data.session_time === "asr"
+                                                ? "العصر"
+                                                : data.session_time ===
+                                                    "maghrib"
+                                                  ? "المغرب"
+                                                  : "—"}
+                                        </div>
+                                    )}
+                                </F>
+                            </div>
+
+                            <F label="ملاحظات">
+                                {editMode ? (
+                                    <textarea
+                                        value={form.notes ?? ""}
+                                        onChange={(e) =>
+                                            setForm((p) => ({
+                                                ...p,
+                                                notes: e.target.value,
+                                            }))
+                                        }
+                                        style={{
+                                            width: "100%",
+                                            border: "1px solid #e2e8f0",
+                                            borderRadius: 8,
+                                            padding: "7px 10px",
+                                            fontSize: 13,
+                                            fontFamily: "inherit",
+                                            outline: "none",
+                                            background: "#f8fafc",
+                                            minHeight: 70,
+                                            resize: "vertical",
+                                        }}
+                                    />
+                                ) : (
+                                    <div
+                                        style={{
+                                            fontSize: 13,
+                                            color: "#64748b",
+                                            background: "#f8fafc",
+                                            borderRadius: 8,
+                                            padding: "10px 12px",
+                                        }}
+                                    >
+                                        {data.notes || "لا توجد ملاحظات"}
+                                    </div>
+                                )}
+                            </F>
+
+                            {/* بيانات الحلقة والخطة */}
+                            {data.booking && (
+                                <div
+                                    style={{
+                                        marginTop: 16,
+                                        background:
+                                            "linear-gradient(135deg,#f0fdf4,#dcfce7)",
+                                        borderRadius: 14,
+                                        padding: 16,
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            fontWeight: 900,
+                                            fontSize: 14,
+                                            color: "#0f6e56",
+                                            marginBottom: 12,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 6,
+                                        }}
+                                    >
+                                        <FaQuran size={14} /> بيانات الخطة
+                                        والحلقة
+                                    </div>
+                                    <div
+                                        style={{
+                                            display: "grid",
+                                            gridTemplateColumns: "1fr 1fr",
+                                            gap: 10,
+                                        }}
+                                    >
+                                        {[
+                                            {
+                                                l: "الخطة",
+                                                v: data.booking.plan_name,
+                                            },
+                                            {
+                                                l: "مدة الخطة",
+                                                v: `${data.booking.total_months} شهر`,
+                                            },
+                                            {
+                                                l: "الحلقة",
+                                                v: data.booking.circle_name,
+                                            },
+                                            {
+                                                l: "المسجد",
+                                                v: data.booking.mosque_name,
+                                            },
+                                            {
+                                                l: "المعلم",
+                                                v: data.booking.teacher_name,
+                                            },
+                                            {
+                                                l: "وقت الحصة",
+                                                v: data.booking.schedule_time,
+                                            },
+                                            {
+                                                l: "طريقة البداية",
+                                                v:
+                                                    MODE_LABEL[
+                                                        data.booking.start_mode
+                                                    ] ??
+                                                    data.booking.start_mode,
+                                            },
+                                            {
+                                                l: "التقدم",
+                                                v:
+                                                    PROGRESS_LABEL[
+                                                        data.booking
+                                                            .progress_status
+                                                    ] ??
+                                                    data.booking
+                                                        .progress_status,
+                                            },
+                                        ].map((item, i) => (
+                                            <div
+                                                key={i}
+                                                style={{
+                                                    background: "#fff",
+                                                    borderRadius: 10,
+                                                    padding: "10px 12px",
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        fontSize: 10,
+                                                        color: "#94a3b8",
+                                                        marginBottom: 3,
+                                                    }}
+                                                >
+                                                    {item.l}
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: 13,
+                                                        fontWeight: 700,
+                                                        color: "#1e293b",
+                                                    }}
+                                                >
+                                                    {item.v || "—"}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Progress Bar */}
+                                    <div style={{ marginTop: 12 }}>
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                fontSize: 12,
+                                                color: "#64748b",
+                                                marginBottom: 5,
+                                            }}
+                                        >
+                                            <span>تقدم الخطة</span>
+                                            <span>
+                                                {data.booking.completed_days} /{" "}
+                                                {data.booking.total_days} يوم
+                                            </span>
+                                        </div>
+                                        <div
+                                            style={{
+                                                background: "#d1fae5",
+                                                borderRadius: 10,
+                                                height: 10,
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    height: "100%",
+                                                    background: "#0f6e56",
+                                                    borderRadius: 10,
+                                                    width: `${data.booking.total_days > 0 ? (data.booking.completed_days / data.booking.total_days) * 100 : 0}%`,
+                                                    transition: "width .5s",
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Jitsi Room */}
+                                    {data.booking.jitsi_url && (
+                                        <div
+                                            style={{
+                                                marginTop: 12,
+                                                background: "#eff6ff",
+                                                borderRadius: 12,
+                                                padding: "12px 16px",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "space-between",
+                                            }}
+                                        >
+                                            <div>
+                                                <div
+                                                    style={{
+                                                        fontWeight: 700,
+                                                        fontSize: 13,
+                                                        color: "#1e40af",
+                                                    }}
+                                                >
+                                                    غرفة الحصة الافتراضية
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: 11,
+                                                        color: "#64748b",
+                                                        marginTop: 2,
+                                                    }}
+                                                >
+                                                    {data.booking.jitsi_room}
+                                                </div>
+                                            </div>
+                                            <a
+                                                href={data.booking.jitsi_url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: 6,
+                                                    background: "#2563eb",
+                                                    color: "#fff",
+                                                    borderRadius: 10,
+                                                    padding: "8px 16px",
+                                                    fontSize: 12,
+                                                    fontWeight: 700,
+                                                    textDecoration: "none",
+                                                }}
+                                            >
+                                                <FiVideo size={13} /> انضمام
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ) : // ── Tab: Plan ──────────────────────────────────────────────
+                    activeTab === "plan" ? (
+                        <div>
+                            <div
+                                style={{
+                                    fontWeight: 900,
+                                    fontSize: 15,
+                                    color: "#1e293b",
+                                    marginBottom: 14,
+                                }}
+                            >
+                                تفاصيل أيام الخطة
+                            </div>
+                            {data.plan_progress.length === 0 ? (
+                                <div
+                                    style={{
+                                        textAlign: "center",
+                                        padding: 40,
+                                        color: "#94a3b8",
+                                    }}
+                                >
+                                    <FiBook
+                                        size={32}
+                                        style={{ marginBottom: 10 }}
+                                    />
+                                    <br />
+                                    لا توجد تفاصيل خطة
+                                </div>
+                            ) : (
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 8,
+                                    }}
+                                >
+                                    {data.plan_progress.map((day, i) => {
+                                        const s = STATUS_DAY[day.status] ?? {
+                                            bg: "#f1f5f9",
+                                            color: "#475569",
+                                        };
+                                        return (
+                                            <div
+                                                key={day.id}
+                                                style={{
+                                                    background: "#f8fafc",
+                                                    borderRadius: 12,
+                                                    padding: "12px 14px",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 12,
+                                                    borderRight: `3px solid ${s.color}`,
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        width: 36,
+                                                        height: 36,
+                                                        borderRadius: "50%",
+                                                        background: s.bg,
+                                                        color: s.color,
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent:
+                                                            "center",
+                                                        fontWeight: 900,
+                                                        fontSize: 13,
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    {i + 1}
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            gap: 8,
+                                                            alignItems:
+                                                                "center",
+                                                            marginBottom: 3,
+                                                        }}
+                                                    >
+                                                        <span
+                                                            style={{
+                                                                fontWeight: 700,
+                                                                fontSize: 13,
+                                                                color: "#1e293b",
+                                                            }}
+                                                        >
+                                                            يوم {day.day_number}
+                                                        </span>
+                                                        {day.plan_day_number &&
+                                                            day.plan_day_number !==
+                                                                day.day_number && (
+                                                                <span
+                                                                    style={{
+                                                                        fontSize: 10,
+                                                                        color: "#94a3b8",
+                                                                    }}
+                                                                >
+                                                                    (أصله يوم{" "}
+                                                                    {
+                                                                        day.plan_day_number
+                                                                    }
+                                                                    )
+                                                                </span>
+                                                            )}
+                                                        <Badge
+                                                            label={day.status}
+                                                            bg={s.bg}
+                                                            color={s.color}
+                                                        />
+                                                    </div>
+                                                    {day.new_memorization && (
+                                                        <div
+                                                            style={{
+                                                                fontSize: 12,
+                                                                color: "#0f6e56",
+                                                            }}
+                                                        >
+                                                            حفظ:{" "}
+                                                            {
+                                                                day.new_memorization
+                                                            }
+                                                        </div>
+                                                    )}
+                                                    {day.review_memorization && (
+                                                        <div
+                                                            style={{
+                                                                fontSize: 12,
+                                                                color: "#0284c7",
+                                                            }}
+                                                        >
+                                                            مراجعة:{" "}
+                                                            {
+                                                                day.review_memorization
+                                                            }
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {day.session_time && (
+                                                    <div
+                                                        style={{
+                                                            fontSize: 11,
+                                                            color: "#64748b",
+                                                        }}
+                                                    >
+                                                        <FiClock
+                                                            size={11}
+                                                            style={{
+                                                                marginLeft: 3,
+                                                            }}
+                                                        />
+                                                        {day.session_time}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    ) : // ── Tab: Attendance ────────────────────────────────────────
+                    activeTab === "attendance" ? (
+                        <div>
+                            <div
+                                style={{
+                                    fontWeight: 900,
+                                    fontSize: 15,
+                                    color: "#1e293b",
+                                    marginBottom: 14,
+                                }}
+                            >
+                                إحصائيات الحضور
+                            </div>
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(3,1fr)",
+                                    gap: 10,
+                                    marginBottom: 16,
+                                }}
+                            >
+                                <StatBox
+                                    icon={<FiCheckCircle />}
+                                    label="إجمالي الحضور"
+                                    value={data.attendance.present}
+                                    color="#16a34a"
+                                />
+                                <StatBox
+                                    icon={<FiXCircle />}
+                                    label="إجمالي الغياب"
+                                    value={data.attendance.absent}
+                                    color="#dc2626"
+                                />
+                                <StatBox
+                                    icon={<FiTrendingUp />}
+                                    label="نسبة الحضور"
+                                    value={`${data.attendance.rate}%`}
+                                    color="#0284c7"
+                                />
+                            </div>
+                            <div
+                                style={{
+                                    background: "#f8fafc",
+                                    borderRadius: 14,
+                                    padding: 16,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        marginBottom: 8,
+                                        fontSize: 13,
+                                        color: "#64748b",
+                                    }}
+                                >
+                                    <span>نسبة الحضور الإجمالية</span>
+                                    <span
+                                        style={{
+                                            fontWeight: 700,
+                                            color: "#1e293b",
+                                        }}
+                                    >
+                                        {data.attendance.rate}%
+                                    </span>
+                                </div>
+                                <div
+                                    style={{
+                                        background: "#e2e8f0",
+                                        borderRadius: 10,
+                                        height: 12,
+                                        overflow: "hidden",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            height: "100%",
+                                            borderRadius: 10,
+                                            width: `${data.attendance.rate}%`,
+                                            background:
+                                                data.attendance.rate >= 80
+                                                    ? "#16a34a"
+                                                    : data.attendance.rate >= 60
+                                                      ? "#f59e0b"
+                                                      : "#dc2626",
+                                            transition: "width .5s",
+                                        }}
+                                    />
+                                </div>
+                                <div
+                                    style={{
+                                        marginTop: 12,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 6,
+                                        fontSize: 13,
+                                        color: "#64748b",
+                                    }}
+                                >
+                                    <FiStar
+                                        size={13}
+                                        style={{ color: "#f59e0b" }}
+                                    />
+                                    متوسط التقييم:{" "}
+                                    <strong style={{ color: "#1e293b" }}>
+                                        {data.attendance.avg_rating} / 5
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        // ── Tab: Achievements ──────────────────────────────────────
+                        <div>
+                            <div
+                                style={{
+                                    fontWeight: 900,
+                                    fontSize: 15,
+                                    color: "#1e293b",
+                                    marginBottom: 14,
+                                }}
+                            >
+                                الإنجازات والنقاط
+                            </div>
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(3,1fr)",
+                                    gap: 10,
+                                    marginBottom: 16,
+                                }}
+                            >
+                                <StatBox
+                                    icon={<FiAward />}
+                                    label="صافي النقاط"
+                                    value={data.achievements.total_points}
+                                    color="#9333ea"
+                                />
+                                <StatBox
+                                    icon={<FiCheckCircle />}
+                                    label="نقاط مضافة"
+                                    value={data.achievements.added_points}
+                                    color="#16a34a"
+                                />
+                                <StatBox
+                                    icon={<FiXCircle />}
+                                    label="نقاط مخصومة"
+                                    value={data.achievements.deducted_points}
+                                    color="#dc2626"
+                                />
+                            </div>
+                            {data.achievements.history.length === 0 ? (
+                                <div
+                                    style={{
+                                        textAlign: "center",
+                                        padding: 40,
+                                        color: "#94a3b8",
+                                    }}
+                                >
+                                    <FiAward
+                                        size={32}
+                                        style={{ marginBottom: 10 }}
+                                    />
+                                    <br />
+                                    لا توجد إنجازات بعد
+                                </div>
+                            ) : (
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 8,
+                                    }}
+                                >
+                                    {data.achievements.history.map(
+                                        (a: any, i: number) => (
+                                            <div
+                                                key={i}
+                                                style={{
+                                                    background: "#f8fafc",
+                                                    borderRadius: 12,
+                                                    padding: "10px 14px",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 12,
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        width: 36,
+                                                        height: 36,
+                                                        borderRadius: "50%",
+                                                        background:
+                                                            a.points_action ===
+                                                            "added"
+                                                                ? "#dcfce7"
+                                                                : "#fee2e2",
+                                                        color:
+                                                            a.points_action ===
+                                                            "added"
+                                                                ? "#166534"
+                                                                : "#991b1b",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent:
+                                                            "center",
+                                                        fontWeight: 900,
+                                                        fontSize: 14,
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    {a.points_action === "added"
+                                                        ? "+"
+                                                        : "-"}
+                                                    {a.points}
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <div
+                                                        style={{
+                                                            fontSize: 13,
+                                                            fontWeight: 700,
+                                                            color: "#1e293b",
+                                                        }}
+                                                    >
+                                                        {a.reason ||
+                                                            a.achievement_type ||
+                                                            "نقاط"}
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: 11,
+                                                            color: "#94a3b8",
+                                                            marginTop: 2,
+                                                        }}
+                                                    >
+                                                        {
+                                                            a.created_at?.split(
+                                                                "T",
+                                                            )[0]
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
     );
 }
 
-// ── Component رئيسي ───────────────────────────────────────────────────────
+// ── Main Component ───────────────────────────────────────────────────────────
 const StudentAffairs: React.FC = () => {
-    const {
-        students: studentsFromHook,
-        loading,
-        filterStatus,
-        setFilterStatus,
-        sendWhatsappReminder,
-        printCard,
-        refetch,
-    } = useStudentAffairs();
-
-    const [students, setStudents] = useState<StudentType[]>([]);
+    const [students, setStudents] = useState<StudentRow[]>([]);
+    const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState("");
-    const [confirm, setConfirm] = useState<ConfirmModalProps | null>(null);
-    const [showUpdateModal, setShowUpdateModal] = useState(false);
-    const [selectedStudentId, setSelectedStudentId] = useState<number | null>(
-        null,
-    );
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [registerImporting, setRegisterImporting] = useState(false);
-    const [importResult, setImportResult] = useState<{
-        title: string;
-        result: ImportResult;
+    const [filterStatus, setFilterStatus] = useState("الكل");
+    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [toast, setToast] = useState<{
+        message: string;
+        tone: "success" | "error";
     } | null>(null);
-    const registerInputRef = useRef<HTMLInputElement>(null);
-    const { notifySuccess, notifyError } = useToast();
+    const toastTimer = useRef<number | null>(null);
+    const [stats, setStats] = useState({
+        totalStudents: 0,
+        activeStudents: 0,
+        pendingStudents: 0,
+    });
+    const [page, setPage] = useState(1);
+    const [lastPage, setLastPage] = useState(1);
+    const [total, setTotal] = useState(0);
+
+    const showToast = useCallback(
+        (message: string, tone: "success" | "error" = "success") => {
+            setToast({ message, tone });
+            if (toastTimer.current) clearTimeout(toastTimer.current);
+            toastTimer.current = window.setTimeout(() => setToast(null), 3500);
+        },
+        [],
+    );
+
+    const fetchStudents = useCallback(
+        async (p = 1) => {
+            setLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (p > 1) params.set("page", String(p));
+                if (search) params.set("search", search);
+                if (filterStatus !== "الكل") params.set("status", filterStatus);
+                const r = await apiFetch(`/api/v1/student-affairs?${params}`);
+                setStudents(r.data ?? []);
+                setLastPage(r.last_page ?? 1);
+                setTotal(r.total ?? 0);
+                if (r.stats) setStats(r.stats);
+                setPage(p);
+            } catch (e: any) {
+                showToast(e.message, "error");
+            } finally {
+                setLoading(false);
+            }
+        },
+        [search, filterStatus, showToast],
+    );
 
     useEffect(() => {
-        setStudents(studentsFromHook);
-    }, [studentsFromHook]);
+        fetchStudents(1);
+    }, [search, filterStatus]);
 
-    const isPortal = !!getPortalCenterId();
-
-    const filteredStudents = students.filter(
-        (s) =>
-            s.name.toLowerCase().includes(search.toLowerCase()) ||
-            s.idNumber.includes(search) ||
-            s.guardianName.toLowerCase().includes(search.toLowerCase()),
-    );
-
-    const handleDownloadRegisterTemplate = () => {
-        const rows: RegisterRow[] = [
-            {
-                "الاسم الأول": "محمد",
-                "اسم العائلة": "العمري",
-                "رقم الهوية": "1234567890",
-                "تاريخ الميلاد": "2010-05-15",
-                "المرحلة الدراسية": "elementary",
-                الجنس: "male",
-                "البريد الإلكتروني للطالب": "student@example.com",
-                "بريد ولي الأمر": "guardian@example.com",
-                "رمز دولة ولي الأمر": "966",
-                "هاتف ولي الأمر": "501234567",
-                "الحالة الصحية": "healthy",
-                "وقت الجلسة": "asr",
-                ملاحظات: "",
-            },
-        ];
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(rows);
-        XLSX.utils.book_append_sheet(wb, ws, "تسجيل الطلاب");
-        XLSX.writeFile(wb, "قالب_تسجيل_الطلاب.xlsx");
-        notifySuccess("تم تحميل القالب بنجاح");
+    const handleWhatsApp = async (id: number, phone: string) => {
+        try {
+            const r = await apiFetch(`/api/v1/student-affairs/${id}/whatsapp`);
+            window.open(r.whatsapp_url, "_blank");
+        } catch {
+            window.open(`https://wa.me/${phone.replace(/\D/g, "")}`, "_blank");
+        }
     };
 
     const handleExport = () => {
-        if (students.length === 0) {
-            notifyError("لا توجد بيانات للتصدير");
-            return;
-        }
+        if (!students.length) return showToast("لا توجد بيانات", "error");
         const rows = students.map((s) => ({
-            "رقم هوية الطالب": s.idNumber,
-            "اسم الطالب": s.name,
-            "اسم الحلقة": s.circle || "",
+            الاسم: s.name,
+            "رقم الهوية": s.idNumber,
+            الحلقة: s.circle,
             "ولي الأمر": s.guardianName,
-            "جوال ولي الأمر": s.guardianPhone,
+            الجوال: s.guardianPhone,
+            الحضور: s.attendanceRate,
             الحالة: s.status,
         }));
         const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(rows);
-        XLSX.utils.book_append_sheet(wb, ws, "الطلاب");
+        XLSX.utils.book_append_sheet(
+            wb,
+            XLSX.utils.json_to_sheet(rows),
+            "الطلاب",
+        );
         XLSX.writeFile(
             wb,
             `الطلاب_${new Date().toLocaleDateString("ar-EG").replace(/\//g, "-")}.xlsx`,
         );
-        notifySuccess(`تم تصدير ${students.length} طالب بنجاح`);
+        showToast(`تم تصدير ${students.length} طالب`);
     };
 
-    const handleRegisterFile = async (
-        e: React.ChangeEvent<HTMLInputElement>,
-    ) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        e.target.value = "";
-
-        const csrfToken = getCsrfToken();
-        if (!csrfToken) {
-            notifyError("فشل في جلب رمز الحماية");
-            return;
-        }
-
-        setRegisterImporting(true);
-        setImportResult(null);
-
-        try {
-            const buffer = await file.arrayBuffer();
-            const wb = XLSX.read(buffer, { type: "array" });
-            const sheetName =
-                wb.SheetNames.find((n) => n === "تسجيل الطلاب") ??
-                wb.SheetNames[0];
-            const rows: RegisterRow[] = XLSX.utils.sheet_to_json(
-                wb.Sheets[sheetName],
-                { defval: "" },
-            );
-
-            if (rows.length === 0) {
-                notifyError("الملف فارغ");
-                setRegisterImporting(false);
-                return;
-            }
-            if (!("رقم الهوية" in rows[0])) {
-                notifyError('تأكد من وجود عمود "رقم الهوية"');
-                setRegisterImporting(false);
-                return;
-            }
-
-            const studentsData = rows.map((row) => ({
-                first_name: String(row["الاسم الأول"] ?? "").trim(),
-                family_name: String(row["اسم العائلة"] ?? "").trim(),
-                id_number: String(row["رقم الهوية"] ?? "").trim(),
-                birth_date: String(row["تاريخ الميلاد"] ?? "").trim(),
-                grade_level: String(row["المرحلة الدراسية"] ?? "").trim(),
-                gender: String(row["الجنس"] ?? "").trim(),
-                student_email: String(
-                    row["البريد الإلكتروني للطالب"] ?? "",
-                ).trim(),
-                guardian_email: String(row["بريد ولي الأمر"] ?? "").trim(),
-                guardian_country_code: String(
-                    row["رمز دولة ولي الأمر"] ?? "",
-                ).trim(),
-                guardian_phone: String(row["هاتف ولي الأمر"] ?? "").trim(),
-                health_status:
-                    String(row["الحالة الصحية"] ?? "healthy").trim() ||
-                    "healthy",
-                session_time: String(row["وقت الجلسة"] ?? "").trim(),
-                notes: String(row["ملاحظات"] ?? "").trim(),
-            }));
-
-            const res = await fetch("/api/v1/auth/student/import-register", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...buildHeaders({ "X-CSRF-TOKEN": csrfToken }),
-                },
-                body: JSON.stringify({ students: studentsData }),
-            });
-
-            const json = await res.json();
-            const data = json.data ?? {};
-
-            setImportResult({
-                title: "نتيجة تسجيل الطلاب",
-                result: {
-                    success: data.success_count ?? 0,
-                    failed: data.failed_count ?? 0,
-                    errors: data.errors ?? [],
-                },
-            });
-
-            if ((data.success_count ?? 0) > 0) {
-                notifySuccess(`تم تسجيل ${data.success_count} طالب`);
-                refetch();
-            }
-            if ((data.failed_count ?? 0) > 0)
-                notifyError(`فشل تسجيل ${data.failed_count} طالب`);
-        } catch {
-            notifyError("حدث خطأ في قراءة الملف");
-        } finally {
-            setRegisterImporting(false);
-        }
+    const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
+        نشط: { bg: "#dcfce7", color: "#166534" },
+        معلق: { bg: "#fef9c3", color: "#854d0e" },
+        "متأخر مالياً": { bg: "#fee2e2", color: "#991b1b" },
     };
 
-    const handleEdit = (id: number) => {
-        setSelectedStudentId(id);
-        setShowUpdateModal(true);
+    const TH: React.CSSProperties = {
+        padding: "10px 14px",
+        textAlign: "right",
+        color: "#64748b",
+        fontWeight: 700,
+        fontSize: 12,
+        borderBottom: "1px solid #f1f5f9",
+        whiteSpace: "nowrap",
     };
-    const handleCloseUpdateModal = () => {
-        setShowUpdateModal(false);
-        setSelectedStudentId(null);
-    };
-    const handleUpdateSuccess = () => {
-        notifySuccess("تم تحديث بيانات الطالب");
-        handleCloseUpdateModal();
+    const TD: React.CSSProperties = {
+        padding: "12px 14px",
+        borderBottom: "1px solid #f8fafc",
+        verticalAlign: "middle",
     };
 
-    function BadgeStatus({ s }: { s: string }) {
-        return (
-            <span
-                style={{
-                    padding: "4px 10px",
-                    borderRadius: 6,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    background:
-                        s === "نشط"
-                            ? "var(--g100)"
-                            : s === "متأخر مالياً"
-                              ? "#fee2e2"
-                              : "#fef3c7",
-                    color:
-                        s === "نشط"
-                            ? "var(--g700)"
-                            : s === "متأخر مالياً"
-                              ? "#ef4444"
-                              : "#92400e",
-                }}
-            >
-                {s}
-            </span>
-        );
-    }
-
-    if (loading)
-        return (
+    return (
+        <div
+            style={{
+                fontFamily: "'Tajawal',sans-serif",
+                direction: "rtl",
+                background: "#f8fafc",
+                minHeight: "100vh",
+                padding: 20,
+            }}
+        >
+            {/* Header */}
             <div
-                className="content"
-                id="contentArea"
                 style={{
-                    minHeight: "400px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    background: "linear-gradient(135deg,#1e293b,#0f4c35)",
+                    borderRadius: 20,
+                    padding: "24px 28px",
+                    marginBottom: 20,
+                    color: "#fff",
+                    position: "relative",
+                    overflow: "hidden",
                 }}
             >
-                <div className="widget">
-                    <div className="navbar__loading">
-                        <div className="loading-spinner">
-                            <div className="spinner-circle"></div>
-                        </div>
+                <div
+                    style={{
+                        position: "absolute",
+                        inset: 0,
+                        opacity: 0.05,
+                        backgroundImage:
+                            "radial-gradient(circle at 20% 50%,#fff 1px,transparent 1px)",
+                        backgroundSize: "22px 22px",
+                        pointerEvents: "none",
+                    }}
+                />
+                <div style={{ position: "relative" }}>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: "#86efac",
+                            marginBottom: 4,
+                        }}
+                    >
+                        منصة إتقان
+                    </div>
+                    <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>
+                        شؤون الطلاب
+                    </h1>
+                    <p
+                        style={{
+                            margin: "4px 0 0",
+                            color: "#94a3b8",
+                            fontSize: 13,
+                        }}
+                    >
+                        إدارة بيانات الطلاب — الخطط — الحلقات — الحضور —
+                        الإنجازات
+                    </p>
+                    <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                        <button
+                            onClick={() => fetchStudents(page)}
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                padding: "7px 14px",
+                                borderRadius: 10,
+                                border: "1px solid #ffffff33",
+                                background: "#ffffff22",
+                                color: "#fff",
+                                cursor: "pointer",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                fontFamily: "inherit",
+                            }}
+                        >
+                            <FiRefreshCw size={12} /> تحديث
+                        </button>
+                        <button
+                            onClick={handleExport}
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                padding: "7px 14px",
+                                borderRadius: 10,
+                                border: "1px solid #ffffff33",
+                                background: "#ffffff22",
+                                color: "#fff",
+                                cursor: "pointer",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                fontFamily: "inherit",
+                            }}
+                        >
+                            <FiDownload size={12} /> تصدير Excel
+                        </button>
                     </div>
                 </div>
             </div>
-        );
 
-    return (
-        <>
-            <input
-                ref={registerInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                style={{ display: "none" }}
-                onChange={handleRegisterFile}
-            />
-
-            {showUpdateModal && selectedStudentId && (
-                <StudentAffairsUpdate
-                    studentId={selectedStudentId}
-                    onClose={handleCloseUpdateModal}
-                    onSuccess={handleUpdateSuccess}
+            {/* Stats */}
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))",
+                    gap: 12,
+                    marginBottom: 20,
+                }}
+            >
+                <StatBox
+                    icon={<FiUsers />}
+                    label="إجمالي الطلاب"
+                    value={stats.totalStudents}
+                    color="#1e293b"
                 />
-            )}
-
-            {showAddModal && (
-                <AddStudentModal
-                    onClose={() => setShowAddModal(false)}
-                    onSuccess={() => {
-                        setShowAddModal(false);
-                        refetch();
-                    }}
+                <StatBox
+                    icon={<FiCheckCircle />}
+                    label="طلاب نشطين"
+                    value={stats.activeStudents}
+                    color="#16a34a"
                 />
-            )}
+                <StatBox
+                    icon={<FiClock />}
+                    label="معلق"
+                    value={stats.pendingStudents}
+                    color="#f59e0b"
+                />
+                <StatBox
+                    icon={<FiUsers />}
+                    label="في هذه الصفحة"
+                    value={students.length}
+                    color="#0284c7"
+                />
+            </div>
 
-            {confirm && (
-                <div
+            {/* Filter Bar */}
+            <div
+                style={{
+                    background: "#fff",
+                    borderRadius: 14,
+                    padding: 14,
+                    marginBottom: 14,
+                    boxShadow: "0 2px 10px #0001",
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                }}
+            >
+                <label
                     style={{
-                        position: "fixed",
-                        inset: 0,
-                        zIndex: 3000,
-                        background: "rgba(0,0,0,.5)",
-                        backdropFilter: "blur(4px)",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
+                        gap: 8,
+                        background: "#f8fafc",
+                        borderRadius: 10,
+                        padding: "8px 14px",
+                        flex: 1,
+                        minWidth: 200,
+                        border: "1px solid #e2e8f0",
                     }}
                 >
-                    <div className="conf-box">
-                        <div className="conf-t">{confirm.title}</div>
-                        <div className="conf-d">
-                            {confirm.desc || "هل أنت متأكد؟"}
-                        </div>
-                        <div className="conf-acts">
-                            <button className="btn bd" onClick={confirm.cb}>
-                                تأكيد
-                            </button>
-                            <button
-                                className="btn bs"
-                                onClick={() => setConfirm(null)}
-                            >
-                                إلغاء
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {importResult && (
-                <ImportResultModal
-                    title={importResult.title}
-                    result={importResult.result}
-                    onClose={() => setImportResult(null)}
-                />
-            )}
-
-            <div className="content" id="contentArea">
-                <div className="widget">
-                    <div className="wh">
-                        <div className="wh-l">
-                            شؤون الطلاب{" "}
-                            <span
-                                style={{ fontWeight: 400, fontSize: "0.9em" }}
-                            >
-                                ({filteredStudents.length} طالب)
-                            </span>
-                        </div>
-                        <div
-                            className="flx"
-                            style={{ gap: 6, flexWrap: "wrap" }}
+                    <FiSearch size={14} color="#94a3b8" />
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="ابحث بالاسم أو رقم الهوية..."
+                        style={{
+                            border: "none",
+                            background: "transparent",
+                            outline: "none",
+                            fontSize: 13,
+                            flex: 1,
+                            fontFamily: "inherit",
+                            color: "#1e293b",
+                        }}
+                    />
+                    {search && (
+                        <button
+                            onClick={() => setSearch("")}
+                            style={{
+                                border: "none",
+                                background: "none",
+                                cursor: "pointer",
+                                color: "#94a3b8",
+                                display: "flex",
+                            }}
                         >
-                            <input
-                                className="fi"
-                                placeholder="البحث بالاسم أو الهوية..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                            <select
-                                value={filterStatus}
-                                onChange={(e) =>
-                                    setFilterStatus(e.target.value)
-                                }
-                                className="fi"
-                                style={{ margin: "0 6px" }}
-                            >
-                                <option>الكل</option>
-                                <option>نشط</option>
-                                <option>معلق</option>
-                            </select>
+                            <FiX size={12} />
+                        </button>
+                    )}
+                </label>
+                <div
+                    style={{
+                        display: "flex",
+                        gap: 4,
+                        background: "#f8fafc",
+                        borderRadius: 10,
+                        padding: 4,
+                    }}
+                >
+                    {["الكل", "نشط", "معلق"].map((s) => (
+                        <button
+                            key={s}
+                            onClick={() => setFilterStatus(s)}
+                            style={{
+                                padding: "6px 14px",
+                                borderRadius: 8,
+                                border: "none",
+                                cursor: "pointer",
+                                fontWeight: 700,
+                                fontSize: 12,
+                                fontFamily: "inherit",
+                                background:
+                                    filterStatus === s
+                                        ? "#1e293b"
+                                        : "transparent",
+                                color: filterStatus === s ? "#fff" : "#64748b",
+                            }}
+                        >
+                            {s}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
-                            <button
-                                className="btn bp bsm"
-                                onClick={() => setShowAddModal(true)}
-                            >
-                                + طالب جديد
-                            </button>
+            {/* Results */}
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 10 }}>
+                عرض{" "}
+                <strong style={{ color: "#1e293b" }}>{students.length}</strong>{" "}
+                من أصل <strong style={{ color: "#1e293b" }}>{total}</strong>
+            </div>
 
-                            {!isPortal && (
-                                <>
-                                    <button
-                                        style={{ margin: "0 3px" }}
-                                        className="btn bs bsm"
-                                        onClick={handleDownloadRegisterTemplate}
-                                    >
-                                        ⬇ قالب التسجيل
-                                    </button>
-                                    <button
-                                        style={{ margin: "0 3px" }}
-                                        className="btn bs bsm"
-                                        onClick={() =>
-                                            registerInputRef.current?.click()
-                                        }
-                                        disabled={registerImporting}
-                                    >
-                                        {registerImporting
-                                            ? "جاري التسجيل..."
-                                            : "↑ تسجيل من Excel"}
-                                    </button>
-                                </>
-                            )}
-
-                            <button
-                                style={{ margin: "0 3px" }}
-                                className="btn bs bsm"
-                                onClick={handleExport}
-                            >
-                                ↓ تصدير Excel
-                            </button>
-                        </div>
+            {/* Table */}
+            <div
+                style={{
+                    background: "#fff",
+                    borderRadius: 20,
+                    overflow: "hidden",
+                    boxShadow: "0 2px 16px #0001",
+                }}
+            >
+                {loading ? (
+                    <div
+                        style={{
+                            textAlign: "center",
+                            padding: "60px 20px",
+                            color: "#94a3b8",
+                        }}
+                    >
+                        <FiClock size={32} style={{ marginBottom: 10 }} />
+                        <br />
+                        جاري التحميل...
                     </div>
-
+                ) : students.length === 0 ? (
+                    <div
+                        style={{
+                            textAlign: "center",
+                            padding: "60px 20px",
+                            color: "#94a3b8",
+                        }}
+                    >
+                        <FiUsers size={40} style={{ marginBottom: 10 }} />
+                        <br />
+                        <div style={{ fontWeight: 700 }}>لا توجد طلاب</div>
+                    </div>
+                ) : (
                     <div style={{ overflowX: "auto" }}>
-                        <table>
+                        <table
+                            style={{
+                                width: "100%",
+                                borderCollapse: "collapse",
+                                fontSize: 13,
+                            }}
+                        >
                             <thead>
-                                <tr>
-                                    <th>الصورة</th>
-                                    <th>الاسم</th>
-                                    <th>رقم الهوية</th>
-                                    <th>ولي الأمر</th>
-                                    <th>الحالة</th>
-                                    <th>الإجراءات</th>
+                                <tr style={{ background: "#f8fafc" }}>
+                                    <th style={TH}>الطالب</th>
+                                    <th style={TH}>رقم الهوية</th>
+                                    <th style={TH}>الحلقة</th>
+                                    <th style={TH}>ولي الأمر</th>
+                                    <th style={TH}>الحضور</th>
+                                    <th style={TH}>الحالة</th>
+                                    <th style={{ ...TH, cursor: "default" }}>
+                                        الإجراءات
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredStudents.length > 0 ? (
-                                    filteredStudents.map((item) => (
-                                        <tr key={item.id}>
-                                            <td>
+                                {students.map((s, i) => {
+                                    const sc = STATUS_COLOR[s.status] ?? {
+                                        bg: "#f1f5f9",
+                                        color: "#475569",
+                                    };
+                                    return (
+                                        <tr
+                                            key={s.id}
+                                            style={{
+                                                background:
+                                                    i % 2 === 0
+                                                        ? "#fff"
+                                                        : "#fafafa",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={() => setSelectedId(s.id)}
+                                        >
+                                            <td style={TD}>
                                                 <div
                                                     style={{
-                                                        width: 48,
-                                                        height: 48,
-                                                        borderRadius: "50%",
-                                                        backgroundImage:
-                                                            item.img
-                                                                ? `url(${item.img})`
-                                                                : undefined,
-                                                        backgroundSize: "cover",
-                                                        backgroundPosition:
-                                                            "center",
-                                                        background: item.img
-                                                            ? undefined
-                                                            : "var(--n100)",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: 10,
                                                     }}
-                                                />
-                                            </td>
-                                            <td style={{ fontWeight: 700 }}>
-                                                {item.name}
-                                            </td>
-                                            <td>{item.idNumber}</td>
-                                            <td>
-                                                <div style={{ fontSize: 13 }}>
+                                                >
+                                                    <Avatar
+                                                        name={s.name}
+                                                        idx={i}
+                                                        img={s.img}
+                                                    />
                                                     <div>
-                                                        {item.guardianName}
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            color: "#3b82f6",
-                                                            fontSize: 12,
-                                                        }}
-                                                    >
-                                                        {item.guardianPhone}
+                                                        <div
+                                                            style={{
+                                                                fontWeight: 700,
+                                                                color: "#1e293b",
+                                                            }}
+                                                        >
+                                                            {s.name}
+                                                        </div>
+                                                        <div
+                                                            style={{
+                                                                fontSize: 11,
+                                                                color: "#94a3b8",
+                                                            }}
+                                                        >
+                                                            {s.attendanceRate}{" "}
+                                                            حضور
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <BadgeStatus s={item.status} />
+                                            <td style={TD}>
+                                                <span
+                                                    style={{
+                                                        fontFamily: "monospace",
+                                                        fontSize: 12,
+                                                        color: "#475569",
+                                                    }}
+                                                >
+                                                    {s.idNumber}
+                                                </span>
                                             </td>
-                                            <td>
-                                                <div className="td-actions">
+                                            <td
+                                                style={{
+                                                    ...TD,
+                                                    fontSize: 12,
+                                                    color: "#0f6e56",
+                                                    fontWeight: 700,
+                                                }}
+                                            >
+                                                {s.circle || "—"}
+                                            </td>
+                                            <td style={TD}>
+                                                <div style={{ fontSize: 13 }}>
+                                                    <div
+                                                        style={{
+                                                            fontWeight: 600,
+                                                        }}
+                                                    >
+                                                        {s.guardianName}
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: 11,
+                                                            color: "#0284c7",
+                                                        }}
+                                                    >
+                                                        {s.guardianPhone}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style={TD}>
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: 6,
+                                                    }}
+                                                >
+                                                    <div
+                                                        style={{
+                                                            flex: 1,
+                                                            background:
+                                                                "#e2e8f0",
+                                                            borderRadius: 10,
+                                                            height: 6,
+                                                            width: 60,
+                                                            overflow: "hidden",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                height: "100%",
+                                                                background:
+                                                                    "#16a34a",
+                                                                borderRadius: 10,
+                                                                width: s.attendanceRate,
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <span
+                                                        style={{
+                                                            fontSize: 11,
+                                                            fontWeight: 700,
+                                                            color: "#16a34a",
+                                                        }}
+                                                    >
+                                                        {s.attendanceRate}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td style={TD}>
+                                                <Badge
+                                                    label={s.status}
+                                                    bg={sc.bg}
+                                                    color={sc.color}
+                                                />
+                                            </td>
+                                            <td
+                                                style={TD}
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        gap: 5,
+                                                        flexWrap: "wrap",
+                                                    }}
+                                                >
                                                     <button
-                                                        className="btn bp bxs"
                                                         onClick={() =>
-                                                            sendWhatsappReminder(
-                                                                item.id,
-                                                                item.guardianPhone,
+                                                            setSelectedId(s.id)
+                                                        }
+                                                        style={{
+                                                            display:
+                                                                "inline-flex",
+                                                            alignItems:
+                                                                "center",
+                                                            gap: 4,
+                                                            padding: "5px 10px",
+                                                            borderRadius: 8,
+                                                            border: "1px solid #e2e8f0",
+                                                            background:
+                                                                "#f8fafc",
+                                                            cursor: "pointer",
+                                                            fontSize: 11,
+                                                            fontWeight: 700,
+                                                            fontFamily:
+                                                                "inherit",
+                                                            color: "#475569",
+                                                        }}
+                                                    >
+                                                        <FiEdit2 size={11} />{" "}
+                                                        تفاصيل
+                                                    </button>
+                                                    <button
+                                                        onClick={() =>
+                                                            handleWhatsApp(
+                                                                s.id,
+                                                                s.guardianPhone,
                                                             )
                                                         }
-                                                        title="واتساب"
+                                                        style={{
+                                                            display:
+                                                                "inline-flex",
+                                                            alignItems:
+                                                                "center",
+                                                            gap: 4,
+                                                            padding: "5px 10px",
+                                                            borderRadius: 8,
+                                                            border: "none",
+                                                            background:
+                                                                "#dcfce7",
+                                                            cursor: "pointer",
+                                                            fontSize: 11,
+                                                            fontWeight: 700,
+                                                            fontFamily:
+                                                                "inherit",
+                                                            color: "#166534",
+                                                        }}
                                                     >
-                                                        {WhatsAppIcon}
-                                                    </button>
-                                                    <button
-                                                        className="btn bm bxs"
-                                                        onClick={() =>
-                                                            printCard(item.id)
-                                                        }
-                                                        title="طباعة"
-                                                    >
-                                                        {PrintIcon}
-                                                    </button>
-                                                    <button
-                                                        className="btn bs bxs"
-                                                        onClick={() =>
-                                                            handleEdit(item.id)
-                                                        }
-                                                    >
-                                                        تعديل
+                                                        <FiMessageSquare
+                                                            size={11}
+                                                        />
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={6}>
-                                            <div
-                                                className="empty"
-                                                style={{
-                                                    textAlign: "center",
-                                                    padding: 40,
-                                                }}
-                                            >
-                                                <p
-                                                    style={{
-                                                        color: "var(--n500)",
-                                                    }}
-                                                >
-                                                    {search
-                                                        ? "لا توجد نتائج"
-                                                        : "لا يوجد طلاب"}
-                                                </p>
-                                                <button
-                                                    className="btn bp bsm"
-                                                    onClick={() =>
-                                                        setShowAddModal(true)
-                                                    }
-                                                >
-                                                    + إضافة طالب
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
-                </div>
+                )}
+
+                {/* Pagination */}
+                {lastPage > 1 && (
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "12px 20px",
+                            borderTop: "1px solid #f1f5f9",
+                        }}
+                    >
+                        <span style={{ fontSize: 12, color: "#64748b" }}>
+                            الصفحة {page} من {lastPage}
+                        </span>
+                        <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                                disabled={page <= 1}
+                                onClick={() => fetchStudents(page - 1)}
+                                style={{
+                                    padding: "6px 14px",
+                                    borderRadius: 8,
+                                    border: "1px solid #e2e8f0",
+                                    background: "#fff",
+                                    cursor:
+                                        page <= 1 ? "not-allowed" : "pointer",
+                                    opacity: page <= 1 ? 0.4 : 1,
+                                    fontFamily: "inherit",
+                                    fontWeight: 700,
+                                    fontSize: 12,
+                                }}
+                            >
+                                السابق
+                            </button>
+                            <button
+                                disabled={page >= lastPage}
+                                onClick={() => fetchStudents(page + 1)}
+                                style={{
+                                    padding: "6px 14px",
+                                    borderRadius: 8,
+                                    border: "1px solid #e2e8f0",
+                                    background: "#fff",
+                                    cursor:
+                                        page >= lastPage
+                                            ? "not-allowed"
+                                            : "pointer",
+                                    opacity: page >= lastPage ? 0.4 : 1,
+                                    fontFamily: "inherit",
+                                    fontWeight: 700,
+                                    fontSize: 12,
+                                }}
+                            >
+                                التالي
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
-        </>
+
+            {/* Detail Modal */}
+            {selectedId && (
+                <StudentDetailModal
+                    studentId={selectedId}
+                    onClose={() => setSelectedId(null)}
+                />
+            )}
+
+            {/* Toast */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    tone={toast.tone}
+                    onClose={() => setToast(null)}
+                />
+            )}
+        </div>
     );
 };
 

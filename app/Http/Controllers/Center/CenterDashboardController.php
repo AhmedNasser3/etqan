@@ -18,21 +18,14 @@ use Illuminate\Support\Facades\Log;
 
 class CenterDashboardController extends Controller
 {
-private function resolveCenterId(Request $request): ?int
-{
-    // ✅ الـ header له الأولوية دايماً (للأدمن)
-    $headerCenterId = $request->header('X-Center-Id');
-    if ($headerCenterId && is_numeric($headerCenterId)) {
-        return (int) $headerCenterId;
+    public function resolveCenterId(Request $request): ?int
+    {
+        if (Auth::check() && Auth::user()->center_id) {
+            return (int) Auth::user()->center_id;
+        }
+        $id = $request->header('X-Center-Id') ?? $request->query('center_id');
+        return ($id && is_numeric($id)) ? (int) $id : null;
     }
-
-    // بعدين جرب من اليوزر
-    if (Auth::check() && Auth::user()->center_id) {
-        return (int) Auth::user()->center_id;
-    }
-
-    return null;
-}
 
     /**
      * GET /api/v1/center/dashboard/stats
