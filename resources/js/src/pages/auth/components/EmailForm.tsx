@@ -60,16 +60,6 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({
 
             {/* NAME ROW */}
             <div className="row-2">
-                <FG label="اللقب / الاسم الثاني" req>
-                    <input
-                        required
-                        type="text"
-                        name="family_name"
-                        id="family_name"
-                        placeholder="... التميمي"
-                        className="bare-field"
-                    />
-                </FG>
                 <FG label="الاسم الأول" req>
                     <input
                         required
@@ -79,6 +69,16 @@ const StudentEnrollment: React.FC<StudentEnrollmentProps> = ({
                         placeholder={
                             gender === "male" ? "... أحمد" : "... فاطمة"
                         }
+                        className="bare-field"
+                    />
+                </FG>
+                <FG label="اللقب / الاسم الثاني" req>
+                    <input
+                        required
+                        type="text"
+                        name="family_name"
+                        id="family_name"
+                        placeholder="... التميمي"
                         className="bare-field"
                     />
                 </FG>

@@ -1,31 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
 import { useCenterRegister } from "../hooks/useCenterRegister";
 import FAQItem from "../../DashBoard/home/NewTheme/FAQItem";
+import CentersSection from "../components/CentersSection";
 import logo from "../../../assets/images/logo.png";
 
 const CenterRegister: React.FC = () => {
     const [countryCode, setCountryCode] = useState<string>("+966");
-    const [selectedGender, setSelectedGender] = useState<"male" | "female">(
-        "male",
-    );
-    const {
-        form,
-        errors,
-        loading,
-        setForm,
-        setAvatar,
-        handleSubmit,
-        resetForm,
-    } = useCenterRegister();
+    const { form, errors, loading, setForm, setAvatar, handleSubmit } =
+        useCenterRegister();
     const navigate = useNavigate();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setAvatar(e.target.files[0]);
-        }
+        if (e.target.files?.[0]) setAvatar(e.target.files[0]);
     };
 
     useEffect(() => {
@@ -33,10 +21,7 @@ const CenterRegister: React.FC = () => {
             toast.error(errors.general, {
                 duration: 5000,
                 position: "top-right",
-                style: {
-                    direction: "rtl",
-                    fontFamily: "Cairo, sans-serif",
-                },
+                style: { direction: "rtl", fontFamily: "Cairo, sans-serif" },
             });
         }
     }, [errors.general]);
@@ -44,7 +29,7 @@ const CenterRegister: React.FC = () => {
     const faqQuestions = [
         {
             question: "ما هو (رابط مجمعك)",
-            answer: " هو الرابط الخاص بمجمعك مثال : www.etqan.com/seraj, www.etqan.com/game3",
+            answer: "هو الرابط الخاص بمجمعك مثال: www.etqan.com/seraj, www.etqan.com/game3",
         },
     ];
 
@@ -66,18 +51,13 @@ const CenterRegister: React.FC = () => {
                                 >
                                     <div className="auth-bg-deco" />
                                     <div className="auth-root-register-form auth-card">
-                                        {/* BRAND */}
                                         <div className="brand-row">
-                                            <div>
-                                                <img
-                                                    style={{ width: "60px" }}
-                                                    src={logo}
-                                                    alt="لوجو"
-                                                />
-                                            </div>
+                                            <img
+                                                style={{ width: "60px" }}
+                                                src={logo}
+                                                alt="لوجو"
+                                            />
                                         </div>
-
-                                        {/* HEADING */}
                                         <div className="auth-heading">
                                             <h1>طلب تسجيل مجمع</h1>
                                             <p>
@@ -112,7 +92,6 @@ const CenterRegister: React.FC = () => {
                                                         </div>
                                                     )}
                                                 </div>
-
                                                 <div className="field-wrap">
                                                     <label className="field-label">
                                                         رابط مجمعك *
@@ -129,7 +108,7 @@ const CenterRegister: React.FC = () => {
                                                                         .value,
                                                             })
                                                         }
-                                                        placeholder="game3, etqan, seraj : يرجي كتابته بالانجليزية مثل"
+                                                        placeholder="game3, etqan, seraj"
                                                         className={`fi2${errors.subdomain ? " fi2--err" : ""}`}
                                                     />
                                                     {errors.subdomain && (
@@ -166,7 +145,6 @@ const CenterRegister: React.FC = () => {
                                                         </div>
                                                     )}
                                                 </div>
-
                                                 <div className="field-wrap">
                                                     <label className="field-label">
                                                         اسم مدير المجمع *
@@ -243,7 +221,7 @@ const CenterRegister: React.FC = () => {
 
                                             <div className="field-wrap">
                                                 <label className="field-label">
-                                                    شعار المجمع
+                                                    شعار المجمع{" "}
                                                     <span className="opt-tag">
                                                         اختياري
                                                     </span>
@@ -289,18 +267,19 @@ const CenterRegister: React.FC = () => {
                                             </div>
 
                                             <div style={{ margin: "24px 0" }}>
-                                                {faqQuestions.map(
-                                                    (faq, index) => (
-                                                        <FAQItem
-                                                            key={index}
-                                                            question={
-                                                                faq.question
-                                                            }
-                                                            answer={faq.answer}
-                                                        />
-                                                    ),
-                                                )}
+                                                {faqQuestions.map((faq, i) => (
+                                                    <FAQItem
+                                                        key={i}
+                                                        question={faq.question}
+                                                        answer={faq.answer}
+                                                    />
+                                                ))}
                                             </div>
+
+                                            {/* ── قائمة المجمعات الموجودة ── */}
+                                            <CentersSection
+                                                currentSlug={null}
+                                            />
                                         </div>
 
                                         <div className="auth-footer-strip">

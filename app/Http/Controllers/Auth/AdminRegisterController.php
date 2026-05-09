@@ -135,7 +135,7 @@ public function getCenters()
         ])
         ->leftJoin('users', function($join) {
             $join->on('users.center_id', '=', 'centers.id')
-                 ->where('users.role_id', '=', 1); //  center_owner role_id = 1
+                 ->where('users.role_id', '=', 1); // center_owner
         })
         ->selectRaw('
             centers.id,
@@ -146,7 +146,14 @@ public function getCenters()
             centers.address,
             GROUP_CONCAT(DISTINCT users.name) as manager_name
         ')
-        ->groupBy('centers.id')
+        ->groupBy(
+            'centers.id',
+            'centers.name',
+            'centers.subdomain',
+            'centers.email',
+            'centers.phone',
+            'centers.address'
+        )
         ->orderBy('centers.name', 'asc')
         ->get();
 
@@ -163,7 +170,6 @@ public function getCenters()
         ], 500);
     }
 }
-
 
     /**
      * جلب تفاصيل مجمع معين مع اسم المدير

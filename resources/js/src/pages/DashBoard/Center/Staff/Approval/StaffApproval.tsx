@@ -148,7 +148,7 @@ const MOCK_PENDING: PendingTeacher[] = [
         salary: 3200,
         teacher: {
             role: "teacher",
-            notes: "حلقة تختيم القرآن من 7:30 م إلى 8:30 م",
+            notes: "حلقة تختيم القرآن (ID: 1) | من 7:30 م إلى 8:30 م",
         },
     },
     {
@@ -164,7 +164,7 @@ const MOCK_PENDING: PendingTeacher[] = [
         salary: 2600,
         teacher: {
             role: "supervisor",
-            notes: "حلقة البنات - الإشراف على التقييم",
+            notes: "حلقة البنات (ID: 2) | من 5:00 م إلى 6:00 م",
         },
     },
     {
@@ -207,7 +207,10 @@ const MOCK_PENDING: PendingTeacher[] = [
         circles_count: 4,
         students_count: 88,
         salary: 3800,
-        teacher: { role: "teacher", notes: "حلقة الصبح" },
+        teacher: {
+            role: "teacher",
+            notes: "حلقة الصبح (ID: 3) | من 6:00 ص إلى 7:00 ص",
+        },
     },
     {
         id: 6,
@@ -233,7 +236,10 @@ const MOCK_PENDING: PendingTeacher[] = [
         circles_count: 2,
         students_count: 35,
         salary: 2900,
-        teacher: { role: "supervisor", notes: "الإشراف العام" },
+        teacher: {
+            role: "supervisor",
+            notes: "الإشراف العام (ID: 4) | من 4:00 م إلى 5:00 م",
+        },
     },
 ];
 
@@ -267,8 +273,6 @@ const fmtSalary = (n?: number) =>
     n ? `${n.toLocaleString("ar-EG")} ج.م` : "—";
 
 /* ─────────────── Sub-components ─────────────── */
-
-/* Avatar */
 const AvatarInitials = ({ name, idx }: { name: string; idx: number }) => {
     const av = AV_COLORS[idx % AV_COLORS.length];
     const initials = name
@@ -298,7 +302,6 @@ const AvatarInitials = ({ name, idx }: { name: string; idx: number }) => {
     );
 };
 
-/* Badge */
 const StatusBadge = ({ status }: { status: string }) => {
     const m = STATUS_META[status] ?? STATUS_META.inactive;
     return (
@@ -322,7 +325,6 @@ const StatusBadge = ({ status }: { status: string }) => {
     );
 };
 
-/* Role pill */
 const RolePill = ({ role }: { role?: string }) => {
     const s = ROLE_STYLE[role || "teacher"] ?? ROLE_STYLE.teacher;
     return (
@@ -343,7 +345,6 @@ const RolePill = ({ role }: { role?: string }) => {
     );
 };
 
-/* Toast */
 const Toast = ({
     message,
     tone,
@@ -396,7 +397,6 @@ const Toast = ({
     </div>
 );
 
-/* Confirm Modal */
 const ConfirmModal = ({
     title,
     desc,
@@ -490,7 +490,6 @@ const ConfirmModal = ({
     </div>
 );
 
-/* Detail Item */
 const DetailItem = ({
     icon,
     label,
@@ -524,7 +523,6 @@ const DetailItem = ({
     </div>
 );
 
-/* ─────────────── Stat Card ─────────────── */
 const StatCard = ({
     label,
     value,
@@ -561,7 +559,6 @@ const StatCard = ({
     </div>
 );
 
-/* ─────────────── Teacher Card (Card View) ─────────────── */
 const TeacherCardView = ({
     teacher,
     index,
@@ -581,7 +578,6 @@ const TeacherCardView = ({
 }) => {
     const [expanded, setExpanded] = useState(false);
     const T = teacher;
-    const sm = STATUS_META[T.status] ?? STATUS_META.inactive;
     const borderColor =
         T.status === "active"
             ? "#22c55e"
@@ -697,8 +693,6 @@ const TeacherCardView = ({
                     ))}
                 </div>
             </div>
-
-            {/* Info bar */}
             <div
                 style={{
                     margin: "0 18px 12px",
@@ -733,8 +727,6 @@ const TeacherCardView = ({
                     📅 {fmtDate(T.created_at)}
                 </span>
             </div>
-
-            {/* Actions */}
             <div
                 style={{
                     padding: "0 18px 16px",
@@ -791,8 +783,6 @@ const TeacherCardView = ({
                     تفاصيل
                 </button>
             </div>
-
-            {/* Expanded */}
             {expanded && (
                 <div
                     style={{
@@ -869,7 +859,6 @@ const StaffApproval: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [mosques, setMosques] = useState<string[]>([]);
 
-    /* Filters */
     const [search, setSearch] = useState("");
     const [debSearch, setDebSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("");
@@ -886,7 +875,6 @@ const StaffApproval: React.FC = () => {
     const [viewMode, setViewMode] = useState<ViewMode>("table");
     const [showFilters, setShowFilters] = useState(false);
 
-    /* UI state */
     const [page, setPage] = useState(1);
     const PER_PAGE = 10;
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -899,13 +887,11 @@ const StaffApproval: React.FC = () => {
     } | null>(null);
     const toastTimer = useRef<number | null>(null);
 
-    /* ── API ── */
     const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const d = await apiFetch("/api/v1/teachers/pending");
-
             setTeachers(d.data ?? []);
         } catch {
             setError("تعذر تحميل البيانات — يُعرض بيانات بديلة");
@@ -937,13 +923,11 @@ const StaffApproval: React.FC = () => {
         fetchMosques();
     }, []);
 
-    /* Debounce search */
     useEffect(() => {
         const t = window.setTimeout(() => setDebSearch(search), 350);
         return () => window.clearTimeout(t);
     }, [search]);
 
-    /* Reset page on filter change */
     useEffect(() => {
         setPage(1);
     }, [
@@ -959,7 +943,6 @@ const StaffApproval: React.FC = () => {
         sortDir,
     ]);
 
-    /* Toast helper */
     const showToast = (
         message: string,
         tone: "success" | "error" = "success",
@@ -969,7 +952,6 @@ const StaffApproval: React.FC = () => {
         toastTimer.current = window.setTimeout(() => setToast(null), 3500);
     };
 
-    /* ── Derived data ── */
     const filtered = teachers
         .filter((t) => {
             const q = debSearch.toLowerCase();
@@ -1032,17 +1014,31 @@ const StaffApproval: React.FC = () => {
     /* ── Actions ── */
     const handleApprove = async (id: number) => {
         setApprovingIds((prev) => new Set([...prev, id]));
-        setTeachers((prev) =>
-            prev.map((t) => (t.id === id ? { ...t, status: "active" } : t)),
-        );
         try {
-            await apiFetch(`/api/v1/teachers/my-teachers/${id}/toggle-status`, {
-                method: "POST",
-            });
-            showToast("تم تفعيل المعلم بنجاح ✓");
+            // ── الـ API بيغير الحالة ويربط المعلم بالحلقات أوتوماتيك ──
+            const res = await apiFetch(
+                `/api/v1/teachers/my-teachers/${id}/toggle-status`,
+                { method: "POST" },
+            );
+            const newStatus = res.status as TeacherStatus;
+
+            // نحدث الـ state محلياً بالحالة الجديدة الراجعة من الـ API
+            setTeachers((prev) =>
+                prev.map((t) =>
+                    t.id === id ? { ...t, status: newStatus } : t,
+                ),
+            );
+
+            showToast(res.message ?? "تم تفعيل المعلم وربطه بالحلقات بنجاح ✓");
+
+            // نعمل refresh للبيانات عشان نجيب circles_count و students_count المحدثين
+            setTimeout(() => fetchData(), 800);
         } catch {
-            await fetchData();
-            showToast("تعذر تفعيل المعلم", "error");
+            // fallback: نحدث محلياً لو فشل الـ API
+            setTeachers((prev) =>
+                prev.map((t) => (t.id === id ? { ...t, status: "active" } : t)),
+            );
+            showToast("تعذر التواصل مع السيرفر", "error");
         } finally {
             setApprovingIds((prev) => {
                 const s = new Set(prev);
@@ -1056,23 +1052,24 @@ const StaffApproval: React.FC = () => {
         const t = teachers.find((x) => x.id === id);
         setConfirm({
             title: "رفض طلب المعلم",
-            desc: `هل أنت متأكد من رفض طلب "${t?.name}"؟ لا يمكن التراجع.`,
+            desc: `هل أنت متأكد من رفض طلب "${t?.name}"؟ سيتم تعليق حسابه وإلغاء ربطه بالحلقات.`,
             cb: async () => {
                 setRejectingIds((prev) => new Set([...prev, id]));
-                setTeachers((prev) =>
-                    prev.map((x) =>
-                        x.id === id ? { ...x, status: "rejected" } : x,
-                    ),
-                );
                 setConfirm(null);
                 try {
                     await apiFetch(`/api/v1/teachers/my-teachers/${id}`, {
                         method: "DELETE",
                     });
-                    showToast("تم رفض الطلب");
+                    // ── الـ destroy بيعمل suspended والـ toggleStatus بيشيل teacher_id من الحلقات ──
+                    setTeachers((prev) =>
+                        prev.map((x) =>
+                            x.id === id ? { ...x, status: "suspended" } : x,
+                        ),
+                    );
+                    showToast("تم تعليق المعلم وإلغاء ربطه بالحلقات");
                 } catch {
                     await fetchData();
-                    showToast("تعذر رفض الطلب", "error");
+                    showToast("تعذر تعليق المعلم", "error");
                 } finally {
                     setRejectingIds((prev) => {
                         const s = new Set(prev);
@@ -1182,7 +1179,6 @@ const StaffApproval: React.FC = () => {
         return [1, "...", page - 1, page, page + 1, "...", totalPages];
     };
 
-    /* ── Styles helpers ── */
     const TH: React.CSSProperties = {
         padding: "10px 14px",
         textAlign: "right",
@@ -1200,7 +1196,6 @@ const StaffApproval: React.FC = () => {
         verticalAlign: "middle",
     };
 
-    /* ═══════════════════════════════════════════════════ */
     return (
         <div
             style={{
@@ -1357,7 +1352,6 @@ const StaffApproval: React.FC = () => {
                     boxShadow: "0 2px 10px #0001",
                 }}
             >
-                {/* Row 1: search + tabs + view toggle */}
                 <div
                     style={{
                         display: "flex",
@@ -1367,7 +1361,6 @@ const StaffApproval: React.FC = () => {
                         marginBottom: 12,
                     }}
                 >
-                    {/* Search */}
                     <label
                         style={{
                             display: "flex",
@@ -1412,7 +1405,6 @@ const StaffApproval: React.FC = () => {
                         )}
                     </label>
 
-                    {/* Status tabs */}
                     <div
                         style={{
                             display: "flex",
@@ -1459,7 +1451,6 @@ const StaffApproval: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* View toggle */}
                     <div
                         style={{
                             display: "flex",
@@ -1469,12 +1460,7 @@ const StaffApproval: React.FC = () => {
                             padding: 4,
                         }}
                     >
-                        {(
-                            [
-                                ["table", "table"],
-                                ["cards", "cards"],
-                            ] as [ViewMode, string][]
-                        ).map(([v, _]) => (
+                        {(["table", "cards"] as ViewMode[]).map((v) => (
                             <button
                                 key={v}
                                 onClick={() => setViewMode(v)}
@@ -1501,7 +1487,6 @@ const StaffApproval: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* Advanced filters toggle */}
                     <button
                         onClick={() => setShowFilters((v) => !v)}
                         style={{
@@ -1515,7 +1500,6 @@ const StaffApproval: React.FC = () => {
                         <FiFilter size={13} /> فلاتر متقدمة{" "}
                         {showFilters ? "▲" : "▼"}
                     </button>
-
                     <button
                         onClick={resetFilters}
                         style={{
@@ -1530,7 +1514,6 @@ const StaffApproval: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Row 2: Advanced Filters (collapsible) */}
                 {showFilters && (
                     <div
                         style={{
@@ -1542,195 +1525,162 @@ const StaffApproval: React.FC = () => {
                             borderTop: "1px solid #f1f5f9",
                         }}
                     >
-                        {/* Role */}
-                        <div>
-                            <label
-                                style={{
-                                    fontSize: 11,
-                                    color: "#94a3b8",
-                                    display: "block",
-                                    marginBottom: 4,
-                                }}
-                            >
-                                الدور الوظيفي
-                            </label>
-                            <select
-                                value={roleFilter}
-                                onChange={(e) => setRoleFilter(e.target.value)}
-                                style={selectStyle}
-                            >
-                                <option value="">كل الأدوار</option>
-                                {Object.entries(ROLE_LABELS).map(([k, v]) => (
-                                    <option key={k} value={k}>
-                                        {v}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        {/* Mosque */}
-                        <div>
-                            <label
-                                style={{
-                                    fontSize: 11,
-                                    color: "#94a3b8",
-                                    display: "block",
-                                    marginBottom: 4,
-                                }}
-                            >
-                                المسجد
-                            </label>
-                            <select
-                                value={mosqueFilter}
-                                onChange={(e) =>
-                                    setMosqueFilter(e.target.value)
-                                }
-                                style={selectStyle}
-                            >
-                                <option value="">كل المساجد</option>
-                                {mosques.map((m) => (
-                                    <option key={m} value={m}>
-                                        {m}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        {/* Date from */}
-                        <div>
-                            <label
-                                style={{
-                                    fontSize: 11,
-                                    color: "#94a3b8",
-                                    display: "block",
-                                    marginBottom: 4,
-                                }}
-                            >
-                                تاريخ التقديم من
-                            </label>
-                            <input
-                                type="date"
-                                value={dateFrom}
-                                onChange={(e) => setDateFrom(e.target.value)}
-                                style={selectStyle}
-                            />
-                        </div>
-                        {/* Date to */}
-                        <div>
-                            <label
-                                style={{
-                                    fontSize: 11,
-                                    color: "#94a3b8",
-                                    display: "block",
-                                    marginBottom: 4,
-                                }}
-                            >
-                                تاريخ التقديم إلى
-                            </label>
-                            <input
-                                type="date"
-                                value={dateTo}
-                                onChange={(e) => setDateTo(e.target.value)}
-                                style={selectStyle}
-                            />
-                        </div>
-                        {/* Salary min */}
-                        <div>
-                            <label
-                                style={{
-                                    fontSize: 11,
-                                    color: "#94a3b8",
-                                    display: "block",
-                                    marginBottom: 4,
-                                }}
-                            >
-                                الراتب الأدنى
-                            </label>
-                            <input
-                                type="number"
-                                value={salaryMin}
-                                onChange={(e) => setSalaryMin(e.target.value)}
-                                placeholder="0"
-                                style={selectStyle}
-                            />
-                        </div>
-                        {/* Salary max */}
-                        <div>
-                            <label
-                                style={{
-                                    fontSize: 11,
-                                    color: "#94a3b8",
-                                    display: "block",
-                                    marginBottom: 4,
-                                }}
-                            >
-                                الراتب الأقصى
-                            </label>
-                            <input
-                                type="number"
-                                value={salaryMax}
-                                onChange={(e) => setSalaryMax(e.target.value)}
-                                placeholder="∞"
-                                style={selectStyle}
-                            />
-                        </div>
-                        {/* Sort */}
-                        <div>
-                            <label
-                                style={{
-                                    fontSize: 11,
-                                    color: "#94a3b8",
-                                    display: "block",
-                                    marginBottom: 4,
-                                }}
-                            >
-                                الترتيب حسب
-                            </label>
-                            <select
-                                value={sortKey}
-                                onChange={(e) =>
-                                    setSortKey(e.target.value as SortKey)
-                                }
-                                style={selectStyle}
-                            >
-                                <option value="created_at">
-                                    تاريخ التقديم
-                                </option>
-                                <option value="name">الاسم</option>
-                                <option value="salary">الراتب</option>
-                                <option value="students_count">
-                                    عدد الطلاب
-                                </option>
-                                <option value="circles_count">
-                                    عدد الحلقات
-                                </option>
-                            </select>
-                        </div>
-                        {/* Sort dir */}
-                        <div>
-                            <label
-                                style={{
-                                    fontSize: 11,
-                                    color: "#94a3b8",
-                                    display: "block",
-                                    marginBottom: 4,
-                                }}
-                            >
-                                الاتجاه
-                            </label>
-                            <select
-                                value={sortDir}
-                                onChange={(e) =>
-                                    setSortDir(e.target.value as SortDir)
-                                }
-                                style={selectStyle}
-                            >
-                                <option value="desc">تنازلي</option>
-                                <option value="asc">تصاعدي</option>
-                            </select>
-                        </div>
+                        {[
+                            {
+                                label: "الدور الوظيفي",
+                                el: (
+                                    <select
+                                        value={roleFilter}
+                                        onChange={(e) =>
+                                            setRoleFilter(e.target.value)
+                                        }
+                                        style={selectStyle}
+                                    >
+                                        <option value="">كل الأدوار</option>
+                                        {Object.entries(ROLE_LABELS).map(
+                                            ([k, v]) => (
+                                                <option key={k} value={k}>
+                                                    {v}
+                                                </option>
+                                            ),
+                                        )}
+                                    </select>
+                                ),
+                            },
+                            {
+                                label: "المسجد",
+                                el: (
+                                    <select
+                                        value={mosqueFilter}
+                                        onChange={(e) =>
+                                            setMosqueFilter(e.target.value)
+                                        }
+                                        style={selectStyle}
+                                    >
+                                        <option value="">كل المساجد</option>
+                                        {mosques.map((m) => (
+                                            <option key={m} value={m}>
+                                                {m}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ),
+                            },
+                            {
+                                label: "تاريخ التقديم من",
+                                el: (
+                                    <input
+                                        type="date"
+                                        value={dateFrom}
+                                        onChange={(e) =>
+                                            setDateFrom(e.target.value)
+                                        }
+                                        style={selectStyle}
+                                    />
+                                ),
+                            },
+                            {
+                                label: "تاريخ التقديم إلى",
+                                el: (
+                                    <input
+                                        type="date"
+                                        value={dateTo}
+                                        onChange={(e) =>
+                                            setDateTo(e.target.value)
+                                        }
+                                        style={selectStyle}
+                                    />
+                                ),
+                            },
+                            {
+                                label: "الراتب الأدنى",
+                                el: (
+                                    <input
+                                        type="number"
+                                        value={salaryMin}
+                                        onChange={(e) =>
+                                            setSalaryMin(e.target.value)
+                                        }
+                                        placeholder="0"
+                                        style={selectStyle}
+                                    />
+                                ),
+                            },
+                            {
+                                label: "الراتب الأقصى",
+                                el: (
+                                    <input
+                                        type="number"
+                                        value={salaryMax}
+                                        onChange={(e) =>
+                                            setSalaryMax(e.target.value)
+                                        }
+                                        placeholder="∞"
+                                        style={selectStyle}
+                                    />
+                                ),
+                            },
+                            {
+                                label: "الترتيب حسب",
+                                el: (
+                                    <select
+                                        value={sortKey}
+                                        onChange={(e) =>
+                                            setSortKey(
+                                                e.target.value as SortKey,
+                                            )
+                                        }
+                                        style={selectStyle}
+                                    >
+                                        <option value="created_at">
+                                            تاريخ التقديم
+                                        </option>
+                                        <option value="name">الاسم</option>
+                                        <option value="salary">الراتب</option>
+                                        <option value="students_count">
+                                            عدد الطلاب
+                                        </option>
+                                        <option value="circles_count">
+                                            عدد الحلقات
+                                        </option>
+                                    </select>
+                                ),
+                            },
+                            {
+                                label: "الاتجاه",
+                                el: (
+                                    <select
+                                        value={sortDir}
+                                        onChange={(e) =>
+                                            setSortDir(
+                                                e.target.value as SortDir,
+                                            )
+                                        }
+                                        style={selectStyle}
+                                    >
+                                        <option value="desc">تنازلي</option>
+                                        <option value="asc">تصاعدي</option>
+                                    </select>
+                                ),
+                            },
+                        ].map(({ label, el }) => (
+                            <div key={label}>
+                                <label
+                                    style={{
+                                        fontSize: 11,
+                                        color: "#94a3b8",
+                                        display: "block",
+                                        marginBottom: 4,
+                                    }}
+                                >
+                                    {label}
+                                </label>
+                                {el}
+                            </div>
+                        ))}
                     </div>
                 )}
 
-                {/* Active filter chips */}
                 {(roleFilter ||
                     mosqueFilter ||
                     dateFrom ||
@@ -1812,7 +1762,6 @@ const StaffApproval: React.FC = () => {
                 )}
             </div>
 
-            {/* ── Error ── */}
             {error && (
                 <div
                     style={{
@@ -1828,7 +1777,6 @@ const StaffApproval: React.FC = () => {
                 </div>
             )}
 
-            {/* ── Results count ── */}
             <div
                 style={{
                     display: "flex",
@@ -1849,7 +1797,7 @@ const StaffApproval: React.FC = () => {
                 </span>
             </div>
 
-            {/* ── Content: Table or Cards ── */}
+            {/* ── Content ── */}
             {loading ? (
                 <div
                     style={{
@@ -1880,14 +1828,12 @@ const StaffApproval: React.FC = () => {
                     </div>
                 </div>
             ) : viewMode === "cards" ? (
-                /* ── Cards View ── */
                 <div
                     style={{
                         display: "grid",
                         gridTemplateColumns:
                             "repeat(auto-fit,minmax(480px,1fr))",
                         gap: 16,
-                        width: "20%",
                     }}
                 >
                     {pageItems.map((t, i) => (
@@ -1904,7 +1850,6 @@ const StaffApproval: React.FC = () => {
                     ))}
                 </div>
             ) : (
-                /* ── Table View ── */
                 <div
                     style={{
                         background: "#fff",
@@ -1975,7 +1920,6 @@ const StaffApproval: React.FC = () => {
                                                         "background .15s",
                                                 }}
                                             >
-                                                {/* Name */}
                                                 <td style={TD}>
                                                     <div
                                                         style={{
@@ -2010,13 +1954,11 @@ const StaffApproval: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                {/* Role */}
                                                 <td style={TD}>
                                                     <RolePill
                                                         role={t.teacher?.role}
                                                     />
                                                 </td>
-                                                {/* Notes */}
                                                 <td
                                                     style={{
                                                         ...TD,
@@ -2027,7 +1969,6 @@ const StaffApproval: React.FC = () => {
                                                 >
                                                     {t.teacher?.notes || "—"}
                                                 </td>
-                                                {/* Mosque */}
                                                 <td style={TD}>
                                                     <span
                                                         style={{
@@ -2049,7 +1990,6 @@ const StaffApproval: React.FC = () => {
                                                             "غير مربوط"}
                                                     </span>
                                                 </td>
-                                                {/* Salary */}
                                                 <td
                                                     style={{
                                                         ...TD,
@@ -2060,7 +2000,6 @@ const StaffApproval: React.FC = () => {
                                                 >
                                                     {fmtSalary(t.salary)}
                                                 </td>
-                                                {/* Students */}
                                                 <td
                                                     style={{
                                                         ...TD,
@@ -2099,7 +2038,6 @@ const StaffApproval: React.FC = () => {
                                                         </span>
                                                     </span>
                                                 </td>
-                                                {/* Date */}
                                                 <td
                                                     style={{
                                                         ...TD,
@@ -2109,13 +2047,11 @@ const StaffApproval: React.FC = () => {
                                                 >
                                                     {fmtDate(t.created_at)}
                                                 </td>
-                                                {/* Status */}
                                                 <td style={TD}>
                                                     <StatusBadge
                                                         status={t.status}
                                                     />
                                                 </td>
-                                                {/* Actions */}
                                                 <td style={TD}>
                                                     <div
                                                         style={{
@@ -2262,8 +2198,6 @@ const StaffApproval: React.FC = () => {
                                                     </div>
                                                 </td>
                                             </tr>
-
-                                            {/* Expanded row */}
                                             {isExp && (
                                                 <tr>
                                                     <td
@@ -2388,7 +2322,6 @@ const StaffApproval: React.FC = () => {
                         </table>
                     </div>
 
-                    {/* ── Pagination ── */}
                     {totalPages > 1 && (
                         <div
                             style={{
@@ -2456,7 +2389,6 @@ const StaffApproval: React.FC = () => {
                 </div>
             )}
 
-            {/* Pagination for cards view */}
             {viewMode === "cards" && totalPages > 1 && (
                 <div
                     style={{
@@ -2503,7 +2435,6 @@ const StaffApproval: React.FC = () => {
                 </div>
             )}
 
-            {/* Confirm Modal */}
             {confirm && (
                 <ConfirmModal
                     title={confirm.title}
@@ -2512,8 +2443,6 @@ const StaffApproval: React.FC = () => {
                     onCancel={() => setConfirm(null)}
                 />
             )}
-
-            {/* Toast */}
             {toast && (
                 <Toast
                     message={toast.message}
@@ -2525,7 +2454,6 @@ const StaffApproval: React.FC = () => {
     );
 };
 
-/* ── Style helpers (outside component to avoid re-creation) ── */
 const selectStyle: React.CSSProperties = {
     width: "100%",
     border: "1px solid #e2e8f0",

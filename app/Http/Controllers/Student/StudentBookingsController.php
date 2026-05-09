@@ -311,8 +311,16 @@ class StudentBookingsController extends Controller
             // ✅ ترتيب الأيام حسب start_mode
             $orderedDetails = $this->orderPlanDetails($planDetails, $startMode, $startDay);
 
-            $realTeacher = Teacher::where('user_id', $schedule->teacher_id)->first();
-            if (!$realTeacher) {
+// ✅ صح — teacher_id يحمل users.id، فنبحث في teachers بـ user_id
+$realTeacher = $schedule->teacher_id
+    ? Teacher::where('user_id', $schedule->teacher_id)->first()
+    : null;
+
+
+
+if (!$realTeacher) {
+    throw new \Exception("لا يوجد معلم مرتبط بهذا الموعد أو الحلقة (schedule_id: {$schedule->id})");
+}            if (!$realTeacher) {
                 throw new \Exception("المعلم غير موجود لـ user_id: {$schedule->teacher_id}");
             }
 

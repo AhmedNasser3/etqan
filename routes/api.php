@@ -25,6 +25,7 @@ use App\Http\Controllers\Plans\PlanController;
 use App\Http\Controllers\Plans\PlanDetailController;
 use App\Http\Controllers\Plans\PlatformPlanController;
 use App\Http\Controllers\Plans\StudentPlanController;
+use App\Http\Controllers\PublicCenterController;
 use App\Http\Controllers\Reports\ReportsController;
 use App\Http\Controllers\Reports\StatsController;
 use App\Http\Controllers\Routes\RouteCustomizationController;
@@ -33,6 +34,7 @@ use App\Http\Controllers\Student\SpecialRequestController;
 use App\Http\Controllers\Student\StudentAchievementController;
 use App\Http\Controllers\Student\StudentAffairsController;
 use App\Http\Controllers\Student\StudentBookingsController;
+use App\Http\Controllers\Student\StudentImportController;
 use App\Http\Controllers\Student\StudentPlansController;
 use App\Http\Controllers\Student\StudentTransferController;
 use App\Http\Controllers\Students\PendingStudentController;
@@ -60,6 +62,68 @@ use Illuminate\Support\Facades\Route;
 // في routes/api.php
 // داخل الـ Route::middleware(['auth:sanctum']) الموجود عندك
 // في routes/api.php مؤقتاً للاختبار فقط
+// ── Student Dashboard Routes ──
+// في routes/api.php
+Route::prefix('v1/students')->middleware(['web'])->group(function () {
+
+    // رفع ملف Excel وتسجيل الطلاب
+    Route::post('import-excel', [
+        StudentImportController::class,
+        'importFromExcel',
+    ])->name('students.import.excel');
+
+    // تنزيل قالب Excel
+    // type: with_time | without_time
+    Route::get('import-template/{type}', [
+        StudentImportController::class,
+        'downloadTemplate',
+    ])->where('type', 'with_time|without_time')
+      ->name('students.import.template');
+
+});
+Route::middleware('web')->group(function () {
+    Route::prefix('v1')->group(function () {
+        Route::prefix('schedule-create')->group(function () {
+            Route::get('/plans', [PlanCircleScheduleController::class, 'getPlansForCreate']);
+            Route::get('/circles', [PlanCircleScheduleController::class, 'getCirclesForCreate']);
+            Route::get('/teachers', [PlanCircleScheduleController::class, 'getTeachersForCreate']);
+        });
+
+        Route::post('/plans/schedules', [PlanCircleScheduleController::class, 'store']); // للإضافة
+        Route::get('/plans/my-center-schedules', [PlanCircleScheduleController::class, 'myCenterSchedules']); // لعرض الخاصة بمركزي
+    });
+});
+Route::get('/v1/attendance/staff-attendance', [AttendanceController::class, 'staffAttendance'])->middleware('web');
+
+Route::middleware(['web'])->prefix('v1')->group(function () {
+
+    // ── Quick check-in (الأهم — لازم يكون قبل {attendanceDay}) ──
+    Route::post('attendance/quick-checkin', [AttendanceController::class, 'quickCheckin']);
+
+    // ── اليوم الحالي ──
+    Route::get('attendance/today', [AttendanceController::class, 'today']);
+
+    // ── إحصائيات ──
+    Route::get('attendance/stats', [AttendanceController::class, 'stats']);
+
+    // ── CRUD عادي ──
+    Route::apiResource('attendance', AttendanceController::class);
+
+    // ── Admin ──
+    Route::get('staff/attendance',             [AttendanceController::class, 'staffAttendance']);
+    Route::patch('staff/attendance/{id}',      [AttendanceController::class, 'markStaffAttendance']);
+
+});
+
+Route::middleware(['web'])->prefix('v1/student/dash')->group(function () {
+    Route::get('/dashboard',            [\App\Http\Controllers\Api\StudentDashboardController::class, 'index']);
+    Route::get('/profile',              [\App\Http\Controllers\Api\StudentProfileController::class,   'show']);
+    Route::get('/attendance',           [\App\Http\Controllers\Api\StudentDashboardController::class, 'attendance']);
+    Route::get('/achievements',         [\App\Http\Controllers\Api\StudentDashboardController::class, 'achievements']);
+    Route::get('/plan-details',         [\App\Http\Controllers\Api\StudentDashboardController::class, 'planDetails']);
+    Route::get('/next-session',         [\App\Http\Controllers\Api\StudentDashboardController::class, 'nextSession']);
+});
+Route::get('/public/centers', [PublicCenterController::class, 'index']);
 Route::middleware(['web'])->prefix('v1/teachers')->group(function () {
     Route::get('attendance-report',       [TeacherAttendanceReportController::class, 'index']);
     Route::get('attendance-report/{id}',  [TeacherAttendanceReportController::class, 'show']);
@@ -96,7 +160,6 @@ Route::get('v1/centers-test', function () {
 });
     Route::get('centers/all', [CenterController::class, 'allCenters']);
 
-Route::get('/v1/attendance/staff-attendance', [AttendanceController::class, 'staffAttendance'])->middleware('web');
 // في routes/api.php
 Route::prefix('v1')->name('v1.')->group(function () {
 Route::prefix('admin')->middleware(['web'])->group(function () {

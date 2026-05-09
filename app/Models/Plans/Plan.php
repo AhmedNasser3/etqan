@@ -135,6 +135,6 @@ class Plan extends Model
                 'total_schedules' => $schedules->count(),
                 'sample_date' => $firstSchedule->schedule_date?->format('Y-m-d') ?? 'غير محدد'
             ];
-        })->values()->take(3);
+        })->values()->take(1);
     }
 }

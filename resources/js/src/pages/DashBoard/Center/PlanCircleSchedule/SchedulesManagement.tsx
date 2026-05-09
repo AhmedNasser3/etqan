@@ -1,9 +1,8 @@
-// SchedulesManagement.tsx — نسخة مُعاد تصميمها
-import React, { useState, useEffect, useCallback } from "react";
+// SchedulesManagement.tsx — مع إضافة repeat_type و plan_end_date في الكارد
+import React, { useState, useEffect } from "react";
 import UpdateSchedulePage from "./models/UpdateSchedulePage";
 import CreateSchedulePage from "./models/CreateSchedulePage";
 import { usePlanSchedules, ScheduleType } from "./hooks/usePlanSchedules";
-import { ICO } from "../../icons";
 import { useToast } from "../../../../../contexts/ToastContext";
 import {
     FiPlus,
@@ -13,24 +12,17 @@ import {
     FiTrash2,
     FiCheckCircle,
     FiXCircle,
-    FiClock,
     FiUsers,
     FiCopy,
     FiBook,
 } from "react-icons/fi";
 
-/* ══════════════════════════════════════════════
-   Types
-══════════════════════════════════════════════ */
 interface ConfirmModalProps {
     title: string;
     desc?: string;
     cb: () => void;
 }
 
-/* ══════════════════════════════════════════════
-   Sub-components
-══════════════════════════════════════════════ */
 const AV_COLORS = [
     { bg: "#E1F5EE", color: "#085041" },
     { bg: "#E6F1FB", color: "#0C447C" },
@@ -69,9 +61,30 @@ const Avatar = ({ name, idx }: { name: string; idx: number }) => {
     );
 };
 
-/* ══════════════════════════════════════════════
+/* ── helper: تحويل أسماء الأيام الإنجليزية لعربية مختصرة ── */
+const REPEAT_DAY_AR: Record<string, string> = {
+    sunday: "أحد",
+    monday: "إثنين",
+    tuesday: "ثلاثاء",
+    wednesday: "أربعاء",
+    thursday: "خميس",
+    friday: "جمعة",
+    saturday: "سبت",
+};
+
+const parseRepeatDays = (raw: string | null | undefined): string => {
+    if (!raw) return "";
+    try {
+        const arr: string[] = typeof raw === "string" ? JSON.parse(raw) : raw;
+        return arr.map((d) => REPEAT_DAY_AR[d] || d).join(" · ");
+    } catch {
+        return "";
+    }
+};
+
+/* ════════════════════════════════════════
    Main
-══════════════════════════════════════════════ */
+════════════════════════════════════════ */
 const SchedulesManagement: React.FC = () => {
     const {
         schedules: schedulesFromHook,
@@ -107,7 +120,6 @@ const SchedulesManagement: React.FC = () => {
                 .includes(search.toLowerCase()),
     );
 
-    /* helpers */
     const getCircleName = (s: ScheduleType) => s.circle?.name || "غير محدد";
     const getTeacherName = (s: ScheduleType) => s.teacher?.name || "غير محدد";
     const getAvailabilityText = (s: ScheduleType) => {
@@ -117,16 +129,14 @@ const SchedulesManagement: React.FC = () => {
         return { text: `${rem} / ${s.max_students}`, avail: rem > 0 };
     };
 
-    /* stats */
     const totalSchedules = schedules.length;
     const availableCount = schedules.filter((s) => s.is_available).length;
+    const unavailCount = schedules.filter((s) => !s.is_available).length;
     const bookedCount = schedules.reduce(
         (acc, s) => acc + (s.booked_students || 0),
         0,
     );
-    const unavailCount = schedules.filter((s) => !s.is_available).length;
 
-    /* handlers */
     const handleEdit = (s: ScheduleType) => {
         setSelectedSchedule(s);
         setSelectedScheduleId(s.id);
@@ -177,7 +187,6 @@ const SchedulesManagement: React.FC = () => {
         notifySuccess("تم نسخ رابط الغرفة!");
     };
 
-    /* ── shared card button style ── */
     const editBtn: React.CSSProperties = {
         display: "inline-flex",
         alignItems: "center",
@@ -631,7 +640,7 @@ const SchedulesManagement: React.FC = () => {
                     </button>
                 </div>
 
-                {/* search toolbar */}
+                {/* search */}
                 <div
                     style={{
                         display: "flex",
@@ -691,7 +700,7 @@ const SchedulesManagement: React.FC = () => {
                     </span>
                 </div>
 
-                {/* cards list */}
+                {/* ── cards list ── */}
                 {loading ? (
                     <div style={{ textAlign: "center", padding: 48 }}>
                         <div
@@ -756,6 +765,19 @@ const SchedulesManagement: React.FC = () => {
                                 const av = getAvailabilityText(s);
                                 const circle = getCircleName(s);
                                 const teacher = getTeacherName(s);
+
+                                // ✅ بيانات التكرار
+                                const repeatType = (s as any).repeat_type as
+                                    | string
+                                    | undefined;
+                                const repeatDays = parseRepeatDays(
+                                    (s as any).repeat_days,
+                                );
+                                const endDate = (s as any).plan_end_date as
+                                    | string
+                                    | null
+                                    | undefined;
+
                                 return (
                                     <div
                                         key={s.id}
@@ -827,12 +849,14 @@ const SchedulesManagement: React.FC = () => {
                                             <div
                                                 style={{
                                                     display: "flex",
-                                                    gap: 10,
+                                                    gap: 8,
                                                     flexWrap: "wrap",
                                                     fontSize: 11,
                                                     color: "#64748b",
+                                                    alignItems: "center",
                                                 }}
                                             >
+                                                {/* الخطة */}
                                                 <span
                                                     style={{
                                                         display: "inline-flex",
@@ -845,9 +869,11 @@ const SchedulesManagement: React.FC = () => {
                                                         style={{
                                                             color: "#0f6e56",
                                                         }}
-                                                    />{" "}
+                                                    />
                                                     {s.plan.plan_name}
                                                 </span>
+
+                                                {/* المعلم */}
                                                 <span
                                                     style={{
                                                         display: "inline-flex",
@@ -860,9 +886,60 @@ const SchedulesManagement: React.FC = () => {
                                                         style={{
                                                             color: "#2563eb",
                                                         }}
-                                                    />{" "}
+                                                    />
                                                     {teacher}
                                                 </span>
+
+                                                {/* ✅ badge نوع التكرار */}
+                                                {repeatType && (
+                                                    <span
+                                                        style={{
+                                                            display:
+                                                                "inline-flex",
+                                                            alignItems:
+                                                                "center",
+                                                            gap: 3,
+                                                            padding: "2px 8px",
+                                                            borderRadius: 20,
+                                                            fontSize: 10,
+                                                            fontWeight: 700,
+                                                            background:
+                                                                repeatType ===
+                                                                "daily"
+                                                                    ? "#eff6ff"
+                                                                    : "#f0fdf4",
+                                                            color:
+                                                                repeatType ===
+                                                                "daily"
+                                                                    ? "#1d4ed8"
+                                                                    : "#15803d",
+                                                            border: `1px solid ${repeatType === "daily" ? "#bfdbfe" : "#86efac"}`,
+                                                        }}
+                                                    >
+                                                        {repeatType === "daily"
+                                                            ? "📅 يومي"
+                                                            : `🗓️ ${repeatDays || "أيام محددة"}`}
+                                                    </span>
+                                                )}
+
+                                                {/* ✅ تاريخ النهاية */}
+                                                {endDate && (
+                                                    <span
+                                                        style={{
+                                                            display:
+                                                                "inline-flex",
+                                                            alignItems:
+                                                                "center",
+                                                            gap: 3,
+                                                            fontSize: 10,
+                                                            color: "#94a3b8",
+                                                        }}
+                                                    >
+                                                        🏁 ينتهي: {endDate}
+                                                    </span>
+                                                )}
+
+                                                {/* رابط Jitsi */}
                                                 {s.jitsi_room_url && (
                                                     <button
                                                         onClick={() =>
@@ -957,7 +1034,7 @@ const SchedulesManagement: React.FC = () => {
                     </div>
                 )}
 
-                {/* footer add button */}
+                {/* footer */}
                 {filteredSchedules.length > 0 && (
                     <div
                         style={{

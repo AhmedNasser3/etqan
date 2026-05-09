@@ -65,7 +65,14 @@ const PlanCard: React.FC<PlanCardProps> = ({
     type,
     onBookSchedule,
 }) => {
-    // ✅ FIX: pendingScheduleId مش محتاجها هنا لأن الـ Modal هو اللي بيتحكم في الـ loading state
+    // ✅ state للتحكم في عرض المزيد — ترجع false لما الكارد يتقفل
+    const [showAll, setShowAll] = useState(false);
+
+    // لما الكارد يتقفل — نرجع للحالة الافتراضية
+    useEffect(() => {
+        if (!isExpanded) setShowAll(false);
+    }, [isExpanded]);
+
     const safeSummary =
         Array.isArray(schedule_summary) && schedule_summary.length > 0
             ? schedule_summary[0]
@@ -74,11 +81,15 @@ const PlanCard: React.FC<PlanCardProps> = ({
     const scheduleItems = safeSummary.schedule_items || [];
     const totalSchedules = safeSummary.total_schedules || 0;
 
+    // ✅ 3 بس في البداية — كلهم لو ضغط "عرض المزيد"
+    const visibleSchedules = showAll
+        ? scheduleItems
+        : scheduleItems.slice(0, 3);
+
     const handleClickBook = (scheduleId: number, e: React.MouseEvent) => {
         e.stopPropagation();
         const item = scheduleItems.find((s) => s.id === scheduleId);
         if (!item?.is_available) return;
-        // ✅ FIX: بنمرر planDetailsId=0 وبنخلي الـ hook يحدده من الـ API
         onBookSchedule(scheduleId, id, 0);
     };
 
@@ -119,11 +130,11 @@ const PlanCard: React.FC<PlanCardProps> = ({
                         حلقات الخطة المتاحة
                         <span>({totalSchedules} موعد)</span>
                     </div>
+
                     {scheduleItems.length > 0 ? (
-                        <div className="qplan-expanded__grid">
-                            {scheduleItems
-                                .slice(0, 3)
-                                .map((schedule, index) => (
+                        <>
+                            <div className="qplan-expanded__grid">
+                                {visibleSchedules.map((schedule, index) => (
                                     <div
                                         key={`${id}-${schedule.id}-${index}`}
                                         className="qschedule-card"
@@ -141,7 +152,11 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                             {schedule.time_range}
                                         </div>
                                         <div
-                                            className={`qschedule-card__status ${schedule.is_available ? "qschedule-card__status--ok" : "qschedule-card__status--full"}`}
+                                            className={`qschedule-card__status ${
+                                                schedule.is_available
+                                                    ? "qschedule-card__status--ok"
+                                                    : "qschedule-card__status--full"
+                                            }`}
                                         >
                                             {schedule.is_available ? (
                                                 <>
@@ -172,7 +187,23 @@ const PlanCard: React.FC<PlanCardProps> = ({
                                         </button>
                                     </div>
                                 ))}
-                        </div>
+                            </div>
+
+                            {/* ✅ زرار عرض المزيد — يظهر فقط لو في أكتر من 3 */}
+                            {scheduleItems.length > 3 && (
+                                <button
+                                    className="qplan-show-more-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowAll((prev) => !prev);
+                                    }}
+                                >
+                                    {showAll
+                                        ? "▲ عرض أقل"
+                                        : `▼ عرض المزيد (${scheduleItems.length - 3} موعد إضافي)`}
+                                </button>
+                            )}
+                        </>
                     ) : (
                         <div className="qplan-expanded__empty">
                             <InformationCircleIcon className="w-12 h-12" />
@@ -223,10 +254,8 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         fetchPlanDetails,
     } = useStudentPlans(type, 1);
 
-    // ✅ FIX: نجيب البيانات الأول، وبعدين نفتح الـ Modal — بدون race condition
     const handleOpenModal = useCallback(
         async (scheduleId: number, planId: number, planDetailsId: number) => {
-            // منع double-click أو فتح modal تاني وهو شغال
             if (modalLoading || modalOpen) return;
 
             setModalLoading(true);
@@ -238,7 +267,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
                 const details = await fetchPlanDetails(planId);
                 setPlanDetailsForModal(details);
 
-                // ✅ بنفتح الـ Modal بس بعد ما البيانات وصلت
                 setBookingIntent({ scheduleId, planId, planDetailsId });
                 setModalOpen(true);
             } catch (err) {
@@ -254,8 +282,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         async (config: PlanStartConfig) => {
             if (!bookingIntent) return;
 
-            console.log("📦 Booking with config:", config);
-
             setModalLoading(true);
             try {
                 const result = await bookSchedule(
@@ -265,7 +291,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
                     config,
                 );
 
-                // ✅ نغلق الـ Modal الأول، وبعدين نعرض النتيجة
                 setModalOpen(false);
                 setBookingIntent(null);
                 setPlanDetailsForModal([]);
@@ -283,9 +308,8 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
         [bookingIntent, bookSchedule, refetch],
     );
 
-    // ✅ FIX: إغلاق نظيف للـ Modal
     const handleCloseModal = useCallback(() => {
-        if (modalLoading) return; // منع الإغلاق وهو بيحجز
+        if (modalLoading) return;
         setModalOpen(false);
         setBookingIntent(null);
         setPlanDetailsForModal([]);
@@ -422,7 +446,6 @@ const PlanCards: React.FC<PlanCardsProps> = ({ type = "available" }) => {
                 )}
             </div>
 
-            {/* ✅ Modal اختيار طريقة البداية */}
             <PlanStartConfigModal
                 isOpen={modalOpen}
                 onClose={handleCloseModal}

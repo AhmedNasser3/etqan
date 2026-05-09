@@ -16,7 +16,11 @@ const ModalNotification: React.FC<ModalNotificationProps> = ({
     if (!show) return null;
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <div
+            className="modal-overlay"
+            style={{ zIndex: "9999999" }}
+            onClick={onClose}
+        >
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <h2 className="modal-title">{title}</h2>
                 <p className="modal-message">{message}</p>

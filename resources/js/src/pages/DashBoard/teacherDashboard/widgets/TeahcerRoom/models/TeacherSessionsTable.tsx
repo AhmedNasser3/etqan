@@ -18,7 +18,7 @@ interface SessionType {
 
 interface TeacherSessionsData {
     success: boolean;
-    sessions: SessionType[];
+    sessions: SessionType[]; // ✅ sessions وليس session
     total: number;
     message?: string;
 }
@@ -147,23 +147,23 @@ const TeacherSessionsTable: React.FC = () => {
             });
             const data: TeacherSessionsData = await res.json();
             if (data.success) {
-                const list =
-                    (data.sessions ?? (data as any).session)
-                        ? [(data as any).session]
-                        : [];
-                setSessions(list.filter(Boolean));
+                // ✅ data.sessions هي array مباشرة
+                const list: SessionType[] = data.sessions ?? [];
+                setSessions(list);
+
                 const init: Record<number, RowState> = {};
-                list.filter(Boolean).forEach((s: SessionType) => {
+                list.forEach((s) => {
                     init[s.id] = {
                         status: (s.status as RowStatus) ?? "قيد الانتظار",
                         note: "",
-                        rating: 0,
+                        rating: s.attendance_rating ?? 0,
                         saved: false,
                         saving: false,
                         expanded: false,
                     };
                 });
                 setRows(init);
+
                 if (list.length) push("success", `${list.length} جلسة جاهزة`);
                 else push("info", "لا توجد جلسات حالياً");
             } else {

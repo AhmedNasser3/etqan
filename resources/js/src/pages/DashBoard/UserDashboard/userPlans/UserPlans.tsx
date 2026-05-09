@@ -1,13 +1,6 @@
-// UserPlans.tsx - ديزاين معتدل يشبه CirclesManagement
 import React from "react";
-import { RiRobot2Fill } from "react-icons/ri";
-import { GrStatusGood } from "react-icons/gr";
-import { PiTimerDuotone } from "react-icons/pi";
-import { PiWhatsappLogoDuotone } from "react-icons/pi";
-import { FaStar } from "react-icons/fa";
-import { GoGoal } from "react-icons/go";
-import { useStudentPlans } from "./hooks/useStudentPlans";
 import { SiBookstack } from "react-icons/si";
+import { useStudentPlans } from "./hooks/useStudentPlans";
 
 const UserPlans: React.FC = () => {
     const {
@@ -40,15 +33,10 @@ const UserPlans: React.FC = () => {
         const date = new Date(dateString);
         const todayDate = new Date(today.toDateString());
         const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-
         if (date.toDateString() === todayDate.toDateString()) return "اليوم";
         if (date.toDateString() === yesterday.toDateString()) return "أمس";
         return dateString.split("-").reverse().join("/");
     };
-
-    const filteredData = planData.filter(
-        (item) => item.date >= dateFrom && item.date <= dateTo,
-    );
 
     const formatSessionTime = (time: string | undefined): string => {
         if (!time) return "غير محدد";
@@ -56,12 +44,15 @@ const UserPlans: React.FC = () => {
             const [hours, minutes] = time.split(":");
             const hour = parseInt(hours);
             const period = hour >= 12 ? "م" : "ص";
-            const displayHour = hour % 12 || 12;
-            return `${displayHour}:${minutes} ${period}`;
+            return `${hour % 12 || 12}:${minutes} ${period}`;
         } catch {
             return time;
         }
     };
+
+    const filteredData = planData.filter(
+        (item) => item.date >= dateFrom && item.date <= dateTo,
+    );
 
     if (loading) {
         return (
@@ -78,38 +69,66 @@ const UserPlans: React.FC = () => {
         );
     }
 
-    const getStatusBadgeClass = (status: string) => {
-        switch (status) {
-            case "completed":
-                return "bg-g";
-            case "retry":
-                return "bg-a";
-            default:
-                return "bg-r";
-        }
-    };
-
     function BadgeStatus({ status }: { status: string }) {
-        const map: Record<string, React.CSSProperties> = {
-            "bg-g": { background: "var(--g100)", color: "var(--g700)" },
-            "bg-r": { background: "#fee2e2", color: "#ef4444" },
-            "bg-a": { background: "#fef3c7", color: "#92400e" },
-            "bg-n": { background: "var(--n100)", color: "var(--n500)" },
+        const styles: Record<string, React.CSSProperties> = {
+            completed: { background: "var(--g100)", color: "var(--g700)" },
+            retry: { background: "#fef3c7", color: "#92400e" },
+            pending: { background: "#fee2e2", color: "#ef4444" },
         };
-        const value = map[getStatusBadgeClass(status)] || map["bg-n"];
-        const text =
-            status === "completed"
-                ? "مكتمل"
-                : status === "retry"
-                  ? "إعادة"
-                  : "قيد الانتظار";
+        const labels: Record<string, string> = {
+            completed: "مكتمل",
+            retry: "إعادة",
+            pending: "قيد الانتظار",
+        };
         return (
             <span
                 className="badge px-2 py-1 rounded-full text-xs font-medium"
-                style={value}
+                style={
+                    styles[status] ?? {
+                        background: "var(--n100)",
+                        color: "var(--n500)",
+                    }
+                }
             >
-                {text}
+                {labels[status] ?? "قيد الانتظار"}
             </span>
+        );
+    }
+
+    function ScheduleTypeBadge({
+        repeatType,
+        repeatDays,
+    }: {
+        repeatType?: string;
+        repeatDays?: string[];
+    }) {
+        const isDaily = !repeatType || repeatType === "daily";
+
+        if (isDaily) {
+            return (
+                <span
+                    className="badge px-2 py-1 rounded-full text-xs font-medium"
+                    style={{ background: "#dbeafe", color: "#1d4ed8" }}
+                >
+                    يومياً
+                </span>
+            );
+        }
+
+        const days = (repeatDays ?? []).filter((d) => d !== "يومياً");
+
+        return (
+            <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                {days.map((day, i) => (
+                    <span
+                        key={i}
+                        className="badge px-2 py-1 rounded-full text-xs font-medium"
+                        style={{ background: "#f3e8ff", color: "#7e22ce" }}
+                    >
+                        {day}
+                    </span>
+                ))}
+            </div>
         );
     }
 
@@ -146,6 +165,58 @@ const UserPlans: React.FC = () => {
                     </div>
                 </div>
 
+                {stats && (
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "16px",
+                            padding: "12px 16px",
+                            background: "var(--n50)",
+                            borderRadius: "8px",
+                            margin: "0 0 12px",
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <span
+                            style={{ fontSize: "13px", color: "var(--n600)" }}
+                        >
+                            إجمالي الأيام:{" "}
+                            <strong style={{ color: "var(--n800)" }}>
+                                {stats.total_days}
+                            </strong>
+                        </span>
+                        <span
+                            style={{ fontSize: "13px", color: "var(--n600)" }}
+                        >
+                            المكتملة:{" "}
+                            <strong style={{ color: "var(--g700)" }}>
+                                {stats.completed_days}
+                            </strong>
+                        </span>
+                        <span
+                            style={{ fontSize: "13px", color: "var(--n600)" }}
+                        >
+                            التقدم:{" "}
+                            <strong style={{ color: "#7e22ce" }}>
+                                {stats.progress_percentage}%
+                            </strong>
+                        </span>
+                        {stats.today_goal && (
+                            <span
+                                style={{
+                                    fontSize: "13px",
+                                    color: "var(--n600)",
+                                }}
+                            >
+                                هدف اليوم:{" "}
+                                <strong style={{ color: "var(--n800)" }}>
+                                    {stats.today_goal.hifz}
+                                </strong>
+                            </span>
+                        )}
+                    </div>
+                )}
+
                 {filteredData.length === 0 ? (
                     <div className="empty text-center py-16">
                         <SiBookstack className="mx-auto text-4xl text-gray-300 mb-2" />
@@ -161,6 +232,7 @@ const UserPlans: React.FC = () => {
                                     <th>الحفظ الجديد</th>
                                     <th>المراجعة</th>
                                     <th>الوقت</th>
+                                    <th>أيام الخطة</th>
                                     <th>الحالة</th>
                                 </tr>
                             </thead>
@@ -175,6 +247,12 @@ const UserPlans: React.FC = () => {
                                             {formatSessionTime(
                                                 item.session_time,
                                             )}
+                                        </td>
+                                        <td>
+                                            <ScheduleTypeBadge
+                                                repeatType={item.repeat_type}
+                                                repeatDays={item.repeat_days}
+                                            />
                                         </td>
                                         <td>
                                             <BadgeStatus status={item.status} />

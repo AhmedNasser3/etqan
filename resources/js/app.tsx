@@ -86,7 +86,6 @@ import DomainRequestsAdminManagement from "./src/pages/DashBoard/Admin/DomainReq
 import ItqanApp from "./src/pages/DashBoard/Center/itqan-clean";
 import TopBar from "./src/layouts/centerDashboard/TopBar";
 import { ToastProvider } from "./contexts/ToastContext";
-import StudentDashboard from "./src/pages/DashBoard/StudentDashboardV2";
 import UserTopBar from "./src/layouts/userDashboard/UserTopBar";
 import StudentRoom from "./src/pages/DashBoard/UserDashboard/StudentRoom";
 import AdminTopBar from "./src/layouts/adminDashboard/AdminTopBar";
@@ -102,6 +101,9 @@ import StaffAttendancePage from "./src/pages/DashBoard/Center/Attendance/Staff/S
 import TeacherStudentReports from "./src/pages/DashBoard/teacherDashboard/TeacherStudentReports";
 import TeacherStudentsDashboard from "./src/pages/DashBoard/teacherDashboard/TeacherStudentsDashboard";
 import TeacherAttendanceReport from "./src/pages/DashBoard/Center/Certificates/TeacherAttendanceReport";
+import StudentDashboard from "./src/pages/DashBoard/UserDashboard/StudentDashboard";
+import TeacherAchievementsManagement from "./src/pages/DashBoard/teacherDashboard/widgets/TeacherMotivate/TeacherAchievementList";
+import StudentImportExcel from "./src/pages/DashBoard/Center/useStudentBookings/StudentImportExcel";
 
 function UserLayout() {
     const [mobileSB, setMobileSB] = useState(false);
@@ -322,7 +324,6 @@ function App() {
                             path="plans-details-manegment"
                             element={<PlanDetailsManagement />}
                         />
-                        <Route path="dassssh" element={<StudentDashboard />} />
                         <Route
                             path="shedule-manegment"
                             element={<SchedulesManagement />}
@@ -381,6 +382,10 @@ function App() {
                             element={<CertificatesManagement />}
                         />
                         <Route
+                            path="student-circles-management"
+                            element={<StudentImportExcel />}
+                        />
+                        <Route
                             path="teachers-management"
                             element={<MyTeachersManagement />}
                         />
@@ -404,7 +409,7 @@ function App() {
                         <Route path="plan" element={<TeacherPlan />} />
                         <Route
                             path="motivation"
-                            element={<TeacherAchievementList />}
+                            element={<TeacherAchievementsManagement />}
                         />
                         <Route
                             path="attendance"
@@ -444,7 +449,7 @@ function App() {
                     </Route>
 
                     <Route path="user-dashboard/*" element={<UserLayout />}>
-                        <Route index element={<UserDashboard />} />
+                        <Route index element={<StudentDashboard />} />
                         <Route path="plans" element={<Plans />} />
                         <Route path="student-shop" element={<StudentShop />} />
 

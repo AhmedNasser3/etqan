@@ -22,101 +22,73 @@ class TeacherStudentSessionsController extends Controller
 public function getTeacherStudentSessions(Request $request)
 {
     $user = Auth::user();
-
     if (!$user) {
-        return response()->json([
-            'success' => false,
-            'message' => 'تحتاج تسجيل دخول'
-        ], 401);
+        return response()->json(['success' => false, 'message' => 'تحتاج تسجيل دخول'], 401);
     }
 
     $teacher = Teacher::where('user_id', $user->id)->first();
-
     if (!$teacher) {
-        return response()->json([
-            'success' => true,
-            'message' => 'لست مسجل كمعلم',
-            'teacher_id' => null,
-            'session' => null,
-            'total' => 0
-        ]);
+        return response()->json(['success' => true, 'sessions' => [], 'total' => 0]);
     }
 
     $teacherId = $teacher->id;
 
-    //  آخر جلسة مكتملة (مش غائب)
-    $lastCompletedSession = StudentPlanDetail::where('teacher_id', $teacherId)
-        ->where('status', 'مكتمل')
-        ->orderBy('day_number', 'desc')
-        ->orderBy('session_time', 'desc')
-        ->first();
+    // ✅ جيب كل booking_ids الخاصة بالمعلم
+    $bookingIds = StudentPlanDetail::where('teacher_id', $teacherId)
+        ->distinct()
+        ->pluck('circle_student_booking_id');
 
-    $lastDayNumber = $lastCompletedSession ? $lastCompletedSession->day_number : 0;
+    $sessions = collect();
 
-    //  الأولوية 1: جلسات قيد الانتظار في الأيام الجاية
-    $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
-        ->where('status', 'قيد الانتظار')
-        ->where('day_number', '>', $lastDayNumber)
-        ->orderBy('day_number', 'asc')
-        ->orderBy('session_time', 'asc')
-        ->first();
-
-    //  الأولوية 2: جلسات إعادة (مهمة جداً)
-    if (!$nextPendingSession) {
-        $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
-            ->where('status', 'إعادة')
+    foreach ($bookingIds as $bookingId) {
+        // ✅ لكل طالب — جيب أقرب حصة لسه مش مكتملة
+        $nextSession = StudentPlanDetail::where('teacher_id', $teacherId)
+            ->where('circle_student_booking_id', $bookingId)
+            ->whereIn('status', ['قيد الانتظار', 'إعادة'])
+            ->orderByRaw("FIELD(status, 'إعادة', 'قيد الانتظار')") // إعادة أولوية أعلى
             ->orderBy('day_number', 'asc')
-            ->orderBy('session_time', 'asc')
             ->first();
-    }
 
-    //  الأولوية 3: أي جلسة قيد الانتظار
-    if (!$nextPendingSession) {
-        $nextPendingSession = StudentPlanDetail::where('teacher_id', $teacherId)
-            ->where('status', 'قيد الانتظار')
-            ->orderBy('day_number', 'asc')
-            ->orderBy('session_time', 'asc')
-            ->first();
-    }
+        // الطالب خلص كل حصصه — تجاهله
+        if (!$nextSession) continue;
 
-    $session = null;
-    if ($nextPendingSession) {
         $student = DB::table('circle_student_bookings as b')
             ->join('users', 'b.user_id', '=', 'users.id')
-            ->where('b.id', $nextPendingSession->circle_student_booking_id)
-            ->select('b.id as booking_id', 'users.id as user_id', 'users.name as student_name', 'users.avatar as student_image')
+            ->where('b.id', $bookingId)
+            ->select('users.id as user_id', 'users.name as student_name', 'users.avatar as student_image')
             ->first();
 
-        $attendance = StudentAttendance::where('student_plan_detail_id', $nextPendingSession->id)->first();
+        $attendance = \App\Models\Students\StudentAttendance::where('student_plan_detail_id', $nextSession->id)->first();
 
-        $session = [
-            'id' => $nextPendingSession->id,
-            'day_number' => $nextPendingSession->day_number,
-            'session_time' => $nextPendingSession->session_time,
-            'status' => $nextPendingSession->status,
-            'new_memorization' => $nextPendingSession->new_memorization ?? null,
-            'review_memorization' => $nextPendingSession->review_memorization ?? null,
-            'circle_student_booking_id' => $nextPendingSession->circle_student_booking_id,
-            'plan_id' => $nextPendingSession->plan_id,
-            'circle_id' => $nextPendingSession->circle_id,
-            'plan_circle_schedule_id' => $nextPendingSession->plan_circle_schedule_id,
-            'student_name' => $student->student_name ?? 'طالب غير محدد',
-            'student_id' => $student->user_id ?? null,
-            'student_image' => $student->student_image ?? null,
-            'attendance_status' => $attendance ? $attendance->status : null,
-            'attendance_note' => $attendance ? $attendance->note : null,
-            'attendance_rating' => $attendance ? $attendance->rating : 0,
-        ];
+        $sessions->push([
+            'id'                        => $nextSession->id,
+            'day_number'                => $nextSession->day_number,
+            'session_time'              => $nextSession->session_time,
+            'status'                    => $nextSession->status,
+            'new_memorization'          => $nextSession->new_memorization,
+            'review_memorization'       => $nextSession->review_memorization,
+            'circle_student_booking_id' => $bookingId,
+            'plan_id'                   => $nextSession->plan_id,
+            'circle_id'                 => $nextSession->circle_id,
+            'plan_circle_schedule_id'   => $nextSession->plan_circle_schedule_id,
+            'student_name'              => $student->student_name ?? 'طالب غير محدد',
+            'student_id'                => $student->user_id ?? null,
+            'student_image'             => $student->student_image ?? null,
+            'attendance_status'         => $attendance?->status,
+            'attendance_note'           => $attendance?->note,
+            'attendance_rating'         => $attendance?->rating ?? 0,
+        ]);
     }
 
+    // ✅ ترتيب — إعادة أولاً ثم قيد الانتظار
+    $sorted = $sessions->sortByDesc(fn($s) => $s['status'] === 'إعادة')->values();
+
     return response()->json([
-        'success' => true,
-        'user_id' => $user->id,
-        'teacher_id' => $teacherId,
+        'success'      => true,
+        'teacher_id'   => $teacherId,
         'teacher_name' => $user->name,
-        'teacher_role' => $teacher->role ?? null,
-        'session' => $session,
-        'total' => $session ? 1 : 0
+        'sessions'     => $sorted,
+        'total'        => $sorted->count()
     ]);
 }
 

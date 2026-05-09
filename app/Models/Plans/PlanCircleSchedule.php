@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 
 class PlanCircleSchedule extends Model
 {
@@ -18,6 +19,9 @@ class PlanCircleSchedule extends Model
 
     protected $table = 'plan_circle_schedules';
 
+    /**
+     * ✅ الـ fillable محدث بالحقول الجديدة
+     */
     protected $fillable = [
         'plan_id',
         'circle_id',
@@ -32,17 +36,32 @@ class PlanCircleSchedule extends Model
         'is_available',
         'notes',
         'jitsi_room_name',
+
+        // ✅ الحقول الجديدة من الـ Migration
+        'repeat_type',
+        'repeat_days',
+        'plan_end_date',
     ];
 
+    /**
+     * ✅ الـ casts محدث للحقول الجديدة
+     */
     protected $casts = [
         'schedule_date' => 'date',
+        'plan_end_date' => 'date',
         'start_time' => 'datetime:H:i',
         'end_time' => 'datetime:H:i',
         'is_available' => 'boolean',
         'max_students' => 'integer',
+        'booked_students' => 'integer',
+        'duration_minutes' => 'integer',
+
+        // ✅ الحقول الجديدة
+        'repeat_type' => 'string',  // enum كـ string
+        'repeat_days' => 'array',   // JSON → array تلقائياً
     ];
 
-    protected $appends = ['jitsi_url'];
+    protected $appends = ['jitsi_url', 'repeat_days_formatted'];
 
     protected static function boot()
     {
@@ -61,7 +80,7 @@ class PlanCircleSchedule extends Model
         });
     }
 
-    //  إنشاء Jitsi room name فريد
+    // إنشاء Jitsi room name فريد
     public static function generateUniqueJitsiRoom(): string
     {
         do {
@@ -71,7 +90,7 @@ class PlanCircleSchedule extends Model
         return $roomName;
     }
 
-    //  Accessor للـ Jitsi URL
+    // Accessor للـ Jitsi URL
     public function getJitsiUrlAttribute(): string
     {
         return $this->jitsi_room_name
@@ -79,86 +98,55 @@ class PlanCircleSchedule extends Model
             : 'https://meet.jit.si/halaqa-teacher-default';
     }
 
-    //  العلاقات الأساسية
-    public function plan(): BelongsTo
-    {
-        return $this->belongsTo(Plan::class);
+    // ✅ Accessor جديد لعرض الأيام بشكل جميل
+/**
+ * ✅ Accessor آمن لعرض الأيام بشكل جميل
+ */
+public function getRepeatDaysFormattedAttribute(): string
+{
+    // 1. إذا null أو فارغ
+    if (empty($this->repeat_days)) {
+        return match($this->repeat_type) {
+            'daily' => 'يومي',
+            default => 'غير محدد'
+        };
     }
 
-    public function circle(): BelongsTo
-    {
-        return $this->belongsTo(Circle::class);
+    // 2. إذا مش array، اعرض رسالة خطأ
+    if (!is_array($this->repeat_days)) {
+        \Log::warning('repeat_days is not array', ['value' => $this->repeat_days, 'schedule_id' => $this->id]);
+        return 'خطأ في البيانات';
     }
 
-    public function teacher(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'teacher_id');
-    }
+    // 3. array_map آمن
+    $days_ar = [
+        'sunday' => 'الأحد', 'monday' => 'الإثنين', 'tuesday' => 'الثلاثاء',
+        'wednesday' => 'الأربعاء', 'thursday' => 'الخميس',
+        'friday' => 'الجمعة', 'saturday' => 'السبت'
+    ];
 
-    //  العلاقة المهمة مع الحجوزات
-    public function bookings(): HasMany
-    {
-        return $this->hasMany(CircleStudentBooking::class, 'plan_circle_schedule_id');
-    }
+    $formatted = array_map(fn($day) => $days_ar[$day] ?? (string)$day, $this->repeat_days);
+    return implode(' / ', $formatted);
+}
+    // الـ Relations (كما هي)
+    public function plan(): BelongsTo { return $this->belongsTo(Plan::class); }
+    public function circle(): BelongsTo { return $this->belongsTo(Circle::class); }
+    public function teacher(): BelongsTo { return $this->belongsTo(User::class, 'teacher_id'); }
+    public function bookings(): HasMany { return $this->hasMany(CircleStudentBooking::class, 'plan_circle_schedule_id'); }
 
-    //  علاقة مباشرة مع أول طالب محجوز
-    public function firstStudentBooking()
-    {
-        return $this->hasOne(CircleStudentBooking::class, 'plan_circle_schedule_id');
-    }
-
-    //  جلب الطالب الأول مع معلوماته
-    public function firstStudent()
-    {
-        return $this->hasOneThrough(
-            User::class,
-            CircleStudentBooking::class,
-            'plan_circle_schedule_id', // FK في CircleStudentBooking
-            'id',                      // PK في User
-            'id',                      // PK في PlanCircleSchedule
-            'user_id'                  // FK في CircleStudentBooking → User
-        );
-    }
-
-    //  عدد الطلاب المحجوزين
-    public function getBookedStudentsCountAttribute()
-    {
-        return $this->bookings()->count();
-    }
-
+    // Scopes (كما هي)
     public function hasAvailability(): bool
     {
-        if (!$this->is_available) {
-            return false;
-        }
-
-        if ($this->max_students === null) {
-            return true;
-        }
-
+        if (!$this->is_available) return false;
+        if ($this->max_students === null) return true;
         return $this->booked_students < $this->max_students;
     }
 
     public function getAvailabilityPercentage(): int
     {
-        if ($this->max_students === null) {
-            return 100;
-        }
-
+        if ($this->max_students === null) return 100;
         return $this->max_students > 0
             ? round((1 - ($this->booked_students / $this->max_students)) * 100)
             : 0;
-    }
-
-    //  Scope للمعلم الحالي
-    public function scopeForTeacher($query, $teacherId)
-    {
-        return $query->where('teacher_id', $teacherId);
-    }
-
-    //  Scope للحصص المتاحة
-    public function scopeAvailable($query)
-    {
-        return $query->where('is_available', true);
     }
 }

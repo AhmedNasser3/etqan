@@ -116,88 +116,155 @@ class PlanCircleScheduleController extends Controller
     }
 
     //  4️⃣ إنشاء موعد - مُصحح مع Jitsi room تلقائي + validation مرن + Debug
-    public function store(Request $request)
-    {
-        Log::info('➕ [STEP 1] store() - Raw request data', $request->all());
+public function store(Request $request)
+{
+    \Log::info('➕ [STEP 1] store() - Raw request data', $request->all());
 
-        $validated = $request->validate([
-            'plan_id' => 'required|exists:plans,id',
-            'circle_id' => 'required|exists:circles,id',
-            'teacher_id' => 'nullable|exists:users,id',
-            'schedule_date' => 'required|date|after_or_equal:today',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i',
-            'duration_minutes' => 'nullable|integer|min:15|max:300',
-            'max_students' => 'nullable|integer|min:1|max:100',
-            'notes' => 'nullable|string|max:1000',
+    $validated = $request->validate([
+        'plan_id'          => 'required|exists:plans,id',
+        'circle_id'        => 'required|exists:circles,id',
+        'teacher_id'       => 'nullable|exists:users,id',
+        'start_time'       => 'required|date_format:H:i',
+        'end_time'         => 'required|date_format:H:i|after:start_time',
+        'duration_minutes' => 'nullable|integer|min:15|max:300',
+        'max_students'     => 'nullable|integer|min:1|max:100',
+        'notes'            => 'nullable|string|max:1000',
+
+        // ✅ جديد
+        'repeat_type'      => 'required|in:daily,specific_days',
+        'repeat_days'      => 'required_if:repeat_type,specific_days|array',
+        'repeat_days.*'    => 'in:sunday,monday,tuesday,wednesday,thursday,friday,saturday',
+        'plan_total_days'  => 'required|integer|min:1|max:365',
+    ]);
+
+    \Log::info('✅ [STEP 2] Validation PASSED', $validated);
+
+    $plan = \DB::table('plans')->find($validated['plan_id']);
+    if ($plan->center_id !== \Auth::user()->center_id) {
+        return response()->json(['error' => 'الخطة غير مملوكة لمركزك'], 403);
+    }
+
+    \DB::beginTransaction();
+    try {
+        $duration = $validated['duration_minutes'] ?? $this->calculateDuration(
+            $validated['start_time'],
+            $validated['end_time']
+        );
+
+        $repeatType = $validated['repeat_type'];
+        $repeatDays = $repeatType === 'specific_days' ? $validated['repeat_days'] : null;
+        $totalDays  = $validated['plan_total_days'];
+
+        // ✅ حساب أول موعد (بعد اليوم)
+        $startDate = $this->calculateFirstSessionDate($repeatType, $repeatDays);
+
+        // ✅ حساب تاريخ النهاية
+        $endDate = $this->calculatePlanEndDate($startDate, $totalDays, $repeatType, $repeatDays);
+
+        $schedule = \App\Models\Plans\PlanCircleSchedule::create([
+            'plan_id'          => $validated['plan_id'],
+            'circle_id'        => $validated['circle_id'],
+            'teacher_id'       => $validated['teacher_id'] ?? null,
+            'schedule_date'    => $startDate->format('Y-m-d'),
+            'start_time'       => $validated['start_time'],
+            'end_time'         => $validated['end_time'],
+            'duration_minutes' => $duration,
+            'day_of_week'      => strtolower($startDate->format('l')),
+            'max_students'     => $validated['max_students'] ?? null,
+            'is_available'     => true,
+            'notes'            => $validated['notes'] ?? null,
+            'booked_students'  => 0,
+            'repeat_type'      => $repeatType,
+            'repeat_days'      => $repeatDays ? json_encode($repeatDays) : null,
+            'plan_end_date'    => $endDate->format('Y-m-d'),
         ]);
 
-        Log::info(' [STEP 2] Validation PASSED', $validated);
+        $schedule->load(['plan:id,plan_name', 'circle:id,name', 'teacher:id,name']);
 
-        $plan = DB::table('plans')->find($validated['plan_id']);
-        if ($plan->center_id !== Auth::user()->center_id) {
-            Log::error('❌ [STEP 3 FAILED] Plan not owned by center');
-            return response()->json(['error' => 'الخطة غير مملوكة لمركزك'], 403);
-        }
+        \DB::commit();
 
-        Log::info(' [STEP 4] Plan ownership verified', ['plan_id' => $validated['plan_id']]);
+        return response()->json([
+            'success'        => true,
+            'schedule'       => $schedule,
+            'first_session'  => $startDate->format('Y-m-d'),
+            'plan_end_date'  => $endDate->format('Y-m-d'),
+            'total_sessions' => $totalDays,
+        ], 201);
 
-        DB::beginTransaction();
-        try {
-            $duration = $validated['duration_minutes'] ?? $this->calculateDuration(
-                $validated['start_time'],
-                $validated['end_time']
-            );
+    } catch (\Exception $e) {
+        \DB::rollBack();
+        \Log::error('❌ store() FAILED', ['error' => $e->getMessage()]);
+        return response()->json(['error' => 'فشل في الإنشاء: ' . $e->getMessage()], 500);
+    }
+}
 
-            $schedule = PlanCircleSchedule::create([
-                'plan_id' => $validated['plan_id'],
-                'circle_id' => $validated['circle_id'],
-                'teacher_id' => $validated['teacher_id'] ?? null,
-                'schedule_date' => $validated['schedule_date'],
-                'start_time' => $validated['start_time'],
-                'end_time' => $validated['end_time'],
-                'duration_minutes' => $duration,
-                'day_of_week' => strtolower(now()->parse($validated['schedule_date'])->dayOfWeek),
-                'max_students' => $validated['max_students'] ?? null,
-                'is_available' => true,
-                'notes' => $validated['notes'] ?? null,
-                'booked_students' => 0,
-            ]);
+// ✅ حساب أول موعد بعد اليوم
+private function calculateFirstSessionDate(string $repeatType, ?array $repeatDays): \Carbon\Carbon
+{
+    $today    = \Carbon\Carbon::today();
+    $tomorrow = $today->copy()->addDay();
 
-            Log::info(' [STEP 5] Schedule record created مع Jitsi room', [
-                'id' => $schedule->id,
-                'jitsi_room_name' => $schedule->jitsi_room_name,
-                'jitsi_url' => $schedule->jitsi_url
-            ]);
-
-            $schedule->load(['plan:id,plan_name', 'circle:id,name', 'teacher:id,name']);
-
-            DB::commit();
-            Log::info('🎉 [STEP 6 SUCCESS] Schedule fully created + Jitsi room', [
-                'id' => $schedule->id,
-                'jitsi_room_name' => $schedule->jitsi_room_name
-            ]);
-
-            return response()->json($schedule, 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('❌ [STEP 5 FAILED] Database error', [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'data' => $validated
-            ]);
-            return response()->json(['error' => 'فشل في الإنشاء: ' . $e->getMessage()], 500);
-        }
+    if ($repeatType === 'daily') {
+        return $tomorrow;
     }
 
-    private function calculateDuration($start, $end)
-    {
-        $start = DateTime::createFromFormat('H:i', $start);
-        $end = DateTime::createFromFormat('H:i', $end);
-        return $start->diff($end)->i;
+    // specific_days: ابحث عن أقرب يوم من الأيام المختارة بعد اليوم
+    $dayMap = [
+        'sunday' => 0, 'monday' => 1, 'tuesday' => 2,
+        'wednesday' => 3, 'thursday' => 4, 'friday' => 5, 'saturday' => 6,
+    ];
+
+    $selectedDayNumbers = array_map(fn($d) => $dayMap[$d], $repeatDays);
+    sort($selectedDayNumbers);
+
+    $current = $tomorrow->copy();
+    for ($i = 0; $i < 14; $i++) {
+        if (in_array($current->dayOfWeek, $selectedDayNumbers)) {
+            return $current;
+        }
+        $current->addDay();
     }
 
+    return $tomorrow;
+}
+
+// ✅ حساب تاريخ نهاية الخطة
+private function calculatePlanEndDate(
+    \Carbon\Carbon $startDate,
+    int $totalDays,
+    string $repeatType,
+    ?array $repeatDays
+): \Carbon\Carbon {
+    if ($repeatType === 'daily') {
+        return $startDate->copy()->addDays($totalDays - 1);
+    }
+
+    $dayMap = [
+        'sunday' => 0, 'monday' => 1, 'tuesday' => 2,
+        'wednesday' => 3, 'thursday' => 4, 'friday' => 5, 'saturday' => 6,
+    ];
+    $selectedDayNumbers = array_map(fn($d) => $dayMap[$d], $repeatDays);
+
+    $count   = 0;
+    $current = $startDate->copy();
+
+    while ($count < $totalDays) {
+        if (in_array($current->dayOfWeek, $selectedDayNumbers)) {
+            $count++;
+            if ($count === $totalDays) break;
+        }
+        $current->addDay();
+    }
+
+    return $current;
+}
+
+private function calculateDuration($start, $end): int
+{
+    $s = \DateTime::createFromFormat('H:i', $start);
+    $e = \DateTime::createFromFormat('H:i', $end);
+    return (int) ($s->diff($e)->h * 60 + $s->diff($e)->i);
+}
     //  باقي الـ methods محدثة  $appends في Model مش محتاج append
     public function myCenterSchedules(Request $request)
     {

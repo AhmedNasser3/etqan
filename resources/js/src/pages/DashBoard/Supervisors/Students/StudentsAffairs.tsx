@@ -24,6 +24,9 @@ import {
     FiFilter,
     FiGrid,
     FiList,
+    FiUpload,
+    FiFileText,
+    FiAlertCircle,
 } from "react-icons/fi";
 import { FaMosque, FaQuran } from "react-icons/fa";
 import * as XLSX from "xlsx";
@@ -102,6 +105,11 @@ interface StudentRow {
     balance: string;
     status: string;
     img: string;
+}
+interface ImportResult {
+    success_count: number;
+    failed_count: number;
+    errors: string[];
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -315,6 +323,765 @@ function Toast({
             >
                 <FiX size={13} />
             </button>
+        </div>
+    );
+}
+
+// ── Arabic ↔ API mappers ─────────────────────────────────────────────────────
+// القالب يُنزَّل بالعربية؛ عند الرفع نحوّل كل قيمة للإنجليزية قبل إرسالها للـ API
+
+/** أسماء أعمدة القالب العربي ← مفاتيح API */
+const AR_COL_MAP: Record<string, string> = {
+    "الاسم الأول": "first_name",
+    "اسم العائلة": "family_name",
+    "رقم الهوية": "id_number",
+    "تاريخ الميلاد": "birth_date",
+    "المرحلة الدراسية": "grade_level",
+    الجنس: "gender",
+    "البريد الإلكتروني للطالب": "student_email",
+    "بريد ولي الأمر": "guardian_email",
+    "رمز دولة ولي الأمر": "guardian_country_code",
+    "هاتف ولي الأمر": "guardian_phone",
+    "الحالة الصحية": "health_status",
+    "مستوى القراءة": "reading_level",
+    "وقت الجلسة": "session_time",
+    ملاحظات: "notes",
+    الحلقة: "circle",
+};
+
+/** قيم عربية → قيم API */
+const AR_VALUE_MAP: Record<string, Record<string, string>> = {
+    grade_level: {
+        // ابتدائي
+        ابتدائي: "elementary",
+        "أول ابتدائي": "elementary",
+        "ثاني ابتدائي": "elementary",
+        "ثالث ابتدائي": "elementary",
+        "رابع ابتدائي": "elementary",
+        "خامس ابتدائي": "elementary",
+        "سادس ابتدائي": "elementary",
+        "اول ابتدائي": "elementary",
+        ثاني: "elementary",
+        ثالث: "elementary",
+        رابع: "elementary",
+        خامس: "elementary",
+        سادس: "elementary",
+        elementary: "elementary",
+        // متوسط
+        متوسط: "middle",
+        "أول متوسط": "middle",
+        "ثاني متوسط": "middle",
+        "ثالث متوسط": "middle",
+        "اول متوسط": "middle",
+        middle: "middle",
+        // ثانوي
+        ثانوي: "high",
+        "أول ثانوي": "high",
+        "ثاني ثانوي": "high",
+        "ثالث ثانوي": "high",
+        "اول ثانوي": "high",
+        high: "high",
+    },
+    gender: {
+        ذكر: "male",
+        male: "male",
+        أنثى: "female",
+        انثى: "female",
+        female: "female",
+    },
+    health_status: {
+        سليم: "healthy",
+        healthy: "healthy",
+        "يحتاج متابعة": "needs_attention",
+        needs_attention: "needs_attention",
+        "ذوي احتياجات": "special_needs",
+        special_needs: "special_needs",
+    },
+    session_time: {
+        العصر: "asr",
+        عصر: "asr",
+        asr: "asr",
+        المغرب: "maghrib",
+        مغرب: "maghrib",
+        maghrib: "maghrib",
+        "": "",
+    },
+    guardian_country_code: {
+        "966": "966",
+        السعودية: "966",
+        "20": "20",
+        مصر: "20",
+        "971": "971",
+        الإمارات: "971",
+        الامارات: "971",
+    },
+};
+
+/** تطبيع تاريخ الميلاد: يقبل M/D/YYYY أو YYYY-MM-DD أو serial Excel */
+function normalizeDate(raw: any): string {
+    if (!raw && raw !== 0) return "";
+    // Excel serial number
+    if (typeof raw === "number") {
+        const d = new Date(Math.round((raw - 25569) * 86400 * 1000));
+        return d.toISOString().split("T")[0];
+    }
+    const s = String(raw).trim();
+    // already YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // M/D/YYYY or MM/DD/YYYY
+    const parts = s.split("/");
+    if (parts.length === 3) {
+        const [m, d, y] = parts;
+        return `${y.padStart(4, "0")}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    }
+    return s;
+}
+
+/** تحويل صف من القالب العربي إلى كائن API */
+function mapArabicRow(raw: Record<string, any>): Record<string, string> {
+    const out: Record<string, string> = {};
+
+    for (const [colAr, apiKey] of Object.entries(AR_COL_MAP)) {
+        // ابحث عن العمود بالاسم العربي أولاً، ثم بالمفتاح الإنجليزي fallback
+        const val = raw[colAr] ?? raw[apiKey] ?? "";
+        out[apiKey] = String(val ?? "").trim();
+    }
+
+    // تحويل القيم
+    const mappable = [
+        "grade_level",
+        "gender",
+        "health_status",
+        "session_time",
+        "guardian_country_code",
+    ] as const;
+    for (const key of mappable) {
+        const original = out[key];
+        const mapped = AR_VALUE_MAP[key]?.[original];
+        if (mapped !== undefined) out[key] = mapped;
+        // إذا لم نجد تطابقاً نترك القيمة كما هي (سيرفضها الـ API بوضوح)
+    }
+
+    // تطبيع التاريخ
+    const rawDate = raw["تاريخ الميلاد"] ?? raw["birth_date"] ?? "";
+    out["birth_date"] = normalizeDate(rawDate);
+
+    // fallback للحالة الصحية
+    if (!out["health_status"]) out["health_status"] = "healthy";
+
+    return out;
+}
+
+// ── Import Modal ─────────────────────────────────────────────────────────────
+function ImportModal({
+    onClose,
+    onSuccess,
+}: {
+    onClose: () => void;
+    onSuccess: () => void;
+}) {
+    const [file, setFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [result, setResult] = useState<ImportResult | null>(null);
+    const [dragOver, setDragOver] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // ── القالب بالعربية كاملاً ──
+    const AR_TEMPLATE_HEADERS = [
+        "الاسم الأول",
+        "اسم العائلة",
+        "رقم الهوية",
+        "تاريخ الميلاد",
+        "المرحلة الدراسية",
+        "الجنس",
+        "البريد الإلكتروني للطالب",
+        "بريد ولي الأمر",
+        "رمز دولة ولي الأمر",
+        "هاتف ولي الأمر",
+        "الحالة الصحية",
+        "مستوى القراءة",
+        "وقت الجلسة",
+        "ملاحظات",
+        "الحلقة",
+    ];
+
+    const AR_TEMPLATE_EXAMPLE = [
+        {
+            "الاسم الأول": "محمد",
+            "اسم العائلة": "الأحمد",
+            "رقم الهوية": "1234567890",
+            "تاريخ الميلاد": "2010-05-15",
+            "المرحلة الدراسية": "سادس",
+            الجنس: "ذكر",
+            "البريد الإلكتروني للطالب": "student@example.com",
+            "بريد ولي الأمر": "guardian@example.com",
+            "رمز دولة ولي الأمر": "966",
+            "هاتف ولي الأمر": "500000000",
+            "الحالة الصحية": "سليم",
+            "مستوى القراءة": "متوسط",
+            "وقت الجلسة": "العصر",
+            ملاحظات: "",
+            الحلقة: "",
+        },
+    ];
+
+    const downloadTemplate = () => {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(AR_TEMPLATE_EXAMPLE, {
+            header: AR_TEMPLATE_HEADERS,
+        });
+        ws["!cols"] = AR_TEMPLATE_HEADERS.map(() => ({ wch: 24 }));
+        // تعليق توضيحي في الصف الثاني (بعد المثال)
+        XLSX.utils.book_append_sheet(wb, ws, "قالب الطلاب");
+
+        // ورقة ثانية للقيم المقبولة
+        const helpData = [
+            {
+                الحقل: "المرحلة الدراسية",
+                "القيم المقبولة":
+                    "ابتدائي / متوسط / ثانوي (أو: أول ابتدائي، ثاني متوسط، ثالث ثانوي ...)",
+            },
+            { الحقل: "الجنس", "القيم المقبولة": "ذكر / أنثى" },
+            {
+                الحقل: "الحالة الصحية",
+                "القيم المقبولة": "سليم / يحتاج متابعة / ذوي احتياجات",
+            },
+            {
+                الحقل: "وقت الجلسة",
+                "القيم المقبولة": "العصر / المغرب (اختياري)",
+            },
+            {
+                الحقل: "رمز دولة ولي الأمر",
+                "القيم المقبولة": "966 (السعودية) / 20 (مصر) / 971 (الإمارات)",
+            },
+            {
+                الحقل: "تاريخ الميلاد",
+                "القيم المقبولة":
+                    "YYYY-MM-DD أو M/D/YYYY مثال: 2010-05-15 أو 5/15/2010",
+            },
+        ];
+        const wsHelp = XLSX.utils.json_to_sheet(helpData);
+        wsHelp["!cols"] = [{ wch: 22 }, { wch: 60 }];
+        XLSX.utils.book_append_sheet(wb, wsHelp, "القيم المقبولة");
+
+        XLSX.writeFile(wb, "قالب_تسجيل_الطلاب.xlsx");
+    };
+
+    const handleFile = (f: File) => {
+        if (!f.name.match(/\.(xlsx|xls)$/i)) {
+            alert("يرجى رفع ملف Excel فقط (.xlsx أو .xls)");
+            return;
+        }
+        setFile(f);
+        setResult(null);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragOver(false);
+        const f = e.dataTransfer.files[0];
+        if (f) handleFile(f);
+    };
+
+    const handleUpload = async () => {
+        if (!file) return;
+        setUploading(true);
+        setResult(null);
+        try {
+            const rawRows = await new Promise<any[]>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const wb = XLSX.read(e.target?.result, {
+                            type: "binary",
+                            cellDates: false,
+                        });
+                        const ws = wb.Sheets[wb.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(ws, {
+                            defval: "",
+                        });
+                        resolve(rows as any[]);
+                    } catch {
+                        reject(new Error("فشل في قراءة الملف"));
+                    }
+                };
+                reader.onerror = () => reject(new Error("فشل في قراءة الملف"));
+                reader.readAsBinaryString(file);
+            });
+
+            if (!rawRows.length)
+                throw new Error("الملف فارغ أو لا يحتوي على بيانات");
+
+            // تحويل كل صف من العربي للـ API
+            const students = rawRows.map(mapArabicRow);
+
+            const r = await apiFetch("/api/v1/auth/student/import-register", {
+                method: "POST",
+                body: JSON.stringify({ students }),
+            });
+
+            setResult(r.data);
+            if (r.data?.success_count > 0) onSuccess();
+        } catch (e: any) {
+            alert(e.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const GRADE_OPTS = [
+        "ابتدائي / أول ابتدائي / سادس ...",
+        "متوسط / أول متوسط / ثالث متوسط ...",
+        "ثانوي / ثاني ثانوي ...",
+    ];
+
+    return (
+        <div
+            style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 6000,
+                background: "rgba(0,0,0,.55)",
+                backdropFilter: "blur(4px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+            }}
+            onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
+            <div
+                style={{
+                    background: "#fff",
+                    borderRadius: 24,
+                    width: "100%",
+                    maxWidth: 560,
+                    maxHeight: "90vh",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    fontFamily: "'Tajawal',sans-serif",
+                    direction: "rtl",
+                }}
+            >
+                {/* Header */}
+                <div
+                    style={{
+                        background: "linear-gradient(135deg,#1e293b,#0f4c35)",
+                        padding: "20px 24px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexShrink: 0,
+                    }}
+                >
+                    <div>
+                        <div
+                            style={{
+                                color: "#86efac",
+                                fontSize: 11,
+                                marginBottom: 2,
+                            }}
+                        >
+                            استيراد جماعي
+                        </div>
+                        <div
+                            style={{
+                                color: "#fff",
+                                fontWeight: 900,
+                                fontSize: 17,
+                            }}
+                        >
+                            رفع ملف الطلاب
+                        </div>
+                        <div
+                            style={{
+                                color: "#94a3b8",
+                                fontSize: 11,
+                                marginTop: 2,
+                            }}
+                        >
+                            القالب والملف كلهم بالعربي ✓
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            background: "#ffffff22",
+                            border: "none",
+                            color: "#fff",
+                            borderRadius: 10,
+                            padding: "8px 12px",
+                            cursor: "pointer",
+                            display: "flex",
+                        }}
+                    >
+                        <FiX size={16} />
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
+                    {/* Step 1 */}
+                    <div
+                        style={{
+                            background: "#f0fdf4",
+                            border: "1px solid #bbf7d0",
+                            borderRadius: 14,
+                            padding: "14px 18px",
+                            marginBottom: 18,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <div>
+                            <div
+                                style={{
+                                    fontWeight: 900,
+                                    fontSize: 14,
+                                    color: "#0f6e56",
+                                    marginBottom: 3,
+                                }}
+                            >
+                                الخطوة 1: تحميل القالب
+                            </div>
+                            <div style={{ fontSize: 12, color: "#64748b" }}>
+                                قالب بالعربي كامل + ورقة القيم المقبولة
+                            </div>
+                        </div>
+                        <button
+                            onClick={downloadTemplate}
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 7,
+                                padding: "9px 18px",
+                                borderRadius: 10,
+                                border: "none",
+                                background: "#0f6e56",
+                                color: "#fff",
+                                cursor: "pointer",
+                                fontSize: 13,
+                                fontWeight: 700,
+                                fontFamily: "inherit",
+                                whiteSpace: "nowrap",
+                            }}
+                        >
+                            <FiDownload size={14} /> تحميل القالب
+                        </button>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div
+                        style={{
+                            fontWeight: 900,
+                            fontSize: 14,
+                            color: "#1e293b",
+                            marginBottom: 10,
+                        }}
+                    >
+                        الخطوة 2: رفع الملف المعبأ
+                    </div>
+
+                    {/* Drop Zone */}
+                    <div
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            setDragOver(true);
+                        }}
+                        onDragLeave={() => setDragOver(false)}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                            border: `2px dashed ${dragOver ? "#0f6e56" : file ? "#0f6e56" : "#cbd5e1"}`,
+                            borderRadius: 14,
+                            padding: "32px 20px",
+                            textAlign: "center",
+                            cursor: "pointer",
+                            background: dragOver
+                                ? "#f0fdf4"
+                                : file
+                                  ? "#f0fdf4"
+                                  : "#f8fafc",
+                            transition: "all .2s",
+                            marginBottom: 16,
+                        }}
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".xlsx,.xls"
+                            style={{ display: "none" }}
+                            onChange={(e) =>
+                                e.target.files?.[0] &&
+                                handleFile(e.target.files[0])
+                            }
+                        />
+                        {file ? (
+                            <div>
+                                <FiFileText
+                                    size={32}
+                                    color="#0f6e56"
+                                    style={{ marginBottom: 8 }}
+                                />
+                                <div
+                                    style={{
+                                        fontWeight: 700,
+                                        color: "#0f6e56",
+                                        fontSize: 14,
+                                    }}
+                                >
+                                    {file.name}
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 12,
+                                        color: "#64748b",
+                                        marginTop: 4,
+                                    }}
+                                >
+                                    {(file.size / 1024).toFixed(1)} KB — اضغط
+                                    لتغيير الملف
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <FiUpload
+                                    size={32}
+                                    color="#94a3b8"
+                                    style={{ marginBottom: 8 }}
+                                />
+                                <div
+                                    style={{
+                                        fontWeight: 700,
+                                        color: "#475569",
+                                        fontSize: 14,
+                                    }}
+                                >
+                                    اسحب ملف Excel هنا أو اضغط للاختيار
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 12,
+                                        color: "#94a3b8",
+                                        marginTop: 4,
+                                    }}
+                                >
+                                    يدعم .xlsx و .xls فقط
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Upload Button */}
+                    <button
+                        onClick={handleUpload}
+                        disabled={!file || uploading}
+                        style={{
+                            width: "100%",
+                            padding: "12px",
+                            borderRadius: 12,
+                            border: "none",
+                            background:
+                                !file || uploading ? "#e2e8f0" : "#0f6e56",
+                            color: !file || uploading ? "#94a3b8" : "#fff",
+                            cursor:
+                                !file || uploading ? "not-allowed" : "pointer",
+                            fontSize: 14,
+                            fontWeight: 900,
+                            fontFamily: "inherit",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 8,
+                            transition: "all .2s",
+                        }}
+                    >
+                        {uploading ? (
+                            <>
+                                <FiRefreshCw
+                                    size={15}
+                                    style={{
+                                        animation: "spin 1s linear infinite",
+                                    }}
+                                />
+                                جاري الرفع والمعالجة...
+                            </>
+                        ) : (
+                            <>
+                                <FiUpload size={15} /> رفع الملف وتسجيل الطلاب
+                            </>
+                        )}
+                    </button>
+
+                    {/* Result */}
+                    {result && (
+                        <div style={{ marginTop: 18 }}>
+                            <div
+                                style={{
+                                    background:
+                                        result.success_count > 0
+                                            ? "#f0fdf4"
+                                            : "#fef2f2",
+                                    border: `1px solid ${result.success_count > 0 ? "#bbf7d0" : "#fecaca"}`,
+                                    borderRadius: 14,
+                                    padding: "14px 18px",
+                                    marginBottom: result.errors.length ? 12 : 0,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        gap: 16,
+                                        flexWrap: "wrap",
+                                    }}
+                                >
+                                    {result.success_count > 0 && (
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                color: "#166534",
+                                                fontWeight: 700,
+                                                fontSize: 14,
+                                            }}
+                                        >
+                                            <FiCheckCircle size={16} />
+                                            تم تسجيل {result.success_count} طالب
+                                            بنجاح
+                                        </div>
+                                    )}
+                                    {result.failed_count > 0 && (
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                color: "#991b1b",
+                                                fontWeight: 700,
+                                                fontSize: 14,
+                                            }}
+                                        >
+                                            <FiXCircle size={16} />
+                                            فشل {result.failed_count} سطر
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {result.errors.length > 0 && (
+                                <div
+                                    style={{
+                                        background: "#fef2f2",
+                                        border: "1px solid #fecaca",
+                                        borderRadius: 14,
+                                        padding: "14px 18px",
+                                        maxHeight: 200,
+                                        overflowY: "auto",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            fontWeight: 700,
+                                            fontSize: 13,
+                                            color: "#991b1b",
+                                            marginBottom: 8,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 6,
+                                        }}
+                                    >
+                                        <FiAlertCircle size={14} /> تفاصيل
+                                        الأخطاء
+                                    </div>
+                                    {result.errors.map((err, i) => (
+                                        <div
+                                            key={i}
+                                            style={{
+                                                fontSize: 12,
+                                                color: "#7f1d1d",
+                                                paddingBottom: 4,
+                                                borderBottom:
+                                                    i < result.errors.length - 1
+                                                        ? "1px solid #fecaca"
+                                                        : "none",
+                                                marginBottom: 4,
+                                            }}
+                                        >
+                                            {err}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Tips */}
+                    <div
+                        style={{
+                            marginTop: 18,
+                            background: "#f8fafc",
+                            borderRadius: 12,
+                            padding: "12px 16px",
+                        }}
+                    >
+                        <div
+                            style={{
+                                fontWeight: 700,
+                                fontSize: 12,
+                                color: "#475569",
+                                marginBottom: 8,
+                            }}
+                        >
+                            القيم المقبولة في الملف:
+                        </div>
+                        {[
+                            [
+                                "المرحلة الدراسية",
+                                "ابتدائي / متوسط / ثانوي (أو: سادس، أول متوسط، ثاني ثانوي ...)",
+                            ],
+                            ["الجنس", "ذكر / أنثى"],
+                            [
+                                "الحالة الصحية",
+                                "سليم / يحتاج متابعة / ذوي احتياجات",
+                            ],
+                            ["وقت الجلسة", "العصر / المغرب (اختياري)"],
+                            ["رمز الدولة", "966 أو 20 أو 971"],
+                            ["تاريخ الميلاد", "YYYY-MM-DD أو M/D/YYYY"],
+                        ].map(([field, vals], i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    fontSize: 11,
+                                    color: "#64748b",
+                                    marginBottom: 5,
+                                    display: "flex",
+                                    gap: 8,
+                                    alignItems: "flex-start",
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        color: "#0f6e56",
+                                        fontWeight: 900,
+                                        minWidth: 90,
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    {field}:
+                                </span>
+                                <span>{vals}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
         </div>
     );
 }
@@ -729,8 +1496,7 @@ function StudentDetailModal({
                         >
                             خطأ في تحميل البيانات
                         </div>
-                    ) : // ── Tab: Info ──────────────────────────────────────────────
-                    activeTab === "info" ? (
+                    ) : activeTab === "info" ? (
                         <div>
                             <div
                                 style={{
@@ -1110,7 +1876,6 @@ function StudentDetailModal({
                                 )}
                             </F>
 
-                            {/* بيانات الحلقة والخطة */}
                             {data.booking && (
                                 <div
                                     style={{
@@ -1216,7 +1981,6 @@ function StudentDetailModal({
                                         ))}
                                     </div>
 
-                                    {/* Progress Bar */}
                                     <div style={{ marginTop: 12 }}>
                                         <div
                                             style={{
@@ -1253,7 +2017,6 @@ function StudentDetailModal({
                                         </div>
                                     </div>
 
-                                    {/* Jitsi Room */}
                                     {data.booking.jitsi_url && (
                                         <div
                                             style={{
@@ -1310,8 +2073,7 @@ function StudentDetailModal({
                                 </div>
                             )}
                         </div>
-                    ) : // ── Tab: Plan ──────────────────────────────────────────────
-                    activeTab === "plan" ? (
+                    ) : activeTab === "plan" ? (
                         <div>
                             <div
                                 style={{
@@ -1472,8 +2234,7 @@ function StudentDetailModal({
                                 </div>
                             )}
                         </div>
-                    ) : // ── Tab: Attendance ────────────────────────────────────────
-                    activeTab === "attendance" ? (
+                    ) : activeTab === "attendance" ? (
                         <div>
                             <div
                                 style={{
@@ -1583,7 +2344,6 @@ function StudentDetailModal({
                             </div>
                         </div>
                     ) : (
-                        // ── Tab: Achievements ──────────────────────────────────────
                         <div>
                             <div
                                 style={{
@@ -1733,6 +2493,7 @@ const StudentAffairs: React.FC = () => {
     const [search, setSearch] = useState("");
     const [filterStatus, setFilterStatus] = useState("الكل");
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [showImport, setShowImport] = useState(false);
     const [toast, setToast] = useState<{
         message: string;
         tone: "success" | "error";
@@ -1893,7 +2654,14 @@ const StudentAffairs: React.FC = () => {
                         إدارة بيانات الطلاب — الخطط — الحلقات — الحضور —
                         الإنجازات
                     </p>
-                    <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 8,
+                            marginTop: 14,
+                            flexWrap: "wrap",
+                        }}
+                    >
                         <button
                             onClick={() => fetchStudents(page)}
                             style={{
@@ -1931,6 +2699,26 @@ const StudentAffairs: React.FC = () => {
                             }}
                         >
                             <FiDownload size={12} /> تصدير Excel
+                        </button>
+                        {/* ── زر الاستيراد الجماعي ── */}
+                        <button
+                            onClick={() => setShowImport(true)}
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                padding: "7px 14px",
+                                borderRadius: 10,
+                                border: "1px solid #86efac55",
+                                background: "#16a34a33",
+                                color: "#86efac",
+                                cursor: "pointer",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                fontFamily: "inherit",
+                            }}
+                        >
+                            <FiUpload size={12} /> استيراد طلاب
                         </button>
                     </div>
                 </div>
@@ -2405,6 +3193,18 @@ const StudentAffairs: React.FC = () => {
                 <StudentDetailModal
                     studentId={selectedId}
                     onClose={() => setSelectedId(null)}
+                />
+            )}
+
+            {/* Import Modal */}
+            {showImport && (
+                <ImportModal
+                    onClose={() => setShowImport(false)}
+                    onSuccess={() => {
+                        setShowImport(false);
+                        fetchStudents(1);
+                        showToast("تم استيراد الطلاب بنجاح ✓");
+                    }}
                 />
             )}
 

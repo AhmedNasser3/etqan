@@ -434,15 +434,7 @@ const TeacherAttendance: React.FC = () => {
             <div className="page-shell">
                 <section className="hero-card">
                     <div>
-                        <h1 className="hero-title">
-                            متابعة حضور المعلمين والحلقات
-                        </h1>
-                        <p className="hero-copy">
-                            لوحة هادئة لمراجعة انتظام الحضور اليومي في المراكز
-                            والحلقات، متابعة التأخر، وتحديث حالة الجلسات بنفس
-                            الطابع الإداري الديني الموجود في صفحة إيقاف وتفعيل
-                            الموظفين.
-                        </p>
+                        <h1 className="hero-title">متبعة حضورك اليومي</h1>
                     </div>
                     <div className="hero-actions">
                         <div
